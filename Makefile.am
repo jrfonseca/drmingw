@@ -69,7 +69,7 @@ install-exec-local: exchndl.dll
 
 docdir = $(prefix)/doc/drmingw
 
-doc_DATA = COPYING COPYING.LIB doc/drmingw.html doc/drmingw.reg doc/exception-nt.gif doc/install.gif doc/sample.gif
+dist_doc_DATA = COPYING COPYING.LIB doc/drmingw.html doc/drmingw.reg doc/exception-nt.gif doc/install.gif doc/sample.gif
 
 
 noinst_LIBRARIES = libexchndl2.a
