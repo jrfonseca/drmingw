@@ -1,3 +1,6 @@
+PACKAGE = DrMingw
+VERSION = 0.4.3
+
 bin_PROGRAMS = drmingw
 
 #lib_LTLIBRARIES = libexchndl.la
@@ -29,6 +32,7 @@ drmingw_SOURCES = \
 	debug.c \
 	include/aout/stab_gnu.h \
 	include/aout/aout64.h \
+	include/aout/stab.def \
 	include/coff/internal.h \
 	include/demangle.h \
 	include/dis-asm.h \
@@ -36,7 +40,9 @@ drmingw_SOURCES = \
 	include/libcoff.h \
 	include/libiberty.h
 
-INCLUDES = -Iinclude
+dist_EXTRA_drmingw_SOURCES = resource.rc icon.ico
+
+INCLUDES = -I$(srcdir)/include
 
 drmingw_LDFLAGS = -mwindows
 
@@ -45,9 +51,8 @@ drmingw_LDADD = resource.o -lbfd -liberty
 #libexchndl_la_SOURCES = exchndl.c
 #libexchndl_la_LDFLAGS = -no-undefined -version-info 0:0:0
 
+RC = @WINDRES@
+RCFLAGS = --use-temp-file --verbose -O COFF
+resource.o: resource.rc resource.h icon.ico
+	$(RC) $(RCFLAGS) -o $@ --include-dir=$(srcdir) $<
 
-RC=mingw32-windres
-RCFLAGS=-O COFF
-
-resource.o: resource.rc resource.h
-	$(RC) $(RCFLAGS) -o $@ $<
