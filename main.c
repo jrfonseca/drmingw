@@ -180,7 +180,7 @@ int main (int argc, char **argv)
 					return 0;
 				}
 				process_id_given = 1;
-				dwProcessId = atol (optarg);
+				dwProcessId = strtoul (optarg, NULL, 0);
 				break;
 
 			case 'e':	/* Signal an event after process is attached.  */
