@@ -52,28 +52,34 @@ RCFLAGS = --use-temp-file --verbose -O COFF
 resource.o: resource.rc resource.h icon.ico
 	$(RC) $(RCFLAGS) -o $@ --include-dir=$(srcdir) $<
 
-doc = \
-	doc/drmingw.html \
-	doc/drmingw.reg \
-	doc/exception-nt.gif \
-	doc/install.gif \
-	doc/sample.gif
-
-EXTRA_DIST = exchndl.c $(doc)
 
 all: exchndl.dll
+
+EXTRA_DIST = exchndl.c
 
 exchndl.dll: exchndl.c
 	$(COMPILE) -shared -s -o $@ $< -lbfd -liberty
 
 CLEANFILES = exchndl.dll
 
+install-exec-local: exchndl.dll
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	$(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) exchndl.dll $(DESTDIR)$(bindir)/exchndl.dll
+	
 
-noinst_LIBRARIES = libexchndl.a
+docdir = $(prefix)/doc/drmingw
 
-libexchndl_a_SOURCES = samples/exchndl2.cxx
+doc_DATA = COPYING COPYING.LIB doc/drmingw.html doc/drmingw.reg doc/exception-nt.gif doc/install.gif doc/sample.gif
 
-noinst_PROGRAMS = test testcpp
+
+noinst_LIBRARIES = libexchndl2.a
+
+libexchndl2_a_SOURCES = samples/exchndl2.cxx
+
+samplesdir = $(docdir)/samples
+
+samples_PROGRAMS = test testcpp
+samples_DATA = samples/exchndl2.cxx samples/test.c samples/testcpp.cxx
 
 test_SOURCES = samples/test.c
 test_LDADD = exchndl2.o -lstdc++
@@ -83,16 +89,3 @@ testcpp_SOURCES = samples/testcpp.cxx
 testcpp_LDADD = exchndl2.o -lstdc++
 testcpp_CXXFLAGS = -ggdb $(AM_CXXFLAGS)
 
-install-exec-local: exchndl.dll test$(EXEEXT) testcpp$(EXEEXT)
-	$(mkinstalldirs) $(DESTDIR)$(bindir)
-	$(INSTALL_PROGRAM_ENV) $(INSTALL_PROGRAM) exchndl.dll $(DESTDIR)$(bindir)/exchndl.dll
-	$(mkinstalldirs) $(DESTDIR)$(prefix)/doc/drmingw
-	for f in $(doc); do \
-	  $(INSTALL_DATA) $(srcdir)/$$f $(DESTDIR)$(prefix)/doc/drmingw/`basename $$f`; \
-	done
-	$(mkinstalldirs) $(DESTDIR)$(prefix)/doc/drmingw/samples
-	$(INSTALL_DATA) samples/exchndl2.cxx $(DESTDIR)$(prefix)/doc/drmingw/samples/exchndl2.cxx
-	$(INSTALL_DATA) samples/test.c $(DESTDIR)$(prefix)/doc/drmingw/samples/test.c
-	$(INSTALL_DATA) samples/testcpp.cxx $(DESTDIR)$(prefix)/doc/drmingw/samples/testcpp.cxx
-	$(INSTALL_PROGRAM) test$(EXEEXT) $(DESTDIR)$(prefix)/doc/drmingw/samples/test$(EXEEXT)
-	$(INSTALL_PROGRAM) testcpp$(EXEEXT) $(DESTDIR)$(prefix)/doc/drmingw/samples/testcpp$(EXEEXT)
