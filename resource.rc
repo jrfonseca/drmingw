@@ -1,0 +1,28 @@
+#include <windows.h>
+#include "resource.h"
+
+IDI_MAINICON ICON DISCARDABLE "icon.ico"
+
+IDM_MAINMENU MENU 
+{
+	POPUP "&File"
+	{
+		MENUITEM "Save &As...", CM_FILE_SAVEAS
+		MENUITEM SEPARATOR
+		MENUITEM "E&xit", CM_FILE_EXIT
+	}
+	POPUP "&Help"
+	{
+		MENUITEM "&About", CM_HELP_ABOUT
+	}
+}
+
+IDD_ABOUT DIALOG 0, 0, 155, 102
+STYLE DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+CAPTION "About Dr. Mingw"
+FONT 8, "MS Sans Serif"
+{
+   CONTROL "&OK", IDOK, "BUTTON", BS_DEFPUSHBUTTON | BS_CENTER | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 51, 83, 50, 14
+   CONTROL "About This Program", -1, "button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE | WS_GROUP, 5, 5, 144, 73
+   CONTROL "A JIT debugger that collects debugging information about unhandled exceptions.\r\n\r\nby José Fonseca", -1, "static", SS_CENTER | WS_CHILD | WS_VISIBLE, 27, 27, 100, 50
+}

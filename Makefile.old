@@ -1,0 +1,125 @@
+# Makefile
+
+
+# Standard Variables
+
+CC=gcc
+CFLAGS=-g -Wall -Os -mwindows 
+INCLUDES=-I. -Iinclude
+CXX=g++
+CXXFLAGS=$(CFLAGS) -fexceptions
+DEP_FLAGS=-MM
+LD=$(CC) $(CFLAGS)
+LDFLAGS=-L.
+DLLWRAP=dllwrap
+LIBS=-lbfd -liberty
+RC=windres
+RCFLAGS=-O COFF
+
+
+# Choose the one you have
+
+#CFUNCTIONS=touch $@
+CFUNCTIONS=rm -f $@ ; cfunctions -i $<
+
+MAKEDEPENDS=rm -f $@ ; mkdepend $(SRCS) $(INCLUDES) -f$@
+#MAKEDEPENDS=$(CXX) $(CXXFLAGS) $(DEP_FLAGS) $(INCLUDES) $(SRCS) > $@
+
+
+# Main Target Defines
+
+TARGET=../bin/drmingw.exe
+
+SRCS=\
+	main.c \
+	debugger.c \
+	dialog.c \
+	log.c \
+	misc.c \
+	module.c \
+	symbols.c \
+	prdbg.c \
+	rddbg.c \
+	debug.c \
+	debugx.c \
+	stabs.c \
+	ieee.c \
+	rdcoff.c \
+	exchndl.c
+
+OBJS=$(SRCS:%.c=%.o) resource.res
+
+
+# Suffix Rules
+
+%.h:
+	@echo "Warning: Can't find $@."
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+
+%.o: %.cxx
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
+
+%.exe: %.o
+	$(LD) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+%.res: %.rc
+	$(RC) $(RCFLAGS) -o $@ $<
+
+
+# Targets
+
+.PHONY: all
+all:	$(TARGET) ../bin/exchndl.dll
+
+
+$(TARGET): .dependencies $(OBJS) 
+	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+../bin/exchndl.dll: LDFLAGS += -s
+../bin/exchndl.dll: exchndl.o
+	$(DLLWRAP) $(LDFLAGS) -o $@ $^ $(LIBS)
+
+
+.PHONY: package
+package:
+	-rm -f ../drmingw-snapshot.tar.bz2
+	tar -C ../ -cIf ../drmingw-snapshot.tar.bz2 . --exclude=*.bak --exclude=*.o --exclude=*.res --exclude=*.a
+
+.PHONY: clean
+clean:
+	-rm -f *.o *.res ../bin/*
+
+
+# Automatic Headers
+
+debugger.h: debugger.c
+	$(CFUNCTIONS)
+
+dialog.h: dialog.c
+	$(CFUNCTIONS)
+
+log.h: log.c
+	$(CFUNCTIONS)
+
+misc.h: misc.c
+	$(CFUNCTIONS)
+
+module.h: module.c
+	$(CFUNCTIONS)
+
+symbols.h: symbols.c
+	$(CFUNCTIONS)
+
+
+# Dependencies
+
+resource.res: resource.rc resource.h
+
+# Automatic Dependencies
+
+.dependencies: Makefile $(SRCS)
+	$(MAKEDEPENDS)
+
+-include .dependencies
