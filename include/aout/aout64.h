@@ -1,4 +1,20 @@
-/* `a.out' object-file definitions, including extensions to 64-bit fields */
+/* `a.out' object-file definitions, including extensions to 64-bit fields
+
+   Copyright 2001 Free Software Foundation, Inc.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
 #ifndef __A_OUT_64_H__
 #define __A_OUT_64_H__
@@ -115,7 +131,8 @@ struct external_exec
 /* This macro is only relevant for ZMAGIC files; QMAGIC always has the header
    in the text.  */
 #ifndef N_HEADER_IN_TEXT
-#define N_HEADER_IN_TEXT(x) (((x).a_entry & (TARGET_PAGE_SIZE-1)) >= EXEC_BYTES_SIZE)
+#define N_HEADER_IN_TEXT(x) \
+  (((x).a_entry & (TARGET_PAGE_SIZE-1)) >= EXEC_BYTES_SIZE)
 #endif
 
 /* Sun shared libraries, not linux.  This macro is only relevant for ZMAGIC
@@ -135,15 +152,17 @@ struct external_exec
 
 #ifndef N_TXTADDR
 #define N_TXTADDR(x) \
-    (/* The address of a QMAGIC file is always one page in, */ \
-     /* with the header in the text.  */ \
-     N_IS_QMAGIC (x) ? TARGET_PAGE_SIZE + EXEC_BYTES_SIZE : \
-     N_MAGIC(x) != ZMAGIC ? 0 :	/* object file or NMAGIC */\
-     N_SHARED_LIB(x) ? 0 :	\
-     N_HEADER_IN_TEXT(x)  ?	\
-	    TEXT_START_ADDR + EXEC_BYTES_SIZE :	/* no padding */\
-	    TEXT_START_ADDR			/* a page of padding */\
-    )
+    (/* The address of a QMAGIC file is always one page in, */		\
+     /* with the header in the text.  */				\
+     N_IS_QMAGIC (x)							\
+     ? (bfd_vma) TARGET_PAGE_SIZE + EXEC_BYTES_SIZE			\
+     : (N_MAGIC (x) != ZMAGIC						\
+	? (bfd_vma) 0	/* object file or NMAGIC */			\
+	: (N_SHARED_LIB (x)						\
+	   ? (bfd_vma) 0						\
+	   : (N_HEADER_IN_TEXT (x)					\
+	      ? (bfd_vma) TEXT_START_ADDR + EXEC_BYTES_SIZE		\
+	      : (bfd_vma) TEXT_START_ADDR))))
 #endif
 
 /* If N_HEADER_IN_TEXT is not true for ZMAGIC, there is some padding
@@ -161,14 +180,15 @@ struct external_exec
 
 /* Offset in an a.out of the start of the text section. */
 #ifndef N_TXTOFF
-#define N_TXTOFF(x)	\
-    (/* For {O,N,Q}MAGIC, no padding.  */ \
-     N_MAGIC(x) != ZMAGIC ? EXEC_BYTES_SIZE : \
-     N_SHARED_LIB(x) ? 0 : \
-     N_HEADER_IN_TEXT(x) ?	\
-	    EXEC_BYTES_SIZE :			/* no padding */\
-	    ZMAGIC_DISK_BLOCK_SIZE		/* a page of padding */\
-    )
+#define N_TXTOFF(x)							\
+    (/* For {O,N,Q}MAGIC, no padding.  */				\
+     N_MAGIC (x) != ZMAGIC						\
+     ? EXEC_BYTES_SIZE							\
+     : (N_SHARED_LIB (x)						\
+	? 0								\
+	: (N_HEADER_IN_TEXT (x)						\
+	   ? EXEC_BYTES_SIZE		/* no padding */		\
+	   : ZMAGIC_DISK_BLOCK_SIZE	/* a page of padding */)))
 #endif
 /* Size of the text section.  It's always as stated, except that we
    offset it to `undo' the adjustment to N_TXTADDR and N_TXTOFF
@@ -177,25 +197,28 @@ struct external_exec
    exec header to be part of the text segment.)  */
 #ifndef N_TXTSIZE
 #define	N_TXTSIZE(x) \
-    (/* For QMAGIC, we don't consider the header part of the text section.  */\
-     N_IS_QMAGIC (x) ? (x).a_text - EXEC_BYTES_SIZE : \
-     (N_MAGIC(x) != ZMAGIC || N_SHARED_LIB(x)) ? (x).a_text : \
-     N_HEADER_IN_TEXT(x)  ?	\
-	    (x).a_text - EXEC_BYTES_SIZE:	/* no padding */\
-	    (x).a_text				/* a page of padding */\
-    )
+  (/* For QMAGIC, we don't consider the header part of the text section.  */\
+   N_IS_QMAGIC (x)							\
+   ? (x).a_text - EXEC_BYTES_SIZE					\
+   : ((N_MAGIC (x) != ZMAGIC || N_SHARED_LIB (x))			\
+      ? (x).a_text							\
+      : (N_HEADER_IN_TEXT (x)						\
+	 ? (x).a_text - EXEC_BYTES_SIZE	/* no padding */		\
+	 : (x).a_text			/* a page of padding */ )))
 #endif
 /* The address of the data segment in virtual memory.
    It is the text segment address, plus text segment size, rounded
    up to a N_SEGSIZE boundary for pure or pageable files. */
 #ifndef N_DATADDR
 #define N_DATADDR(x) \
-    (N_MAGIC(x)==OMAGIC? (N_TXTADDR(x)+N_TXTSIZE(x)) \
-     :  (N_SEGSIZE(x) + ((N_TXTADDR(x)+N_TXTSIZE(x)-1) & ~(N_SEGSIZE(x)-1))))
+  (N_MAGIC (x) == OMAGIC						\
+   ? (N_TXTADDR (x) + N_TXTSIZE (x))					\
+   : (N_SEGSIZE (x) + ((N_TXTADDR (x) + N_TXTSIZE (x) - 1)		\
+		       & ~ (bfd_vma) (N_SEGSIZE (x) - 1))))
 #endif
 /* The address of the BSS segment -- immediately after the data segment.  */
 
-#define N_BSSADDR(x)	(N_DATADDR(x) + (x).a_data)
+#define N_BSSADDR(x)	(N_DATADDR (x) + (x).a_data)
 
 /* Offsets of the various portions of the file after the text segment.  */
 
@@ -212,21 +235,19 @@ struct external_exec
    for NMAGIC.  */
 
 #ifndef N_DATOFF
-#define N_DATOFF(x) \
- (N_TXTOFF(x) + N_TXTSIZE(x))
+#define N_DATOFF(x)	( N_TXTOFF (x) + N_TXTSIZE (x) )
 #endif
-
 #ifndef N_TRELOFF
-#define N_TRELOFF(x)	( N_DATOFF(x) + (x).a_data )
+#define N_TRELOFF(x)	( N_DATOFF (x) + (x).a_data )
 #endif
 #ifndef N_DRELOFF
-#define N_DRELOFF(x)	( N_TRELOFF(x) + (x).a_trsize )
+#define N_DRELOFF(x)	( N_TRELOFF (x) + (x).a_trsize )
 #endif
 #ifndef N_SYMOFF
-#define N_SYMOFF(x)	( N_DRELOFF(x) + (x).a_drsize )
+#define N_SYMOFF(x)	( N_DRELOFF (x) + (x).a_drsize )
 #endif
 #ifndef N_STROFF
-#define N_STROFF(x)	( N_SYMOFF(x) + (x).a_syms )
+#define N_STROFF(x)	( N_SYMOFF (x) + (x).a_syms )
 #endif
 
 /* Symbols */
@@ -388,13 +409,29 @@ struct reloc_ext_external {
   bfd_byte r_addend[BYTES_IN_WORD];	/* datum addend				*/
 };
 
+#ifndef RELOC_EXT_BITS_EXTERN_BIG
 #define	RELOC_EXT_BITS_EXTERN_BIG	((unsigned int) 0x80)
-#define	RELOC_EXT_BITS_EXTERN_LITTLE	((unsigned int) 0x01)
+#endif
 
+#ifndef RELOC_EXT_BITS_EXTERN_LITTLE
+#define	RELOC_EXT_BITS_EXTERN_LITTLE	((unsigned int) 0x01)
+#endif
+
+#ifndef RELOC_EXT_BITS_TYPE_BIG
 #define	RELOC_EXT_BITS_TYPE_BIG		((unsigned int) 0x1F)
+#endif
+
+#ifndef RELOC_EXT_BITS_TYPE_SH_BIG
 #define	RELOC_EXT_BITS_TYPE_SH_BIG	0
+#endif
+
+#ifndef RELOC_EXT_BITS_TYPE_LITTLE
 #define	RELOC_EXT_BITS_TYPE_LITTLE	((unsigned int) 0xF8)
+#endif
+
+#ifndef RELOC_EXT_BITS_TYPE_SH_LITTLE
 #define	RELOC_EXT_BITS_TYPE_SH_LITTLE	3
+#endif
 
 /* Bytes per relocation entry */
 #define	RELOC_EXT_SIZE	(BYTES_IN_WORD + 3 + 1 + BYTES_IN_WORD)
