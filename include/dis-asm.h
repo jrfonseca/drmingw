@@ -210,12 +210,14 @@ extern int print_insn_fr30		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_hppa		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_i860		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_i960		PARAMS ((bfd_vma, disassemble_info*));
+extern int print_insn_ip2k		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_m32r		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_m88k		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_mcore		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_mmix		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_mn10200		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_mn10300		PARAMS ((bfd_vma, disassemble_info*));
+extern int print_insn_msp430		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_ns32k		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_openrisc		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_big_or32          PARAMS ((bfd_vma, disassemble_info*));
@@ -228,6 +230,7 @@ extern int print_insn_rs6000		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_s390              PARAMS ((bfd_vma, disassemble_info*)); 
 extern int print_insn_sh		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_tic30		PARAMS ((bfd_vma, disassemble_info*));
+extern int print_insn_tic4x		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_tic54x		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_tic80		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_v850		PARAMS ((bfd_vma, disassemble_info*));
@@ -237,10 +240,13 @@ extern int print_insn_xstormy16		PARAMS ((bfd_vma, disassemble_info*));
 extern int print_insn_sh64		PARAMS ((bfd_vma, disassemble_info *));
 extern int print_insn_sh64x_media	PARAMS ((bfd_vma, disassemble_info *));
 extern int print_insn_frv		PARAMS ((bfd_vma, disassemble_info *));
+extern int print_insn_iq2000            PARAMS ((bfd_vma, disassemble_info *));
 
 extern disassembler_ftype arc_get_disassembler PARAMS ((void *));
 extern disassembler_ftype cris_get_disassembler PARAMS ((bfd *));
 
+extern void print_mips_disassembler_options PARAMS ((FILE *));
+extern void print_ppc_disassembler_options PARAMS ((FILE *));
 extern void print_arm_disassembler_options PARAMS ((FILE *));
 extern void parse_arm_disassembler_option  PARAMS ((char *));
 extern int  get_arm_regname_num_options    PARAMS ((void));
@@ -315,7 +321,7 @@ extern int generic_symbol_at_address
   (INFO).insn_info_valid = 0
 
 #ifdef __cplusplus
-};
+}
 #endif
 
 #endif /* ! defined (DIS_ASM_H) */

@@ -13,6 +13,7 @@
 #include <tchar.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <malloc.h>
 
 
 #define HAVE_BFD	1
@@ -58,25 +59,25 @@ DWORD GetModuleBase(DWORD dwAddress)
 #include "libcoff.h"
 
 // Read in the symbol table.
-static boolean
+static bfd_boolean
 slurp_symtab (bfd *abfd, asymbol ***syms, long *symcount)
 {
 	long storage;
 
 	if ((bfd_get_file_flags (abfd) & HAS_SYMS) == 0)
-		return false;
+		return FALSE;
 
 	storage = bfd_get_symtab_upper_bound (abfd);
 	if (storage < 0)
-		return false;
+		return FALSE;
 
 	if((*syms = (asymbol **) malloc (storage)) == NULL)
-		return false;
+		return FALSE;
 
 	if((*symcount = bfd_canonicalize_symtab (abfd, *syms)) < 0)
-		return false;
+		return FALSE;
 	
-	return true;
+	return TRUE;
 }
 
 // This stucture is used to pass information between translate_addresses and find_address_in_section.
@@ -87,7 +88,7 @@ struct find_handle
 	const char *filename;
 	const char *functionname;
 	unsigned int line;
-	boolean found;
+	bfd_boolean found;
 };
 
 // Look for an address in a section.  This is called via  bfd_map_over_sections. 
@@ -150,9 +151,9 @@ BOOL BfdGetSymFromAddr(bfd *abfd, asymbol **syms, long symcount, DWORD dwAddress
 		return FALSE;
 	info.syms = syms;
 
-	info.found = false;
+	info.found = FALSE;
 	bfd_map_over_sections (abfd, find_address_in_section, (PTR) &info);
-	if (info.found == false || info.line == 0)
+	if (info.found == FALSE || info.line == 0)
 		return FALSE;
 
 	assert(lpSymName);
@@ -181,9 +182,9 @@ BOOL BfdGetLineFromAddr(bfd *abfd, asymbol **syms, long symcount, DWORD dwAddres
 
 	info.syms = syms;
 
-	info.found = false;
+	info.found = FALSE;
 	bfd_map_over_sections (abfd, find_address_in_section, (PTR) &info);
-	if (info.found == false || info.line == 0)
+	if (info.found == FALSE || info.line == 0)
 		return FALSE;
 
 	assert(lpFileName && lpLineNumber);

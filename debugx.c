@@ -120,7 +120,7 @@ struct debug_type
 		struct debug_indirect_type *kindirect;
 		/* DEBUG_KIND_INT.  */
 		/* Whether the integer is unsigned.  */
-		boolean kint;
+		bfd_boolean kint;
 		/* DEBUG_KIND_STRUCT, DEBUG_KIND_UNION, DEBUG_KIND_CLASS,
 		   DEBUG_KIND_UNION_CLASS.  */
 		struct debug_class_type *kclass;
@@ -203,7 +203,7 @@ struct debug_function_type
 	/* NULL terminated array of argument types.  */
 	debug_type *arg_types;
 	/* Whether the function takes a variable number of arguments.  */
-	boolean varargs;
+	bfd_boolean varargs;
 };
 
 /* Information kept for a range.  */
@@ -231,7 +231,7 @@ struct debug_array_type
 	/* Upper bound.  */
 	bfd_signed_vma upper;
 	/* Whether this array is really a string.  */
-	boolean stringp;
+	bfd_boolean stringp;
 };
 
 /* Information kept for a set.  */
@@ -241,7 +241,7 @@ struct debug_set_type
 	/* Base type.  */
 	debug_type type;
 	/* Whether this set is really a bitstring.  */
-	boolean bitstringp;
+	bfd_boolean bitstringp;
 };
 
 /* Information kept for an offset type (a based pointer).  */
@@ -265,7 +265,7 @@ struct debug_method_type
 	/* A NULL terminated array of argument types.  */
 	debug_type *arg_types;
 	/* Whether the method takes a variable number of arguments.  */
-	boolean varargs;
+	bfd_boolean varargs;
 };
 
 /* Information kept for a named type.  */
@@ -289,10 +289,10 @@ struct debug_field
 	/* Visibility of the field.  */
 	enum debug_visibility visibility;
 	/* Whether this is a static member.  */
-	boolean static_member;
+	bfd_boolean static_member;
 	union
 	{
-		/* If static_member is false.  */
+		/* If static_member is FALSE.  */
 		struct
 		{
 			/* Bit position of the field in the struct.  */
@@ -300,7 +300,7 @@ struct debug_field
 			/* Size of the field in bits.  */
 			unsigned int bitsize;
 		} f;
-		/* If static_member is true.  */
+		/* If static_member is TRUE.  */
 		struct
 		{
 			const char *physname;
@@ -317,7 +317,7 @@ struct debug_baseclass
 	/* Bit position of the base class in the object.  */
 	unsigned int bitpos;
 	/* Whether the base class is virtual.  */
-	boolean virtual;
+	bfd_boolean virtual;
 	/* Visibility of the base class.  */
 	enum debug_visibility visibility;
 };
@@ -344,9 +344,9 @@ struct debug_method_variant
 	/* The visibility of the function.  */
 	enum debug_visibility visibility;
 	/* Whether the function is const.  */
-	boolean constp;
+	bfd_boolean constp;
 	/* Whether the function is volatile.  */
-	boolean volatilep;
+	bfd_boolean volatilep;
 	/* The offset to the function in the virtual function table.  */
 	bfd_vma voffset;
 	/* If voffset is VOFFSET_STATIC_METHOD, this is a static method.  */
@@ -565,8 +565,8 @@ struct debug_type_real_list
 
 static void debug_error (const char *);
 static struct debug_type *debug_get_real_type (PTR, debug_type, struct debug_type_real_list *);
-static boolean print_type (struct debug_handle *info, struct debug_type *type, struct debug_name *name);
-static boolean print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info, struct debug_type *type, struct debug_name *name, HANDLE hprocess, DWORD addr, int level, int indent);
+static bfd_boolean print_type (struct debug_handle *info, struct debug_type *type, struct debug_name *name);
+static bfd_boolean print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info, struct debug_type *type, struct debug_name *name, HANDLE hprocess, DWORD addr, int level, int indent);
 
 /* Issue an error message.  */
 
@@ -623,7 +623,7 @@ static struct debug_type * debug_get_real_type (PTR handle, debug_type type, str
 	/* NOTREACHED */
 }
 
-boolean
+bfd_boolean
 get_line_from_addr (bfd *abfd, asymbol **syms, long symcount, PTR dhandle, bfd_vma address, char *filename, unsigned int nsize, unsigned int *lineno)
 {
 	struct debug_handle *info = (struct debug_handle *) dhandle;
@@ -665,10 +665,10 @@ get_line_from_addr (bfd *abfd, asymbol **syms, long symcount, PTR dhandle, bfd_v
 	{
 		lstrcpyn(filename, closest_lineno->file->filename, nsize);
 		*lineno = closest_lineno->linenos[closest_lineno_index];
-		return true;
+		return TRUE;
 	}
 	else
-		return false;
+		return FALSE;
 }
 
 static void 
@@ -687,7 +687,7 @@ print_indent(unsigned indent)
 
 const char *parameter_name = NULL;
 
-boolean
+bfd_boolean
 print_function_info (bfd *abfd, asymbol **syms, long symcount, PTR dhandle, HANDLE hprocess, const char *function_name, DWORD framepointer)
 {
 	struct debug_handle *info = (struct debug_handle *) dhandle;
@@ -719,7 +719,7 @@ print_function_info (bfd *abfd, asymbol **syms, long symcount, PTR dhandle, HAND
 							lprintf("static ");
 						
 						if (! print_type (info, function->return_type, (struct debug_name *) NULL))
-							return false;
+							return FALSE;
 					
 						if((res = cplus_demangle(n->name, DMGL_ANSI)))
 						{
@@ -738,13 +738,13 @@ print_function_info (bfd *abfd, asymbol **syms, long symcount, PTR dhandle, HAND
 							
 							
 							if (! print_type (info, p->type, (struct debug_name *) NULL))
-								return false;
+								return FALSE;
 							
 							lprintf(" %s = ", p->name);
 							//lprintf(" %s /* %li */ = ", p->name, p->val);
 
 							if (! print_value (abfd, syms, symcount, info, p->type, (struct debug_name *) NULL, hprocess, p->kind == DEBUG_PARM_STACK ? framepointer + p->val : 0, 1, indent))
-								return false;
+								return FALSE;
 
 							if(p->next)
 							{
@@ -759,7 +759,7 @@ print_function_info (bfd *abfd, asymbol **syms, long symcount, PTR dhandle, HAND
 						for (b = function->blocks; b != NULL; b = b->next)
 						{
 							//if (! print_block (info, b))
-							//	return false;
+							//	return FALSE;
 						}
 					}
 				}
@@ -767,12 +767,12 @@ print_function_info (bfd *abfd, asymbol **syms, long symcount, PTR dhandle, HAND
 		}
 	}
 
-	return true;
+	return TRUE;
 }
 
 /* Write out a class type.  */
 #if 0
-static boolean
+static bfd_boolean
 print_class_type (struct debug_handle *info, struct debug_type *type, const char *tag)
 {
 	unsigned int i;
@@ -790,7 +790,7 @@ print_class_type (struct debug_handle *info, struct debug_type *type, const char
 		if (type->u.kclass->id <= info->base_id)
 		{
 			if (! debug_set_class_id (info, tag, type))
-				return false;
+				return FALSE;
 		}
 		*/
 		/*
@@ -809,12 +809,12 @@ print_class_type (struct debug_handle *info, struct debug_type *type, const char
 		if (vptrbase != NULL && vptrbase != type)
 		{
 			if (! print_type (info, vptrbase, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 		}
 	}
 
 	//if (! (*fns->start_class_type) (fhandle, tag, id, type->kind == DEBUG_KIND_CLASS, type->size, vptrbase != NULL, vptrbase == type))
-	//	return false;
+	//	return FALSE;
 	lprintf(type->kind == DEBUG_KIND_CLASS ? "class" : "union");
 
 	if (type->u.kclass != NULL)
@@ -827,17 +827,17 @@ print_class_type (struct debug_handle *info, struct debug_type *type, const char
 
 				f = type->u.kclass->fields[i];
 				if (! print_type (info, f->type, (struct debug_name *) NULL))
-					return false;
+					return FALSE;
 				if (f->static_member)
 				{
 					
 					if (! (*fns->class_static_member) (fhandle, f->name, f->u.s.physname, f->visibility))
-						return false;
+						return FALSE;
 				}
 				else
 				{
 					if (! (*fns->struct_field) (fhandle, f->name, f->u.f.bitpos, f->u.f.bitsize, f->visibility))
-						return false;
+						return FALSE;
 				}
 			}
 		}
@@ -850,9 +850,9 @@ print_class_type (struct debug_handle *info, struct debug_type *type, const char
 
 				b = type->u.kclass->baseclasses[i];
 				if (! debug_write_type (info, b->type, (struct debug_name *) NULL))
-					return false;
+					return FALSE;
 				if (! (*fns->class_baseclass) (fhandle, b->bitpos, b->virtual, b->visibility))
-					return false;
+					return FALSE;
 			}
 		}
 
@@ -865,7 +865,7 @@ print_class_type (struct debug_handle *info, struct debug_type *type, const char
 
 				m = type->u.kclass->methods[i];
 				if (! (*fns->class_start_method) (fhandle, m->name))
-					return false;
+					return FALSE;
 				for (j = 0; m->variants[j] != NULL; j++)
 				{
 					struct debug_method_variant *v;
@@ -874,30 +874,30 @@ print_class_type (struct debug_handle *info, struct debug_type *type, const char
 					if (v->context != NULL)
 					{
 						if (! print_type (info, v->context, (struct debug_name *) NULL))
-							return false;
+							return FALSE;
 					}
 					if (! print_type (info, v->type, (struct debug_name *) NULL))
-						return false;
+						return FALSE;
 					if (v->voffset != VOFFSET_STATIC_METHOD)
 					{
 						if (! (*fns->class_method_variant) (fhandle, v->physname, v->visibility, v->constp, v->volatilep, v->voffset, v->context != NULL))
-							return false;
+							return FALSE;
 					}
 					else
 					{
 						if (! (*fns->class_static_method_variant) (fhandle, v->physname, v->visibility, v->constp, v->volatilep))
-							return false;
+							return FALSE;
 					}
 				}
 				if (! (*fns->class_end_method) (fhandle))
-					return false;
+					return FALSE;
 			}
 		}
 	}
 
 	//return (*fns->end_class_type) (fhandle);
 	lprintf("}");
-	return true;
+	return TRUE;
 }
 #endif
 
@@ -907,7 +907,7 @@ print_class_type (struct debug_handle *info, struct debug_type *type, const char
    then the name argument is a tag from a DEBUG_KIND_TAGGED type which
    points to this one.  */
 
-static boolean
+static bfd_boolean
 print_type (struct debug_handle *info, struct debug_type *type, struct debug_name *name)
 {
 	unsigned int i;
@@ -922,7 +922,7 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 		{
 			//return (*fns->typedef_type) (fhandle, type->u.knamed->name->name);
 			lprintf("%s", type->u.knamed->name->name);
-			return true;
+			return TRUE;
 		}
 		else
 		{
@@ -932,7 +932,7 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 			if (real == NULL)
 			{
 				//return (*fns->empty_type) (fhandle);
-				return true;
+				return TRUE;
 			}
 
 			//return (*fns->tag_type) (fhandle, type->u.knamed->name->name, id, real->kind);
@@ -955,11 +955,11 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 					break;
 				default:
 					assert(0);
-					return false;
+					return FALSE;
 			}
 			if(type->u.knamed->name->name)
 				lprintf("%s", type->u.knamed->name->name);
-			return true;
+			return TRUE;
 		}
 	}
 
@@ -973,22 +973,22 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 	{
 		case DEBUG_KIND_ILLEGAL:
 			debug_error ("print_type: illegal type encountered");
-			return false;
+			return FALSE;
 		case DEBUG_KIND_INDIRECT:
 			if (*type->u.kindirect->slot == DEBUG_TYPE_NULL)
 			{
 				//return (*fns->empty_type) (fhandle);
-				return true;
+				return TRUE;
 			}
 			return print_type (info, *type->u.kindirect->slot, name);
 		case DEBUG_KIND_VOID:
 			//return (*fns->void_type) (fhandle);
 			lprintf("void");			
-			return true;
+			return TRUE;
 		case DEBUG_KIND_INT:
 			//return (*fns->int_type) (fhandle, type->size, type->u.kint);
   			lprintf ("%sint%d", type->u.kint ? "u" : "", type->size * 8);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_FLOAT:
 			//return (*fns->float_type) (fhandle, type->size);
 			if (type->size == 4)
@@ -997,7 +997,7 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 				lprintf ("double");
 			else
 				lprintf ("float%d", type->size * 8);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_COMPLEX:
 			//return (*fns->complex_type) (fhandle, type->size);
 			lprintf("complex ");	
@@ -1007,11 +1007,11 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 				lprintf ("double");
 			else
 				lprintf ("float%d", type->size * 8);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_BOOL:
 			//return (*fns->bool_type) (fhandle, type->size);
 			lprintf ("bool%d", type->size * 8);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_STRUCT:
 		case DEBUG_KIND_UNION:
 			//(*fns->start_struct_type) (fhandle, tag, (type->u.kclass != NULL ? type->u.kclass->id : 0), type->kind == DEBUG_KIND_STRUCT, type->size)
@@ -1028,7 +1028,7 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 
 					f = type->u.kclass->fields[i];
 					if (!print_type (info, f->type, (struct debug_name *) NULL))
-						return false;
+						return FALSE;
 
 					//(*fns->struct_field) (fhandle, f->name, f->u.f.bitpos, f->u.f.bitsize, f->visibility)
 					lprintf(" %s;", f->name);
@@ -1036,11 +1036,11 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 			}
 			//return (*fns->end_struct_type) (fhandle);
 			lprintf(" }");
-			return true;
+			return TRUE;
 		case DEBUG_KIND_CLASS:
 		case DEBUG_KIND_UNION_CLASS:
 			//return debug_write_class_type (info, fns, fhandle, type, tag);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_ENUM:
 			//if (type->u.kenum == NULL)
 			//	return (*fns->enum_type) (fhandle, tag, (const char **) NULL,	(bfd_signed_vma *) NULL);
@@ -1073,20 +1073,20 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 				}
 				lprintf(" }");
 			}
-			return true;
+			return TRUE;
 		case DEBUG_KIND_POINTER:
 			if (! print_type (info, type->u.kpointer, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 			lprintf(" *");
 			//return (*fns->pointer_type) (fhandle);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_FUNCTION:
 			//return (*fns->function_type) (fhandle, is, type->u.kfunction->varargs);
 			{
 				int i = 0;
 
 				if (! print_type (info,	type->u.kfunction->return_type,	(struct debug_name *) NULL))
-					return false;
+					return FALSE;
 				lprintf(" ()(");
 				if (type->u.kfunction->arg_types != NULL)
 					for (; type->u.kfunction->arg_types[i] != NULL; i++)
@@ -1094,49 +1094,49 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 						if(i)
 							lprintf(", ");
 						if (! print_type (info,	type->u.kfunction->arg_types[i], (struct debug_name *) NULL))
-							return false;
+							return FALSE;
 					}
 				if(!i)
 					lprintf("void");
 				lprintf(")");
-				return true;
+				return TRUE;
 			}
 		case DEBUG_KIND_REFERENCE:
 			if (! print_type (info, type->u.kreference, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 			//return (*fns->reference_type) (fhandle);
 			lprintf(" &");
-			return true;
+			return TRUE;
 		case DEBUG_KIND_RANGE:
 			if (! print_type (info, type->u.krange->type, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 			//return (*fns->range_type) (fhandle, type->u.krange->lower, type->u.krange->upper);
 			lprintf("[]");
-			return true;
+			return TRUE;
 		case DEBUG_KIND_ARRAY:
 			if (! print_type (info, type->u.karray->element_type, (struct debug_name *) NULL) || ! print_type (info, type->u.karray->range_type, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 			//return (*fns->array_type) (fhandle, type->u.karray->lower, type->u.karray->upper, type->u.karray->stringp);
 			lprintf("[]");
-			return true;
+			return TRUE;
 		case DEBUG_KIND_SET:
 			lprintf("set");
 			if (! print_type (info, type->u.kset->type,	(struct debug_name *) NULL))
-				return false;
+				return FALSE;
 			//return (*fns->set_type) (fhandle, type->u.kset->bitstringp);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_OFFSET:
 			if (
 				!print_type (info, type->u.koffset->base_type, (struct debug_name *) NULL)
 				|| !print_type (info, type->u.koffset->target_type, (struct debug_name *) NULL)
 			)
-				return false;
+				return FALSE;
 			//return (*fns->offset_type) (fhandle);
 			lprintf("offset");
-			return true;
+			return TRUE;
 		case DEBUG_KIND_METHOD:
 			if (! print_type (info, type->u.kmethod->return_type, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 			if (type->u.kmethod->arg_types == NULL)
 				is = -1;
 			else
@@ -1145,39 +1145,39 @@ print_type (struct debug_handle *info, struct debug_type *type, struct debug_nam
 					if (! print_type (info, 
 																	type->u.kmethod->arg_types[is],
 																	(struct debug_name *) NULL))
-						return false;
+						return FALSE;
 			}
 			if (type->u.kmethod->domain_type != NULL)
 			{
 				if (! print_type (info, type->u.kmethod->domain_type, (struct debug_name *) NULL))
-					return false;
+					return FALSE;
 			}
 			//return (*fns->method_type) (fhandle, type->u.kmethod->domain_type != NULL, is, type->u.kmethod->varargs);
 			lprintf("method");
-			return true;
+			return TRUE;
 		case DEBUG_KIND_CONST:
 			lprintf("const ");
 			if (! print_type (info, type->u.kconst, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 			//return (*fns->const_type) (fhandle);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_VOLATILE:
 			lprintf("volatile ");
 			if (! print_type (info, type->u.kvolatile, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 			//return (*fns->volatile_type) (fhandle);
-			return true;
+			return TRUE;
 		case DEBUG_KIND_NAMED:
 			return print_type (info, type->u.knamed->type, (struct debug_name *) NULL);
 		case DEBUG_KIND_TAGGED:
 			return print_type (info, type->u.knamed->type, type->u.knamed->name);
 		default:
 			assert(0);
-			return false;
+			return FALSE;
 	}
 }
 
-static boolean
+static bfd_boolean
 print_string (HANDLE hprocess, DWORD addr)
 {
 	char szString[MAX_STRING_SIZE];
@@ -1188,31 +1188,31 @@ print_string (HANDLE hprocess, DWORD addr)
 		char c;
 		
 		if(!ReadProcessMemory(hprocess, (LPVOID) (addr++), &c, sizeof(char), NULL))
-			return false;
+			return FALSE;
 		
 		szString[i++] = c;
 		
 		if(!c)
 		{
 			lprintf("\"%s\"", szString);
-			return true;
+			return TRUE;
 		}
 		
 		if(!isprint(c))
-			return false;
+			return FALSE;
 		
 		if(i == MAX_STRING_SIZE - 1)
 		{
 			szString[i] = 0;
 			lprintf("\"%s\"...", szString);
-			return true;
+			return TRUE;
 		}
 	}
 }
 
 /* Write out a class type.  */
 #if 0
-static boolean
+static bfd_boolean
 debug_write_class_value (struct debug_handle *info, struct debug_type *type, const char *tag)
 {
 	unsigned int i;
@@ -1229,7 +1229,7 @@ debug_write_class_value (struct debug_handle *info, struct debug_type *type, con
 		if (type->u.kclass->id <= info->base_id)
 		{
 			if (! debug_set_class_id (info, tag, type))
-				return false;
+				return FALSE;
 		}
 
 		if (info->mark == type->u.kclass->mark)
@@ -1247,12 +1247,12 @@ debug_write_class_value (struct debug_handle *info, struct debug_type *type, con
 		if (vptrbase != NULL && vptrbase != type)
 		{
 			if (! debug_write_type (info, fns, fhandle, vptrbase, (struct debug_name *) NULL))
-				return false;
+				return FALSE;
 		}
 	}
 
 	if (! (*fns->start_class_type) (fhandle, tag, id, type->kind == DEBUG_KIND_CLASS, type->size, vptrbase != NULL, vptrbase == type))
-		return false;
+		return FALSE;
 
 	if (type->u.kclass != NULL)
 	{
@@ -1264,16 +1264,16 @@ debug_write_class_value (struct debug_handle *info, struct debug_type *type, con
 
 				f = type->u.kclass->fields[i];
 				if (! debug_write_type (info, fns, fhandle, f->type, (struct debug_name *) NULL))
-					return false;
+					return FALSE;
 				if (f->static_member)
 				{
 					if (! (*fns->class_static_member) (fhandle, f->name, f->u.s.physname, f->visibility))
-						return false;
+						return FALSE;
 				}
 				else
 				{
 					if (! (*fns->struct_field) (fhandle, f->name, f->u.f.bitpos, f->u.f.bitsize, f->visibility))
-						return false;
+						return FALSE;
 				}
 			}
 		}
@@ -1286,9 +1286,9 @@ debug_write_class_value (struct debug_handle *info, struct debug_type *type, con
 
 				b = type->u.kclass->baseclasses[i];
 				if (! debug_write_type (info, fns, fhandle, b->type, (struct debug_name *) NULL))
-					return false;
+					return FALSE;
 				if (! (*fns->class_baseclass) (fhandle, b->bitpos, b->virtual, b->visibility))
-					return false;
+					return FALSE;
 			}
 		}
 
@@ -1301,7 +1301,7 @@ debug_write_class_value (struct debug_handle *info, struct debug_type *type, con
 
 				m = type->u.kclass->methods[i];
 				if (! (*fns->class_start_method) (fhandle, m->name))
-					return false;
+					return FALSE;
 				for (j = 0; m->variants[j] != NULL; j++)
 				{
 					struct debug_method_variant *v;
@@ -1310,23 +1310,23 @@ debug_write_class_value (struct debug_handle *info, struct debug_type *type, con
 					if (v->context != NULL)
 					{
 						if (! debug_write_type (info, fns, fhandle, v->context, (struct debug_name *) NULL))
-							return false;
+							return FALSE;
 					}
 					if (! debug_write_type (info, fns, fhandle, v->type, (struct debug_name *) NULL))
-						return false;
+						return FALSE;
 					if (v->voffset != VOFFSET_STATIC_METHOD)
 					{
 						if (! (*fns->class_method_variant) (fhandle, v->physname, v->visibility, v->constp, v->volatilep, v->voffset, v->context != NULL))
-							return false;
+							return FALSE;
 					}
 					else
 					{
 						if (! (*fns->class_static_method_variant) (fhandle, v->physname, v->visibility, v->constp, v->volatilep))
-							return false;
+							return FALSE;
 					}
 				}
 				if (! (*fns->class_end_method) (fhandle))
-					return false;
+					return FALSE;
 			}
 		}
 	}
@@ -1341,7 +1341,7 @@ debug_write_class_value (struct debug_handle *info, struct debug_type *type, con
    then the name argument is a tag from a DEBUG_KIND_TAGGED type which
    points to this one.  */
 
-static boolean
+static bfd_boolean
 print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info, struct debug_type *type, struct debug_name *name, HANDLE hprocess, DWORD addr, int level, int indent)
 {
 	unsigned int i;
@@ -1350,21 +1350,21 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 	{
 	case DEBUG_KIND_ILLEGAL:
 		debug_error ("print_value: illegal type encountered");
-		return false;
+		return FALSE;
 	case DEBUG_KIND_INDIRECT:
 		if (*type->u.kindirect->slot == DEBUG_TYPE_NULL)
 		{
 			//return (*fns->empty_type) (fhandle);
 			lprintf("<undefined>");
-			return true;
+			return TRUE;
 		}
 		//return print_value (info, *type->u.kindirect->slot, name, NULL, 0, level - 1);
 		lprintf("(indirect)");
-		return true;
+		return TRUE;
 	case DEBUG_KIND_VOID:
 		//return (*fns->void_type) (fhandle);
 		lprintf ("(void)");
-		return true;
+		return TRUE;
 	case DEBUG_KIND_INT:
 		//return (*fns->int_type) (fhandle, type->size, type->u.kint);
 		{
@@ -1402,10 +1402,10 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 						break;
 		
 					default:
-						return false;
+						return FALSE;
 				}
 		}
-		return true;
+		return TRUE;
 	case DEBUG_KIND_FLOAT:
 		//return (*fns->float_type) (fhandle, type->size);
 		{
@@ -1426,18 +1426,18 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 		
 					default:
 						lprintf("%i", type->size);
-						return false;
+						return FALSE;
 				}
 		}
-		return true;
+		return TRUE;
 	case DEBUG_KIND_COMPLEX:
 		//return (*fns->complex_type) (fhandle, type->size);
 		lprintf("(complex)");			
-		return true;
+		return TRUE;
 	case DEBUG_KIND_BOOL:
 		//return (*fns->bool_type) (fhandle, type->size);
 		lprintf("(bool)");
-		return true;
+		return TRUE;
 	case DEBUG_KIND_STRUCT:
 	case DEBUG_KIND_UNION:
 		//(*fns->start_struct_type) (fhandle, tag, (type->u.kclass != NULL ? type->u.kclass->id : 0), type->kind == DEBUG_KIND_STRUCT, type->size)
@@ -1457,7 +1457,7 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 				
 				f = type->u.kclass->fields[i];
 				if (!print_type (info, f->type, (struct debug_name *) NULL))
-					return false;
+					return FALSE;
 				
 				lprintf(" %s", f->name);
 
@@ -1467,19 +1467,19 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 
 					//(*fns->struct_field) (fhandle, f->name, f->u.f.bitpos, f->u.f.bitsize, f->visibility)
 					if (! print_value (abfd, syms, symcount, info, f->type, (struct debug_name *) NULL, hprocess, addr + (f->u.f.bitpos >> 3), level, indent))
-						return false;
+						return FALSE;
 				}
 			}
 		}
 		print_indent(--indent);
 		lprintf("}");
 		//return (*fns->end_struct_type) (fhandle);
-		return true;
+		return TRUE;
 	case DEBUG_KIND_CLASS:
 	case DEBUG_KIND_UNION_CLASS:
 		//return debug_write_class_type (info, fns, fhandle, type, tag);
 		lprintf("(class)");
-		return true;
+		return TRUE;
 	case DEBUG_KIND_ENUM:
 		//if (type->u.kenum == NULL)
 		//	return (*fns->enum_type) (fhandle, tag, (const char **) NULL,	(bfd_signed_vma *) NULL);
@@ -1488,12 +1488,12 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 			bfd_signed_vma value;
 			
 			if(!ReadProcessMemory(hprocess, (LPVOID) addr, &value, sizeof(value), NULL))
-				return true;
+				return TRUE;
 			
 			if (type->u.kenum == NULL)
 			{
 				lprintf("%li", (long) value);
-				return true;
+				return TRUE;
 			}
 			else
 			{
@@ -1504,15 +1504,15 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 					if(type->u.kenum->values[i] == value)
 					{
 						lprintf("%s", type->u.kenum->names[i]);
-						return true;
+						return TRUE;
 					}
 				}
 
 				lprintf("%li", (long) value);
-				return true;
+				return TRUE;
 			}
 		}
-		return true;
+		return TRUE;
 	case DEBUG_KIND_POINTER:
 		{
 			DWORD nextaddr;
@@ -1543,14 +1543,14 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 					{
 						lprintf("&");
 						if (! print_value (abfd, syms, symcount, info, type->u.kpointer, (struct debug_name *) NULL, hprocess, nextaddr, level - 1, indent))
-							return false;
+							return FALSE;
 					}
 				}
 				else
 					lprintf("0x%08lx", nextaddr);
 			}
 			//return (*fns->pointer_type) (fhandle);
-			return true;
+			return TRUE;
 		}
 	case DEBUG_KIND_FUNCTION:
 		//return (*fns->function_type) (fhandle, is, type->u.kfunction->varargs);
@@ -1562,7 +1562,7 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 			else
 				lprintf("0x%08lx", addr);
 
-			return true;
+			return TRUE;
 		}
 	case DEBUG_KIND_REFERENCE:
 		{
@@ -1573,87 +1573,87 @@ print_value (bfd *abfd, asymbol **syms, long symcount, struct debug_handle *info
 				if(level)
 				{
 					if (! print_value (abfd, syms, symcount, info, type->u.kreference, (struct debug_name *) NULL, hprocess, nextaddr, level - 1, indent))
-						return false;
+						return FALSE;
 				}
 				else
 					lprintf("*0x%08lx", nextaddr);
 			}
 			//return (*fns->reference_type) (fhandle);
-			return true;
+			return TRUE;
 		}
 	case DEBUG_KIND_RANGE:
 		lprintf("(range)");
 		/*
 		if (! print_value (info, type->u.krange->type, (struct debug_name *) NULL, NULL, 0, level - 1))
-			return false;
+			return FALSE;
 		*/
 		//return (*fns->range_type) (fhandle, type->u.krange->lower, type->u.krange->upper);
-		return true;
+		return TRUE;
 	case DEBUG_KIND_ARRAY:
 		lprintf("(array)");
 		/*
 		if (! print_value (info, type->u.karray->element_type, (struct debug_name *) NULL, NULL, 0, level - 1)
 				|| ! print_value (info, type->u.karray->range_type, (struct debug_name *) NULL, NULL, 0, level - 1))
-			return false;
+			return FALSE;
 		*/
 		//return (*fns->array_type) (fhandle, type->u.karray->lower, type->u.karray->upper, type->u.karray->stringp);
-		return true;
+		return TRUE;
 	case DEBUG_KIND_SET:
 		lprintf("(set)");
 		/*
 		if (! print_value (info, type->u.kset->type, (struct debug_name *) NULL, NULL, 0, level - 1))
-			return false;
+			return FALSE;
 		*/
 		//return (*fns->set_type) (fhandle, type->u.kset->bitstringp);
-		return true;
+		return TRUE;
 	case DEBUG_KIND_OFFSET:
 		lprintf("(offset)");
 		/*
 		if (! print_value (info, type->u.koffset->base_type, (struct debug_name *) NULL, NULL, 0, level - 1)
 				|| ! print_value (info, type->u.koffset->target_type, (struct debug_name *) NULL, NULL, 0, level - 1))
-			return false;
+			return FALSE;
 		*/
 		//return (*fns->offset_type) (fhandle);
 		lprintf("offset ");
-		return true;
+		return TRUE;
 	case DEBUG_KIND_METHOD:
 		lprintf("(method)");
 		/*
 		if (! print_value (info, type->u.kmethod->return_type, (struct debug_name *) NULL, NULL, 0, level - 1))
-			return false;
+			return FALSE;
 		if (type->u.kmethod->arg_types == NULL)
 			is = -1;
 		else
 		{
 			for (is = 0; type->u.kmethod->arg_types[is] != NULL; is++)
 				if (! print_value (info, type->u.kmethod->arg_types[is], (struct debug_name *) NULL, NULL, 0, level - 1))
-					return false;
+					return FALSE;
 		}
 		if (type->u.kmethod->domain_type != NULL)
 		{
 			if (! print_value (info, type->u.kmethod->domain_type, (struct debug_name *) NULL, NULL, 0, level - 1))
-				return false;
+				return FALSE;
 		}
 		*/
 		//return (*fns->method_type) (fhandle, type->u.kmethod->domain_type != NULL, is, type->u.kmethod->varargs);
-		return true;
+		return TRUE;
 	case DEBUG_KIND_CONST:
 		//return (*fns->const_type) (fhandle);
 		if (! print_value (abfd, syms, symcount, info, type->u.kconst, (struct debug_name *) NULL, hprocess, addr, level, indent))
-			return false;
-		return true;
+			return FALSE;
+		return TRUE;
 	case DEBUG_KIND_VOLATILE:
 		//return (*fns->volatile_type) (fhandle);
 		if (! print_value (abfd, syms, symcount, info, type->u.kvolatile, (struct debug_name *) NULL, hprocess, addr, level, indent))
-			return false;
-		return true;
+			return FALSE;
+		return TRUE;
 	case DEBUG_KIND_NAMED:
 		return print_value (abfd, syms, symcount, info, type->u.knamed->type, (struct debug_name *) NULL, hprocess, addr, level, indent);
 	case DEBUG_KIND_TAGGED:
 		return print_value (abfd, syms, symcount, info, type->u.knamed->type, type->u.knamed->name, hprocess, addr, level, indent);
 	default:
 		abort ();
-		return false;
+		return FALSE;
 	}
 }
 
