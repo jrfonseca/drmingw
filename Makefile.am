@@ -44,7 +44,7 @@ drmingw_LDADD = resource.o -lbfd -liberty
 #libexchndl_la_LDFLAGS = -no-undefined -version-info 0:0:0
 
 
-RC=i386-mingw32msvc-windres
+RC=mingw32-windres
 RCFLAGS=-O COFF
 
 resource.o: resource.rc resource.h
