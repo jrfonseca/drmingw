@@ -19,7 +19,6 @@ drmingw_SOURCES = \
 	resource.h \
 	symbols.c \
 	symbols.h \
-	bfd/libcoff.h \
 	ieee.c \
 	ieee.h \
 	rdcoff.c \
@@ -32,7 +31,10 @@ drmingw_SOURCES = \
 	include/aout/aout64.h \
 	include/coff/internal.h \
 	include/demangle.h \
-	include/dis-asm.h
+	include/dis-asm.h \
+	include/getopt.h \
+	include/libcoff.h \
+	include/libiberty.h
 
 INCLUDES = -Iinclude
 
