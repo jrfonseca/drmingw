@@ -1,15 +1,22 @@
-//==========================================
-// Matt Pietrek
-// Microsoft Systems Journal, April 1997
-// FILE: MSJEXHND.CPP
-//
-// Adapted to Mingw32 by José Fonseca <j_r_fonseca@yahoo.co.uk>
-//==========================================
+/*
+ * exchndl.c
+ *
+ * Author:
+ *   José Fonseca <j_r_fonseca@yahoo.co.uk>
+ *
+ * Originally based on Matt Pietrek's MSJEXHND.CPP in Microsoft Systems
+ * Journal, April 1997.
+ */
+
 #include <assert.h>
 #include <windows.h>
 #include <tchar.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+
+#define HAVE_BFD	1
+
 
 // Declare the static variables
 static TCHAR szLogFileName[MAX_PATH] = _T("");
@@ -41,6 +48,9 @@ DWORD GetModuleBase(DWORD dwAddress)
 	
 	return VirtualQuery((LPCVOID) dwAddress, &Buffer, sizeof(Buffer)) ? (DWORD) Buffer.AllocationBase : 0;
 }
+
+
+#ifdef HAVE_BFD
 
 #include <bfd.h>
 #include <demangle.h>
@@ -183,6 +193,8 @@ BOOL BfdGetLineFromAddr(bfd *abfd, asymbol **syms, long symcount, DWORD dwAddres
 
 	return TRUE;
 }
+
+#endif /* HAVE_BFD */
 
 #include <imagehlp.h>
 
@@ -581,9 +593,11 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	HMODULE hModule = NULL;
 	TCHAR szModule[MAX_PATH]; 
 
+#ifdef HAVE_BFD
 	bfd *abfd = NULL;
 	asymbol **syms = NULL;	// The symbol table.
 	long symcount = 0;	// Number of symbols in `syms'.
+#endif /* HAVE_BFD */
 
 	assert(!bSymInitialized);
 
@@ -674,6 +688,9 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 		
 		if((hModule = (HMODULE) GetModuleBase(StackFrame.AddrPC.Offset)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
 		{
+#ifndef HAVE_BFD
+			rprintf( _T("  %s:ModulBase %08lX"), szModule, hModule);
+#else /* HAVE_BFD */
 			rprintf( _T("  %s:%08lX"), szModule, StackFrame.AddrPC.Offset);
 		
 			if(hModule != hPrevModule)
@@ -728,6 +745,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 					if(BfdGetLineFromAddr(abfd, syms, symcount, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
 						rprintf( _T("  %s:%ld"), szFileName, LineNumber);
 				}
+#endif /* HAVE_BFD */
 			
 			if(!bSuccess && bSymInitialized)
 				if((bSuccess = ImagehlpGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
@@ -747,7 +765,8 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 		rprintf(_T("\r\n"));
 	}
-	
+
+#ifdef HAVE_BFD
 	if(syms)
 	{
 		free(syms);
@@ -757,6 +776,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	
 	if(abfd)
 		bfd_close(abfd);
+#endif /* HAVE_BFD */
 	
 	if(bSymInitialized)
 	{
@@ -1058,7 +1078,9 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 			0
 		);
 			
+#ifdef HAVE_BFD
 		bfd_set_error_handler((bfd_error_handler_type) rprintf);
+#endif /* HAVE_BFD */
 	
 		if (hReportFile)
 		{
