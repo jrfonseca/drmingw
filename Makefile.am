@@ -64,17 +64,24 @@ EXTRA_DIST = exchndl.c $(doc)
 all: exchndl.dll
 
 exchndl.dll: exchndl.c
-	$(COMPILE) -shared -o $@ $< -lbfd -liberty
+	$(COMPILE) -shared -s -o $@ $< -lbfd -liberty
 
 CLEANFILES = exchndl.dll
 
+
+noinst_LIBRARIES = libexchndl.a
+
+libexchndl_a_SOURCES = samples/exchndl2.cxx
+
 noinst_PROGRAMS = test testcpp
 
-test_SOURCES = samples/test.c samples/exchndl2.cxx
-test_CFLAGS = -g $(AM_CFLAGS)
+test_SOURCES = samples/test.c
+test_LDADD = exchndl2.o -lstdc++
+test_CFLAGS = -ggdb $(AM_CFLAGS)
 
-testcpp_SOURCES = samples/test.c samples/exchndl2.cxx
-testcpp_CXXFLAGS = -g $(AM_CXXFLAGS)
+testcpp_SOURCES = samples/testcpp.cxx
+testcpp_LDADD = exchndl2.o -lstdc++
+testcpp_CXXFLAGS = -ggdb $(AM_CXXFLAGS)
 
 install-exec-local: exchndl.dll test$(EXEEXT) testcpp$(EXEEXT)
 	$(mkinstalldirs) $(DESTDIR)$(bindir)
