@@ -3,7 +3,7 @@
 // Microsoft Systems Journal, April 1997
 // FILE: MSJEXHND.CPP
 //
-// Adapted to Mingw32 by José Fonseca (em96115@fe.up.pt)
+// Adapted to Mingw32 by José Fonseca <j_r_fonseca@yahoo.co.uk>
 //==========================================
 #include <assert.h>
 #include <windows.h>

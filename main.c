@@ -1,7 +1,7 @@
 /* main.c
  *
  *
- * José Fonseca (em96115@fe.up.pt)
+ * José Fonseca <j_r_fonseca@yahoo.co.uk>
  */
 
 #include <assert.h>

@@ -3,8 +3,6 @@ VERSION = 0.4.3
 
 bin_PROGRAMS = drmingw
 
-#lib_LTLIBRARIES = libexchndl.la
-
 drmingw_SOURCES = \
 	debugger.c \
 	debugger.h \
@@ -40,7 +38,10 @@ drmingw_SOURCES = \
 	include/libcoff.h \
 	include/libiberty.h
 
-dist_EXTRA_drmingw_SOURCES = resource.rc icon.ico
+dist_EXTRA_drmingw_SOURCES = \
+	exchndl.c \
+	resource.rc \
+	icon.ico
 
 INCLUDES = -I$(srcdir)/include
 
@@ -48,11 +49,13 @@ drmingw_LDFLAGS = -mwindows
 
 drmingw_LDADD = resource.o -lbfd -liberty
 
-#libexchndl_la_SOURCES = exchndl.c
-#libexchndl_la_LDFLAGS = -no-undefined -version-info 0:0:0
-
 RC = @WINDRES@
 RCFLAGS = --use-temp-file --verbose -O COFF
 resource.o: resource.rc resource.h icon.ico
 	$(RC) $(RCFLAGS) -o $@ --include-dir=$(srcdir) $<
 
+all: exchndl.dll
+
+exchndl.dll: exchndl.c
+	$(COMPILE) -shared -o $@ $< -lbfd -liberty
+	
