@@ -1,0 +1,9 @@
+Using BCC 5.5.1, just "bcc32 testsegv.cpp". I was testing the different
+exception handling mechanism of MSVC, GCC, and BCC32.
+
+I encountered this problem before, but was not able to trace to a suitable
+test case. Maybe this time it is good enough.
+
+Best regards,
+
+Wu Yongwei
