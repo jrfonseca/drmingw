@@ -85,6 +85,7 @@ static void find_address_in_section (bfd *abfd, asection *section, PTR data)
 {
 	struct find_handle *info = (struct find_handle *) data;
 	bfd_vma vma;
+	bfd_size_type size;
 
 	if (info->found)
 		return;
@@ -92,10 +93,13 @@ static void find_address_in_section (bfd *abfd, asection *section, PTR data)
 	if ((bfd_get_section_flags (abfd, section) & SEC_ALLOC) == 0)
 		return;
 
+	vma = bfd_get_section_vma (abfd, section);
+	size = bfd_get_section_size_before_reloc (section);
+	
 	if (info->pc < (vma = bfd_get_section_vma (abfd, section)))
 		return;
 
-	if (info->pc >= vma + bfd_get_section_size_before_reloc (section))
+	if (info->pc >= vma + (size = bfd_get_section_size_before_reloc (section)))
 		return;
 
 	info->found = bfd_find_nearest_line (abfd, section, info->syms, info->pc - vma, &info->filename, &info->functionname, &info->line);
@@ -1089,39 +1093,6 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 		return EXCEPTION_CONTINUE_SEARCH;
 }
 
-/*
-BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
-{
-	switch (dwReason)
-	{
-		case DLL_PROCESS_ATTACH:
-			// Install the unhandled exception filter function
-			prevExceptionFilter = SetUnhandledExceptionFilter(UnhandledExceptionFilter);
-			
-			// Figure out what the report file will be named, and store it away
-			if(GetModuleFileName(NULL, szLogFileName, MAX_PATH))
-			{
-				LPTSTR lpszDot;
-				
-				// Look for the '.' before the "EXE" extension.  Replace the extension
-				// with "RPT"
-				if((lpszDot = _tcsrchr(szLogFileName, _T('.'))))
-				{
-					lpszDot++;	// Advance past the '.'
-					_tcscpy(lpszDot, _T("RPT"));	// "RPT" -> "Report"
-				}
-			}
-			break;
-
-		case DLL_PROCESS_DETACH:
-			SetUnhandledExceptionFilter(prevExceptionFilter);
-			break;
-	}
-	
-	return TRUE;
-}
-*/
-
 static void OnStartup(void) __attribute__((constructor));
 
 void OnStartup(void)
@@ -1156,3 +1127,21 @@ void OnExit(void)
 {
 	SetUnhandledExceptionFilter(prevExceptionFilter);
 }
+
+#if 0
+BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
+{
+	switch (dwReason)
+	{
+		case DLL_PROCESS_ATTACH:
+			OnStartup();
+			break;
+
+		case DLL_PROCESS_DETACH:
+			OnExit();
+			break;
+	}
+	
+	return TRUE;
+}
+#endif
