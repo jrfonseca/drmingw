@@ -578,7 +578,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	TCHAR szModule[MAX_PATH]; 
 
 	bfd *abfd = NULL;
-	asymbol **syms;	// The symbol table.
+	asymbol **syms = NULL;	// The symbol table.
 	long symcount = 0;	// Number of symbols in `syms'.
 
 	assert(!bSymInitialized);

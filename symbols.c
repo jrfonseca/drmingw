@@ -571,7 +571,7 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nS
 				
 				if(bfd_get_file_flags(abfd) & HAS_SYMS)
 				{
-					asymbol **syms;	// The symbol table.
+					asymbol **syms = NULL;	// The symbol table.
 					long symcount = 0;	// Number of symbols in `syms'.
 	
 					/* Read in the symbol table.  */
