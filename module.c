@@ -10,6 +10,7 @@
 #include <tchar.h>
 
 #include "debugger.h"
+#include "module.h"
 
 
 // The GetModuleBase function retrieves the base address of the module that contains the specified address. 

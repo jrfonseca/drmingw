@@ -9,6 +9,7 @@
 
 #include "misc.h"
 #include "resource.h"
+#include "dialog.h"
 
 static HINSTANCE hInstance = NULL;
 static char szClassName[] = "MyWindowClass";
