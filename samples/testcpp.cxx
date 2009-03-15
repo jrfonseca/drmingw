@@ -9,7 +9,7 @@
 
 typedef char * cp;
 
-void YetAnotherFunction( int i, double j, char * pszString )
+static void YetAnotherFunction( int i, double j, const char * pszString )
 {
 	int k;
 
@@ -23,7 +23,7 @@ void YetAnotherFunction( int i, double j, char * pszString )
 	sscanf("12345", "%i", (int *) (k=i));
 }
 
-void MyWonderfulFunction( int i, float j )
+static void MyWonderfulFunction( int i, float j )
 {
 	YetAnotherFunction( i * 2, j, "Hello" );
 }

@@ -8,7 +8,7 @@
 
 #include <stdio.h>
 
-void YetAnotherFunction(int i)
+static void YetAnotherFunction(int i)
 {
 	int k;
 	
@@ -26,12 +26,14 @@ struct AStructType
 	int AnArray[2];
 };
 
-void MyWonderfulFunction(int AnInteger, double ADouble, int AnArray[4], char * AString, enum {a,b,c} AnEnum, struct AStructType AStruct, void (*AFunction)(void))
+enum AnEnumType {a,b,c};
+
+static void MyWonderfulFunction(int AnInteger, double ADouble, int AnArray[4], char * AString, enum AnEnumType AnEnum, struct AStructType AStruct, void (*AFunction)(void))
 {
 	YetAnotherFunction( 8 );
 }
 
-void ASimpleFunction(void) {}
+static void ASimpleFunction(void) {}
 
 int main(int argc, char *argv[])
 {
