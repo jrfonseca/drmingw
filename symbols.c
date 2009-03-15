@@ -576,7 +576,6 @@ BfdOpen(LPCSTR szModule, HANDLE hProcess, HMODULE hModule, asymbol ***syms, long
 	}
 
 #if 0
-	/* XXX: this stopped working */
 	image_base_vma = pe_data (abfd)->pe_opthdr.ImageBase;
 #else
 	image_base_vma = (bfd_vma) PEGetImageBase(hProcess, hModule);
