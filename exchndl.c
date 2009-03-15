@@ -158,7 +158,7 @@ BOOL BfdGetSymFromAddr(bfd *abfd, asymbol **syms, long symcount, DWORD dwAddress
 
 	assert(lpSymName);
 	
-	if(info.functionname == NULL && *info.functionname == '\0')
+	if(info.functionname == NULL || *info.functionname == '\0')
 		return FALSE;		
 	
 	lstrcpyn(lpSymName, info.functionname, nSize);
