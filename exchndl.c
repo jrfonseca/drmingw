@@ -105,12 +105,11 @@ static void find_address_in_section (bfd *abfd, asection *section, PTR data)
 		return;
 
 	vma = bfd_get_section_vma (abfd, section);
-	size = bfd_get_section_size_before_reloc (section);
-	
-	if (info->pc < (vma = bfd_get_section_vma (abfd, section)))
+	if (info->pc < vma)
 		return;
 
-	if (info->pc >= vma + (size = bfd_get_section_size_before_reloc (section)))
+	size = bfd_get_section_size (section);
+	if (info->pc >= vma + size)
 		return;
 
 	info->found = bfd_find_nearest_line (abfd, section, info->syms, info->pc - vma, &info->filename, &info->functionname, &info->line);
@@ -518,7 +517,7 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 					{
 						dwNearestAddress = pFunction;
 						
-						if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)(&ExportDir.AddressOfNames[j])), &dwNearestName, sizeof(dwNearestName), NULL))
+						if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + ExportDir.AddressOfNames + j*sizeof(DWORD)), &dwNearestName, sizeof(dwNearestName), NULL))
 							return FALSE;
 							
 						dwNearestName = (DWORD) hModule + dwNearestName;
