@@ -27,6 +27,7 @@
 #include "coff/internal.h"
 #include "budbg.h"
 #include "debug.h"
+#include "debugx.h"
 #include "libcoff.h"
 
 // Read in the symbol table.
@@ -780,10 +781,6 @@ BOOL WINAPI IntelStackWalk(
 	
 	return TRUE;	
 }
-
-#include "debug.h"
-extern int get_line_from_addr(bfd *abfd, asymbol **syms, long symcount, PTR dhandle, bfd_vma address, char *filename, unsigned int nsize, unsigned int *lineno);
-extern int print_function_info(bfd *abfd, asymbol **syms, long symcount, PTR dhandle, HANDLE hprocess, const char *function_name, DWORD framepointer);
 
 BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 {

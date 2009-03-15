@@ -38,6 +38,7 @@
 #include "demangle.h"
 #include "libiberty.h"
 #include "debug.h"
+#include "debugx.h"
 
 #define MAX_ARRAY_SIZE	20
 #define MAX_STRING_SIZE	512
