@@ -1,0 +1,8 @@
+.*.sw?
+.scon*
+*.RPT
+*.a
+*.dll
+*.exe
+*.o
+*.pyc
