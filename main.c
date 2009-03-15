@@ -21,7 +21,7 @@
 #undef PACKAGE
 #define PACKAGE "DrMingw"
 #undef VERSION
-#define VERSION "0.4.3"
+#define VERSION "0.4.4"
 
 int main (int argc, char **argv)
 {
