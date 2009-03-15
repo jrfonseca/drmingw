@@ -24,30 +24,26 @@
 
 #include <libiberty.h>
 #include <demangle.h>
-#include "coff/internal.h"
 #include "budbg.h"
 #include "debug.h"
 #include "debugx.h"
-#include "libcoff.h"
 
 // Read in the symbol table.
 static bfd_boolean
 slurp_symtab (bfd *abfd, asymbol ***syms, long *symcount)
 {
-	long storage;
+	unsigned int size;
 
 	if ((bfd_get_file_flags (abfd) & HAS_SYMS) == 0)
 		return FALSE;
 
-	storage = bfd_get_symtab_upper_bound (abfd);
-	if (storage < 0)
+	*symcount = bfd_read_minisymbols (abfd, FALSE, (void *) syms, &size);
+	if (*symcount == 0)
+		*symcount = bfd_read_minisymbols (abfd, TRUE /* dynamic */, (void *) syms, &size);
+
+	if (*symcount < 0)
 		return FALSE;
 
-	*syms = (asymbol **) xmalloc (storage);
-
-	if((*symcount = bfd_canonicalize_symtab (abfd, *syms)) < 0)
-		return FALSE;
-	
 	return TRUE;
 }
 
@@ -63,7 +59,7 @@ struct find_handle
 };
 
 // Look for an address in a section.  This is called via  bfd_map_over_sections. 
-static void find_address_in_section (bfd *abfd, asection *section, PTR data)
+static void find_address_in_section (bfd *abfd, asection *section, void *data)
 {
 	struct find_handle *info = (struct find_handle *) data;
 	bfd_vma vma;
@@ -74,14 +70,17 @@ static void find_address_in_section (bfd *abfd, asection *section, PTR data)
 
 	if ((bfd_get_section_flags (abfd, section) & SEC_ALLOC) == 0)
 		return;
-
-	if (info->pc < (vma = bfd_get_section_vma (abfd, section)))
+	
+	vma = bfd_get_section_vma (abfd, section);
+	if (info->pc < vma)
 		return;
 
-	if (info->pc >= vma + (size = bfd_get_section_size_before_reloc (section)))
+	size = bfd_get_section_size (section);
+	if (info->pc >= vma + size)
 		return;
 
-	info->found = bfd_find_nearest_line (abfd, section, info->syms, info->pc - vma, &info->filename, &info->functionname, &info->line);
+	info->found = bfd_find_nearest_line (abfd, section, info->syms, info->pc - vma, 
+                                             &info->filename, &info->functionname, &info->line);
 }
 
 BOOL BfdDemangleSymName(LPCTSTR lpName, LPTSTR lpDemangledName, DWORD nSize)
@@ -111,18 +110,14 @@ BOOL BfdGetSymFromAddr(bfd *abfd, asymbol **syms, long symcount, HANDLE hProcess
 	if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)))
 		return FALSE;
 	
+	assert(bfd_get_file_flags (abfd) & HAS_SYMS);
+	assert(symcount);
+
 	info.pc = dwAddress;
-
-	if(!(bfd_get_file_flags (abfd) & HAS_SYMS) || !symcount)
-	{
-		if(verbose_flag)
-			lprintf(_T("%s: %s\r\n"), bfd_get_filename (abfd), _T("No symbols"));
-		return FALSE;
-	}
 	info.syms = syms;
-
 	info.found = FALSE;
-	bfd_map_over_sections (abfd, find_address_in_section, (PTR) &info);
+
+	bfd_map_over_sections (abfd, find_address_in_section, &info);
 	if (info.found == FALSE || info.line == 0)
 	{
 		if(verbose_flag)
@@ -148,18 +143,15 @@ BOOL BfdGetLineFromAddr(bfd *abfd, asymbol **syms, long symcount, HANDLE hProces
 	if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)))
 		return FALSE;
 	
+	assert(bfd_get_file_flags (abfd) & HAS_SYMS);
+	assert(symcount);
+
 	info.pc = dwAddress;
-
-	if(!(bfd_get_file_flags (abfd) & HAS_SYMS) || !symcount)
-	{
-		if(verbose_flag)
-			lprintf(_T("%s: %s\r\n"), bfd_get_filename (abfd), _T("No symbols"));
-		return FALSE;
-	}
 	info.syms = syms;
-
 	info.found = FALSE;
-	bfd_map_over_sections (abfd, find_address_in_section, (PTR) &info);
+	info.found = FALSE;
+
+	bfd_map_over_sections (abfd, find_address_in_section, &info);
 	if (info.found == FALSE || info.line == 0)
 	{
 		if(verbose_flag)
@@ -433,11 +425,45 @@ BOOL ImagehlpGetLineFromAddr(HANDLE hProcess, DWORD dwAddress,  LPTSTR lpFileNam
 	return TRUE;
 }
 
+static PIMAGE_NT_HEADERS
+PEImageNtHeader(HANDLE hProcess, HMODULE hModule)
+{
+	PIMAGE_DOS_HEADER pDosHeader;
+	PIMAGE_NT_HEADERS pNtHeaders;
+	LONG e_lfanew;
+	
+	// Point to the DOS header in memory
+	pDosHeader = (PIMAGE_DOS_HEADER)hModule;
+	
+	// From the DOS header, find the NT (PE) header
+	if(!ReadProcessMemory(hProcess, &pDosHeader->e_lfanew, &e_lfanew, sizeof(e_lfanew), NULL))
+		return NULL;
+	
+	pNtHeaders = (PIMAGE_NT_HEADERS)((LPBYTE)hModule + e_lfanew);
+
+	return pNtHeaders;
+}
+
+static DWORD 
+PEGetImageBase(HANDLE hProcess, HMODULE hModule)
+{
+	PIMAGE_NT_HEADERS pNtHeaders;
+	IMAGE_NT_HEADERS NtHeaders;
+
+	if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))
+		return FALSE;
+
+	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof(IMAGE_NT_HEADERS), NULL))
+		return FALSE;
+
+	return NtHeaders.OptionalHeader.ImageBase;
+}
+	
 BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
 	HMODULE hModule;
-	PIMAGE_NT_HEADERS pNtHdr;
-	IMAGE_NT_HEADERS NtHdr;
+	PIMAGE_NT_HEADERS pNtHeaders;
+	IMAGE_NT_HEADERS NtHeaders;
 	PIMAGE_SECTION_HEADER pSection;
 	DWORD dwNearestAddress = 0, dwNearestName;
 	int i;
@@ -445,30 +471,19 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)))
 		return FALSE;
 	
-	{
-		PIMAGE_DOS_HEADER pDosHdr;
-		LONG e_lfanew;
-		
-		// Point to the DOS header in memory
-		pDosHdr = (PIMAGE_DOS_HEADER)hModule;
-		
-		// From the DOS header, find the NT (PE) header
-		if(!ReadProcessMemory(hProcess, &pDosHdr->e_lfanew, &e_lfanew, sizeof(e_lfanew), NULL))
-			return FALSE;
-		
-		pNtHdr = (PIMAGE_NT_HEADERS)((DWORD)hModule + (DWORD)e_lfanew);
+	if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))
+		return FALSE;
+
+	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof(IMAGE_NT_HEADERS), NULL))
+		return FALSE;
 	
-		if(!ReadProcessMemory(hProcess, pNtHdr, &NtHdr, sizeof(IMAGE_NT_HEADERS), NULL))
-			return FALSE;
-	}
-	
-	pSection = (PIMAGE_SECTION_HEADER) ((DWORD)pNtHdr + sizeof(DWORD) + sizeof(IMAGE_FILE_HEADER) + NtHdr.FileHeader.SizeOfOptionalHeader);
+	pSection = (PIMAGE_SECTION_HEADER) ((LPBYTE)pNtHeaders + sizeof(DWORD) + sizeof(IMAGE_FILE_HEADER) + NtHeaders.FileHeader.SizeOfOptionalHeader);
 
 	/*if(verbose_flag)
 		lprintf(_T("Exported symbols:\r\n"));*/
 
 	// Look for export section
-	for (i = 0; i < NtHdr.FileHeader.NumberOfSections; i++, pSection++)
+	for (i = 0; i < NtHeaders.FileHeader.NumberOfSections; i++, pSection++)
 	{
 		IMAGE_SECTION_HEADER Section;
 		PIMAGE_EXPORT_DIRECTORY pExportDir = NULL;
@@ -479,33 +494,33 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
     	
 		if(memcmp(Section.Name, ExportSectionName, IMAGE_SIZEOF_SHORT_NAME) == 0)
 			pExportDir = (PIMAGE_EXPORT_DIRECTORY) Section.VirtualAddress;
-		else if ((NtHdr.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress >= Section.VirtualAddress) && (NtHdr.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress < (Section.VirtualAddress + Section.SizeOfRawData)))
-			pExportDir = (PIMAGE_EXPORT_DIRECTORY) NtHdr.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+		else if ((NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress >= Section.VirtualAddress) && (NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress < (Section.VirtualAddress + Section.SizeOfRawData)))
+			pExportDir = (PIMAGE_EXPORT_DIRECTORY) NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
 
 		if(pExportDir)
 		{
 			IMAGE_EXPORT_DIRECTORY ExportDir;
 			
-			if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)pExportDir), &ExportDir, sizeof(IMAGE_EXPORT_DIRECTORY), NULL))
+			if(!ReadProcessMemory(hProcess, (PVOID)((LPBYTE)hModule + (DWORD)pExportDir), &ExportDir, sizeof(IMAGE_EXPORT_DIRECTORY), NULL))
 				return FALSE;
 			
 			{
 				PDWORD *AddressOfFunctions = alloca(ExportDir.NumberOfFunctions*sizeof(PDWORD));
 				int j;
 	
-				if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)ExportDir.AddressOfFunctions), AddressOfFunctions, ExportDir.NumberOfFunctions*sizeof(PDWORD), NULL))
+				if(!ReadProcessMemory(hProcess, (PVOID)((LPBYTE)hModule + (DWORD)ExportDir.AddressOfFunctions), AddressOfFunctions, ExportDir.NumberOfFunctions*sizeof(PDWORD), NULL))
 						return FALSE;
 				
 				for(j = 0; j < ExportDir.NumberOfNames; ++j)
 				{
 					DWORD pFunction = (DWORD)hModule + (DWORD)AddressOfFunctions[j];
-					//ReadProcessMemory(hProcess, (DWORD) hModule + (DWORD) (&ExportDir.AddressOfFunctions[j]), &pFunction, sizeof(pFunction), NULL);
+					//ReadProcessMemory(hProcess, (LPBYTE) hModule + (DWORD) (&ExportDir.AddressOfFunctions[j]), &pFunction, sizeof(pFunction), NULL);
 					
 					if(pFunction <= dwAddress && pFunction > dwNearestAddress)
 					{
 						dwNearestAddress = pFunction;
 						
-						if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)(&ExportDir.AddressOfNames[j])), &dwNearestName, sizeof(dwNearestName), NULL))
+						if(!ReadProcessMemory(hProcess, (PVOID)((LPBYTE)hModule + ExportDir.AddressOfNames + j*sizeof(DWORD)), &dwNearestName, sizeof(dwNearestName), NULL))
 							return FALSE;
 							
 						dwNearestName = (DWORD) hModule + dwNearestName;
@@ -516,8 +531,8 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 						DWORD dwName;
 						char szName[256];
 						
-						if(ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)(&ExportDir.AddressOfNames[j])), &dwName, sizeof(dwName), NULL))
-							if(ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + dwName), szName, sizeof(szName), NULL))
+						if(ReadProcessMemory(hProcess, (PVOID)((LPBYTE)hModule + (DWORD)(&ExportDir.AddressOfNames[j])), &dwName, sizeof(dwName), NULL))
+							if(ReadProcessMemory(hProcess, (PVOID)((LPBYTE)hModule + dwName), szName, sizeof(szName), NULL))
 								lprintf("\t%08x\t%s\r\n", pFunction, szName);
 					}*/
 				}
@@ -535,6 +550,71 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	return TRUE;
 }
 
+static bfd *
+BfdOpen(LPCSTR szModule, HANDLE hProcess, HMODULE hModule, asymbol ***syms, long *symcount)
+{
+	bfd *abfd;
+	bfd_vma adjust_section_vma;
+	bfd_vma image_base_vma;
+
+	abfd = bfd_openr (szModule, NULL);
+	if(!abfd)
+		goto no_bfd;
+
+	if(!bfd_check_format(abfd, bfd_object))
+	{
+		if(verbose_flag)
+			lprintf(_T("\r\n%s: %s\r\n"), szModule, _T("Bad format"));
+		goto bad_format;
+	}
+
+	if(!(bfd_get_file_flags(abfd) & HAS_SYMS))
+	{
+		if(verbose_flag)
+			lprintf(_T("\r\n%s: %s\r\n"), szModule, _T("No symbols"));
+		goto no_symbols;
+	}
+
+#if 0
+	/* XXX: this stopped working */
+	image_base_vma = pe_data (abfd)->pe_opthdr.ImageBase;
+#else
+	image_base_vma = (bfd_vma) PEGetImageBase(hProcess, hModule);
+#endif
+
+	/* If we are adjusting section VMA's, change them all now.  Changing
+	the BFD information is a hack.  However, we must do it, or
+	bfd_find_nearest_line will not do the right thing.  */
+	if ((adjust_section_vma = (bfd_vma) hModule - image_base_vma))
+	{
+		asection *s;
+	
+		if(verbose_flag)
+			lprintf(_T("\r\nadjusting sections from 0x%08lx to 0x%08lx, 0x%08lx\r\n"), image_base_vma, hModule, adjust_section_vma);
+	
+		for (s = abfd->sections; s != NULL; s = s->next)
+			bfd_set_section_vma(abfd, s, bfd_get_section_vma(abfd, s) + adjust_section_vma);
+	}
+
+	if(!slurp_symtab(abfd, syms, symcount))
+		goto no_symbols;
+
+	if(!*symcount)
+		goto zero_symbols;
+
+	return abfd;
+
+zero_symbols:
+	free(*syms);
+no_symbols:
+bad_format:
+	bfd_close(abfd);
+no_bfd:
+	*syms = NULL;
+	*symcount = 0;
+	return NULL;
+}
+
 BOOL GetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
 	BOOL bReturn = FALSE;
@@ -545,64 +625,21 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nS
 		TCHAR szModule[MAX_PATH]; 
 		bfd_error_handler_type old_bfd_error_handler;
 		bfd *abfd;
+		asymbol **syms;
+		long symcount;
 	
 		if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)) || !j_GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
 			return FALSE;
 
 		old_bfd_error_handler = bfd_set_error_handler((bfd_error_handler_type) lprintf);
 			
-		if((abfd = bfd_openr (szModule, NULL)))
+		if((abfd = BfdOpen(szModule, hProcess, hModule, &syms, &symcount)))
 		{
-			if(bfd_check_format(abfd, bfd_object))
-			{
-				bfd_vma adjust_section_vma = 0;
-	
-				/* If we are adjusting section VMA's, change them all now.  Changing
-				the BFD information is a hack.  However, we must do it, or
-				bfd_find_nearest_line will not do the right thing.  */
-				if ((adjust_section_vma = (bfd_vma) hModule - pe_data(abfd)->pe_opthdr.ImageBase))
-				{
-					asection *s;
-				
-					for (s = abfd->sections; s != NULL; s = s->next)
-					{
-						s->vma += adjust_section_vma;
-						s->lma += adjust_section_vma;
-					}
-				}
-				
-				if(bfd_get_file_flags(abfd) & HAS_SYMS)
-				{
-					asymbol **syms = NULL;	// The symbol table.
-					long symcount = 0;	// Number of symbols in `syms'.
-	
-					/* Read in the symbol table.  */
-					if(slurp_symtab(abfd, &syms, &symcount))
-					{
-						if((bReturn = BfdGetSymFromAddr(abfd, syms, symcount, hProcess, dwAddress, lpSymName, nSize)))
-							BfdDemangleSymName(lpSymName, lpSymName, nSize);
-	
-						free(syms);
-					}
-					else
-					{
-						if(verbose_flag)
-							lprintf(_T("%s: %s\r\n"), szModule, bfd_errmsg(bfd_get_error()));
-					}
-				}
-				else
-				{
-					if(verbose_flag)
-						lprintf(_T("%s: %s\r\n"), szModule, _T("No symbols"));
-				}
-				
-				bfd_close(abfd);
-			}
-			else
-			{
-				if(verbose_flag)
-					lprintf(_T("%s: %s\r\n"), szModule, _T("No symbols"));
-			}
+			if((bReturn = BfdGetSymFromAddr(abfd, syms, symcount, hProcess, dwAddress, lpSymName, nSize)))
+				BfdDemangleSymName(lpSymName, lpSymName, nSize);
+
+			free(syms);
+			bfd_close(abfd);
 		}
 		
 		bfd_set_error_handler(old_bfd_error_handler);
@@ -644,64 +681,19 @@ BOOL GetLineFromAddr(HANDLE hProcess, DWORD dwAddress,  LPTSTR lpFileName, DWORD
 		bfd_error_handler_type old_bfd_error_handler;
 		TCHAR szModule[MAX_PATH]; 
 		bfd *abfd;
+		asymbol **syms;
+		long symcount;
 	
 		if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)) || !j_GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
 			return FALSE;
 
 		old_bfd_error_handler = bfd_set_error_handler((bfd_error_handler_type) lprintf);
 	
-		if((abfd = bfd_openr (szModule, NULL)))
+		if((abfd = BfdOpen (szModule, hProcess, hModule, &syms, &symcount)))
 		{
-			if(bfd_check_format(abfd, bfd_object))
-			{
-				bfd_vma adjust_section_vma = 0;
-	
-				/* If we are adjusting section VMA's, change them all now.  Changing
-				the BFD information is a hack.  However, we must do it, or
-				bfd_find_nearest_line will not do the right thing.  */
-				if ((adjust_section_vma = (bfd_vma) hModule - pe_data(abfd)->pe_opthdr.ImageBase))
-				{
-					asection *s;
-				
-					for (s = abfd->sections; s != NULL; s = s->next)
-					{
-						s->vma += adjust_section_vma;
-						s->lma += adjust_section_vma;
-					}
-				}
-				
-				if(bfd_get_file_flags(abfd) & HAS_SYMS)
-				{
-					asymbol **syms;	// The symbol table.
-					long symcount = 0;	// Number of symbols in `syms'.
-	
-					/* Read in the symbol table.  */
-					if(slurp_symtab(abfd, &syms, &symcount))
-					{
-						bReturn = BfdGetLineFromAddr(abfd, syms, symcount, hProcess, dwAddress, lpFileName, nSize, lpLineNumber);
-	
-						free(syms);
-					}
-					else
-					{
-						if(verbose_flag)
-							lprintf(_T("%s: %s\r\n"), szModule, bfd_errmsg(bfd_get_error()));
-					}
-				}
-				else
-				{
-					if(verbose_flag)
-						lprintf(_T("%s: %s\r\n"), szModule, _T("No symbols"));
-				}
-				
-				bfd_close(abfd);
-			}
-			else
-			{
-				if(verbose_flag)
-					lprintf(_T("%s: %s\r\n"), szModule, _T("No symbols"));
-			}
-
+			bReturn = BfdGetLineFromAddr(abfd, syms, symcount, hProcess, dwAddress, lpFileName, nSize, lpLineNumber);
+			free(syms);
+			bfd_close(abfd);
 		}
 
 		bfd_set_error_handler(old_bfd_error_handler);
@@ -916,34 +908,15 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			}
 			else
 			{
-				if((abfd = pModuleListInfo->abfd = bfd_openr (szModule, NULL)))
-					if(bfd_check_format(abfd, bfd_object))
-					{
-						bfd_vma adjust_section_vma = 0;
-			
-						/* If we are adjusting section VMA's, change them all now.  Changing
-						the BFD information is a hack.  However, we must do it, or
-						bfd_find_nearest_line will not do the right thing.  */
-						if ((adjust_section_vma = (bfd_vma) hModule - pe_data(abfd)->pe_opthdr.ImageBase))
-						{
-							asection *s;
-						
-							for (s = abfd->sections; s != NULL; s = s->next)
-							{
-								s->vma += adjust_section_vma;
-								s->lma += adjust_section_vma;
-							}
-						}
-						
-						if(bfd_get_file_flags(abfd) & HAS_SYMS)
-						{
-							/* Read in the symbol table.  */
-							slurp_symtab(abfd, (asymbol ***) &pModuleListInfo->syms, &pModuleListInfo->symcount);
-							
-							if((syms = pModuleListInfo->syms) && (symcount = pModuleListInfo->symcount))
-								dhandle = pModuleListInfo->dhandle = read_debugging_info (abfd, syms, symcount);
-						}
-					}
+				if((abfd = BfdOpen (szModule, hProcess, hModule, &syms, &symcount)))
+				{
+					dhandle = read_debugging_info (abfd, syms, symcount);
+
+					pModuleListInfo->abfd = abfd;
+					pModuleListInfo->syms = syms;
+					pModuleListInfo->symcount = symcount;
+					pModuleListInfo->dhandle = dhandle;
+				}
 			}
 			
 			if(!bSuccess && abfd && syms && symcount)
