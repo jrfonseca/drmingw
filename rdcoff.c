@@ -34,6 +34,7 @@
    the N_BTMASK, etc., values.  */
 #include "libcoff.h"
 
+#ifndef _WIN32
 /* These macros extract the right mask and shifts for this BFD.  They
    assume that there is a local variable named ABFD.  This is so that
    macros like ISFCN and DECREF, from coff/internal.h, will work
@@ -42,6 +43,7 @@
 #define	N_BTSHFT (coff_data (abfd)->local_n_btshft)
 #define	N_TMASK  (coff_data (abfd)->local_n_tmask)
 #define	N_TSHIFT (coff_data (abfd)->local_n_tshift)
+#endif
 
 /* This structure is used to hold the symbols, as well as the current
    location within the symbols.  */

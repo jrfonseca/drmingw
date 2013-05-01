@@ -1,8 +1,14 @@
 .*.sw?
-.scon*
 *.RPT
 *.a
+*.cmake
 *.dll
 *.exe
 *.o
 *.pyc
+*.zip
+_CPack_Packages
+CMakeCache.txt
+CMakeFiles
+Makefile
+install_manifest.txt

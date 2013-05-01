@@ -21,6 +21,10 @@
 #ifndef GNU_COFF_INTERNAL_H
 #define GNU_COFF_INTERNAL_H 1
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 /* First, make "signed char" work, even on old compilers. */
 #ifndef signed
 #ifndef __STDC__
@@ -98,7 +102,7 @@ struct internal_filehdr
 #define F_DLL           (0x2000)
 
 /* Extra structure which is used in the optional header.  */
-#ifndef _WINNT_H
+#ifndef _WIN32
 typedef struct _IMAGE_DATA_DIRECTORY 
 {
   bfd_vma VirtualAddress;
@@ -474,7 +478,7 @@ struct internal_syment
 #define DT_FCN		(2)	/* function */
 #define DT_ARY		(3)	/* array */
 
-#ifndef _WINNT_H
+#ifndef _WIN32
 #define BTYPE(x)	((x) & N_BTMASK)
 #define DTYPE(x)	(((x) & N_TMASK) >> N_BTSHFT)
 
