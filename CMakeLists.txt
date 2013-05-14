@@ -126,6 +126,10 @@ target_link_libraries (exchndl
 	${BINUTILS_LIBERTY_LIBRARY}
 )
 
+set_target_properties (exchndl PROPERTIES
+    PREFIX ""
+)
+
 install (TARGETS exchndl LIBRARY DESTINATION lib)
 
 add_subdirectory (samples)
