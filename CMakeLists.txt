@@ -103,6 +103,8 @@ target_link_libraries (exchndl
 
 install (TARGETS exchndl LIBRARY DESTINATION lib)
 
+add_subdirectory (samples)
+
 
 ##############################################################################
 # Packaging

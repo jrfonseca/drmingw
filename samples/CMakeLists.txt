@@ -1,0 +1,13 @@
+
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_DEBUG} -gstabs ")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -gstabs")
+
+add_executable (test
+        test.c
+        exchndl2.cxx
+)
+
+add_executable (testcpp
+	testcpp.cxx
+	exchndl2.cxx
+)
