@@ -72,7 +72,6 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 	PTHREAD_LIST_INFO pThreadInfo;
 	TCHAR szModule[MAX_PATH];
 	HMODULE hModule;
-	CONTEXT Context;
 	
 	unsigned i;
 
@@ -85,14 +84,6 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 		++i;
 	assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
 	pProcessInfo = &ProcessListInfo[i];
-	
-	// Find the thread in the thread list
-	assert(nThreads);
-	i = 0;
-	while(i < nThreads && (DebugEvent.dwProcessId > ThreadListInfo[i].dwProcessId || (DebugEvent.dwProcessId == ThreadListInfo[i].dwProcessId && DebugEvent.dwThreadId > ThreadListInfo[i].dwThreadId)))
-		++i;
-	assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId && ThreadListInfo[i].dwThreadId == DebugEvent.dwThreadId);
-	pThreadInfo = &ThreadListInfo[i];
 	
 	/*assert(!bSymInitialize);
 	SymSetOptions(SYMOPT_LOAD_LINES);
@@ -248,78 +239,89 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 
 	lprintf(".\r\n\r\n");		
 	
-	// Get the thread context
-	Context.ContextFlags = CONTEXT_DEBUG_REGISTERS | CONTEXT_FLOATING_POINT | CONTEXT_SEGMENTS | CONTEXT_INTEGER | CONTEXT_CONTROL;
-	if(!GetThreadContext(pThreadInfo->hThread, &Context))
-		assert(0);
-
-	#ifdef _M_IX86	// Intel Only!
-
-	// Show the registers
-	lprintf(_T("Registers:\r\n"));
-	if(Context.ContextFlags & CONTEXT_INTEGER)
-		lprintf(
-			_T("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\r\n"),
-			Context.Eax,
-			Context.Ebx,
-			Context.Ecx,
-			Context.Edx,
-			Context.Esi,
-			Context.Edi
-		);
-	if(Context.ContextFlags & CONTEXT_CONTROL)
-		lprintf(
-			_T("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\r\n"),
-			Context.Eip,
-			Context.Esp,
-			Context.Ebp,
-			(Context.EFlags >> 12) & 3,	//  IOPL level value
-			Context.EFlags & 0x00100000 ? "vip" : "   ",	//  VIP (virtual interrupt pending)
-			Context.EFlags & 0x00080000 ? "vif" : "   ",	//  VIF (virtual interrupt flag)
-			Context.EFlags & 0x00000800 ? "ov" : "nv",	//  VIF (virtual interrupt flag)
-			Context.EFlags & 0x00000400 ? "dn" : "up",	//  OF (overflow flag)
-			Context.EFlags & 0x00000200 ? "ei" : "di",	//  IF (interrupt enable flag)
-			Context.EFlags & 0x00000080 ? "ng" : "pl",	//  SF (sign flag)
-			Context.EFlags & 0x00000040 ? "zr" : "nz",	//  ZF (zero flag)
-			Context.EFlags & 0x00000010 ? "ac" : "na",	//  AF (aux carry flag)
-			Context.EFlags & 0x00000004 ? "po" : "pe",	//  PF (parity flag)
-			Context.EFlags & 0x00000001 ? "cy" : "nc"	//  CF (carry flag)
-		);
-	if(Context.ContextFlags & CONTEXT_SEGMENTS)
-	{
-		lprintf(
-			_T("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx"),
-			Context.SegCs,
-			Context.SegSs,
-			Context.SegDs,
-			Context.SegEs,
-			Context.SegFs,
-			Context.SegGs
-		);
-		if(Context.ContextFlags & CONTEXT_CONTROL)
-			lprintf(
-				_T("             efl=%08lx"),
-				Context.EFlags
-			);
-	}
-	else
-		if(Context.ContextFlags & CONTEXT_CONTROL)
-			lprintf(
-				_T("                                                                       efl=%08lx"),
-				Context.EFlags
-			);
-	lprintf(_T("\r\n\r\n"));
-
-	#endif
-
-	StackBackTrace(pProcessInfo->hProcess, pThreadInfo->hThread, &Context);
-	
-	/*if(bSymInitialized)
-	{
-		if(!pfnSymCleanup(hProcess))
+	// Find the thread in the thread list
+	assert(nThreads);
+	for (i = 0; i < nThreads; ++i) {
+		assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
+		if (ThreadListInfo[i].dwThreadId == DebugEvent.dwThreadId) {
+		   lprintf(_T("XXXXXXXXXXXXXXXXXXXXXX\r\n"));
+		}
+		pThreadInfo = &ThreadListInfo[i];
+		
+		// Get the thread context
+		CONTEXT Context;
+		Context.ContextFlags = CONTEXT_DEBUG_REGISTERS | CONTEXT_FLOATING_POINT | CONTEXT_SEGMENTS | CONTEXT_INTEGER | CONTEXT_CONTROL;
+		if(!GetThreadContext(pThreadInfo->hThread, &Context))
 			assert(0);
-		hProcess_Imagehlp = NULL;
-	}*/
+
+		#ifdef _M_IX86	// Intel Only!
+
+		// Show the registers
+		lprintf(_T("Registers:\r\n"));
+		if(Context.ContextFlags & CONTEXT_INTEGER)
+			lprintf(
+				_T("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\r\n"),
+				Context.Eax,
+				Context.Ebx,
+				Context.Ecx,
+				Context.Edx,
+				Context.Esi,
+				Context.Edi
+			);
+		if(Context.ContextFlags & CONTEXT_CONTROL)
+			lprintf(
+				_T("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\r\n"),
+				Context.Eip,
+				Context.Esp,
+				Context.Ebp,
+				(Context.EFlags >> 12) & 3,	//  IOPL level value
+				Context.EFlags & 0x00100000 ? "vip" : "   ",	//  VIP (virtual interrupt pending)
+				Context.EFlags & 0x00080000 ? "vif" : "   ",	//  VIF (virtual interrupt flag)
+				Context.EFlags & 0x00000800 ? "ov" : "nv",	//  VIF (virtual interrupt flag)
+				Context.EFlags & 0x00000400 ? "dn" : "up",	//  OF (overflow flag)
+				Context.EFlags & 0x00000200 ? "ei" : "di",	//  IF (interrupt enable flag)
+				Context.EFlags & 0x00000080 ? "ng" : "pl",	//  SF (sign flag)
+				Context.EFlags & 0x00000040 ? "zr" : "nz",	//  ZF (zero flag)
+				Context.EFlags & 0x00000010 ? "ac" : "na",	//  AF (aux carry flag)
+				Context.EFlags & 0x00000004 ? "po" : "pe",	//  PF (parity flag)
+				Context.EFlags & 0x00000001 ? "cy" : "nc"	//  CF (carry flag)
+			);
+		if(Context.ContextFlags & CONTEXT_SEGMENTS)
+		{
+			lprintf(
+				_T("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx"),
+				Context.SegCs,
+				Context.SegSs,
+				Context.SegDs,
+				Context.SegEs,
+				Context.SegFs,
+				Context.SegGs
+			);
+			if(Context.ContextFlags & CONTEXT_CONTROL)
+				lprintf(
+					_T("             efl=%08lx"),
+					Context.EFlags
+				);
+		}
+		else
+			if(Context.ContextFlags & CONTEXT_CONTROL)
+				lprintf(
+					_T("                                                                       efl=%08lx"),
+					Context.EFlags
+				);
+		lprintf(_T("\r\n\r\n"));
+
+		#endif
+
+		StackBackTrace(pProcessInfo->hProcess, pThreadInfo->hThread, &Context);
+		
+		/*if(bSymInitialized)
+		{
+			if(!pfnSymCleanup(hProcess))
+				assert(0);
+			hProcess_Imagehlp = NULL;
+		}*/
+	}
 	
 	lflush();
 	return TRUE;
