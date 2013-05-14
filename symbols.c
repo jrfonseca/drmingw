@@ -166,7 +166,7 @@ BOOL BfdGetLineFromAddr(bfd *abfd, asymbol **syms, long symcount, HANDLE hProces
 
 
 #ifdef HEADER
-#include <imagehlp.h>
+#include <dbghelp.h>
 #endif /* HEADER */
 
 BOOL bSymInitialized = FALSE;
@@ -179,7 +179,7 @@ static PFNSYMINITIALIZE pfnSymInitialize = NULL;
 BOOL WINAPI j_SymInitialize(HANDLE hProcess, PSTR UserSearchPath, BOOL fInvadeProcess)
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
 		(pfnSymInitialize || (pfnSymInitialize = (PFNSYMINITIALIZE) GetProcAddress(hModule_Imagehlp, "SymInitialize")))
 	)
 		return pfnSymInitialize(hProcess, UserSearchPath, fInvadeProcess);
@@ -193,7 +193,7 @@ static PFNSYMCLEANUP pfnSymCleanup = NULL;
 BOOL WINAPI j_SymCleanup(HANDLE hProcess)
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
 		(pfnSymCleanup || (pfnSymCleanup = (PFNSYMCLEANUP) GetProcAddress(hModule_Imagehlp, "SymCleanup")))
 	)
 		return pfnSymCleanup(hProcess);
@@ -208,7 +208,7 @@ static
 DWORD WINAPI j_SymSetOptions(DWORD SymOptions)
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
 		(pfnSymSetOptions || (pfnSymSetOptions = (PFNSYMSETOPTIONS) GetProcAddress(hModule_Imagehlp, "SymSetOptions")))
 	)
 		return pfnSymSetOptions(SymOptions);
@@ -216,84 +216,79 @@ DWORD WINAPI j_SymSetOptions(DWORD SymOptions)
 		return FALSE;
 }
 
-typedef BOOL (WINAPI *PFNSYMUNDNAME)(PIMAGEHLP_SYMBOL, PSTR, DWORD);
-static PFNSYMUNDNAME pfnSymUnDName = NULL;
+typedef BOOL (WINAPI *PFNSYMUNDNAME64)(PIMAGEHLP_SYMBOL64, PSTR, DWORD);
+static PFNSYMUNDNAME64 pfnSymUnDName64 = NULL;
 
 static
-BOOL WINAPI j_SymUnDName(PIMAGEHLP_SYMBOL Symbol, PSTR UnDecName, DWORD UnDecNameLength)
+BOOL WINAPI j_SymUnDName64(PIMAGEHLP_SYMBOL64 Symbol, PSTR UnDecName, DWORD UnDecNameLength)
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
-		(pfnSymUnDName || (pfnSymUnDName = (PFNSYMUNDNAME) GetProcAddress(hModule_Imagehlp, "SymUnDName")))
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
+		(pfnSymUnDName64 || (pfnSymUnDName64 = (PFNSYMUNDNAME64) GetProcAddress(hModule_Imagehlp, "SymUnDName64")))
 	)
-		return pfnSymUnDName(Symbol, UnDecName, UnDecNameLength);
+		return pfnSymUnDName64(Symbol, UnDecName, UnDecNameLength);
 	else
 		return FALSE;
 }
 
-typedef DWORD (WINAPI *PFNUNDECORATESYMBOLNAME)(PCSTR, PSTR, DWORD, DWORD);
-static PFNUNDECORATESYMBOLNAME pfnUnDecorateSymbolName = NULL;
+typedef PFUNCTION_TABLE_ACCESS_ROUTINE64 PFNSYMFUNCTIONTABLEACCESS64;
+static PFNSYMFUNCTIONTABLEACCESS64 pfnSymFunctionTableAccess = NULL;
 
-static
-DWORD j_UnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
+PVOID WINAPI j_SymFunctionTableAccess64(HANDLE hProcess, DWORD64 AddrBase)
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
-		(pfnUnDecorateSymbolName || (pfnUnDecorateSymbolName = (PFNUNDECORATESYMBOLNAME) GetProcAddress(hModule_Imagehlp, "UnDecorateSymbolName")))
-	)
-		return pfnUnDecorateSymbolName(DecoratedName, UnDecoratedName, UndecoratedLength, Flags);
-	else
-		return FALSE;
-}
-
-typedef PFUNCTION_TABLE_ACCESS_ROUTINE PFNSYMFUNCTIONTABLEACCESS;
-static PFNSYMFUNCTIONTABLEACCESS pfnSymFunctionTableAccess = NULL;
-
-PVOID WINAPI j_SymFunctionTableAccess(HANDLE hProcess, DWORD AddrBase)
-{
-	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
-		(pfnSymFunctionTableAccess || (pfnSymFunctionTableAccess = (PFNSYMFUNCTIONTABLEACCESS) GetProcAddress(hModule_Imagehlp, "SymFunctionTableAccess")))
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
+		(pfnSymFunctionTableAccess || (pfnSymFunctionTableAccess = (PFNSYMFUNCTIONTABLEACCESS64) GetProcAddress(hModule_Imagehlp, "SymFunctionTableAccess64")))
 	)
 		return pfnSymFunctionTableAccess(hProcess, AddrBase);
 	else
 		return NULL;
 }
 
-typedef PGET_MODULE_BASE_ROUTINE PFNSYMGETMODULEBASE;
-static PFNSYMGETMODULEBASE pfnSymGetModuleBase = NULL;
+typedef PGET_MODULE_BASE_ROUTINE64 PFNSYMGETMODULEBASE64;
+static PFNSYMGETMODULEBASE64 pfnSymGetModuleBase64 = NULL;
 
-DWORD WINAPI j_SymGetModuleBase(HANDLE hProcess, DWORD dwAddr)
+DWORD64 WINAPI j_SymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddr)
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
-		(pfnSymGetModuleBase || (pfnSymGetModuleBase = (PFNSYMGETMODULEBASE) GetProcAddress(hModule_Imagehlp, "SymGetModuleBase")))
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
+		(pfnSymGetModuleBase64 || (pfnSymGetModuleBase64 = (PFNSYMGETMODULEBASE64) GetProcAddress(hModule_Imagehlp, "SymGetModuleBase64")))
 	)
-		return pfnSymGetModuleBase(hProcess, dwAddr);
+		return pfnSymGetModuleBase64(hProcess, dwAddr);
 	else
 		return 0;
 }
 
-typedef BOOL (WINAPI *PFNSTACKWALK)(DWORD, HANDLE, HANDLE, LPSTACKFRAME, LPVOID, PREAD_PROCESS_MEMORY_ROUTINE, PFUNCTION_TABLE_ACCESS_ROUTINE, PGET_MODULE_BASE_ROUTINE, PTRANSLATE_ADDRESS_ROUTINE);
-static PFNSTACKWALK pfnStackWalk = NULL;
+typedef BOOL (WINAPI *PFNSTACKWALK64)(
+	DWORD MachineType,
+	HANDLE hProcess,
+	HANDLE hThread,
+	LPSTACKFRAME64 StackFrame,
+	PVOID ContextRecord,
+	PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine,
+	PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine,
+	PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine,
+	PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress
+);
+static PFNSTACKWALK64 pfnStackWalk64 = NULL;
 
-BOOL WINAPI j_StackWalk(
+BOOL WINAPI j_StackWalk64(
 	DWORD MachineType, 
 	HANDLE hProcess, 
 	HANDLE hThread, 
-	LPSTACKFRAME StackFrame, 
+	LPSTACKFRAME64 StackFrame,
 	PVOID ContextRecord, 
-	PREAD_PROCESS_MEMORY_ROUTINE ReadMemoryRoutine,  
-	PFUNCTION_TABLE_ACCESS_ROUTINE FunctionTableAccessRoutine,
-	PGET_MODULE_BASE_ROUTINE GetModuleBaseRoutine, 
-	PTRANSLATE_ADDRESS_ROUTINE TranslateAddress 
+	PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine,
+	PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine,
+	PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine,
+	PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress
 )
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
-		(pfnStackWalk || (pfnStackWalk = (PFNSTACKWALK) GetProcAddress(hModule_Imagehlp, "StackWalk")))
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
+		(pfnStackWalk64 || (pfnStackWalk64 = (PFNSTACKWALK64) GetProcAddress(hModule_Imagehlp, "StackWalk64")))
 	)
-		return pfnStackWalk(
+		return pfnStackWalk64(
 			MachineType, 
 			hProcess, 
 			hThread, 
@@ -308,71 +303,72 @@ BOOL WINAPI j_StackWalk(
 		return FALSE;
 }
 
-typedef BOOL (WINAPI *PFNSYMGETSYMFROMADDR)(HANDLE, DWORD, LPDWORD, PIMAGEHLP_SYMBOL);
-static PFNSYMGETSYMFROMADDR pfnSymGetSymFromAddr = NULL;
+typedef BOOL (WINAPI *PFNSYMGETSYMFROMADDR64)(HANDLE, DWORD64, PDWORD64, PIMAGEHLP_SYMBOL64);
+static PFNSYMGETSYMFROMADDR64 pfnSymGetSymFromAddr64 = NULL;
 
-BOOL WINAPI j_SymGetSymFromAddr(HANDLE hProcess, DWORD Address, PDWORD Displacement, PIMAGEHLP_SYMBOL Symbol)
+BOOL WINAPI j_SymGetSymFromAddr64(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PIMAGEHLP_SYMBOL64 Symbol)
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
-		(pfnSymGetSymFromAddr || (pfnSymGetSymFromAddr = (PFNSYMGETSYMFROMADDR) GetProcAddress(hModule_Imagehlp, "SymGetSymFromAddr")))
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
+		(pfnSymGetSymFromAddr64 || (pfnSymGetSymFromAddr64 = (PFNSYMGETSYMFROMADDR64) GetProcAddress(hModule_Imagehlp, "SymGetSymFromAddr64")))
 	)
-		return pfnSymGetSymFromAddr(hProcess, Address, Displacement, Symbol);
+		return pfnSymGetSymFromAddr64(hProcess, Address, Displacement, Symbol);
 	else
 		return FALSE;
 }
 
-typedef BOOL (WINAPI *PFNSYMGETLINEFROMADDR)(HANDLE, DWORD, LPDWORD, PIMAGEHLP_LINE);
-static PFNSYMGETLINEFROMADDR pfnSymGetLineFromAddr = NULL;
+typedef BOOL (WINAPI *PFNSYMGETLINEFROMADDR64)(HANDLE, DWORD64, LPDWORD, PIMAGEHLP_LINE64);
+static PFNSYMGETLINEFROMADDR64 pfnSymGetLineFromAddr64 = NULL;
 
-BOOL WINAPI j_SymGetLineFromAddr(HANDLE hProcess, DWORD dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE Line)
+BOOL WINAPI j_SymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line)
 {
 	if(
-		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("IMAGEHLP.DLL")))) &&
-		(pfnSymGetLineFromAddr || (pfnSymGetLineFromAddr = (PFNSYMGETLINEFROMADDR) GetProcAddress(hModule_Imagehlp, "SymGetLineFromAddr")))
+		(hModule_Imagehlp || (hModule_Imagehlp = LoadLibrary(_T("DBGHELP")))) &&
+		(pfnSymGetLineFromAddr64 || (pfnSymGetLineFromAddr64 = (PFNSYMGETLINEFROMADDR64) GetProcAddress(hModule_Imagehlp, "SymGetLineFromAddr64")))
 	)
-		return pfnSymGetLineFromAddr(hProcess, dwAddr, pdwDisplacement, Line);
+		return pfnSymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, Line);
 	else
 		return FALSE;
 }
 
 BOOL ImagehlpDemangleSymName(LPCTSTR lpName, LPTSTR lpDemangledName, DWORD nSize)
 {
-	TCHAR *szDemangledName = alloca(nSize*sizeof(TCHAR));
+	BYTE symbolBuffer[sizeof(IMAGEHLP_SYMBOL64) + 512];
+	PIMAGEHLP_SYMBOL64 pSymbol = (PIMAGEHLP_SYMBOL64) symbolBuffer;
 	
-	if(!j_UnDecorateSymbolName(lpName, szDemangledName, nSize, UNDNAME_COMPLETE | UNDNAME_32_BIT_DECODE))
-	{
-		if(verbose_flag)
-			lprintf(_T("UnDecorateSymbolName: %s\r\n"), LastErrorMessage());
-		*lpDemangledName = _T('\0');
+	memset( symbolBuffer, 0, sizeof(symbolBuffer) );
+	
+	pSymbol->SizeOfStruct = sizeof(symbolBuffer);
+	pSymbol->MaxNameLength = 512;
+
+	lstrcpyn(pSymbol->Name, lpName, pSymbol->MaxNameLength);
+
+	if(!j_SymUnDName64(pSymbol, lpDemangledName, nSize))
 		return FALSE;
-	}
-	
-	lstrcpyn(lpDemangledName, szDemangledName, nSize);
 	
 	return TRUE;
 }
 
-BOOL ImagehlpGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nSize)
+BOOL ImagehlpGetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
 	// IMAGEHLP is wacky, and requires you to pass in a pointer to a
-	// IMAGEHLP_SYMBOL structure.  The problem is that this structure is
+	// IMAGEHLP_SYMBOL64 structure.  The problem is that this structure is
 	// variable length.  That is, you determine how big the structure is
 	// at runtime.  This means that you can't use sizeof(struct).
 	// So...make a buffer that's big enough, and make a pointer
 	// to the buffer.  We also need to initialize not one, but TWO
 	// members of the structure before it can be used.
 	
-	BYTE symbolBuffer[sizeof(IMAGEHLP_SYMBOL) + MAX_SYM_NAME_SIZE];
-	PIMAGEHLP_SYMBOL pSymbol = (PIMAGEHLP_SYMBOL) symbolBuffer;
-	DWORD dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
+	BYTE symbolBuffer[sizeof(IMAGEHLP_SYMBOL64) + 512];
+	PIMAGEHLP_SYMBOL64 pSymbol = (PIMAGEHLP_SYMBOL64) symbolBuffer;
+	DWORD64 dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
 
 	pSymbol->SizeOfStruct = sizeof(symbolBuffer);
-	pSymbol->MaxNameLength = MAX_SYM_NAME_SIZE;
+	pSymbol->MaxNameLength = 512;
 
 	assert(bSymInitialized);
 	
-	if(!j_SymGetSymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol))
+	if(!j_SymGetSymFromAddr64(hProcess, dwAddress, &dwDisplacement, pSymbol))
 		return FALSE;
 
 	lstrcpyn(lpSymName, pSymbol->Name, nSize);
@@ -380,14 +376,14 @@ BOOL ImagehlpGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, 
 	return TRUE;
 }
 
-BOOL ImagehlpGetLineFromAddr(HANDLE hProcess, DWORD dwAddress,  LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
+BOOL ImagehlpGetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
 {
-	IMAGEHLP_LINE Line;
+	IMAGEHLP_LINE64 Line;
 	DWORD dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
 
 	// Do the source and line lookup.
-	memset(&Line, 0, sizeof(IMAGEHLP_LINE));
-	Line.SizeOfStruct = sizeof(IMAGEHLP_LINE);
+	memset(&Line, 0, sizeof Line);
+	Line.SizeOfStruct = sizeof Line;
 	
 	assert(bSymInitialized);
 
@@ -397,8 +393,8 @@ BOOL ImagehlpGetLineFromAddr(HANDLE hProcess, DWORD dwAddress,  LPTSTR lpFileNam
 		//  line addresses (after the first lookup) that fall exactly on
 		//  a zero displacement.  I will walk backwards 100 bytes to
 		//  find the line and return the proper displacement.
-		DWORD dwTempDisp = 0 ;
-		while (dwTempDisp < 100 && !j_SymGetLineFromAddr(hProcess, dwAddress - dwTempDisp, &dwDisplacement, &Line))
+		DWORD64 dwTempDisp = 0 ;
+		while (dwTempDisp < 100 && !j_SymGetLineFromAddr64(hProcess, dwAddress - dwTempDisp, &dwDisplacement, &Line))
 			++dwTempDisp;
 		
 		if(dwTempDisp >= 100)
@@ -498,26 +494,26 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 		{
 			IMAGE_EXPORT_DIRECTORY ExportDir;
 			
-			if(!ReadProcessMemory(hProcess, (PVOID)((LPBYTE)hModule + (DWORD)pExportDir), &ExportDir, sizeof(IMAGE_EXPORT_DIRECTORY), NULL))
+			if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)pExportDir), &ExportDir, sizeof(IMAGE_EXPORT_DIRECTORY), NULL))
 				return FALSE;
 			
 			{
 				PDWORD *AddressOfFunctions = alloca(ExportDir.NumberOfFunctions*sizeof(PDWORD));
 				int j;
 	
-				if(!ReadProcessMemory(hProcess, (PVOID)((LPBYTE)hModule + (DWORD)ExportDir.AddressOfFunctions), AddressOfFunctions, ExportDir.NumberOfFunctions*sizeof(PDWORD), NULL))
+				if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)ExportDir.AddressOfFunctions), AddressOfFunctions, ExportDir.NumberOfFunctions*sizeof(PDWORD), NULL))
 						return FALSE;
 				
 				for(j = 0; j < ExportDir.NumberOfNames; ++j)
 				{
 					DWORD pFunction = (DWORD)hModule + (DWORD)AddressOfFunctions[j];
-					//ReadProcessMemory(hProcess, (LPBYTE) hModule + (DWORD) (&ExportDir.AddressOfFunctions[j]), &pFunction, sizeof(pFunction), NULL);
+					//ReadProcessMemory(hProcess, (DWORD) hModule + (DWORD) (&ExportDir.AddressOfFunctions[j]), &pFunction, sizeof(pFunction), NULL);
 					
 					if(pFunction <= dwAddress && pFunction > dwNearestAddress)
 					{
 						dwNearestAddress = pFunction;
 						
-						if(!ReadProcessMemory(hProcess, (PVOID)((LPBYTE)hModule + ExportDir.AddressOfNames + j*sizeof(DWORD)), &dwNearestName, sizeof(dwNearestName), NULL))
+						if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + ExportDir.AddressOfNames + j*sizeof(DWORD)), &dwNearestName, sizeof(dwNearestName), NULL))
 							return FALSE;
 							
 						dwNearestName = (DWORD) hModule + dwNearestName;
@@ -545,6 +541,21 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	lpSymName[nSize - 1] = 0;
 
 	return TRUE;
+}
+
+static BOOL CALLBACK ReadProcessMemory64(
+   HANDLE hProcess,
+   DWORD64 lpBaseAddress,
+   PVOID lpBuffer,
+   DWORD nSize,
+   PDWORD lpNumberOfBytesRead
+) {
+	DWORD NumberOfBytesRead = 0;
+	BOOL bRet = ReadProcessMemory(hProcess, (LPCVOID)(UINT_PTR)lpBaseAddress, lpBuffer, nSize, &NumberOfBytesRead);
+	if (lpNumberOfBytesRead) {
+		*lpNumberOfBytesRead = NumberOfBytesRead;
+	}
+	return bRet;
 }
 
 static bfd *
@@ -727,18 +738,18 @@ BOOL WINAPI IntelStackWalk(
 	DWORD MachineType, 
 	HANDLE hProcess, 
 	HANDLE hThread, 
-	LPSTACKFRAME StackFrame, 
-	PCONTEXT ContextRecord, 
-	PREAD_PROCESS_MEMORY_ROUTINE ReadMemoryRoutine,  
-	PFUNCTION_TABLE_ACCESS_ROUTINE FunctionTableAccessRoutine,
-	PGET_MODULE_BASE_ROUTINE GetModuleBaseRoutine, 
-	PTRANSLATE_ADDRESS_ROUTINE TranslateAddress 
+	LPSTACKFRAME64 StackFrame,
+	CONTEXT *ContextRecord,
+	PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine,
+	PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine,
+	PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine,
+	PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress
 )
 {
 	assert(MachineType == IMAGE_FILE_MACHINE_I386);
 	
 	if(ReadMemoryRoutine == NULL)
-		ReadMemoryRoutine = ReadProcessMemory;
+		ReadMemoryRoutine = &ReadProcessMemory64;
 	
 	if(!StackFrame->Reserved[0])
 	{
@@ -752,20 +763,20 @@ BOOL WINAPI IntelStackWalk(
 		StackFrame->AddrFrame.Offset = ContextRecord->Ebp;
 
 		StackFrame->AddrReturn.Mode = AddrModeFlat;
-		if(!ReadMemoryRoutine(hProcess, (LPCVOID) (StackFrame->AddrFrame.Offset + sizeof(DWORD)), &StackFrame->AddrReturn.Offset, sizeof(DWORD), NULL))
+		if(!ReadMemoryRoutine(hProcess, StackFrame->AddrFrame.Offset + sizeof (DWORD), &StackFrame->AddrReturn.Offset, sizeof(DWORD), NULL))
 			return FALSE;
 	}
 	else
 	{
 		StackFrame->AddrPC.Offset = StackFrame->AddrReturn.Offset;
 		//AddrStack = AddrFrame + 2*sizeof(DWORD);
-		if(!ReadMemoryRoutine(hProcess, (LPCVOID) StackFrame->AddrFrame.Offset, &StackFrame->AddrFrame.Offset, sizeof(DWORD), NULL))
+		if(!ReadMemoryRoutine(hProcess, StackFrame->AddrFrame.Offset, &StackFrame->AddrFrame.Offset, sizeof(DWORD), NULL))
 			return FALSE;
-		if(!ReadMemoryRoutine(hProcess, (LPCVOID) (StackFrame->AddrFrame.Offset + sizeof(DWORD)), &StackFrame->AddrReturn.Offset, sizeof(DWORD), NULL))
+		if(!ReadMemoryRoutine(hProcess, StackFrame->AddrFrame.Offset + sizeof(DWORD), &StackFrame->AddrReturn.Offset, sizeof(DWORD), NULL))
 			return FALSE;
 	}
 
-	ReadMemoryRoutine(hProcess, (LPCVOID) (StackFrame->AddrFrame.Offset + 2*sizeof(DWORD)), StackFrame->Params, sizeof(StackFrame->Params), NULL);
+	ReadMemoryRoutine(hProcess, StackFrame->AddrFrame.Offset + 2*sizeof(DWORD), StackFrame->Params, sizeof(StackFrame->Params), NULL);
 	
 	return TRUE;	
 }
@@ -775,7 +786,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	int i;
 	PPROCESS_LIST_INFO pProcessListInfo;
 
-	STACKFRAME StackFrame;
+        STACKFRAME64 StackFrame;
 
 	HMODULE hModule = NULL;
 	TCHAR szModule[MAX_PATH]; 
@@ -816,7 +827,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 		lprintf( _T("AddrPC     AddrReturn AddrFrame  AddrStack  Params\r\n") );
 
 	while ( 1 )
-	{
+        {
 		BOOL bSuccess = FALSE;
 		TCHAR szSymName[MAX_SYM_NAME_SIZE] = _T("");
 		TCHAR szFileName[MAX_PATH] = _T("");
@@ -824,15 +835,15 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 		if(bSymInitialized)
 		{
-			if(!j_StackWalk(
+                        if(!j_StackWalk64(
 					IMAGE_FILE_MACHINE_I386,
 					hProcess,
 					hThread,
 					&StackFrame,
 					pContext,
 					NULL,
-					j_SymFunctionTableAccess,
-					j_SymGetModuleBase,
+                                        j_SymFunctionTableAccess64,
+                                        j_SymGetModuleBase64,
 					NULL
 				)
 			)
