@@ -151,7 +151,9 @@ BOOL DebugMainLoop(void)
 					);					
 				}
 
-				if (DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_BREAKPOINT) {
+				dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
+				if (DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT ||
+				    DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_BREAKPOINT) {
 					if (DebugEvent.u.Exception.dwFirstChance)
 					{
 						/*
@@ -189,17 +191,16 @@ BOOL DebugMainLoop(void)
 						if(hEvent)
 						{
 							SetEvent(hEvent);
+							CloseHandle(hEvent);
 							hEvent = NULL;
 						}
 
 						dwContinueStatus = DBG_CONTINUE;
-						break;
 					}
 				}
 
 				LogException(DebugEvent);
 				
-				dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
 				break;
 	 
 			case CREATE_THREAD_DEBUG_EVENT: 
