@@ -68,6 +68,11 @@ if (MINGW)
 	endif ()
 endif ()
 
+add_definitions (
+	-D_WIN32_WINNT=0x0501 # minimum required OS version
+	-DWINVER=0x0501
+)
+
 
 ##############################################################################
 # Targets
