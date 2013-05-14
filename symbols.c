@@ -145,7 +145,7 @@ BOOL BfdGetLineFromAddr(bfd *abfd, asymbol **syms, long symcount, HANDLE hProces
 
 	info.pc = dwAddress;
 	info.syms = syms;
-	info.found = FALSE;
+
 	info.found = FALSE;
 
 	bfd_map_over_sections (abfd, find_address_in_section, &info);
@@ -335,7 +335,7 @@ BOOL ImagehlpDemangleSymName(LPCTSTR lpName, LPTSTR lpDemangledName, DWORD nSize
 {
 	BYTE symbolBuffer[sizeof(IMAGEHLP_SYMBOL64) + 512];
 	PIMAGEHLP_SYMBOL64 pSymbol = (PIMAGEHLP_SYMBOL64) symbolBuffer;
-	
+
 	memset( symbolBuffer, 0, sizeof(symbolBuffer) );
 	
 	pSymbol->SizeOfStruct = sizeof(symbolBuffer);
@@ -470,7 +470,7 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof(IMAGE_NT_HEADERS), NULL))
 		return FALSE;
 	
-	pSection = (PIMAGE_SECTION_HEADER) ((LPBYTE)pNtHeaders + sizeof(DWORD) + sizeof(IMAGE_FILE_HEADER) + NtHeaders.FileHeader.SizeOfOptionalHeader);
+	pSection = (PIMAGE_SECTION_HEADER) ((DWORD)pNtHeaders + sizeof(DWORD) + sizeof(IMAGE_FILE_HEADER) + NtHeaders.FileHeader.SizeOfOptionalHeader);
 
 	/*if(verbose_flag)
 		lprintf(_T("Exported symbols:\r\n"));*/

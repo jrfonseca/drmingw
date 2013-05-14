@@ -57,8 +57,6 @@ DWORD GetModuleBase(DWORD dwAddress)
 
 #include <bfd.h>
 #include <demangle.h>
-#include "coff/internal.h"
-#include "libcoff.h"
 
 // Read in the symbol table.
 static bfd_boolean
@@ -176,14 +174,13 @@ BOOL BfdGetLineFromAddr(bfd *abfd, asymbol **syms, long symcount, DWORD dwAddres
 	if(!(hModule = (HMODULE) GetModuleBase(dwAddress)))
 		return FALSE;
 	
-	info.pc = dwAddress;
-
 	if(!(bfd_get_file_flags (abfd) & HAS_SYMS) || !symcount)
 		return FALSE;
 
+	info.pc = dwAddress;
 	info.syms = syms;
-
 	info.found = FALSE;
+
 	bfd_map_over_sections (abfd, find_address_in_section, (PTR) &info);
 	if (info.found == FALSE || info.line == 0)
 		return FALSE;
@@ -459,12 +456,46 @@ BOOL ImagehlpGetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileN
 	return TRUE;
 }
 
+static PIMAGE_NT_HEADERS
+PEImageNtHeader(HANDLE hProcess, HMODULE hModule)
+{
+	PIMAGE_DOS_HEADER pDosHeader;
+	PIMAGE_NT_HEADERS pNtHeaders;
+	LONG e_lfanew;
+	
+	// Point to the DOS header in memory
+	pDosHeader = (PIMAGE_DOS_HEADER)hModule;
+	
+	// From the DOS header, find the NT (PE) header
+	if(!ReadProcessMemory(hProcess, &pDosHeader->e_lfanew, &e_lfanew, sizeof(e_lfanew), NULL))
+		return NULL;
+	
+	pNtHeaders = (PIMAGE_NT_HEADERS)((LPBYTE)hModule + e_lfanew);
+
+	return pNtHeaders;
+}
+
+static DWORD 
+PEGetImageBase(HANDLE hProcess, HMODULE hModule)
+{
+	PIMAGE_NT_HEADERS pNtHeaders;
+	IMAGE_NT_HEADERS NtHeaders;
+
+	if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))
+		return FALSE;
+
+	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof(IMAGE_NT_HEADERS), NULL))
+		return FALSE;
+
+	return NtHeaders.OptionalHeader.ImageBase;
+}
+	
 static
 BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
 	HMODULE hModule;
-	PIMAGE_NT_HEADERS pNtHdr;
-	IMAGE_NT_HEADERS NtHdr;
+	PIMAGE_NT_HEADERS pNtHeaders;
+	IMAGE_NT_HEADERS NtHeaders;
 	PIMAGE_SECTION_HEADER pSection;
 	DWORD dwNearestAddress = 0, dwNearestName;
 	int i;
@@ -472,27 +503,16 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	if(!(hModule = (HMODULE) GetModuleBase(dwAddress)))
 		return FALSE;
 	
-	{
-		PIMAGE_DOS_HEADER pDosHdr;
-		LONG e_lfanew;
-		
-		// Point to the DOS header in memory
-		pDosHdr = (PIMAGE_DOS_HEADER)hModule;
-		
-		// From the DOS header, find the NT (PE) header
-		if(!ReadProcessMemory(hProcess, &pDosHdr->e_lfanew, &e_lfanew, sizeof(e_lfanew), NULL))
-			return FALSE;
-		
-		pNtHdr = (PIMAGE_NT_HEADERS)((DWORD)hModule + (DWORD)e_lfanew);
+	if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))
+		return FALSE;
+
+	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof(IMAGE_NT_HEADERS), NULL))
+		return FALSE;
 	
-		if(!ReadProcessMemory(hProcess, pNtHdr, &NtHdr, sizeof(IMAGE_NT_HEADERS), NULL))
-			return FALSE;
-	}
-	
-	pSection = (PIMAGE_SECTION_HEADER) ((DWORD)pNtHdr + sizeof(DWORD) + sizeof(IMAGE_FILE_HEADER) + NtHdr.FileHeader.SizeOfOptionalHeader);
+	pSection = (PIMAGE_SECTION_HEADER) ((DWORD)pNtHeaders + sizeof(DWORD) + sizeof(IMAGE_FILE_HEADER) + NtHeaders.FileHeader.SizeOfOptionalHeader);
 
 	// Look for export section
-	for (i = 0; i < NtHdr.FileHeader.NumberOfSections; i++, pSection++)
+	for (i = 0; i < NtHeaders.FileHeader.NumberOfSections; i++, pSection++)
 	{
 		IMAGE_SECTION_HEADER Section;
 		PIMAGE_EXPORT_DIRECTORY pExportDir = NULL;
@@ -503,8 +523,8 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
     	
 		if(memcmp(Section.Name, ExportSectionName, IMAGE_SIZEOF_SHORT_NAME) == 0)
 			pExportDir = (PIMAGE_EXPORT_DIRECTORY) Section.VirtualAddress;
-		else if ((NtHdr.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress >= Section.VirtualAddress) && (NtHdr.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress < (Section.VirtualAddress + Section.SizeOfRawData)))
-			pExportDir = (PIMAGE_EXPORT_DIRECTORY) NtHdr.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+		else if ((NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress >= Section.VirtualAddress) && (NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress < (Section.VirtualAddress + Section.SizeOfRawData)))
+			pExportDir = (PIMAGE_EXPORT_DIRECTORY) NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
 
 		if(pExportDir)
 		{
@@ -736,12 +756,20 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 					if(bfd_check_format(abfd, bfd_object))
 					{
 						bfd_vma adjust_section_vma = 0;
-			
+						bfd_vma image_base_vma;
+
+#if 0
+						image_base_vma = pe_data (abfd)->pe_opthdr.ImageBase;
+#else
+						image_base_vma = (bfd_vma) PEGetImageBase(hProcess, hModule);
+#endif
+
 						/* If we are adjusting section VMA's, change them all now.  Changing
 						the BFD information is a hack.  However, we must do it, or
 						bfd_find_nearest_line will not do the right thing.  */
-						if ((adjust_section_vma = (bfd_vma) hModule - pe_data(abfd)->pe_opthdr.ImageBase))
+						if ((adjust_section_vma = (bfd_vma) hModule - image_base_vma))
 						{
+			
 							asection *s;
 						
 							for (s = abfd->sections; s != NULL; s = s->next)
