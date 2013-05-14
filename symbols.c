@@ -1,7 +1,7 @@
 /* symbols.c
  *
  *
- * José Fonseca <j_r_fonseca@yahoo.co.uk>
+ * JosÃ© Fonseca <j_r_fonseca@yahoo.co.uk>
  */
 
 #include <assert.h>
@@ -24,9 +24,6 @@
 
 #include <libiberty.h>
 #include <demangle.h>
-#include "budbg.h"
-#include "debug.h"
-#include "debugx.h"
 
 // Read in the symbol table.
 static bfd_boolean
@@ -884,7 +881,6 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			bfd *abfd = NULL;
 			asymbol **syms = NULL;	// The symbol table.
 			long symcount = 0;	// Number of symbols in `syms'.
-			void *dhandle = NULL;
 		
 			lprintf( _T("  %s:%08lX"), GetBaseName(szModule), StackFrame.AddrPC.Offset);
 
@@ -903,18 +899,14 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 				abfd = pModuleListInfo->abfd;
 				syms = pModuleListInfo->syms;
 				symcount = pModuleListInfo->symcount;
-				dhandle = pModuleListInfo->dhandle;
 			}
 			else
 			{
 				if((abfd = BfdOpen (szModule, hProcess, hModule, &syms, &symcount)))
 				{
-					dhandle = read_debugging_info (abfd, syms, symcount);
-
 					pModuleListInfo->abfd = abfd;
 					pModuleListInfo->syms = syms;
 					pModuleListInfo->symcount = symcount;
-					pModuleListInfo->dhandle = dhandle;
 				}
 			}
 			
@@ -930,16 +922,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 					
 					if(BfdGetLineFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
 						lprintf( _T("  %s:%ld"), GetBaseName(szFileName), dwLineNumber);
-					
-					if (dhandle)
-					{
-						lprintf(_T("\r\n"));
-						print_function_info(abfd, syms, symcount, dhandle, hProcess, szSymName, StackFrame.AddrFrame.Offset);
-					}
-				}
-				else if(dhandle && (bSuccess = get_line_from_addr(abfd, syms, symcount, dhandle, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, (unsigned *) &dwLineNumber)))
-					lprintf( _T("  %s:%ld"), GetBaseName(szFileName), dwLineNumber);
-
+                                }
 			}
 			
 			if(!bSuccess && bSymInitialized)

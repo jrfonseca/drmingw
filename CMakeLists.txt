@@ -81,18 +81,12 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable (drmingw WIN32
 	debugger.c
-	debugx.c
 	dialog.c
 	log.c
 	main.c
 	misc.c
 	module.c
 	symbols.c
-	ieee.c
-	rdcoff.c
-	rddbg.c
-	stabs.c
-	debug.c
 	resource.rc
 )
 
