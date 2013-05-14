@@ -518,10 +518,13 @@ BOOL DebugMainLoop(void)
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
+					/* XXX: Must use ReadProcessMemory */
+#if 0
 					lprintf(
 						_T("\tlpDebugStringData = %s\r\n"),
 						DebugEvent.u.DebugString.lpDebugStringData 
 					);
+#endif
 				}
 				break;
 	 		
