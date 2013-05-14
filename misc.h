@@ -7,8 +7,25 @@
 #ifndef CFH_MISC_H
 #define CFH_MISC_H
 
+#include <stdio.h>
+
 /* From `misc.c': */
 extern int verbose_flag;
+
+static inline void
+OutputDebug(const char *format, ...)
+{
+#ifndef NDEBUG
+	char buf[4096];
+	va_list ap;
+	va_start(ap, format);
+	_vsnprintf(buf, sizeof(buf), format, ap);
+	OutputDebugStringA(buf);
+	va_end(ap);
+#else
+	(void)format;
+#endif
+}
 
 #ifdef NDEBUG
 #define ErrorMessageBox(e, args...)	((void) 0)

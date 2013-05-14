@@ -66,6 +66,8 @@ int __cdecl lprintf(const TCHAR * format, ...)
     return retValue;
 }
 
+//#define lprintf OutputDebug
+
 BOOL LogException(DEBUG_EVENT DebugEvent)
 {
 	PPROCESS_LIST_INFO pProcessInfo;
@@ -74,6 +76,8 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 	HMODULE hModule;
 	
 	unsigned i;
+
+	OutputDebug("%s\n", __FUNCTION__);
 
 	assert(DebugEvent.dwDebugEventCode == EXCEPTION_DEBUG_EVENT);
 

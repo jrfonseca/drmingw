@@ -94,8 +94,26 @@ PTHREAD_LIST_INFO ThreadListInfo = NULL;
 unsigned nModules = 0, maxModules = 0;
 PMODULE_LIST_INFO ModuleListInfo = NULL;
 
+BOOL TerminateDebugee()
+{
+    UINT uExitCode = 1;
+    DWORD dwDesiredAccess = PROCESS_TERMINATE;
+    BOOL  bInheritHandle  = FALSE;
+    HANDLE hProcess = OpenProcess(dwDesiredAccess, bInheritHandle, dwProcessId);
+    if (hProcess == NULL)
+        return FALSE;
+
+    BOOL result = TerminateProcess(hProcess, uExitCode);
+
+    CloseHandle(hProcess);
+
+    return result;
+}
+
 void DebugProcess(void * dummy)
 {
+
+	OutputDebug("dwProcessId = %lu, hEvent=%p\n", dwProcessId, hEvent);
 	// attach debuggee
 	if(!DebugActiveProcess(dwProcessId))
 		ErrorMessageBox(_T("DebugActiveProcess: %s"), LastErrorMessage());
@@ -190,6 +208,7 @@ BOOL DebugMainLoop(void)
 						// Signal the aedebug event
 						if(hEvent)
 						{
+							OutputDebug("SetEvent(%p)\n", hEvent);
 							SetEvent(hEvent);
 							CloseHandle(hEvent);
 							hEvent = NULL;
