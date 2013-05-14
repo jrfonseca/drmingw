@@ -1,7 +1,7 @@
 /* misc.c
  *
  *
- * José Fonseca <j_r_fonseca@yahoo.co.uk>
+ * Jose Fonseca <j_r_fonseca@yahoo.co.uk>
  */
 
 #include <windows.h>
