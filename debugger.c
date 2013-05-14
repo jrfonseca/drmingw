@@ -94,7 +94,7 @@ PTHREAD_LIST_INFO ThreadListInfo = NULL;
 unsigned nModules = 0, maxModules = 0;
 PMODULE_LIST_INFO ModuleListInfo = NULL;
 
-BOOL TerminateDebugee()
+BOOL TerminateDebugee(void)
 {
     UINT uExitCode = 1;
     DWORD dwDesiredAccess = PROCESS_TERMINATE;

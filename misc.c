@@ -14,6 +14,23 @@ int verbose_flag = 0;	/* Verbose output (default=no).  */
 
 #ifdef HEADER
 
+#include <stdio.h>
+
+static inline void
+OutputDebug(const char *format, ...)
+{
+#ifndef NDEBUG
+       char buf[4096];
+       va_list ap;
+       va_start(ap, format);
+       _vsnprintf(buf, sizeof(buf), format, ap);
+       OutputDebugStringA(buf);
+       va_end(ap);
+#else
+       (void)format;
+#endif
+}
+
 #ifdef NDEBUG
 #define ErrorMessageBox(e, args...)	((void) 0)
 #else

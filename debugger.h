@@ -1,13 +1,13 @@
-/* This is a Cfunctions (version 0.24) generated header file.
+/* This is a Cfunctions (version 0.28) generated header file.
    Cfunctions is a free program for extracting headers from C files.
-   Get Cfunctions from `http://www.hayamasa.demon.co.uk/cfunctions'. */
+   Get Cfunctions from 'http://www.lemoda.net/cfunctions/'. */
 
 /* This file was generated with:
-`cfunctions -i debugger.c' */
+'cfunctions -i debugger.c' */
 #ifndef CFH_DEBUGGER_H
 #define CFH_DEBUGGER_H
 
-/* From `debugger.c': */
+/* From 'debugger.c': */
 #define DBG_EXCEPTION_HANDLED	((DWORD)0x00010001L)
 typedef struct {
 	DWORD dwProcessId;
@@ -67,6 +67,7 @@ extern unsigned nThreads, maxThreads;
 extern PTHREAD_LIST_INFO ThreadListInfo;
 extern unsigned nModules, maxModules;
 extern PMODULE_LIST_INFO ModuleListInfo;
+BOOL TerminateDebugee (void);
 void DebugProcess (void * dummy );
 BOOL DebugMainLoop (void);
 
