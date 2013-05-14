@@ -30,10 +30,16 @@ if (MSVC)
 			string (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
 		endif ()
 	endforeach (flag_var)
+
+	add_definitions (
+		# http://msdn2.microsoft.com/en-us/library/6dwk3a1z.aspx,
+		-DVC_EXTRALEAN
+		-D_CRT_SECURE_NO_DEPRECATE
+	)
 else ()
 	# Adjust warnings
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS_DEBUG} -Wall")
-	set (CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS_DEBUG} -Wall")
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+	set (CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
 	# Use GDB extensions if available
 	if (CMAKE_COMPILER_IS_GNUC)
