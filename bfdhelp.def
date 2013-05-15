@@ -3,7 +3,7 @@ EXPORTS
 	SymCleanup = BfdSymCleanup
 	SymSetOptions = BfdSymSetOptions
 	SymGetModuleBase64
-	SymGetSymFromAddr64 = BfdSymGetSymFromAddr64
+	SymFromAddr = BfdSymFromAddr
 	SymGetLineFromAddr64 = BfdSymGetLineFromAddr64
 	StackWalk64
 	SymFunctionTableAccess64

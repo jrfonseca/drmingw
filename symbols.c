@@ -38,24 +38,17 @@ BOOL bSymInitialized = FALSE;
 
 BOOL ImagehlpGetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
-	// IMAGEHLP is wacky, and requires you to pass in a pointer to a
-	// IMAGEHLP_SYMBOL64 structure.  The problem is that this structure is
-	// variable length.  That is, you determine how big the structure is
-	// at runtime.  This means that you can't use sizeof(struct).
-	// So...make a buffer that's big enough, and make a pointer
-	// to the buffer.  We also need to initialize not one, but TWO
-	// members of the structure before it can be used.
-	
-	BYTE symbolBuffer[sizeof(IMAGEHLP_SYMBOL64) + 512];
-	PIMAGEHLP_SYMBOL64 pSymbol = (PIMAGEHLP_SYMBOL64) symbolBuffer;
+	BYTE symbolBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+	PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)symbolBuffer;
+
 	DWORD64 dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
 
-	pSymbol->SizeOfStruct = sizeof(symbolBuffer);
-	pSymbol->MaxNameLength = 512;
+	pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+	pSymbol->MaxNameLen = MAX_SYM_NAME;
 
 	assert(bSymInitialized);
 	
-	if(!BfdSymGetSymFromAddr64(hProcess, dwAddress, &dwDisplacement, pSymbol))
+	if(!BfdSymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol))
 		return FALSE;
 
 	lstrcpyn(lpSymName, pSymbol->Name, nSize);

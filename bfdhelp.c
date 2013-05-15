@@ -387,7 +387,7 @@ DWORD WINAPI BfdSymSetOptions(DWORD SymOptions)
 }
 
 
-BOOL WINAPI BfdSymGetSymFromAddr64(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PIMAGEHLP_SYMBOL64 Symbol)
+BOOL WINAPI BfdSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
 {
 #ifdef HAVE_BFD
 	struct find_handle info;
@@ -405,7 +405,7 @@ BOOL WINAPI BfdSymGetSymFromAddr64(HANDLE hProcess, DWORD64 Address, PDWORD64 Di
 	}
 #endif /* HAVE_BFD */
 
-	return SymGetSymFromAddr64(hProcess, Address, Displacement, Symbol);
+	return SymFromAddr(hProcess, Address, Displacement, Symbol);
 }
 
 

@@ -31,7 +31,7 @@ BOOL WINAPI BfdSymCleanup(HANDLE hProcess);
 
 DWORD WINAPI BfdSymSetOptions(DWORD SymOptions);
 
-BOOL WINAPI BfdSymGetSymFromAddr64(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PIMAGEHLP_SYMBOL64 Symbol);
+BOOL WINAPI BfdSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol);
 
 BOOL WINAPI BfdSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line);
 
