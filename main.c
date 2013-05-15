@@ -49,12 +49,24 @@ int main (int argc, char **argv)
 			{ NULL, 0, NULL, 0}
 		};
 
-		c = getopt_long (argc, argv, "hViaup:e:v", long_options, &option_index);
+		c = getopt_long (argc, argv, "?hViaup:e:v", long_options, &option_index);
 
 		if (c == -1)
 			break;	/* Exit from `while (1)' loop.  */
 
 		switch (c) {
+			case '?':
+				if (optopt != '?') {
+					/* Invalid option.  */
+					MessageBox(
+						NULL,
+						_T("Invalid option"),
+						_T(PACKAGE),
+						MB_OK | MB_ICONSTOP
+					);
+					return 0;
+				}
+				/* fall-through */
 			case 'h':	/* Print help and exit.  */
 				MessageBox(
 					NULL, 
@@ -200,15 +212,6 @@ int main (int argc, char **argv)
 			case 'v':	/* Verbose output.  */
 				verbose_flag = 1;
 				break;
-
-			case '?':	/* Invalid option.  */
-				MessageBox(
-					NULL,
-					_T("Invalid option"),
-					_T(PACKAGE),
-					MB_OK | MB_ICONSTOP
-				);
-				return 0;
 
 			default:	/* bug: option not considered.  */
 			{
