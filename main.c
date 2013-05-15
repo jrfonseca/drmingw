@@ -35,7 +35,7 @@ int main (int argc, char **argv)
 	while (1)
 	{
 		int option_index = 0;
-		static struct option long_options[] =
+		static const struct option long_options[] =
 		{
 			{ "help", 0, NULL, 'h'},
 			{ "version", 0, NULL, 'V'},
@@ -45,6 +45,7 @@ int main (int argc, char **argv)
 			{ "uninstall", 0, NULL, 'u'},
 			{ "process-id", 1, NULL, 'p'},
 			{ "event", 1, NULL, 'e'},
+			{ "breakpoint", 0, NULL, 'b'},
 			{ "verbose", 0, NULL, 'v'},
 			{ NULL, 0, NULL, 0}
 		};
@@ -72,7 +73,7 @@ int main (int argc, char **argv)
 					NULL, 
 					_T(
 						"Usage: drmingw [-h|--help] [-V|--version] [-i|--install] [-a|--auto] [-u|--uninstall]\r\n"
-						"[-pLONG|--process-id=LONG] [-eLONG|--event=LONG]\r\n"
+						"[-pLONG|--process-id=LONG] [-eLONG|--event=LONG] [-b|--breakpoint]\r\n"
 						"[-v|--verbose]\r\n"
 						"\r\n"
 						"\t-h\t--help\t\tPrint help and exit\r\n"
@@ -82,6 +83,7 @@ int main (int argc, char **argv)
 						"\t-u\t--uninstall\t\tUninstall\r\n"
 						"\t-pLONG\t--process-id=LONG\tAttach to the process with the given identifier\r\n"
 						"\t-eLONG\t--event=LONG\tSignal an event after process is attached\r\n"
+						"\t-b\t--breakpoint\t\tTreat debug breakpoints as exceptions\r\n"
 						"\t-v\t--verbose\t\tVerbose output\r\n"
 					),
 					_T(PACKAGE),
@@ -207,6 +209,10 @@ int main (int argc, char **argv)
 					return 0;
 				}
 				hEvent = (HANDLE) atol (optarg);
+				break;
+
+			case 'b':	/* Treat debug breakpoints as exceptions */
+				breakpoint_flag = 1;
 				break;
 
 			case 'v':	/* Verbose output.  */

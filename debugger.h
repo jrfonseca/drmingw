@@ -53,6 +53,7 @@ MODULE_LIST_INFO, * PMODULE_LIST_INFO;
 #error "Unknown target CPU"
 
 #endif
+extern int breakpoint_flag;
 extern DWORD dwProcessId;
 extern HANDLE hEvent;
 extern unsigned nProcesses, maxProcesses;

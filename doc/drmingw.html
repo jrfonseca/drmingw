@@ -72,7 +72,7 @@
 <pre>
 <b>drmingw </b>[<b>-h | --help</b>] [<b>-V | --version</b>] [<b>-i | --install</b>] [<b>-a | --auto</b>] [<b>-u | --uninstall</b>]
 [<b>-p</b> <i>pid</i> | <b>--process-id=</b><i>pid</i>]  [<b>-e</b> <i>event</i> | <b>--event=</b><i>event</i>]
-[<b>-v | --verbose</b>]
+[<b>-b | --breakpoint</b>] [<b>-v | --verbose</b>]
 </pre>
 
 	<p>The following table describes the Dr. Mingw command-line options. All
@@ -144,6 +144,15 @@
 			</td>
 			<td width=25%><pre><b>--event=</b><i>event</i></pre></td>
 			<td width=65%>Signal an event after process is attached</td>
+		</tr>
+		<tr> 
+			<td width=10%> 
+				<pre><b>-b</b></pre>
+			</td>
+			<td width=25%> 
+				<pre><b>--breakpoint</b></pre>
+			</td>
+			<td width=65%>Treat breakpoints as exceptions</td>
 		</tr>
 		<tr> 
 			<td width=10%> 

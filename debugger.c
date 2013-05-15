@@ -74,6 +74,8 @@ typedef struct
 #endif	/* HEADER */
 
 
+int breakpoint_flag = 0;	/* Treat breakpoints as exceptions (default=no).  */
+
 DWORD dwProcessId;	/* Attach to the process with the given identifier.  */
 HANDLE hEvent = NULL;	/* Signal an event after process is attached.  */
 
@@ -162,8 +164,7 @@ BOOL DebugMainLoop(void)
 				}
 
 				dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
-				if (DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT ||
-				    DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_BREAKPOINT) {
+				if (DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT) {
 					if (DebugEvent.u.Exception.dwFirstChance)
 					{
 						/*
@@ -207,6 +208,17 @@ BOOL DebugMainLoop(void)
 						}
 
 						dwContinueStatus = DBG_CONTINUE;
+
+						/*
+						 * We ignore first-chance breakpoints by default.
+						 *
+						 * We get one of these whenever we attach to a process.
+						 * But in some cases, we never get a second-chance, e.g.,
+						 * when we're attached through MSVCRT's abort().
+						 */
+						if (!breakpoint_flag) {
+							break;
+						}
 					}
 				}
 
