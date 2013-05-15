@@ -428,38 +428,19 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 		TCHAR szFileName[MAX_PATH] = _T("");
 		DWORD dwLineNumber = 0;
 
-		if(bSymInitialized)
-		{
-                        if(!j_StackWalk64(
-					IMAGE_FILE_MACHINE_I386,
-					hProcess,
-					hThread,
-					&StackFrame,
-					pContext,
-					NULL,
-                                        j_SymFunctionTableAccess64,
-                                        j_SymGetModuleBase64,
-					NULL
-				)
+		if(!StackWalk64(
+				IMAGE_FILE_MACHINE_I386,
+				hProcess,
+				hThread,
+				&StackFrame,
+				pContext,
+				NULL,
+				SymFunctionTableAccess64,
+				SymGetModuleBase64,
+				NULL
 			)
-				break;
-		}
-		else
-		{
-			if(!IntelStackWalk(
-					IMAGE_FILE_MACHINE_I386,
-					hProcess,
-					hThread,
-					&StackFrame,
-					pContext,
-					NULL,
-					NULL,
-					NULL,
-					NULL
-				)
-			)
-				break;
-		}			
+		)
+			break;
 		
 		// Basic sanity check to make sure  the frame is OK.  Bail if not.
 		if ( 0 == StackFrame.AddrFrame.Offset ) 

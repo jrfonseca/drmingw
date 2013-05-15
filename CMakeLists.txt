@@ -104,6 +104,7 @@ add_library (common STATIC
 	symbols.c
 )
 target_link_libraries (common
+	dbghelp
 	psapi
 	${BINUTILS_BFD_LIBRARY}
 	${BINUTILS_LIBERTY_LIBRARY}

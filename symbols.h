@@ -19,9 +19,6 @@ extern BOOL bSymInitialized;
 BOOL WINAPI j_SymInitialize (HANDLE hProcess , PSTR UserSearchPath , BOOL fInvadeProcess );
 BOOL WINAPI j_SymCleanup (HANDLE hProcess );
 DWORD WINAPI j_SymSetOptions (DWORD SymOptions );
-PVOID WINAPI j_SymFunctionTableAccess64 (HANDLE hProcess , DWORD64 AddrBase );
-DWORD64 WINAPI j_SymGetModuleBase64 (HANDLE hProcess , DWORD64 dwAddr );
-BOOL WINAPI j_StackWalk64 (DWORD MachineType , HANDLE hProcess , HANDLE hThread , LPSTACKFRAME64 StackFrame , PVOID ContextRecord , PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine , PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine , PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine , PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress );
 BOOL WINAPI j_SymGetSymFromAddr64 (HANDLE hProcess , DWORD64 Address , PDWORD64 Displacement , PIMAGEHLP_SYMBOL64 Symbol );
 BOOL WINAPI j_SymGetLineFromAddr64 (HANDLE hProcess , DWORD64 dwAddr , PDWORD pdwDisplacement , PIMAGEHLP_LINE64 Line );
 BOOL ImagehlpUnDecorateSymbolName (PCTSTR DecoratedName , PTSTR UnDecoratedName , DWORD UndecoratedLength , DWORD Flags );
@@ -32,6 +29,5 @@ BOOL PEGetSymFromAddr (HANDLE hProcess , DWORD dwAddress , LPTSTR lpSymName , DW
 bfd * BfdOpen (LPCSTR szModule , HANDLE hProcess , HMODULE hModule , asymbol ***syms , long *symcount );
 BOOL GetSymFromAddr (HANDLE hProcess , DWORD dwAddress , LPTSTR lpSymName , DWORD nSize );
 BOOL GetLineFromAddr (HANDLE hProcess , DWORD dwAddress , LPTSTR lpFileName , DWORD nSize , LPDWORD lpLineNumber );
-BOOL WINAPI IntelStackWalk (DWORD MachineType , HANDLE hProcess , HANDLE hThread , LPSTACKFRAME64 StackFrame , CONTEXT *ContextRecord , PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine , PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine , PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine , PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress );
 
 #endif /* CFH_SYMBOLS_H */
