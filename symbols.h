@@ -11,7 +11,7 @@
 #define MAX_SYM_NAME_SIZE	4096
 #include <bfd.h>
 DWORD GetModuleBase (HANDLE hProcess , DWORD dwAddress );
-BOOL BfdDemangleSymName (LPCTSTR lpName , LPTSTR lpDemangledName , DWORD nSize );
+BOOL BfdUnDecorateSymbolName (PCTSTR DecoratedName , PTSTR UnDecoratedName , DWORD UndecoratedLength , DWORD Flags );
 BOOL BfdGetSymFromAddr (bfd *abfd , asymbol **syms , long symcount , HANDLE hProcess , DWORD dwAddress , LPTSTR lpSymName , DWORD nSize );
 BOOL BfdGetLineFromAddr (bfd *abfd , asymbol **syms , long symcount , HANDLE hProcess , DWORD dwAddress , LPTSTR lpFileName , DWORD nSize , LPDWORD lpLineNumber );
 #include <dbghelp.h>
@@ -24,7 +24,7 @@ DWORD64 WINAPI j_SymGetModuleBase64 (HANDLE hProcess , DWORD64 dwAddr );
 BOOL WINAPI j_StackWalk64 (DWORD MachineType , HANDLE hProcess , HANDLE hThread , LPSTACKFRAME64 StackFrame , PVOID ContextRecord , PREAD_PROCESS_MEMORY_ROUTINE64 ReadMemoryRoutine , PFUNCTION_TABLE_ACCESS_ROUTINE64 FunctionTableAccessRoutine , PGET_MODULE_BASE_ROUTINE64 GetModuleBaseRoutine , PTRANSLATE_ADDRESS_ROUTINE64 TranslateAddress );
 BOOL WINAPI j_SymGetSymFromAddr64 (HANDLE hProcess , DWORD64 Address , PDWORD64 Displacement , PIMAGEHLP_SYMBOL64 Symbol );
 BOOL WINAPI j_SymGetLineFromAddr64 (HANDLE hProcess , DWORD64 dwAddr , PDWORD pdwDisplacement , PIMAGEHLP_LINE64 Line );
-BOOL ImagehlpDemangleSymName (LPCTSTR lpName , LPTSTR lpDemangledName , DWORD nSize );
+BOOL ImagehlpUnDecorateSymbolName (PCTSTR DecoratedName , PTSTR UnDecoratedName , DWORD UndecoratedLength , DWORD Flags );
 BOOL ImagehlpGetSymFromAddr (HANDLE hProcess , DWORD64 dwAddress , LPTSTR lpSymName , DWORD nSize );
 BOOL ImagehlpGetLineFromAddr (HANDLE hProcess , DWORD64 dwAddress , LPTSTR lpFileName , DWORD nSize , LPDWORD lpLineNumber );
 DWORD PEGetImageBase (HANDLE hProcess , HMODULE hModule );

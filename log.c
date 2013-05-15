@@ -522,7 +522,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 				{
 					TCHAR szDemSymName[512];
 
-					BfdDemangleSymName(szSymName, szDemSymName, 512);
+					BfdUnDecorateSymbolName(szSymName, szDemSymName, 512, UNDNAME_COMPLETE);
 					
 					lprintf( _T("  %s"), szDemSymName);
 					
@@ -534,7 +534,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			if(!bSuccess && bSymInitialized)
 				if((bSuccess = ImagehlpGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
 				{
-					ImagehlpDemangleSymName(szSymName, szSymName, MAX_SYM_NAME_SIZE);
+					ImagehlpUnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 				
 					lprintf( _T("  %s"), szSymName);
 					

@@ -87,20 +87,20 @@ static void find_address_in_section (bfd *abfd, asection *section, void *data)
                                              &info->filename, &info->functionname, &info->line);
 }
 
-BOOL BfdDemangleSymName(LPCTSTR lpName, LPTSTR lpDemangledName, DWORD nSize)
+BOOL BfdUnDecorateSymbolName(PCTSTR DecoratedName, PTSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
 {
 	char *res;
 	
-	assert(lpName != NULL);
+	assert(DecoratedName != NULL);
 	
-	if((res = cplus_demangle(lpName, DMGL_ANSI /*| DMGL_PARAMS*/)) == NULL)
+	if((res = cplus_demangle(DecoratedName, DMGL_ANSI /*| DMGL_PARAMS*/)) == NULL)
 	{
-		lstrcpyn(lpDemangledName, lpName, nSize);
+		lstrcpyn(UnDecoratedName, DecoratedName, UndecoratedLength);
 		return FALSE;
 	}
 	else
 	{
-		lstrcpyn(lpDemangledName, res, nSize);
+		lstrcpyn(UnDecoratedName, res, UndecoratedLength);
 		free (res);
 		return TRUE;
 	}
@@ -337,7 +337,7 @@ BOOL WINAPI j_SymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDi
 		return FALSE;
 }
 
-BOOL ImagehlpDemangleSymName(LPCTSTR lpName, LPTSTR lpDemangledName, DWORD nSize)
+BOOL ImagehlpUnDecorateSymbolName(PCTSTR DecoratedName, PTSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
 {
 	BYTE symbolBuffer[sizeof(IMAGEHLP_SYMBOL64) + 512];
 	PIMAGEHLP_SYMBOL64 pSymbol = (PIMAGEHLP_SYMBOL64) symbolBuffer;
@@ -347,9 +347,9 @@ BOOL ImagehlpDemangleSymName(LPCTSTR lpName, LPTSTR lpDemangledName, DWORD nSize
 	pSymbol->SizeOfStruct = sizeof(symbolBuffer);
 	pSymbol->MaxNameLength = 512;
 
-	lstrcpyn(pSymbol->Name, lpName, pSymbol->MaxNameLength);
+	lstrcpyn(pSymbol->Name, DecoratedName, pSymbol->MaxNameLength);
 
-	if(!j_SymUnDName64(pSymbol, lpDemangledName, nSize))
+	if(!j_SymUnDName64(pSymbol, UnDecoratedName, UndecoratedLength))
 		return FALSE;
 	
 	return TRUE;
@@ -649,7 +649,7 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nS
 		if((abfd = BfdOpen(szModule, hProcess, hModule, &syms, &symcount)))
 		{
 			if((bReturn = BfdGetSymFromAddr(abfd, syms, symcount, hProcess, dwAddress, lpSymName, nSize)))
-				BfdDemangleSymName(lpSymName, lpSymName, nSize);
+				BfdUnDecorateSymbolName(lpSymName, lpSymName, nSize, UNDNAME_COMPLETE);
 
 			free(syms);
 			bfd_close(abfd);

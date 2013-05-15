@@ -175,7 +175,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 					hprocess = hProcess;
 					*/
 	
-					BfdDemangleSymName(szSymName, szSymName, 512);
+					BfdUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 					
 					rprintf( _T("  %s"), szSymName);
 					
@@ -189,7 +189,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 				{
 					rprintf( _T("  %s"), szSymName);
 					
-					ImagehlpDemangleSymName(szSymName, szSymName, 512);
+					ImagehlpUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 				
 					if(ImagehlpGetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
 						rprintf( _T("  %s:%ld"), szFileName, LineNumber);
