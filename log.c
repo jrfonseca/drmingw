@@ -19,6 +19,7 @@
 #include "log.h"
 #include "misc.h"
 #include "symbols.h"
+#include "bfdhelp.h"
 
 static TCHAR *lpszLog = NULL;
 
@@ -90,7 +91,7 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 	pProcessInfo = &ProcessListInfo[i];
 	
 	/*assert(!bSymInitialize);
-	SymSetOptions(SYMOPT_LOAD_LINES);
+	BfdSymSetOptions(SYMOPT_LOAD_LINES);
 	if(!pfnSymInitialize(hProcess, NULL, TRUE))
 	{
 		if(verbose_flag)
@@ -398,8 +399,8 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	
 	assert(!bSymInitialized);
 
-	j_SymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
-	if(j_SymInitialize(hProcess, NULL, TRUE))
+	BfdSymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
+	if(BfdSymInitialize(hProcess, NULL, TRUE))
 		bSymInitialized = TRUE;
 	else
 		if(verbose_flag)
@@ -463,12 +464,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 		
 		if((hModule = (HMODULE) GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) && GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
 		{
-			PMODULE_LIST_INFO pModuleListInfo;
 			
-			bfd *abfd = NULL;
-			asymbol **syms = NULL;	// The symbol table.
-			long symcount = 0;	// Number of symbols in `syms'.
-		
 			lprintf( _T("  %s:%08lX"), GetBaseName(szModule), StackFrame.AddrPC.Offset);
 
 			// Find the module from the module list
@@ -479,43 +475,11 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			assert(ModuleListInfo[i].dwProcessId == pProcessListInfo->dwProcessId);
 			assert(ModuleListInfo[i].lpBaseAddress == (LPVOID)hModule);
 			assert(ModuleListInfo[i].dwProcessId == pProcessListInfo->dwProcessId && ModuleListInfo[i].lpBaseAddress == (LPVOID)hModule);
-			pModuleListInfo = &ModuleListInfo[i];
 			
-			if(pModuleListInfo->abfd)
-			{
-				abfd = pModuleListInfo->abfd;
-				syms = pModuleListInfo->syms;
-				symcount = pModuleListInfo->symcount;
-			}
-			else
-			{
-				if((abfd = BfdOpen (szModule, hProcess, hModule, &syms, &symcount)))
-				{
-					pModuleListInfo->abfd = abfd;
-					pModuleListInfo->syms = syms;
-					pModuleListInfo->symcount = symcount;
-				}
-			}
-			
-			if(!bSuccess && abfd && syms && symcount)
-			{
-				if((bSuccess = BfdGetSymFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
-				{
-					TCHAR szDemSymName[512];
-
-					BfdUnDecorateSymbolName(szSymName, szDemSymName, 512, UNDNAME_COMPLETE);
-					
-					lprintf( _T("  %s"), szDemSymName);
-					
-					if(BfdGetLineFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
-						lprintf( _T("  %s:%ld"), GetBaseName(szFileName), dwLineNumber);
-                                }
-			}
-			
-			if(!bSuccess && bSymInitialized)
+			if(bSymInitialized)
 				if((bSuccess = ImagehlpGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
 				{
-					ImagehlpUnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
+					BfdUnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 				
 					lprintf( _T("  %s"), szSymName);
 					
@@ -535,7 +499,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	
 	if(bSymInitialized)
 	{
-		if(!j_SymCleanup(hProcess))
+		if(!BfdSymCleanup(hProcess))
 			assert(0);
 		
 		bSymInitialized = FALSE;

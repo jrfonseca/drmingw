@@ -11,8 +11,6 @@
 
 #include <stdlib.h>
 
-#include <bfd.h>
-
 #include "debugger.h"
 #include "log.h"
 #include "misc.h"
@@ -45,12 +43,6 @@ typedef struct
 	DWORD nDebugInfoSize; 
 	LPVOID lpImageName; 
 	WORD fUnicode;
-
-	void *abfd;
-	void *syms;	// The symbol table.
-	long symcount;	// Number of symbols in `syms'.
-
-	void *dhandle;
 } MODULE_LIST_INFO, *PMODULE_LIST_INFO;
 
 #if defined(i386)
@@ -342,11 +334,6 @@ BOOL DebugMainLoop(void)
 				ModuleListInfo[i].lpImageName = DebugEvent.u.CreateProcessInfo.lpImageName; 
 				ModuleListInfo[i].fUnicode = DebugEvent.u.CreateProcessInfo.fUnicode; 
 				
-				ModuleListInfo[i].abfd = NULL;
-				ModuleListInfo[i].syms = NULL;
-				ModuleListInfo[i].symcount = 0;
-			
-				ModuleListInfo[i].dhandle = NULL;
 				break;
 
 			case EXIT_THREAD_DEBUG_EVENT: 
@@ -397,12 +384,6 @@ BOOL DebugMainLoop(void)
 				{
 					if(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId)
 					{
-						if(ModuleListInfo[i].syms)
-							free(ModuleListInfo[i].syms);
-						if(ModuleListInfo[i].abfd)
-							bfd_close(ModuleListInfo[i].abfd);
-						if(ModuleListInfo[i].dhandle)
-							;
 					}
 					else
 						++j;
@@ -485,11 +466,6 @@ BOOL DebugMainLoop(void)
 				ModuleListInfo[i].lpImageName = DebugEvent.u.LoadDll.lpImageName; 
 				ModuleListInfo[i].fUnicode = DebugEvent.u.LoadDll.fUnicode; 
 
-				ModuleListInfo[i].abfd = NULL;
-				ModuleListInfo[i].syms = NULL;
-				ModuleListInfo[i].symcount = 0;
-			
-				ModuleListInfo[i].dhandle = NULL;
 				break;
 	 
 			case UNLOAD_DLL_DEBUG_EVENT: 
@@ -514,13 +490,6 @@ BOOL DebugMainLoop(void)
 				while(i < nModules && (DebugEvent.dwProcessId > ModuleListInfo[i].dwProcessId || (DebugEvent.dwProcessId == ModuleListInfo[i].dwProcessId && DebugEvent.u.UnloadDll.lpBaseOfDll > ModuleListInfo[i].lpBaseAddress)))
 					++i;
 				assert(ModuleListInfo[i].dwProcessId == DebugEvent.dwProcessId && ModuleListInfo[i].lpBaseAddress == DebugEvent.u.UnloadDll.lpBaseOfDll);
-
-				if(ModuleListInfo[i].syms)
-					free(ModuleListInfo[i].syms);
-				if(ModuleListInfo[i].abfd)
-					bfd_close(ModuleListInfo[i].abfd);
-				if(ModuleListInfo[i].dhandle)
-					;
 
 				while(++i < nModules)
 					ModuleListInfo[i - 1] = ModuleListInfo[i];

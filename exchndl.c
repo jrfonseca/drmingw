@@ -18,9 +18,8 @@
 #include <dbghelp.h>
 
 #include "symbols.h"
+#include "bfdhelp.h"
 
-
-#define HAVE_BFD
 
 // Declare the static variables
 static TCHAR szLogFileName[MAX_PATH] = _T("");
@@ -52,16 +51,10 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	HMODULE hModule = NULL;
 	TCHAR szModule[MAX_PATH]; 
 
-#ifdef HAVE_BFD
-	bfd *abfd = NULL;
-	asymbol **syms = NULL;	// The symbol table.
-	long symcount = 0;	// Number of symbols in `syms'.
-#endif /* HAVE_BFD */
-
 	assert(!bSymInitialized);
 
-	j_SymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
-	if(j_SymInitialize(hProcess, NULL, TRUE))
+	BfdSymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
+	if(BfdSymInitialize(hProcess, NULL, TRUE))
 		bSymInitialized = TRUE;
 	
 	memset( &StackFrame, 0, sizeof(StackFrame) );
@@ -83,7 +76,6 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	while ( 1 )
 	{
 		BOOL bSuccess = FALSE;
-		HMODULE hPrevModule = hModule;
 		TCHAR szSymName[512] = _T("");
 		TCHAR szFileName[MAX_PATH] = _T("");
 		DWORD LineNumber = 0;
@@ -128,49 +120,14 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 		
 		if((hModule = (HMODULE) GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
 		{
-#ifndef HAVE_BFD
-			rprintf( _T("  %s:ModulBase %08lX"), szModule, hModule);
-#else /* HAVE_BFD */
-			rprintf( _T("  %s:%08lX"), szModule, StackFrame.AddrPC.Offset);
-		
-			if(hModule != hPrevModule)
-			{
-				if(syms)
-				{
-					free(syms);
-					syms = NULL;
-					symcount = 0;
-				}
-				
-				if(abfd)
-					bfd_close(abfd);
-				
-				abfd = BfdOpen (szModule, hProcess, hModule, &syms, &symcount);
-			}
-			
-			if(!bSuccess && abfd && syms && symcount)
-				if((bSuccess = BfdGetSymFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
-				{
-					/*
-					framepointer = StackFrame.AddrFrame.Offset;
-					hprocess = hProcess;
-					*/
-	
-					BfdUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
-					
-					rprintf( _T("  %s"), szSymName);
-					
-					if(BfdGetLineFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
-						rprintf( _T("  %s:%ld"), szFileName, LineNumber);
-				}
-#endif /* HAVE_BFD */
+			//rprintf( _T("  %s:ModulBase %08lX"), szModule, hModule);
 			
 			if(!bSuccess && bSymInitialized)
 				if((bSuccess = ImagehlpGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
 				{
 					rprintf( _T("  %s"), szSymName);
 					
-					ImagehlpUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
+					BfdUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 				
 					if(ImagehlpGetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
 						rprintf( _T("  %s:%ld"), szFileName, LineNumber);
@@ -184,21 +141,9 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 		rprintf(_T("\r\n"));
 	}
 
-#ifdef HAVE_BFD
-	if(syms)
-	{
-		free(syms);
-		syms = NULL;
-		symcount = 0;
-	}
-	
-	if(abfd)
-		bfd_close(abfd);
-#endif /* HAVE_BFD */
-	
 	if(bSymInitialized)
 	{
-		if(!j_SymCleanup(hProcess))
+		if(!BfdSymCleanup(hProcess))
 			assert(0);
 		
 		bSymInitialized = FALSE;

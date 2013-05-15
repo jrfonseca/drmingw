@@ -99,9 +99,12 @@ endif ()
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+add_definitions (-DHAVE_BFD)
+
 add_library (common STATIC
 	misc.c
 	symbols.c
+	bfdhelp.c
 )
 target_link_libraries (common
 	dbghelp

@@ -1,0 +1,10 @@
+EXPORTS
+	SymInitialize = BfdSymInitialize
+	SymCleanup = BfdSymCleanup
+	SymSetOptions = BfdSymSetOptions
+	SymGetModuleBase64
+	SymGetSymFromAddr64 = BfdSymGetSymFromAddr64
+	SymGetLineFromAddr64 = BfdSymGetLineFromAddr64
+	StackWalk64
+	SymFunctionTableAccess64
+	SymUnDName64

@@ -30,12 +30,6 @@ typedef struct {
 	DWORD nDebugInfoSize; 
 	LPVOID lpImageName; 
 	WORD fUnicode;
-
-	void *abfd;
-	void *syms;	
-	long symcount;	
-
-	void *dhandle;
 } 
 MODULE_LIST_INFO, * PMODULE_LIST_INFO;
 
