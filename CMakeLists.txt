@@ -99,20 +99,26 @@ endif ()
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+add_library (common STATIC
+	misc.c
+	symbols.c
+)
+target_link_libraries (common
+	psapi
+	${BINUTILS_BFD_LIBRARY}
+	${BINUTILS_LIBERTY_LIBRARY}
+)
+
 add_executable (drmingw WIN32
 	debugger.c
 	dialog.c
 	log.c
 	main.c
-	misc.c
-	symbols.c
 	resource.rc
 )
 
 target_link_libraries (drmingw
-	psapi
-	${BINUTILS_BFD_LIBRARY}
-	${BINUTILS_LIBERTY_LIBRARY}
+	common
 )
 
 install (TARGETS drmingw RUNTIME DESTINATION bin)
@@ -123,9 +129,7 @@ add_library (exchndl MODULE
 )
 
 target_link_libraries (exchndl
-	psapi
-	${BINUTILS_BFD_LIBRARY}
-	${BINUTILS_LIBERTY_LIBRARY}
+	common
 )
 
 set_target_properties (exchndl PROPERTIES

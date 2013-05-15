@@ -12,5 +12,6 @@ void lflush (void);
 int __cdecl lprintf (const TCHAR * format , ... );
 BOOL LogException (DEBUG_EVENT DebugEvent );
 BOOL DumpSource (LPCTSTR lpFileName , DWORD dwLineNumber );
+BOOL StackBackTrace (HANDLE hProcess , HANDLE hThread , PCONTEXT pContext );
 
 #endif /* CFH_LOG_H */

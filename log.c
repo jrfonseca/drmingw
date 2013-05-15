@@ -375,3 +375,190 @@ BOOL DumpSource(LPCTSTR lpFileName, DWORD dwLineNumber)
 	fclose(fp);
 	return TRUE;
 }
+
+BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
+{
+	int i;
+	PPROCESS_LIST_INFO pProcessListInfo;
+
+        STACKFRAME64 StackFrame;
+
+	HMODULE hModule = NULL;
+	TCHAR szModule[MAX_PATH]; 
+
+	// Remove the process from the process list
+	assert(nProcesses);
+	i = 0;
+	while(hProcess != ProcessListInfo[i].hProcess)
+	{
+		++i;
+		assert(i < nProcesses);
+	}
+	pProcessListInfo = &ProcessListInfo[i];
+	
+	assert(!bSymInitialized);
+
+	j_SymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
+	if(j_SymInitialize(hProcess, NULL, TRUE))
+		bSymInitialized = TRUE;
+	else
+		if(verbose_flag)
+			lprintf(_T("SymInitialize: %s\r\n"), LastErrorMessage());
+	
+	memset( &StackFrame, 0, sizeof(StackFrame) );
+
+	// Initialize the STACKFRAME structure for the first call.  This is only
+	// necessary for Intel CPUs, and isn't mentioned in the documentation.
+	StackFrame.AddrPC.Offset = pContext->Eip;
+	StackFrame.AddrPC.Mode = AddrModeFlat;
+	StackFrame.AddrStack.Offset = pContext->Esp;
+	StackFrame.AddrStack.Mode = AddrModeFlat;
+	StackFrame.AddrFrame.Offset = pContext->Ebp;
+	StackFrame.AddrFrame.Mode = AddrModeFlat;
+
+	lprintf( _T("Call stack:\r\n") );
+
+	if(verbose_flag)
+		lprintf( _T("AddrPC     AddrReturn AddrFrame  AddrStack  Params\r\n") );
+
+	while ( 1 )
+        {
+		BOOL bSuccess = FALSE;
+		TCHAR szSymName[MAX_SYM_NAME_SIZE] = _T("");
+		TCHAR szFileName[MAX_PATH] = _T("");
+		DWORD dwLineNumber = 0;
+
+		if(bSymInitialized)
+		{
+                        if(!j_StackWalk64(
+					IMAGE_FILE_MACHINE_I386,
+					hProcess,
+					hThread,
+					&StackFrame,
+					pContext,
+					NULL,
+                                        j_SymFunctionTableAccess64,
+                                        j_SymGetModuleBase64,
+					NULL
+				)
+			)
+				break;
+		}
+		else
+		{
+			if(!IntelStackWalk(
+					IMAGE_FILE_MACHINE_I386,
+					hProcess,
+					hThread,
+					&StackFrame,
+					pContext,
+					NULL,
+					NULL,
+					NULL,
+					NULL
+				)
+			)
+				break;
+		}			
+		
+		// Basic sanity check to make sure  the frame is OK.  Bail if not.
+		if ( 0 == StackFrame.AddrFrame.Offset ) 
+			break;
+		
+		if(verbose_flag)
+			lprintf(
+				_T("%08lX   %08lX   %08lX   %08lX   %08lX   %08lX   %08lX   %08lX\r\n"),
+				StackFrame.AddrPC.Offset,
+				StackFrame.AddrReturn.Offset,
+				StackFrame.AddrFrame.Offset, 
+				StackFrame.AddrStack.Offset,
+				StackFrame.Params[0],
+				StackFrame.Params[1],
+				StackFrame.Params[2],
+				StackFrame.Params[3]
+			);
+
+		lprintf( _T("%08lX"), StackFrame.AddrPC.Offset);
+		
+		if((hModule = (HMODULE) GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) && GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
+		{
+			PMODULE_LIST_INFO pModuleListInfo;
+			
+			bfd *abfd = NULL;
+			asymbol **syms = NULL;	// The symbol table.
+			long symcount = 0;	// Number of symbols in `syms'.
+		
+			lprintf( _T("  %s:%08lX"), GetBaseName(szModule), StackFrame.AddrPC.Offset);
+
+			// Find the module from the module list
+			assert(nModules);
+			i = 0;
+			while(i < nModules && (pProcessListInfo->dwProcessId > ModuleListInfo[i].dwProcessId || (pProcessListInfo->dwProcessId == ModuleListInfo[i].dwProcessId && (LPVOID)hModule > ModuleListInfo[i].lpBaseAddress)))
+				++i;
+			assert(ModuleListInfo[i].dwProcessId == pProcessListInfo->dwProcessId);
+			assert(ModuleListInfo[i].lpBaseAddress == (LPVOID)hModule);
+			assert(ModuleListInfo[i].dwProcessId == pProcessListInfo->dwProcessId && ModuleListInfo[i].lpBaseAddress == (LPVOID)hModule);
+			pModuleListInfo = &ModuleListInfo[i];
+			
+			if(pModuleListInfo->abfd)
+			{
+				abfd = pModuleListInfo->abfd;
+				syms = pModuleListInfo->syms;
+				symcount = pModuleListInfo->symcount;
+			}
+			else
+			{
+				if((abfd = BfdOpen (szModule, hProcess, hModule, &syms, &symcount)))
+				{
+					pModuleListInfo->abfd = abfd;
+					pModuleListInfo->syms = syms;
+					pModuleListInfo->symcount = symcount;
+				}
+			}
+			
+			if(!bSuccess && abfd && syms && symcount)
+			{
+				if((bSuccess = BfdGetSymFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
+				{
+					TCHAR szDemSymName[512];
+
+					BfdDemangleSymName(szSymName, szDemSymName, 512);
+					
+					lprintf( _T("  %s"), szDemSymName);
+					
+					if(BfdGetLineFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
+						lprintf( _T("  %s:%ld"), GetBaseName(szFileName), dwLineNumber);
+                                }
+			}
+			
+			if(!bSuccess && bSymInitialized)
+				if((bSuccess = ImagehlpGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
+				{
+					ImagehlpDemangleSymName(szSymName, szSymName, MAX_SYM_NAME_SIZE);
+				
+					lprintf( _T("  %s"), szSymName);
+					
+					if(ImagehlpGetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
+						lprintf( _T("  %s:%ld"), GetBaseName(szFileName), dwLineNumber);
+				}
+
+			if(!bSuccess && (bSuccess = PEGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
+				lprintf( _T("  %s"), szSymName);
+		}
+
+		lprintf(_T("\r\n"));
+		
+		if(bSuccess && DumpSource(szFileName, dwLineNumber))
+			lprintf(_T("\r\n"));
+	}
+	
+	if(bSymInitialized)
+	{
+		if(!j_SymCleanup(hProcess))
+			assert(0);
+		
+		bSymInitialized = FALSE;
+	}
+	
+	return TRUE;
+}
