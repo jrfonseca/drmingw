@@ -9,11 +9,11 @@
 #include <windows.h>
 #include <tchar.h>
 #include <stdlib.h>
+#include <psapi.h>
 
 #include "debugger.h"
 #include "log.h"
 #include "misc.h"
-#include "module.h"
 #include "symbols.h"
 
 #ifdef HEADER
@@ -24,6 +24,15 @@
 
 #include <libiberty.h>
 #include <demangle.h>
+
+// The GetModuleBase function retrieves the base address of the module that contains the specified address. 
+DWORD GetModuleBase(HANDLE hProcess, DWORD dwAddress)
+{
+	MEMORY_BASIC_INFORMATION Buffer;
+	
+	return VirtualQueryEx(hProcess, (LPCVOID) dwAddress, &Buffer, sizeof(Buffer)) ? (DWORD) Buffer.AllocationBase : 0;
+}
+
 
 // Read in the symbol table.
 static bfd_boolean
@@ -635,7 +644,7 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nS
 		asymbol **syms;
 		long symcount;
 	
-		if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)) || !j_GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
+		if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)) || !GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
 			return FALSE;
 
 		old_bfd_error_handler = bfd_set_error_handler((bfd_error_handler_type) lprintf);
@@ -691,7 +700,7 @@ BOOL GetLineFromAddr(HANDLE hProcess, DWORD dwAddress,  LPTSTR lpFileName, DWORD
 		asymbol **syms;
 		long symcount;
 	
-		if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)) || !j_GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
+		if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)) || !GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
 			return FALSE;
 
 		old_bfd_error_handler = bfd_set_error_handler((bfd_error_handler_type) lprintf);
@@ -885,7 +894,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 		lprintf( _T("%08lX"), StackFrame.AddrPC.Offset);
 		
-		if((hModule = (HMODULE) GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) && j_GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
+		if((hModule = (HMODULE) GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) && GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
 		{
 			PMODULE_LIST_INFO pModuleListInfo;
 			

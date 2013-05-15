@@ -8,6 +8,7 @@
 
 #include <windows.h>
 #include <tchar.h>
+#include <psapi.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -17,7 +18,6 @@
 #include "dialog.h"
 #include "log.h"
 #include "misc.h"
-#include "module.h"
 #include "symbols.h"
 
 static TCHAR *lpszLog = NULL;
@@ -101,7 +101,7 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 	bSymInitialized = TRUE;*/
 
 	// First print information about the type of fault
-	lprintf(_T("%s caused "),  j_GetModuleFileNameEx(pProcessInfo->hProcess, NULL, szModule, MAX_PATH) ? GetBaseName(szModule) : "Application");
+	lprintf(_T("%s caused "),  GetModuleFileNameEx(pProcessInfo->hProcess, NULL, szModule, MAX_PATH) ? GetBaseName(szModule) : "Application");
 	switch(DebugEvent.u.Exception.ExceptionRecord.ExceptionCode)
 	{
 		case EXCEPTION_ACCESS_VIOLATION:
@@ -234,7 +234,7 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 
 	// Now print information about where the fault occured
 	lprintf(_T(" at location %08lx"), (DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
-	if((hModule = (HMODULE) GetModuleBase(pProcessInfo->hProcess, (DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) && j_GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof(szModule)))
+	if((hModule = (HMODULE) GetModuleBase(pProcessInfo->hProcess, (DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) && GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof(szModule)))
 		lprintf(_T(" in module %s"), GetBaseName(szModule));
 	
 	// If the exception was an access violation, print out some additional information, to the error log and the debugger.

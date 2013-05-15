@@ -69,8 +69,8 @@ if (MINGW)
 endif ()
 
 add_definitions (
-	-D_WIN32_WINNT=0x0501 # minimum required OS version
-	-DWINVER=0x0501
+	-D_WIN32_WINNT=0x0601 # minimum required OS version
+	-DWINVER=0x0601
 )
 
 
@@ -81,7 +81,7 @@ find_program (CFUNCTIONS_EXECUTABLE cfunctions)
 if (CFUNCTIONS_EXECUTABLE)
 	set (HEADERS)
 
-	foreach (MODULE debugger dialog log misc module symbols)
+	foreach (MODULE debugger dialog log misc symbols)
 		add_custom_command (
 			OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}.h
 			COMMAND ${CFUNCTIONS_EXECUTABLE} -i ${MODULE}.c
@@ -105,12 +105,12 @@ add_executable (drmingw WIN32
 	log.c
 	main.c
 	misc.c
-	module.c
 	symbols.c
 	resource.rc
 )
 
 target_link_libraries (drmingw
+	psapi
 	${BINUTILS_BFD_LIBRARY}
 	${BINUTILS_LIBERTY_LIBRARY}
 )
@@ -123,6 +123,7 @@ add_library (exchndl MODULE
 )
 
 target_link_libraries (exchndl
+	psapi
 	${BINUTILS_BFD_LIBRARY}
 	${BINUTILS_LIBERTY_LIBRARY}
 )

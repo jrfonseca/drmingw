@@ -10,6 +10,7 @@
 /* From 'symbols.c': */
 #define MAX_SYM_NAME_SIZE	4096
 #include <bfd.h>
+DWORD GetModuleBase (HANDLE hProcess , DWORD dwAddress );
 BOOL BfdDemangleSymName (LPCTSTR lpName , LPTSTR lpDemangledName , DWORD nSize );
 BOOL BfdGetSymFromAddr (bfd *abfd , asymbol **syms , long symcount , HANDLE hProcess , DWORD dwAddress , LPTSTR lpSymName , DWORD nSize );
 BOOL BfdGetLineFromAddr (bfd *abfd , asymbol **syms , long symcount , HANDLE hProcess , DWORD dwAddress , LPTSTR lpFileName , DWORD nSize , LPDWORD lpLineNumber );
