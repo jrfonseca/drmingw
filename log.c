@@ -98,7 +98,6 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 			ErrorMessageBox(_T("SymInitialize: %s"), LastErrorMessage());
 		return FALSE;
 	}
-	hProcess_Imagehlp = hProcess;
 	bSymInitialized = TRUE;*/
 
 	// First print information about the type of fault
@@ -324,7 +323,6 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 		{
 			if(!pfnSymCleanup(hProcess))
 				assert(0);
-			hProcess_Imagehlp = NULL;
 		}*/
 	}
 	
@@ -477,13 +475,13 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			assert(ModuleListInfo[i].dwProcessId == pProcessListInfo->dwProcessId && ModuleListInfo[i].lpBaseAddress == (LPVOID)hModule);
 			
 			if(bSymInitialized)
-				if((bSuccess = ImagehlpGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
+				if((bSuccess = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
 				{
 					BfdUnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 				
 					lprintf( _T("  %s"), szSymName);
 					
-					if(ImagehlpGetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
+					if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
 						lprintf( _T("  %s:%ld"), GetBaseName(szFileName), dwLineNumber);
 				}
 

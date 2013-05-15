@@ -15,11 +15,6 @@
 #include "symbols.h"
 #include "bfdhelp.h"
 
-#ifdef HEADER
-#define MAX_SYM_NAME_SIZE	4096
-
-#endif /* HEADER */
-
 
 // The GetModuleBase function retrieves the base address of the module that contains the specified address. 
 DWORD GetModuleBase(HANDLE hProcess, DWORD dwAddress)
@@ -36,27 +31,30 @@ DWORD GetModuleBase(HANDLE hProcess, DWORD dwAddress)
 
 BOOL bSymInitialized = FALSE;
 
-BOOL ImagehlpGetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
+BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
-	BYTE symbolBuffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
-	PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)symbolBuffer;
+	PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + nSize * sizeof(TCHAR));
 
 	DWORD64 dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
+	BOOL bRet;
 
 	pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-	pSymbol->MaxNameLen = MAX_SYM_NAME;
+	pSymbol->MaxNameLen = nSize;
 
 	assert(bSymInitialized);
 	
-	if(!BfdSymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol))
-		return FALSE;
+	bRet = BfdSymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol);
 
-	lstrcpyn(lpSymName, pSymbol->Name, nSize);
+	if (bRet) {
+		lstrcpyn(lpSymName, pSymbol->Name, nSize);
+	}
 
-	return TRUE;
+	free(pSymbol);
+
+	return bRet;
 }
 
-BOOL ImagehlpGetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
+BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
 {
 	IMAGEHLP_LINE64 Line;
 	DWORD dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol

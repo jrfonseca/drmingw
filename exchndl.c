@@ -123,13 +123,13 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			//rprintf( _T("  %s:ModulBase %08lX"), szModule, hModule);
 			
 			if(!bSuccess && bSymInitialized)
-				if((bSuccess = ImagehlpGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
+				if((bSuccess = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
 				{
 					rprintf( _T("  %s"), szSymName);
 					
 					BfdUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 				
-					if(ImagehlpGetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
+					if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
 						rprintf( _T("  %s:%ld"), szFileName, LineNumber);
 				}
 
