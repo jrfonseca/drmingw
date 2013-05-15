@@ -45,11 +45,11 @@ int __cdecl rprintf(const TCHAR * format, ...)
 
 // The GetModuleBase function retrieves the base address of the module that contains the specified address. 
 static 
-DWORD GetModuleBase(DWORD dwAddress)
+DWORD GetModuleBase(HANDLE hProcess, DWORD dwAddress)
 {
 	MEMORY_BASIC_INFORMATION Buffer;
 	
-	return VirtualQuery((LPCVOID) dwAddress, &Buffer, sizeof(Buffer)) ? (DWORD) Buffer.AllocationBase : 0;
+	return VirtualQueryEx(hProcess, (LPCVOID) dwAddress, &Buffer, sizeof(Buffer)) ? (DWORD) Buffer.AllocationBase : 0;
 }
 
 
@@ -136,12 +136,12 @@ BOOL BfdDemangleSymName(LPCTSTR lpName, LPTSTR lpDemangledName, DWORD nSize)
 }
 
 static
-BOOL BfdGetSymFromAddr(bfd *abfd, asymbol **syms, long symcount, DWORD dwAddress, LPTSTR lpSymName, DWORD nSize)
+BOOL BfdGetSymFromAddr(bfd *abfd, asymbol **syms, long symcount, HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
 	HMODULE hModule;
 	struct find_handle info;
 	
-	if(!(hModule = (HMODULE) GetModuleBase(dwAddress)))
+	if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)))
 		return FALSE;
 	
 	info.pc = dwAddress;
@@ -166,12 +166,12 @@ BOOL BfdGetSymFromAddr(bfd *abfd, asymbol **syms, long symcount, DWORD dwAddress
 }
 
 static
-BOOL BfdGetLineFromAddr(bfd *abfd, asymbol **syms, long symcount, DWORD dwAddress,  LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
+BOOL BfdGetLineFromAddr(bfd *abfd, asymbol **syms, long symcount, HANDLE hProcess, DWORD dwAddress,  LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
 {
 	HMODULE hModule;
 	struct find_handle info;
 	
-	if(!(hModule = (HMODULE) GetModuleBase(dwAddress)))
+	if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)))
 		return FALSE;
 	
 	if(!(bfd_get_file_flags (abfd) & HAS_SYMS) || !symcount)
@@ -500,7 +500,7 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	DWORD dwNearestAddress = 0, dwNearestName;
 	int i;
 
-	if(!(hModule = (HMODULE) GetModuleBase(dwAddress)))
+	if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)))
 		return FALSE;
 	
 	if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))
@@ -733,7 +733,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 		rprintf( _T("%08lX"), StackFrame.AddrPC.Offset);
 		
-		if((hModule = (HMODULE) GetModuleBase(StackFrame.AddrPC.Offset)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
+		if((hModule = (HMODULE) GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
 		{
 #ifndef HAVE_BFD
 			rprintf( _T("  %s:ModulBase %08lX"), szModule, hModule);
@@ -786,7 +786,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			}
 			
 			if(!bSuccess && abfd && syms && symcount)
-				if((bSuccess = BfdGetSymFromAddr(abfd, syms, symcount, StackFrame.AddrPC.Offset, szSymName, 512)))
+				if((bSuccess = BfdGetSymFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
 				{
 					/*
 					framepointer = StackFrame.AddrFrame.Offset;
@@ -797,7 +797,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 					
 					rprintf( _T("  %s"), szSymName);
 					
-					if(BfdGetLineFromAddr(abfd, syms, symcount, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
+					if(BfdGetLineFromAddr(abfd, syms, symcount, hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
 						rprintf( _T("  %s:%ld"), szFileName, LineNumber);
 				}
 #endif /* HAVE_BFD */
@@ -851,6 +851,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 	TCHAR szModule[MAX_PATH];
 	HMODULE hModule;
 	PCONTEXT pContext;
+	HANDLE hProcess = GetCurrentProcess();
 	
 	// Start out with a banner
 	rprintf(_T("-------------------\r\n\r\n"));
@@ -1028,7 +1029,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
 	// Now print information about where the fault occured
 	rprintf(_T(" at location %08x"), (DWORD) pExceptionRecord->ExceptionAddress);
-	if((hModule = (HMODULE) GetModuleBase((DWORD) pExceptionRecord->ExceptionAddress)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
+	if((hModule = (HMODULE) GetModuleBase(hProcess, (DWORD) pExceptionRecord->ExceptionAddress)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
 		rprintf(_T(" in module %s"), szModule);
 	
 	// If the exception was an access violation, print out some additional information, to the error log and the debugger.
@@ -1099,7 +1100,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
 	#endif
 
-	StackBackTrace(GetCurrentProcess(), GetCurrentThread(), pContext);
+	StackBackTrace(hProcess, GetCurrentThread(), pContext);
 
 	rprintf(_T("\r\n\r\n"));
 }
