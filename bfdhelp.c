@@ -372,6 +372,7 @@ BOOL WINAPI BfdSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displaceme
 	OutputDebug("%s, 0x%08x\r\n", __FUNCTION__, Address);
 
 	if(bfdhelp_find_symbol(hProcess, Address, &info)) {
+		strncpy(Symbol->Name, info.functionname, Symbol->MaxNameLen);
 
 		if(Displacement) {
 			/* TODO */
