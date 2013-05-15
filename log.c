@@ -69,6 +69,18 @@ int __cdecl lprintf(const TCHAR * format, ...)
 
 //#define lprintf OutputDebug
 
+
+LPTSTR GetBaseName(LPTSTR lpFileName)
+{
+	LPTSTR lpChar = lpFileName + lstrlen(lpFileName);
+
+	while(lpChar > lpFileName && *(lpChar - 1) != '\\' && *(lpChar - 1) != '/' && *(lpChar - 1) != ':')
+		--lpChar;
+
+	return lpChar;
+}
+
+
 BOOL LogException(DEBUG_EVENT DebugEvent)
 {
 	PPROCESS_LIST_INFO pProcessInfo;

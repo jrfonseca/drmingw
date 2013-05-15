@@ -45,32 +45,6 @@ typedef struct
 	WORD fUnicode;
 } MODULE_LIST_INFO, *PMODULE_LIST_INFO;
 
-#if defined(i386)
-
-#define BP_SIZE 1
-#define PC(C) ((C)->Eip)
-
-#elif defined(PPC)
-
-#define BP_SIZE 4
-#define PC(C) ((C)->Iar)
-
-#elif defined(MIPS)
-
-#define BP_SIZE 4
-#define PC(C) ((C)->Fir)
-
-#elif defined(ALPHA)
-
-#define BP_SIZE 4
-#define PC(C) ((C)->Fir)
-
-#else
-
-#error "Unknown target CPU"
-
-#endif
-
 #endif	/* HEADER */
 
 
@@ -88,6 +62,103 @@ PTHREAD_LIST_INFO ThreadListInfo = NULL;
 
 unsigned nModules = 0, maxModules = 0;
 PMODULE_LIST_INFO ModuleListInfo = NULL;
+
+BOOL GetPlatformId(LPDWORD lpdwPlatformId )
+{
+	OSVERSIONINFO VersionInfo;
+	BOOL bResult;
+
+	VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+
+	if((bResult = GetVersionEx(&VersionInfo)))
+		*lpdwPlatformId = VersionInfo.dwPlatformId;
+
+	return bResult;
+}
+
+
+BOOL ObtainSeDebugPrivilege(void)
+{
+	DWORD dwProcessId;
+
+	GetPlatformId(&dwProcessId);
+	if(dwProcessId == VER_PLATFORM_WIN32_NT)
+	{
+		HANDLE hToken;
+		PTOKEN_PRIVILEGES NewPrivileges;
+		BYTE OldPriv[1024];
+		PBYTE pbOldPriv;
+		ULONG cbNeeded;
+		BOOLEAN fRc;
+		LUID LuidPrivilege;
+
+		// Make sure we have access to adjust and to get the old token privileges
+		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+		{
+			OutputDebug("OpenProcessToken failed with %s\n", LastErrorMessage());
+
+			return FALSE;
+		}
+
+		cbNeeded = 0;
+
+		// Initialize the privilege adjustment structure
+		LookupPrivilegeValue( NULL, SE_DEBUG_NAME, &LuidPrivilege );
+
+		NewPrivileges = (PTOKEN_PRIVILEGES) LocalAlloc(
+			LMEM_ZEROINIT,
+			sizeof(TOKEN_PRIVILEGES) + (1 - ANYSIZE_ARRAY)*sizeof(LUID_AND_ATTRIBUTES)
+		);
+		if(NewPrivileges == NULL)
+		{
+			OutputDebug("LocalAlloc failed with %s", LastErrorMessage());
+
+			return FALSE;
+		}
+
+		NewPrivileges->PrivilegeCount = 1;
+		NewPrivileges->Privileges[0].Luid = LuidPrivilege;
+		NewPrivileges->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+		// Enable the privilege
+		pbOldPriv = OldPriv;
+		fRc = AdjustTokenPrivileges(
+			hToken,
+			FALSE,
+			NewPrivileges,
+			1024,
+			(PTOKEN_PRIVILEGES)pbOldPriv,
+			&cbNeeded
+		);
+
+		if (!fRc) {
+
+			// If the stack was too small to hold the privileges
+			// then allocate off the heap
+			if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+
+				pbOldPriv = LocalAlloc(LMEM_FIXED, cbNeeded);
+				if (pbOldPriv == NULL)
+				{
+					OutputDebug("LocalAlloc: %s", LastErrorMessage());
+					return FALSE;
+				}
+
+				fRc = AdjustTokenPrivileges(
+					hToken,
+					FALSE,
+					NewPrivileges,
+					cbNeeded,
+					(PTOKEN_PRIVILEGES)pbOldPriv,
+					&cbNeeded
+				);
+			}
+		}
+		return fRc;
+	}
+	else
+		return TRUE;
+}
 
 BOOL TerminateDebugee(void)
 {
@@ -168,37 +239,6 @@ BOOL DebugMainLoop(void)
 				if (DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT) {
 					if (DebugEvent.u.Exception.dwFirstChance)
 					{
-						/*
-						PPROCESS_LIST_INFO pProcessInfo;
-						PTHREAD_LIST_INFO pThreadInfo;
-						CONTEXT Context;
-						
-						// Find the process in the process list
-						assert(nProcesses);
-						i = 0;
-						while(i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId)
-							++i;
-						assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
-						pProcessInfo = &ProcessListInfo[i];
-						
-						// Find the thread in the thread list
-						assert(nThreads);
-						i = 0;
-						while(i < nThreads && (DebugEvent.dwProcessId > ThreadListInfo[i].dwProcessId || (DebugEvent.dwProcessId == ThreadListInfo[i].dwProcessId && DebugEvent.dwThreadId > ThreadListInfo[i].dwThreadId)))
-							++i;
-						assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId && ThreadListInfo[i].dwThreadId == DebugEvent.dwThreadId);
-						pThreadInfo = &ThreadListInfo[i];
-						
-						// Get the thread context
-						Context.ContextFlags = CONTEXT_DEBUG_REGISTERS | CONTEXT_FLOATING_POINT | CONTEXT_SEGMENTS | CONTEXT_INTEGER | CONTEXT_CONTROL;
-						if(!GetThreadContext(pThreadInfo->hThread, &Context))
-							assert(0);
-
-						// Skip over breakpoint
-						PC(&Context) = (DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress + BP_SIZE;
-						SetThreadContext(pThreadInfo->hThread, &Context);
-						*/
-						
 						// Signal the aedebug event
 						if(hEvent)
 						{

@@ -33,26 +33,6 @@ typedef struct {
 } 
 MODULE_LIST_INFO, * PMODULE_LIST_INFO;
 
-#if defined(i386)
-#define BP_SIZE 1
-#define PC(C) ((C)->Eip)
-
-#elif defined(PPC)
-#define BP_SIZE 4
-#define PC(C) ((C)->Iar)
-
-#elif defined(MIPS)
-#define BP_SIZE 4
-#define PC(C) ((C)->Fir)
-
-#elif defined(ALPHA)
-#define BP_SIZE 4
-#define PC(C) ((C)->Fir)
-
-#else
-#error "Unknown target CPU"
-
-#endif
 extern int breakpoint_flag;
 extern int verbose_flag;
 extern DWORD dwProcessId;
@@ -63,6 +43,8 @@ extern unsigned nThreads, maxThreads;
 extern PTHREAD_LIST_INFO ThreadListInfo;
 extern unsigned nModules, maxModules;
 extern PMODULE_LIST_INFO ModuleListInfo;
+BOOL GetPlatformId (LPDWORD lpdwPlatformId );
+BOOL ObtainSeDebugPrivilege (void);
 BOOL TerminateDebugee (void);
 void DebugProcess (void * dummy );
 BOOL DebugMainLoop (void);

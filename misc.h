@@ -56,8 +56,5 @@ static inline void OutputDebug (const char *format , ... )
 })
 #define LastErrorMessage() FormatErrorMessage(GetLastError())
 void _ErrorMessageBox (LPCTSTR lpszFile , DWORD dwLine , LPCTSTR lpszFormat , ... );
-LPTSTR GetBaseName (LPTSTR lpFileName );
-BOOL GetPlatformId (LPDWORD lpdwPlatformId );
-BOOL ObtainSeDebugPrivilege (void);
 
 #endif /* CFH_MISC_H */
