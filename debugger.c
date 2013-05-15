@@ -75,6 +75,7 @@ typedef struct
 
 
 int breakpoint_flag = 0;	/* Treat breakpoints as exceptions (default=no).  */
+int verbose_flag = 0;	/* Verbose output (default=no).  */
 
 DWORD dwProcessId;	/* Attach to the process with the given identifier.  */
 HANDLE hEvent = NULL;	/* Signal an event after process is attached.  */

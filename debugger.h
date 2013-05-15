@@ -54,6 +54,7 @@ MODULE_LIST_INFO, * PMODULE_LIST_INFO;
 
 #endif
 extern int breakpoint_flag;
+extern int verbose_flag;
 extern DWORD dwProcessId;
 extern HANDLE hEvent;
 extern unsigned nProcesses, maxProcesses;

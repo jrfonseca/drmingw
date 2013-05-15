@@ -10,8 +10,6 @@
 #include "log.h"
 #include "misc.h"
 
-int verbose_flag = 0;	/* Verbose output (default=no).  */
-
 #ifdef HEADER
 
 #include <stdio.h>
@@ -237,8 +235,7 @@ BOOL ObtainSeDebugPrivilege(void)
 		// Make sure we have access to adjust and to get the old token privileges
 		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
 		{
-			if(verbose_flag)
-				ErrorMessageBox(_T("OpenProcessToken: %s"), LastErrorMessage());
+			OutputDebug("OpenProcessToken failed with %s\n", LastErrorMessage());
 				
 			return FALSE;
 		}
@@ -254,8 +251,7 @@ BOOL ObtainSeDebugPrivilege(void)
 		);
 		if(NewPrivileges == NULL)
 		{
-			if(verbose_flag)
-				ErrorMessageBox(_T("LocalAlloc: %s"), LastErrorMessage());
+			OutputDebug("LocalAlloc failed with %s", LastErrorMessage());
 
 			return FALSE;
 		}
@@ -284,8 +280,7 @@ BOOL ObtainSeDebugPrivilege(void)
 				pbOldPriv = LocalAlloc(LMEM_FIXED, cbNeeded);
 				if (pbOldPriv == NULL)
 				{
-					if(verbose_flag)
-						ErrorMessageBox(_T("LocalAlloc: %s"), LastErrorMessage());
+					OutputDebug("LocalAlloc: %s", LastErrorMessage());
 					return FALSE;
 				}
 	

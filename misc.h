@@ -8,7 +8,6 @@
 #define CFH_MISC_H
 
 /* From 'misc.c': */
-extern int verbose_flag;
 #include <stdio.h>
 static inline void OutputDebug (const char *format , ... )
 {
