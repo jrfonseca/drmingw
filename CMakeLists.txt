@@ -38,8 +38,8 @@ if (MSVC)
 	)
 else ()
 	# Adjust warnings
-	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
-	set (CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Wall")
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wmissing-prototypes")
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 	# Use GDB extensions if available
 	if (CMAKE_COMPILER_IS_GNUC)
