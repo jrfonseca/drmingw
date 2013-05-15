@@ -119,6 +119,7 @@ install (TARGETS drmingw RUNTIME DESTINATION bin)
 
 add_library (exchndl MODULE
 	exchndl.c
+	exchndl.def
 )
 
 target_link_libraries (exchndl
