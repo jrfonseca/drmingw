@@ -18,7 +18,7 @@ static void YetAnotherFunction(int i)
 	__asm ("int $3");
 	(*((void (*)(void)) 0x12345678))();
 #endif
-	sscanf("12345", "%i", (int *) (k=i));
+	sscanf("12345", "%i", (int *) (size_t) (k=i));
 }
 
 struct AStructType

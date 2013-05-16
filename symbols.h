@@ -8,7 +8,6 @@
 #define CFH_SYMBOLS_H
 
 /* From 'symbols.c': */
-DWORD64 GetModuleBase (HANDLE hProcess , DWORD64 dwAddress );
 #include <dbghelp.h>
 extern BOOL bSymInitialized;
 BOOL GetSymFromAddr (HANDLE hProcess , DWORD64 dwAddress , LPTSTR lpSymName , DWORD nSize );

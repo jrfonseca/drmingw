@@ -16,10 +16,11 @@
 
 #include "debugger.h"
 #include "dialog.h"
-#include "log.h"
 #include "misc.h"
-#include "symbols.h"
+#include "pehelp.h"
 #include "bfdhelp.h"
+#include "symbols.h"
+#include "log.h"
 
 static TCHAR *lpszLog = NULL;
 
@@ -245,13 +246,17 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 	}
 
 	// Now print information about where the fault occured
-	lprintf(_T(" at location %08lx"), (DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
-	if((hModule = (HMODULE) GetModuleBase(pProcessInfo->hProcess, (DWORD64) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) && GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof(szModule)))
+	lprintf(_T(" at location %p"), DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
+	if((hModule = (HMODULE)(INT_PTR)GetModuleBase(pProcessInfo->hProcess, (DWORD64)(INT_PTR)DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) &&
+	   GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof szModule))
 		lprintf(_T(" in module %s"), GetBaseName(szModule));
 	
 	// If the exception was an access violation, print out some additional information, to the error log and the debugger.
-	if(DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_ACCESS_VIOLATION && DebugEvent.u.Exception.ExceptionRecord.NumberParameters >= 2)
-		lprintf(" %s location %08lx", DebugEvent.u.Exception.ExceptionRecord.ExceptionInformation[0] ? "Writing to" : "Reading from", DebugEvent.u.Exception.ExceptionRecord.ExceptionInformation[1]);
+	if(DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
+	   DebugEvent.u.Exception.ExceptionRecord.NumberParameters >= 2)
+		lprintf(" %s location %08lx",
+			DebugEvent.u.Exception.ExceptionRecord.ExceptionInformation[0] ? "Writing to" : "Reading from",
+			DebugEvent.u.Exception.ExceptionRecord.ExceptionInformation[1]);
 
 	lprintf(".\r\n\r\n");		
 	
@@ -429,6 +434,13 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	StackFrame.AddrStack.Mode = AddrModeFlat;
 	StackFrame.AddrFrame.Offset = pContext->Ebp;
 	StackFrame.AddrFrame.Mode = AddrModeFlat;
+#else
+	StackFrame.AddrPC.Offset = pContext->Rip;
+	StackFrame.AddrPC.Mode = AddrModeFlat;
+	StackFrame.AddrStack.Offset = pContext->Rsp;
+	StackFrame.AddrStack.Mode = AddrModeFlat;
+	StackFrame.AddrFrame.Offset = pContext->Rbp;
+	StackFrame.AddrFrame.Mode = AddrModeFlat;
 #endif
 
 	lprintf( _T("Call stack:\r\n") );
@@ -476,7 +488,8 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 		lprintf( _T("%08lX"), StackFrame.AddrPC.Offset);
 		
-		if((hModule = (HMODULE) GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) && GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
+		if((hModule = (HMODULE)(INT_PTR)GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) &&
+		   GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
 		{
 			
 			lprintf( _T("  %s:%08lX"), GetBaseName(szModule), StackFrame.AddrPC.Offset);

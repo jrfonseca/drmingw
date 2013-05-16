@@ -17,8 +17,9 @@
 
 #include <dbghelp.h>
 
-#include "symbols.h"
+#include "pehelp.h"
 #include "bfdhelp.h"
+#include "symbols.h"
 
 
 // Declare the static variables
@@ -27,6 +28,9 @@ static LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter = NULL;
 static HANDLE hReportFile;
 
 static 
+#ifdef __GNUC__
+	__attribute__ ((format (printf, 1, 2)))
+#endif
 int __cdecl rprintf(const TCHAR * format, ...)
 {
 	TCHAR szBuff[4096];
@@ -61,12 +65,19 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 	// Initialize the STACKFRAME structure for the first call.  This is only
 	// necessary for Intel CPUs, and isn't mentioned in the documentation.
-#ifdef i386
+#if defined(_M_IX86)
 	StackFrame.AddrPC.Offset = pContext->Eip;
 	StackFrame.AddrPC.Mode = AddrModeFlat;
 	StackFrame.AddrStack.Offset = pContext->Esp;
 	StackFrame.AddrStack.Mode = AddrModeFlat;
 	StackFrame.AddrFrame.Offset = pContext->Ebp;
+	StackFrame.AddrFrame.Mode = AddrModeFlat;
+#else
+	StackFrame.AddrPC.Offset = pContext->Rip;
+	StackFrame.AddrPC.Mode = AddrModeFlat;
+	StackFrame.AddrStack.Offset = pContext->Rsp;
+	StackFrame.AddrStack.Mode = AddrModeFlat;
+	StackFrame.AddrFrame.Offset = pContext->Rbp;
 	StackFrame.AddrFrame.Mode = AddrModeFlat;
 #endif
 
@@ -103,14 +114,14 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 		if(0)
 		{
 			rprintf(
-				_T("%08lX   %08lX   %08lX   %08lX\r\n"),
+				_T("%08I64X   %08I64X   %08I64X   %08I64X\r\n"),
 				StackFrame.AddrPC.Offset,
 				StackFrame.AddrReturn.Offset,
 				StackFrame.AddrFrame.Offset, 
 				StackFrame.AddrStack.Offset
 			);
 			rprintf(
-				_T("%08lX   %08lX   %08lX   %08lX\r\n"),
+				_T("%08I64X   %08I64X   %08I64X   %08I64X\r\n"),
 				StackFrame.Params[0],
 				StackFrame.Params[1],
 				StackFrame.Params[2],
@@ -118,9 +129,10 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			);
 		}			
 
-		rprintf( _T("%08lX"), StackFrame.AddrPC.Offset);
+		rprintf( _T("%08I64X"), StackFrame.AddrPC.Offset);
 		
-		if((hModule = (HMODULE) GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
+		if((hModule = (HMODULE)(INT_PTR)GetModuleBase(hProcess, (DWORD64)(INT_PTR)StackFrame.AddrPC.Offset)) &&
+		   GetModuleFileName(hModule, szModule, sizeof(szModule)))
 		{
 			//rprintf( _T("  %s:ModulBase %08lX"), szModule, hModule);
 			
@@ -338,13 +350,17 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 	}
 
 	// Now print information about where the fault occured
-	rprintf(_T(" at location %08x"), (DWORD) pExceptionRecord->ExceptionAddress);
-	if((hModule = (HMODULE) GetModuleBase(hProcess, (DWORD64) pExceptionRecord->ExceptionAddress)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
+	rprintf(_T(" at location %p"), pExceptionRecord->ExceptionAddress);
+	if((hModule = (HMODULE)(INT_PTR)GetModuleBase(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
+	   GetModuleFileName(hModule, szModule, sizeof(szModule)))
 		rprintf(_T(" in module %s"), szModule);
 	
 	// If the exception was an access violation, print out some additional information, to the error log and the debugger.
-	if(pExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && pExceptionRecord->NumberParameters >= 2)
-		rprintf(" %s location %08x", pExceptionRecord->ExceptionInformation[0] ? "Writing to" : "Reading from", pExceptionRecord->ExceptionInformation[1]);
+	if(pExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
+	   pExceptionRecord->NumberParameters >= 2)
+		rprintf(" %s location %p",
+			pExceptionRecord->ExceptionInformation[0] ? "Writing to" : "Reading from",
+			(LPCVOID)pExceptionRecord->ExceptionInformation[1]);
 
 	rprintf(".\r\n\r\n");		
 	
@@ -391,8 +407,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 			pContext->SegDs,
 			pContext->SegEs,
 			pContext->SegFs,
-			pContext->SegGs,
-			pContext->EFlags
+			pContext->SegGs
 		);
 		if(pContext->ContextFlags & CONTEXT_CONTROL)
 			rprintf(

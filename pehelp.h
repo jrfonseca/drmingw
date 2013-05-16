@@ -1,11 +1,17 @@
 #ifndef PEHELP_H
 #define PEHELP_H
 
-PIMAGE_NT_HEADERS
-PEImageNtHeader(HANDLE hProcess, HMODULE hModule);
+DWORD64
+GetModuleBase(HANDLE hProcess, DWORD64 dwAddress);
 
-DWORD
-PEGetImageBase(HANDLE hProcess, HMODULE hModule);
+BOOL CALLBACK
+ReadProcessMemory64(HANDLE hProcess, DWORD64 lpBaseAddress, PVOID lpBuffer, DWORD nSize, PDWORD lpNumberOfBytesRead);
+
+DWORD64
+PEImageNtHeader(HANDLE hProcess, DWORD64 hModule);
+
+DWORD64
+PEGetImageBase(HANDLE hProcess, DWORD64 hModule);
 
 BOOL
 PEGetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize);

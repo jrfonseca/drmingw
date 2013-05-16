@@ -12,17 +12,9 @@
 #include <psapi.h>
 
 #include "misc.h"
-#include "symbols.h"
+#include "pehelp.h"
 #include "bfdhelp.h"
-
-
-// The GetModuleBase function retrieves the base address of the module that contains the specified address. 
-DWORD64 GetModuleBase(HANDLE hProcess, DWORD64 dwAddress)
-{
-	MEMORY_BASIC_INFORMATION Buffer;
-	
-	return VirtualQueryEx(hProcess, (LPCVOID) dwAddress, &Buffer, sizeof(Buffer)) ? (DWORD64) Buffer.AllocationBase : 0;
-}
+#include "symbols.h"
 
 
 #ifdef HEADER

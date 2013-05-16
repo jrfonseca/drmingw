@@ -129,7 +129,7 @@ bfdhelp_module_create(struct bfdhelp_process * process, DWORD64 Base)
 	/* This requires access to BFD internal data structures */
 	module->image_base_vma = pe_data (module->abfd)->pe_opthdr.ImageBase;
 #else
-	module->image_base_vma = (bfd_vma) PEGetImageBase(process->hProcess, (HMODULE)(UINT_PTR)Base);
+	module->image_base_vma = (bfd_vma) PEGetImageBase(process->hProcess, Base);
 #endif
 
 	if(!slurp_symtab(module->abfd, &module->syms, &module->symcount))
@@ -238,7 +238,8 @@ static void find_address_in_section (bfd *abfd, asection *section, void *data)
 	size = bfd_get_section_size (section);
 
 	if (0)
-		OutputDebug("section: 0x%08x - 0x%08x (pc = 0x%08x)\n", vma, vma + size, info->pc);
+		OutputDebug("section: 0x%08" BFD_VMA_FMT "x - 0x%08" BFD_VMA_FMT "x (pc = 0x%08" BFD_VMA_FMT "x)\n",
+			    vma, vma + size, info->pc);
 
 	if (info->pc < vma)
 		return;

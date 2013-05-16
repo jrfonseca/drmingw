@@ -204,10 +204,10 @@ BOOL DebugMainLoop(void)
 						DebugEvent.dwThreadId
 					);
 					OutputDebug(
-						"\tExceptionCode = %lX\r\n\tExceptionFlags = %lX\r\n\tExceptionAddress = %lX\r\n\tdwFirstChance = %lX\r\n",
+						"\tExceptionCode = %lX\r\n\tExceptionFlags = %lX\r\n\tExceptionAddress = %p\r\n\tdwFirstChance = %lX\r\n",
 						DebugEvent.u.Exception.ExceptionRecord.ExceptionCode,
 						DebugEvent.u.Exception.ExceptionRecord.ExceptionFlags,
-						(DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress, 
+						DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress,
 						DebugEvent.u.Exception.dwFirstChance
 					);					
 				}
@@ -267,10 +267,10 @@ BOOL DebugMainLoop(void)
 						DebugEvent.dwThreadId
 					);
 					OutputDebug(
-						"\thThread = %lX\r\n\tlpThreadLocalBase = %lX\r\n\tlpStartAddress = %lX\r\n",
-						(DWORD) DebugEvent.u.CreateThread.hThread, 
-						(DWORD) DebugEvent.u.CreateThread.lpThreadLocalBase, 
-						(DWORD) DebugEvent.u.CreateThread.lpStartAddress
+						"\thThread = %p\r\n\tlpThreadLocalBase = %p\r\n\tlpStartAddress = %p\r\n",
+						DebugEvent.u.CreateThread.hThread,
+						DebugEvent.u.CreateThread.lpThreadLocalBase,
+						DebugEvent.u.CreateThread.lpStartAddress
 					);
 				}
 				
@@ -315,15 +315,15 @@ BOOL DebugMainLoop(void)
 						lstrcpyn(szBuffer, "NULL", sizeof(szBuffer));
 						
 					OutputDebug(
-						"\thFile = %lX\r\n\thProcess = %lX\r\n\thThread = %lX\r\n\tlpBaseOfImage = %lX\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpThreadLocalBase = %lX\r\n\tlpStartAddress = %lX\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
-						(DWORD) DebugEvent.u.CreateProcessInfo.hFile, 
-						(DWORD) DebugEvent.u.CreateProcessInfo.hProcess, 
-						(DWORD) DebugEvent.u.CreateProcessInfo.hThread, 
-						(DWORD) DebugEvent.u.CreateProcessInfo.lpBaseOfImage, 
+						"\thFile = %p\r\n\thProcess = %p\r\n\thThread = %p\r\n\tlpBaseOfImage = %p\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpThreadLocalBase = %p\r\n\tlpStartAddress = %p\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
+						DebugEvent.u.CreateProcessInfo.hFile,
+						DebugEvent.u.CreateProcessInfo.hProcess,
+						DebugEvent.u.CreateProcessInfo.hThread,
+						DebugEvent.u.CreateProcessInfo.lpBaseOfImage,
 						DebugEvent.u.CreateProcessInfo.dwDebugInfoFileOffset, 
 						DebugEvent.u.CreateProcessInfo.nDebugInfoSize, 
-						(DWORD) DebugEvent.u.CreateProcessInfo.lpThreadLocalBase, 
-						(DWORD) DebugEvent.u.CreateProcessInfo.lpStartAddress, 
+						DebugEvent.u.CreateProcessInfo.lpThreadLocalBase,
+						DebugEvent.u.CreateProcessInfo.lpStartAddress,
 						szBuffer, 
 						DebugEvent.u.CreateProcessInfo.fUnicode
 					);
@@ -475,12 +475,12 @@ BOOL DebugMainLoop(void)
 
 					if(!ReadProcessMemory(DebugEvent.u.CreateProcessInfo.hProcess, DebugEvent.u.CreateProcessInfo.lpImageName, &lpImageName, sizeof(LPVOID), NULL) ||
 						!ReadProcessMemory(DebugEvent.u.CreateProcessInfo.hProcess, lpImageName, szBuffer, sizeof(szBuffer), NULL))
-						lstrcpyn(szBuffer, "NULL", sizeof(szBuffer));
+						lstrcpyn(szBuffer, "NULL", sizeof szBuffer);
 						
 					OutputDebug(
-						"\thFile = %lX\r\n\tlpBaseOfDll = %lX\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
-						(DWORD) DebugEvent.u.LoadDll.hFile, 
-						(DWORD) DebugEvent.u.LoadDll.lpBaseOfDll, 
+						"\thFile = %p\r\n\tlpBaseOfDll = %p\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
+						DebugEvent.u.LoadDll.hFile,
+						DebugEvent.u.LoadDll.lpBaseOfDll,
 						DebugEvent.u.LoadDll.dwDebugInfoFileOffset, 
 						DebugEvent.u.LoadDll.nDebugInfoSize, 
 						szBuffer, 
@@ -518,8 +518,8 @@ BOOL DebugMainLoop(void)
 						DebugEvent.dwThreadId
 					);
 					OutputDebug(
-						"\tlpBaseOfDll = %lX\r\n",
-						(DWORD) DebugEvent.u.UnloadDll.lpBaseOfDll 
+						"\tlpBaseOfDll = %p\r\n",
+						DebugEvent.u.UnloadDll.lpBaseOfDll
 					);
 				}
 				
