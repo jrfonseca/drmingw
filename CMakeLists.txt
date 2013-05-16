@@ -164,7 +164,6 @@ install (
 		COPYING
 		COPYING.LIB
 		doc/drmingw.html
-		doc/drmingw.reg
 		doc/exception-nt.gif
 		doc/install.gif
 		doc/sample.gif
