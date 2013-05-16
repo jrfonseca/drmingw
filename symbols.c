@@ -17,11 +17,11 @@
 
 
 // The GetModuleBase function retrieves the base address of the module that contains the specified address. 
-DWORD GetModuleBase(HANDLE hProcess, DWORD dwAddress)
+DWORD64 GetModuleBase(HANDLE hProcess, DWORD64 dwAddress)
 {
 	MEMORY_BASIC_INFORMATION Buffer;
 	
-	return VirtualQueryEx(hProcess, (LPCVOID) dwAddress, &Buffer, sizeof(Buffer)) ? (DWORD) Buffer.AllocationBase : 0;
+	return VirtualQueryEx(hProcess, (LPCVOID) dwAddress, &Buffer, sizeof(Buffer)) ? (DWORD64) Buffer.AllocationBase : 0;
 }
 
 
@@ -115,13 +115,14 @@ PEImageNtHeader(HANDLE hProcess, HMODULE hModule)
 	return pNtHeaders;
 }
 
-BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD nSize)
+BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
 	HMODULE hModule;
 	PIMAGE_NT_HEADERS pNtHeaders;
 	IMAGE_NT_HEADERS NtHeaders;
 	PIMAGE_SECTION_HEADER pSection;
-	DWORD dwNearestAddress = 0, dwNearestName;
+	DWORD64 dwNearestAddress = 0;
+	DWORD dwNearestName;
 	int i;
 
 	if(!(hModule = (HMODULE) GetModuleBase(hProcess, dwAddress)))
@@ -133,7 +134,7 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof(IMAGE_NT_HEADERS), NULL))
 		return FALSE;
 	
-	pSection = (PIMAGE_SECTION_HEADER) ((DWORD)pNtHeaders + sizeof(DWORD) + sizeof(IMAGE_FILE_HEADER) + NtHeaders.FileHeader.SizeOfOptionalHeader);
+	pSection = (PIMAGE_SECTION_HEADER) ((DWORD64)pNtHeaders + sizeof(DWORD64) + sizeof(IMAGE_FILE_HEADER) + NtHeaders.FileHeader.SizeOfOptionalHeader);
 
 	if (0)
 		OutputDebug("Exported symbols:\r\n");
@@ -142,44 +143,41 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	for (i = 0; i < NtHeaders.FileHeader.NumberOfSections; i++, pSection++)
 	{
 		IMAGE_SECTION_HEADER Section;
-		PIMAGE_EXPORT_DIRECTORY pExportDir = NULL;
+		DWORD64 pExportDir = 0;
 		BYTE ExportSectionName[IMAGE_SIZEOF_SHORT_NAME] = {'.', 'e', 'd', 'a', 't', 'a', '\0', '\0'};
 		
-		if(!ReadProcessMemory(hProcess, pSection, &Section, sizeof(IMAGE_SECTION_HEADER), NULL))
+		if(!ReadProcessMemory(hProcess, pSection, &Section, sizeof Section, NULL))
 			return FALSE;
     	
 		if(memcmp(Section.Name, ExportSectionName, IMAGE_SIZEOF_SHORT_NAME) == 0)
-			pExportDir = (PIMAGE_EXPORT_DIRECTORY) Section.VirtualAddress;
+			pExportDir = Section.VirtualAddress;
 		else if ((NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress >= Section.VirtualAddress) && (NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress < (Section.VirtualAddress + Section.SizeOfRawData)))
-			pExportDir = (PIMAGE_EXPORT_DIRECTORY) NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
+			pExportDir = NtHeaders.OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT].VirtualAddress;
 
 		if(pExportDir)
 		{
 			IMAGE_EXPORT_DIRECTORY ExportDir;
 			
-			if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)pExportDir), &ExportDir, sizeof(IMAGE_EXPORT_DIRECTORY), NULL))
+			if(!ReadProcessMemory(hProcess, (PVOID)((DWORD64)hModule + (DWORD64)pExportDir), &ExportDir, sizeof ExportDir, NULL))
 				return FALSE;
 			
 			{
 				PDWORD *AddressOfFunctions = alloca(ExportDir.NumberOfFunctions*sizeof(PDWORD));
 				int j;
 	
-				if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + (DWORD)ExportDir.AddressOfFunctions), AddressOfFunctions, ExportDir.NumberOfFunctions*sizeof(PDWORD), NULL))
+				if(!ReadProcessMemory(hProcess, (PVOID)((DWORD64)hModule + (DWORD64)ExportDir.AddressOfFunctions), AddressOfFunctions, ExportDir.NumberOfFunctions*sizeof(PDWORD), NULL))
 						return FALSE;
 				
 				for(j = 0; j < ExportDir.NumberOfNames; ++j)
 				{
-					DWORD pFunction = (DWORD)hModule + (DWORD)AddressOfFunctions[j];
-					//ReadProcessMemory(hProcess, (DWORD) hModule + (DWORD) (&ExportDir.AddressOfFunctions[j]), &pFunction, sizeof(pFunction), NULL);
+					DWORD64 pFunction = (DWORD64)hModule + (DWORD64)AddressOfFunctions[j];
 					
 					if(pFunction <= dwAddress && pFunction > dwNearestAddress)
 					{
 						dwNearestAddress = pFunction;
 						
-						if(!ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + ExportDir.AddressOfNames + j*sizeof(DWORD)), &dwNearestName, sizeof(dwNearestName), NULL))
+						if(!ReadProcessMemory(hProcess, (PVOID)((DWORD64)hModule + ExportDir.AddressOfNames + j*sizeof(DWORD)), &dwNearestName, sizeof(dwNearestName), NULL))
 							return FALSE;
-							
-						dwNearestName = (DWORD) hModule + dwNearestName;
 					}
 				
 					if (0)
@@ -187,9 +185,9 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 						DWORD dwName;
 						char szName[256];
 						
-						if(ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + ExportDir.AddressOfNames * j*sizeof(DWORD)), &dwName, sizeof(dwName), NULL))
-							if(ReadProcessMemory(hProcess, (PVOID)((DWORD)hModule + dwName), szName, sizeof(szName), NULL))
-								OutputDebug("\t%08x\t%s\r\n", pFunction, szName);
+						if(ReadProcessMemory(hProcess, (PVOID)((DWORD64)hModule + ExportDir.AddressOfNames * j*sizeof(DWORD)), &dwName, sizeof(dwName), NULL))
+							if(ReadProcessMemory(hProcess, (PVOID)((DWORD64)hModule + dwName), szName, sizeof(szName), NULL))
+								OutputDebug("\t%08lx\t%s\r\n", pFunction, szName);
 					}
 				}
 			}
@@ -199,7 +197,7 @@ BOOL PEGetSymFromAddr(HANDLE hProcess, DWORD dwAddress, LPTSTR lpSymName, DWORD 
 	if(!dwNearestAddress)
 		return FALSE;
 		
-	if(!ReadProcessMemory(hProcess, (PVOID)dwNearestName, lpSymName, nSize, NULL))
+	if(!ReadProcessMemory(hProcess, (PVOID)((DWORD64)hModule + dwNearestName), lpSymName, nSize, NULL))
 		return FALSE;
 	lpSymName[nSize - 1] = 0;
 

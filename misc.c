@@ -15,6 +15,7 @@
 #include <stdio.h>
 
 static inline void
+	__attribute__ ((format (printf, 1, 2)))
 OutputDebug(const char *format, ...)
 {
 #ifndef NDEBUG

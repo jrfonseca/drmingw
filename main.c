@@ -208,7 +208,7 @@ int main (int argc, char **argv)
 					);
 					return 0;
 				}
-				hEvent = (HANDLE) atol (optarg);
+				hEvent = (HANDLE) (INT_PTR) atol (optarg);
 				break;
 
 			case 'b':	/* Treat debug breakpoints as exceptions */

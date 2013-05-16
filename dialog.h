@@ -8,7 +8,7 @@
 #define CFH_DIALOG_H
 
 /* From 'dialog.c': */
-BOOL CALLBACK AboutDlgProc (HWND hwnd , UINT Message , WPARAM wParam , LPARAM lParam );
+INT_PTR CALLBACK AboutDlgProc (HWND hwnd , UINT Message , WPARAM wParam , LPARAM lParam );
 void UpdateText (LPCTSTR lpszBuffer );
 LRESULT CALLBACK WndProc (HWND hwnd , UINT Message , WPARAM wParam , LPARAM lParam );
 int Dialog (void);

@@ -246,7 +246,7 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 
 	// Now print information about where the fault occured
 	lprintf(_T(" at location %08lx"), (DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
-	if((hModule = (HMODULE) GetModuleBase(pProcessInfo->hProcess, (DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) && GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof(szModule)))
+	if((hModule = (HMODULE) GetModuleBase(pProcessInfo->hProcess, (DWORD64) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) && GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof(szModule)))
 		lprintf(_T(" in module %s"), GetBaseName(szModule));
 	
 	// If the exception was an access violation, print out some additional information, to the error log and the debugger.
@@ -387,6 +387,8 @@ BOOL DumpSource(LPCTSTR lpFileName, DWORD dwLineNumber)
 	return TRUE;
 }
 
+#define MAX_SYM_NAME_SIZE 512
+
 BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 {
 	int i;
@@ -420,12 +422,14 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 	// Initialize the STACKFRAME structure for the first call.  This is only
 	// necessary for Intel CPUs, and isn't mentioned in the documentation.
+#if defined(i386)
 	StackFrame.AddrPC.Offset = pContext->Eip;
 	StackFrame.AddrPC.Mode = AddrModeFlat;
 	StackFrame.AddrStack.Offset = pContext->Esp;
 	StackFrame.AddrStack.Mode = AddrModeFlat;
 	StackFrame.AddrFrame.Offset = pContext->Ebp;
 	StackFrame.AddrFrame.Mode = AddrModeFlat;
+#endif
 
 	lprintf( _T("Call stack:\r\n") );
 

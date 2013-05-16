@@ -61,12 +61,14 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 	// Initialize the STACKFRAME structure for the first call.  This is only
 	// necessary for Intel CPUs, and isn't mentioned in the documentation.
+#ifdef i386
 	StackFrame.AddrPC.Offset = pContext->Eip;
 	StackFrame.AddrPC.Mode = AddrModeFlat;
 	StackFrame.AddrStack.Offset = pContext->Esp;
 	StackFrame.AddrStack.Mode = AddrModeFlat;
 	StackFrame.AddrFrame.Offset = pContext->Ebp;
 	StackFrame.AddrFrame.Mode = AddrModeFlat;
+#endif
 
 	rprintf( _T("Call stack:\r\n") );
 
@@ -337,7 +339,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
 	// Now print information about where the fault occured
 	rprintf(_T(" at location %08x"), (DWORD) pExceptionRecord->ExceptionAddress);
-	if((hModule = (HMODULE) GetModuleBase(hProcess, (DWORD) pExceptionRecord->ExceptionAddress)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
+	if((hModule = (HMODULE) GetModuleBase(hProcess, (DWORD64) pExceptionRecord->ExceptionAddress)) && GetModuleFileName(hModule, szModule, sizeof(szModule)))
 		rprintf(_T(" in module %s"), szModule);
 	
 	// If the exception was an access violation, print out some additional information, to the error log and the debugger.

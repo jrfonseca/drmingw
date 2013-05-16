@@ -14,7 +14,7 @@
 static HINSTANCE hInstance = NULL;
 static char szClassName[] = "MyWindowClass";
 
-BOOL CALLBACK AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+INT_PTR CALLBACK AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
    switch(Message)
    {
