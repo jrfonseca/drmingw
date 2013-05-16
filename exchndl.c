@@ -475,9 +475,7 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 		return EXCEPTION_CONTINUE_SEARCH;
 }
 
-static void OnStartup(void) __attribute__((constructor));
-
-void OnStartup(void)
+static void OnStartup(void)
 {
 	// Install the unhandled exception filter function
 	prevExceptionFilter = SetUnhandledExceptionFilter(TopLevelExceptionFilter);
@@ -503,9 +501,25 @@ void OnStartup(void)
 	}	
 }
 
-static void OnExit(void) __attribute__((destructor));
-
-void OnExit(void)
+static void OnExit(void)
 {
 	SetUnhandledExceptionFilter(prevExceptionFilter);
+}
+
+BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
+
+BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
+{
+	switch (dwReason)
+	{
+		case DLL_PROCESS_ATTACH:
+			OnStartup();
+			break;
+
+		case DLL_PROCESS_DETACH:
+			OnExit();
+			break;
+	}
+	
+	return TRUE;
 }
