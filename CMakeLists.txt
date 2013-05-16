@@ -11,7 +11,12 @@ find_path (BINUTILS_INCLUDE_DIR bfd.h PATHS ${BINUTILS_ROOT}/include)
 find_library (BINUTILS_BFD_LIBRARY bfd PATHS ${BINUTILS_ROOT}/lib)
 find_library (BINUTILS_LIBERTY_LIBRARY liberty PATHS ${BINUTILS_ROOT}/lib)
 
-include_directories (${BINUTILS_INCLUDE_DIR})
+if (BINUTILS_INCLUDE_DIR AND BINUTILS_BFD_LIBRARY AND BINUTILS_LIBERTY_LIBRARY)
+	set (BINUTILS_FOUND 1)
+	include_directories (${BINUTILS_INCLUDE_DIR})
+	add_definitions (-DHAVE_BFD)
+endif ()
+
 
 
 ##############################################################################
@@ -79,15 +84,18 @@ add_definitions (
 
 find_program (CFUNCTIONS_EXECUTABLE cfunctions)
 if (CFUNCTIONS_EXECUTABLE)
-	set (HEADERS)
+	set_directory_properties (PROPERTIES
+		CLEAN_NO_CUSTOM TRUE
+	)
 
+	set (HEADERS)
 	foreach (MODULE debugger dialog log misc symbols)
 		add_custom_command (
 			OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}.h
 			COMMAND ${CFUNCTIONS_EXECUTABLE} -i ${MODULE}.c
 			DEPENDS ${MODULE}.c
 		)
-	set (HEADERS ${HEADERS} ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}.h)
+		set (HEADERS ${HEADERS} ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}.h)
 	endforeach (MODULE)
 
 	add_custom_target (headers DEPENDS ${HEADERS})
@@ -99,8 +107,6 @@ endif ()
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_definitions (-DHAVE_BFD)
-
 add_library (common STATIC
 	misc.c
 	symbols.c
@@ -109,9 +115,14 @@ add_library (common STATIC
 target_link_libraries (common
 	dbghelp
 	psapi
-	${BINUTILS_BFD_LIBRARY}
-	${BINUTILS_LIBERTY_LIBRARY}
 )
+if (BINUTILS_FOUND)
+	target_link_libraries (common
+		${BINUTILS_BFD_LIBRARY}
+		${BINUTILS_LIBERTY_LIBRARY}
+	)
+endif ()
+
 
 add_executable (drmingw WIN32
 	debugger.c
