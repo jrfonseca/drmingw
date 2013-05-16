@@ -169,7 +169,7 @@ install (
 
 set (CPACK_PACKAGE_VERSION_MAJOR "0")
 set (CPACK_PACKAGE_VERSION_MINOR "5")
-set (CPACK_PACKAGE_VERSION_PATCH "0")
+set (CPACK_PACKAGE_VERSION_PATCH "1")
 
 # cpack mistakenly detects Mingw-w64 as win32
 if (MINGW)
