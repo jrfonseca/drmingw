@@ -97,7 +97,7 @@ PEImageNtHeader(HANDLE hProcess, HMODULE hModule)
 	pDosHeader = (PIMAGE_DOS_HEADER)hModule;
 	
 	// From the DOS header, find the NT (PE) header
-	if(!ReadProcessMemory(hProcess, &pDosHeader->e_lfanew, &e_lfanew, sizeof(e_lfanew), NULL))
+	if(!ReadProcessMemory(hProcess, &pDosHeader->e_lfanew, &e_lfanew, sizeof e_lfanew, NULL))
 		return NULL;
 	
 	pNtHeaders = (PIMAGE_NT_HEADERS)((LPBYTE)hModule + e_lfanew);
@@ -114,7 +114,7 @@ PEGetImageBase(HANDLE hProcess, HMODULE hModule)
 	if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))
 		return FALSE;
 
-	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof(IMAGE_NT_HEADERS), NULL))
+	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof NtHeaders, NULL))
 		return FALSE;
 
 	return NtHeaders.OptionalHeader.ImageBase;
@@ -142,28 +142,28 @@ bfdhelp_module_create(struct bfdhelp_process * process, DWORD64 Base)
 
 	module->abfd = bfd_openr(module->ModuleInfo.LoadedImageName, NULL);
 	if(!module->abfd) {
-		OutputDebug("\r\n%s: %s\r\n", module->ModuleInfo.LoadedImageName, "Could not open");
+		OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "could not open");
 		goto no_bfd;
 	}
 
 	if(!bfd_check_format(module->abfd, bfd_object))
 	{
-		OutputDebug("\r\n%s: %s\r\n", module->ModuleInfo.LoadedImageName, "Bad format");
+		OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "bad format");
 		goto bad_format;
 	}
 
 	if(!(bfd_get_file_flags(module->abfd) & HAS_SYMS))
 	{
-		OutputDebug("\r\n%s: %s\r\n", module->ModuleInfo.LoadedImageName, "No symbols");
+		OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no symbols");
 		goto no_symbols;
 	}
 
-
-	//module->image_base_vma = pe_data (module->abfd)->pe_opthdr.ImageBase;
+#if 0
+	/* This requires access to BFD internal data structures */
+	module->image_base_vma = pe_data (module->abfd)->pe_opthdr.ImageBase;
+#else
 	module->image_base_vma = (bfd_vma) PEGetImageBase(process->hProcess, (HMODULE)(UINT_PTR)Base);
-
-	OutputDebug("Loaded = 0x%08x\n", Base);
-	OutputDebug("Desired = 0x%08x\n", module->image_base_vma);
+#endif
 
 	if(!slurp_symtab(module->abfd, &module->syms, &module->symcount))
 		goto no_symbols;
@@ -270,7 +270,8 @@ static void find_address_in_section (bfd *abfd, asection *section, void *data)
 	vma = bfd_get_section_vma (abfd, section);
 	size = bfd_get_section_size (section);
 
-	OutputDebug("section: 0x%08x - 0x%08x (pc = 0x%08x)\n", vma, vma + size, info->pc);
+	if (0)
+		OutputDebug("section: 0x%08x - 0x%08x (pc = 0x%08x)\n", vma, vma + size, info->pc);
 
 	if (info->pc < vma)
 		return;
@@ -289,17 +290,13 @@ static BOOL bfdhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_ha
 	struct bfdhelp_process *process;
 	struct bfdhelp_module *module;
 		
-	OutputDebug("%s, 0x%08x\r\n", __FUNCTION__, Address);
-
 	process = bfdhelp_process_lookup(hProcess);
 	if(!process) {
-		OutputDebug("No process\r\n");
 		return FALSE;
 	}
 
 	Base = SymGetModuleBase64(hProcess, Address);
 	if(!Base) {
-		OutputDebug("No base address\r\n");
 		return FALSE;
 	}
 
@@ -320,15 +317,12 @@ static BOOL bfdhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_ha
 
 	bfd_map_over_sections(module->abfd, find_address_in_section, info);
 	if (info->found == FALSE || info->line == 0) {
-		OutputDebug("%s: symbol not found\n", module->ModuleInfo.LoadedImageName);
 		return FALSE;
 	}
 
 	if(info->functionname == NULL || *info->functionname == '\0')
 		return FALSE;		
 	
-	OutputDebug("%s: %s found\n", module->ModuleInfo.LoadedImageName, info->functionname);
-
 	return TRUE;
 }
 
@@ -369,8 +363,6 @@ BOOL WINAPI BfdSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displaceme
 #ifdef HAVE_BFD
 	struct find_handle info;
 		
-	OutputDebug("%s, 0x%08x\r\n", __FUNCTION__, Address);
-
 	if(bfdhelp_find_symbol(hProcess, Address, &info)) {
 		strncpy(Symbol->Name, info.functionname, Symbol->MaxNameLen);
 
@@ -392,8 +384,6 @@ BOOL WINAPI BfdSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwD
 #ifdef HAVE_BFD
 	struct find_handle info;
 		
-	OutputDebug("%s, 0x%08x\r\n", __FUNCTION__, dwAddr);
-
 	if(bfdhelp_find_symbol(hProcess, dwAddr, &info)) {
 		Line->FileName = (char *)info.filename;
 		Line->LineNumber = info.line;
@@ -418,8 +408,6 @@ DWORD WINAPI BfdUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, 
 	
 	assert(DecoratedName != NULL);
 
-	(void)Flags;
-	
 	if((res = cplus_demangle(DecoratedName, 0)) != NULL)
 	{
 		strncpy(UnDecoratedName, res, UndecoratedLength);

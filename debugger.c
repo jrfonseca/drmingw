@@ -50,6 +50,7 @@ typedef struct
 
 int breakpoint_flag = 0;	/* Treat breakpoints as exceptions (default=no).  */
 int verbose_flag = 0;	/* Verbose output (default=no).  */
+static int debug_flag = 0;
 
 DWORD dwProcessId;	/* Attach to the process with the given identifier.  */
 HANDLE hEvent = NULL;	/* Signal an event after process is attached.  */
@@ -207,8 +208,8 @@ BOOL DebugMainLoop(void)
 			return FALSE;
 		}
 
-		if(verbose_flag)
-			lprintf(_T("DEBUG_EVENT:\r\n"));
+		if (debug_flag)
+			OutputDebug("DEBUG_EVENT:\r\n");
 
 		// Process the debugging event code.
 		switch (DebugEvent.dwDebugEventCode) 
@@ -218,16 +219,16 @@ BOOL DebugMainLoop(void)
 				// exceptions, remember to set the continuation 
 				// status parameter (dwContinueStatus). This value 
 				// is used by the ContinueDebugEvent function. 
-				if(verbose_flag)
+				if(debug_flag)
 				{
-					lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("EXCEPTION_DEBUG_EVENT"), 
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"EXCEPTION_DEBUG_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
-					lprintf(
-						_T("\tExceptionCode = %lX\r\n\tExceptionFlags = %lX\r\n\tExceptionAddress = %lX\r\n\tdwFirstChance = %lX\r\n"),
+					OutputDebug(
+						"\tExceptionCode = %lX\r\n\tExceptionFlags = %lX\r\n\tExceptionAddress = %lX\r\n\tdwFirstChance = %lX\r\n",
 						DebugEvent.u.Exception.ExceptionRecord.ExceptionCode,
 						DebugEvent.u.Exception.ExceptionRecord.ExceptionFlags,
 						(DWORD) DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress, 
@@ -272,16 +273,16 @@ BOOL DebugMainLoop(void)
 				// with the GetThreadContext and SetThreadContext functions; 
 				// and suspend and resume thread execution with the 
 				// SuspendThread and ResumeThread functions. 
-				if(verbose_flag)
+				if(debug_flag)
 				{
-					lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("CREATE_THREAD_DEBUG_EVENT"), 
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"CREATE_THREAD_DEBUG_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
-					lprintf(
-						_T("\thThread = %lX\r\n\tlpThreadLocalBase = %lX\r\n\tlpStartAddress = %lX\r\n"), 
+					OutputDebug(
+						"\thThread = %lX\r\n\tlpThreadLocalBase = %lX\r\n\tlpStartAddress = %lX\r\n",
 						(DWORD) DebugEvent.u.CreateThread.hThread, 
 						(DWORD) DebugEvent.u.CreateThread.lpThreadLocalBase, 
 						(DWORD) DebugEvent.u.CreateThread.lpStartAddress
@@ -312,14 +313,14 @@ BOOL DebugMainLoop(void)
 				// WriteProcessMemory functions; and suspend and resume 
 				// thread execution with the SuspendThread and ResumeThread 
 				// functions. 
-				if(verbose_flag)
+				if(debug_flag)
 				{
 					TCHAR szBuffer[MAX_PATH];
 					LPVOID lpImageName;
 					
-					lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("CREATE_PROCESS_DEBUG_EVENT"),
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"CREATE_PROCESS_DEBUG_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
@@ -328,8 +329,8 @@ BOOL DebugMainLoop(void)
 						!ReadProcessMemory(DebugEvent.u.CreateProcessInfo.hProcess, lpImageName, szBuffer, sizeof(szBuffer), NULL))
 						lstrcpyn(szBuffer, "NULL", sizeof(szBuffer));
 						
-					lprintf(
-						_T("\thFile = %lX\r\n\thProcess = %lX\r\n\thThread = %lX\r\n\tlpBaseOfImage = %lX\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpThreadLocalBase = %lX\r\n\tlpStartAddress = %lX\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n"),
+					OutputDebug(
+						"\thFile = %lX\r\n\thProcess = %lX\r\n\thThread = %lX\r\n\tlpBaseOfImage = %lX\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpThreadLocalBase = %lX\r\n\tlpStartAddress = %lX\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
 						(DWORD) DebugEvent.u.CreateProcessInfo.hFile, 
 						(DWORD) DebugEvent.u.CreateProcessInfo.hProcess, 
 						(DWORD) DebugEvent.u.CreateProcessInfo.hThread, 
@@ -391,16 +392,16 @@ BOOL DebugMainLoop(void)
 
 			case EXIT_THREAD_DEBUG_EVENT: 
 				// Display the thread's exit code. 
-				if(verbose_flag)
+				if(debug_flag)
 				{
-					lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("EXIT_THREAD_DEBUG_EVENT"), 
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"EXIT_THREAD_DEBUG_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
-					lprintf(
-						_T("\tdwExitCode = %lX\r\n"),
+					OutputDebug(
+						"\tdwExitCode = %lX\r\n",
 						DebugEvent.u.ExitThread.dwExitCode 
 					);
 				}
@@ -418,16 +419,16 @@ BOOL DebugMainLoop(void)
 
 			case EXIT_PROCESS_DEBUG_EVENT: 
 				// Display the process's exit code.
-				if(verbose_flag)
+				if(debug_flag)
 				{
-					lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("EXIT_PROCESS_DEBUG_EVENT"), 
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"EXIT_PROCESS_DEBUG_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
-					lprintf(
-						_T("\tdwExitCode = %lX\r\n"),
+					OutputDebug(
+						"\tdwExitCode = %lX\r\n",
 						DebugEvent.u.ExitProcess.dwExitCode 
 					);
 				}
@@ -475,14 +476,14 @@ BOOL DebugMainLoop(void)
 			case LOAD_DLL_DEBUG_EVENT: 
 				// Read the debugging information included in the newly 
 				// loaded DLL. 
-				if(verbose_flag)
+				if(debug_flag)
 				{
 					TCHAR szBuffer[MAX_PATH];
 					LPVOID lpImageName;
 					
-					lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("LOAD_DLL_DEBUG_EVENT"), 
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"LOAD_DLL_DEBUG_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
@@ -491,8 +492,8 @@ BOOL DebugMainLoop(void)
 						!ReadProcessMemory(DebugEvent.u.CreateProcessInfo.hProcess, lpImageName, szBuffer, sizeof(szBuffer), NULL))
 						lstrcpyn(szBuffer, "NULL", sizeof(szBuffer));
 						
-					lprintf(
-						_T("\thFile = %lX\r\n\tlpBaseOfDll = %lX\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n"),
+					OutputDebug(
+						"\thFile = %lX\r\n\tlpBaseOfDll = %lX\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
 						(DWORD) DebugEvent.u.LoadDll.hFile, 
 						(DWORD) DebugEvent.u.LoadDll.lpBaseOfDll, 
 						DebugEvent.u.LoadDll.dwDebugInfoFileOffset, 
@@ -523,16 +524,16 @@ BOOL DebugMainLoop(void)
 	 
 			case UNLOAD_DLL_DEBUG_EVENT: 
 				// Display a message that the DLL has been unloaded. 
-				if(verbose_flag)
+				if(debug_flag)
 				{
-					lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("UNLOAD_DLL_DEBUG_EVENT"), 
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"UNLOAD_DLL_DEBUG_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
-					lprintf(
-						_T("\tlpBaseOfDll = %lX\r\n"),
+					OutputDebug(
+						"\tlpBaseOfDll = %lX\r\n",
 						(DWORD) DebugEvent.u.UnloadDll.lpBaseOfDll 
 					);
 				}
@@ -552,18 +553,18 @@ BOOL DebugMainLoop(void)
 	 
 			case OUTPUT_DEBUG_STRING_EVENT: 
 				// Display the output debugging string. 
-				if(verbose_flag)
+				if(debug_flag)
 				{
-					lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("OUTPUT_DEBUG_STRING_EVENT"),
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"OUTPUT_DEBUG_STRING_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
 					/* XXX: Must use ReadProcessMemory */
 #if 0
-					lprintf(
-						_T("\tlpDebugStringData = %s\r\n"),
+					OutputDebug(
+						"\tlpDebugStringData = %s\r\n",
 						DebugEvent.u.DebugString.lpDebugStringData 
 					);
 #endif
@@ -571,10 +572,10 @@ BOOL DebugMainLoop(void)
 				break;
 	 		
 	 		default:
-	 			if(verbose_flag)
-	 				lprintf(
-						_T("\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n"),
-						_T("UNLOAD_DLL_DEBUG_EVENT"), 
+				if(debug_flag)
+					OutputDebug(
+						"\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+						"UNLOAD_DLL_DEBUG_EVENT",
 						DebugEvent.dwProcessId, 
 						DebugEvent.dwThreadId
 					);
