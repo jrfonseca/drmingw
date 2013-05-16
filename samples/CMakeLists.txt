@@ -11,3 +11,6 @@ add_executable (testcpp
 	testcpp.cxx
 	exchndl2.cxx
 )
+
+install (FILES test.c testcpp.cxx exchndl2.cxx DESTINATION samples)
+install (TARGETS test testcpp RUNTIME DESTINATION samples)
