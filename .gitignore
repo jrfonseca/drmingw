@@ -11,4 +11,5 @@ _CPack_Packages
 CMakeCache.txt
 CMakeFiles
 Makefile
+drmingw-*-win*
 install_manifest.txt
