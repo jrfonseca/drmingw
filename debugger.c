@@ -64,117 +64,93 @@ PTHREAD_LIST_INFO ThreadListInfo = NULL;
 unsigned nModules = 0, maxModules = 0;
 PMODULE_LIST_INFO ModuleListInfo = NULL;
 
-BOOL GetPlatformId(LPDWORD lpdwPlatformId )
-{
-	OSVERSIONINFO VersionInfo;
-	BOOL bResult;
-
-	VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-
-	if((bResult = GetVersionEx(&VersionInfo)))
-		*lpdwPlatformId = VersionInfo.dwPlatformId;
-
-	return bResult;
-}
-
 
 BOOL ObtainSeDebugPrivilege(void)
 {
-	DWORD dwProcessId;
+	HANDLE hToken;
+	PTOKEN_PRIVILEGES NewPrivileges;
+	BYTE OldPriv[1024];
+	PBYTE pbOldPriv;
+	ULONG cbNeeded;
+	BOOLEAN fRc;
+	LUID LuidPrivilege;
 
-	GetPlatformId(&dwProcessId);
-	if(dwProcessId == VER_PLATFORM_WIN32_NT)
+	// Make sure we have access to adjust and to get the old token privileges
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
 	{
-		HANDLE hToken;
-		PTOKEN_PRIVILEGES NewPrivileges;
-		BYTE OldPriv[1024];
-		PBYTE pbOldPriv;
-		ULONG cbNeeded;
-		BOOLEAN fRc;
-		LUID LuidPrivilege;
+		OutputDebug("OpenProcessToken failed with %s\n", LastErrorMessage());
 
-		// Make sure we have access to adjust and to get the old token privileges
-		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
-		{
-			OutputDebug("OpenProcessToken failed with %s\n", LastErrorMessage());
-
-			return FALSE;
-		}
-
-		cbNeeded = 0;
-
-		// Initialize the privilege adjustment structure
-		LookupPrivilegeValue( NULL, SE_DEBUG_NAME, &LuidPrivilege );
-
-		NewPrivileges = (PTOKEN_PRIVILEGES) LocalAlloc(
-			LMEM_ZEROINIT,
-			sizeof(TOKEN_PRIVILEGES) + (1 - ANYSIZE_ARRAY)*sizeof(LUID_AND_ATTRIBUTES)
-		);
-		if(NewPrivileges == NULL)
-		{
-			OutputDebug("LocalAlloc failed with %s", LastErrorMessage());
-
-			return FALSE;
-		}
-
-		NewPrivileges->PrivilegeCount = 1;
-		NewPrivileges->Privileges[0].Luid = LuidPrivilege;
-		NewPrivileges->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-		// Enable the privilege
-		pbOldPriv = OldPriv;
-		fRc = AdjustTokenPrivileges(
-			hToken,
-			FALSE,
-			NewPrivileges,
-			1024,
-			(PTOKEN_PRIVILEGES)pbOldPriv,
-			&cbNeeded
-		);
-
-		if (!fRc) {
-
-			// If the stack was too small to hold the privileges
-			// then allocate off the heap
-			if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
-
-				pbOldPriv = LocalAlloc(LMEM_FIXED, cbNeeded);
-				if (pbOldPriv == NULL)
-				{
-					OutputDebug("LocalAlloc: %s", LastErrorMessage());
-					return FALSE;
-				}
-
-				fRc = AdjustTokenPrivileges(
-					hToken,
-					FALSE,
-					NewPrivileges,
-					cbNeeded,
-					(PTOKEN_PRIVILEGES)pbOldPriv,
-					&cbNeeded
-				);
-			}
-		}
-		return fRc;
+		return FALSE;
 	}
-	else
-		return TRUE;
+
+	cbNeeded = 0;
+
+	// Initialize the privilege adjustment structure
+	LookupPrivilegeValue( NULL, SE_DEBUG_NAME, &LuidPrivilege );
+
+	NewPrivileges = (PTOKEN_PRIVILEGES) LocalAlloc(
+		LMEM_ZEROINIT,
+		sizeof(TOKEN_PRIVILEGES) + (1 - ANYSIZE_ARRAY)*sizeof(LUID_AND_ATTRIBUTES)
+	);
+	if(NewPrivileges == NULL)
+	{
+		OutputDebug("LocalAlloc failed with %s", LastErrorMessage());
+
+		return FALSE;
+	}
+
+	NewPrivileges->PrivilegeCount = 1;
+	NewPrivileges->Privileges[0].Luid = LuidPrivilege;
+	NewPrivileges->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+	// Enable the privilege
+	pbOldPriv = OldPriv;
+	fRc = AdjustTokenPrivileges(
+		hToken,
+		FALSE,
+		NewPrivileges,
+		1024,
+		(PTOKEN_PRIVILEGES)pbOldPriv,
+		&cbNeeded
+	);
+
+	if (!fRc) {
+
+		// If the stack was too small to hold the privileges
+		// then allocate off the heap
+		if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
+
+			pbOldPriv = LocalAlloc(LMEM_FIXED, cbNeeded);
+			if (pbOldPriv == NULL)
+			{
+				OutputDebug("LocalAlloc: %s", LastErrorMessage());
+				return FALSE;
+			}
+
+			fRc = AdjustTokenPrivileges(
+				hToken,
+				FALSE,
+				NewPrivileges,
+				cbNeeded,
+				(PTOKEN_PRIVILEGES)pbOldPriv,
+				&cbNeeded
+			);
+		}
+	}
+	return fRc;
 }
 
-BOOL TerminateDebugee(void)
+static BOOL TerminateProcessId(DWORD dwProcessId, UINT uExitCode)
 {
-    UINT uExitCode = 1;
-    DWORD dwDesiredAccess = PROCESS_TERMINATE;
-    BOOL  bInheritHandle  = FALSE;
-    HANDLE hProcess = OpenProcess(dwDesiredAccess, bInheritHandle, dwProcessId);
+    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
     if (hProcess == NULL)
         return FALSE;
 
-    BOOL result = TerminateProcess(hProcess, uExitCode);
+    BOOL bRet = TerminateProcess(hProcess, uExitCode);
 
     CloseHandle(hProcess);
 
-    return result;
+    return bRet;
 }
 
 void DebugProcess(void * dummy)
@@ -265,6 +241,15 @@ BOOL DebugMainLoop(void)
 				}
 
 				LogException(DebugEvent);
+
+				if (!DebugEvent.u.Exception.dwFirstChance) {
+					/*
+					 * Terminate the process. As continuing would cause the JIT debugger
+					 * to be invoked again.
+					 */
+					TerminateProcessId(DebugEvent.dwProcessId,
+							   DebugEvent.u.Exception.ExceptionRecord.ExceptionCode);
+				}
 				
 				break;
 	 

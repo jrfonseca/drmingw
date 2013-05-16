@@ -43,9 +43,7 @@ extern unsigned nThreads, maxThreads;
 extern PTHREAD_LIST_INFO ThreadListInfo;
 extern unsigned nModules, maxModules;
 extern PMODULE_LIST_INFO ModuleListInfo;
-BOOL GetPlatformId (LPDWORD lpdwPlatformId );
 BOOL ObtainSeDebugPrivilege (void);
-BOOL TerminateDebugee (void);
 void DebugProcess (void * dummy );
 BOOL DebugMainLoop (void);
 
