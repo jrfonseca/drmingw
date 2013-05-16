@@ -111,6 +111,7 @@ add_library (common STATIC
 	misc.c
 	symbols.c
 	bfdhelp.c
+	pehelp.c
 )
 target_link_libraries (common
 	dbghelp

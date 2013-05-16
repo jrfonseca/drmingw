@@ -27,6 +27,7 @@
 #include <psapi.h>
 
 #include "misc.h"
+#include "pehelp.h"
 #include "bfdhelp.h"
 
 
@@ -86,40 +87,6 @@ slurp_symtab (bfd *abfd, asymbol ***syms, long *symcount)
 }
 
 
-static PIMAGE_NT_HEADERS
-PEImageNtHeader(HANDLE hProcess, HMODULE hModule)
-{
-	PIMAGE_DOS_HEADER pDosHeader;
-	PIMAGE_NT_HEADERS pNtHeaders;
-	LONG e_lfanew;
-	
-	// Point to the DOS header in memory
-	pDosHeader = (PIMAGE_DOS_HEADER)hModule;
-	
-	// From the DOS header, find the NT (PE) header
-	if(!ReadProcessMemory(hProcess, &pDosHeader->e_lfanew, &e_lfanew, sizeof e_lfanew, NULL))
-		return NULL;
-	
-	pNtHeaders = (PIMAGE_NT_HEADERS)((LPBYTE)hModule + e_lfanew);
-
-	return pNtHeaders;
-}
-
-static DWORD 
-PEGetImageBase(HANDLE hProcess, HMODULE hModule)
-{
-	PIMAGE_NT_HEADERS pNtHeaders;
-	IMAGE_NT_HEADERS NtHeaders;
-
-	if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))
-		return FALSE;
-
-	if(!ReadProcessMemory(hProcess, pNtHeaders, &NtHeaders, sizeof NtHeaders, NULL))
-		return FALSE;
-
-	return NtHeaders.OptionalHeader.ImageBase;
-}
-	
 static struct bfdhelp_module *
 bfdhelp_module_create(struct bfdhelp_process * process, DWORD64 Base)
 {
