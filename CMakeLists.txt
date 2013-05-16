@@ -163,10 +163,7 @@ install (
 	FILES
 		COPYING
 		COPYING.LIB
-		doc/drmingw.html
-		doc/exception-nt.gif
-		doc/install.gif
-		doc/sample.gif
+		README.txt
 	DESTINATION doc
 )
 
