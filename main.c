@@ -50,7 +50,7 @@ int main (int argc, char **argv)
 			{ NULL, 0, NULL, 0}
 		};
 
-		c = getopt_long (argc, argv, "?hViaup:e:v", long_options, &option_index);
+		c = getopt_long (argc, argv, "?hViaup:e:vb", long_options, &option_index);
 
 		if (c == -1)
 			break;	/* Exit from `while (1)' loop.  */
@@ -253,6 +253,8 @@ int main (int argc, char **argv)
 			lstrcat(szFullCommand, _T (" -p %ld -e %ld"));			
 			if(verbose_flag)
 				lstrcat(szFullCommand, _T (" -v"));
+			if(breakpoint_flag)
+				lstrcat(szFullCommand, _T (" -b"));
 		
 			lRet = RegCreateKeyEx(
 				HKEY_LOCAL_MACHINE,
