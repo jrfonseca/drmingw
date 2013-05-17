@@ -33,6 +33,15 @@
 
 #ifdef HAVE_BFD
 
+/*
+ * bfd.h will complain without this.
+ */
+#ifndef PACKAGE
+#define PACKAGE
+#endif
+#ifndef PACKAGE_VERSION
+#define PACKAGE_VERSION
+#endif
 
 #include <bfd.h>
 #include <demangle.h>
