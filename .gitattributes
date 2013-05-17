@@ -1,1 +1,2 @@
 *.reg -crlf
+*.cmd -crlf
