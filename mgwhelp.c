@@ -306,7 +306,8 @@ static BOOL mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_ha
 #endif /* HAVE_BFD */
 
 
-BOOL WINAPI MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
+BOOL WINAPI
+MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
 {
 	BOOL ret;
 	
@@ -329,13 +330,15 @@ BOOL WINAPI MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvade
 	return ret;
 }
 
-DWORD WINAPI MgwSymSetOptions(DWORD SymOptions)
+DWORD WINAPI
+MgwSymSetOptions(DWORD SymOptions)
 {
 	return SymSetOptions(SymOptions);
 }
 
 
-BOOL WINAPI MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
+BOOL WINAPI
+MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
 {
 #ifdef HAVE_BFD
 	struct find_handle info;
@@ -356,7 +359,8 @@ BOOL WINAPI MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displaceme
 }
 
 
-BOOL WINAPI MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line)
+BOOL WINAPI
+MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line)
 {
 #ifdef HAVE_BFD
 	struct find_handle info;
@@ -378,7 +382,8 @@ BOOL WINAPI MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwD
 }
 
 
-DWORD WINAPI MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
+DWORD WINAPI
+MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
 {
 #ifdef HAVE_BFD
 	char *res;
@@ -397,7 +402,8 @@ DWORD WINAPI MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, 
 }
 
 
-BOOL WINAPI MgwSymCleanup(HANDLE hProcess)
+BOOL WINAPI
+MgwSymCleanup(HANDLE hProcess)
 {
 #ifdef HAVE_BFD
 	struct mgwhelp_process **link;
