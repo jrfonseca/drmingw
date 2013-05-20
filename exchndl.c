@@ -18,7 +18,7 @@
 #include <dbghelp.h>
 
 #include "symbols.h"
-#include "bfdhelp.h"
+#include "mgwhelp.h"
 
 
 // Declare the static variables
@@ -53,8 +53,8 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 	assert(!bSymInitialized);
 
-	BfdSymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
-	if(BfdSymInitialize(hProcess, NULL, TRUE))
+	MgwSymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
+	if(MgwSymInitialize(hProcess, NULL, TRUE))
 		bSymInitialized = TRUE;
 	
 	memset( &StackFrame, 0, sizeof(StackFrame) );
@@ -127,7 +127,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 				{
 					rprintf( _T("  %s"), szSymName);
 					
-					BfdUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
+					MgwUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 				
 					if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
 						rprintf( _T("  %s:%ld"), szFileName, LineNumber);
@@ -143,7 +143,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
 	if(bSymInitialized)
 	{
-		if(!BfdSymCleanup(hProcess))
+		if(!MgwSymCleanup(hProcess))
 			assert(0);
 		
 		bSymInitialized = FALSE;
