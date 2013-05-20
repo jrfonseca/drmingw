@@ -28,7 +28,7 @@
 
 #include "misc.h"
 #include "pehelp.h"
-#include "bfdhelp.h"
+#include "mgwhelp.h"
 
 
 #ifdef HAVE_BFD
@@ -47,9 +47,9 @@
 #include <demangle.h>
 
 
-struct bfdhelp_module
+struct mgwhelp_module
 {
-	struct bfdhelp_module *next;
+	struct mgwhelp_module *next;
 
 	DWORD64 Base;
 
@@ -63,17 +63,17 @@ struct bfdhelp_module
 };
 
 
-struct bfdhelp_process
+struct mgwhelp_process
 {
-	struct bfdhelp_process *next;
+	struct mgwhelp_process *next;
 
 	HANDLE hProcess;
 
-	struct bfdhelp_module *modules;
+	struct mgwhelp_module *modules;
 };
 
 
-struct bfdhelp_process *processes = NULL;
+struct mgwhelp_process *processes = NULL;
 
 
 // Read in the symbol table.
@@ -96,10 +96,10 @@ slurp_symtab (bfd *abfd, asymbol ***syms, long *symcount)
 }
 
 
-static struct bfdhelp_module *
-bfdhelp_module_create(struct bfdhelp_process * process, DWORD64 Base)
+static struct mgwhelp_module *
+mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
 {
-	struct bfdhelp_module *module;
+	struct mgwhelp_module *module;
 
 	module = calloc(1, sizeof *module);
 	if(!module)
@@ -163,7 +163,7 @@ no_bfd:
 
 
 static void
-bfdhelp_module_destroy(struct bfdhelp_module * module)
+mgwhelp_module_destroy(struct mgwhelp_module * module)
 {
 	if(module->syms)
 		free(module->syms);
@@ -175,10 +175,10 @@ bfdhelp_module_destroy(struct bfdhelp_module * module)
 }
 
 
-static struct bfdhelp_module *
-bfdhelp_module_lookup(struct bfdhelp_process * process, DWORD64 Base)
+static struct mgwhelp_module *
+mgwhelp_module_lookup(struct mgwhelp_process * process, DWORD64 Base)
 {
-	struct bfdhelp_module *module;
+	struct mgwhelp_module *module;
 	
 	module = process->modules;
 	while(module) {
@@ -188,14 +188,14 @@ bfdhelp_module_lookup(struct bfdhelp_process * process, DWORD64 Base)
 		module = module->next;
 	}
 
-	return bfdhelp_module_create(process, Base);
+	return mgwhelp_module_create(process, Base);
 }
 
 
-static struct bfdhelp_process *
-bfdhelp_process_lookup(HANDLE hProcess)
+static struct mgwhelp_process *
+mgwhelp_process_lookup(HANDLE hProcess)
 {
-	struct bfdhelp_process *process;
+	struct mgwhelp_process *process;
 		
 	process = processes;
 	while(process) {
@@ -261,13 +261,13 @@ static void find_address_in_section (bfd *abfd, asection *section, void *data)
 }
 
 
-static BOOL bfdhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
+static BOOL mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
 {
 	DWORD64 Base;
-	struct bfdhelp_process *process;
-	struct bfdhelp_module *module;
+	struct mgwhelp_process *process;
+	struct mgwhelp_module *module;
 		
-	process = bfdhelp_process_lookup(hProcess);
+	process = mgwhelp_process_lookup(hProcess);
 	if(!process) {
 		return FALSE;
 	}
@@ -277,7 +277,7 @@ static BOOL bfdhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_ha
 		return FALSE;
 	}
 
-	module = bfdhelp_module_lookup(process, Base);
+	module = mgwhelp_module_lookup(process, Base);
 	if(!module)
 		return FALSE;
 
@@ -306,7 +306,7 @@ static BOOL bfdhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_ha
 #endif /* HAVE_BFD */
 
 
-BOOL WINAPI BfdSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
+BOOL WINAPI MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
 {
 	BOOL ret;
 	
@@ -314,7 +314,7 @@ BOOL WINAPI BfdSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvade
 
 #ifdef HAVE_BFD
 	if(ret) {
-		struct bfdhelp_process *process;
+		struct mgwhelp_process *process;
 
 		process = calloc(1, sizeof *process);
 		if(process) {
@@ -329,18 +329,18 @@ BOOL WINAPI BfdSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvade
 	return ret;
 }
 
-DWORD WINAPI BfdSymSetOptions(DWORD SymOptions)
+DWORD WINAPI MgwSymSetOptions(DWORD SymOptions)
 {
 	return SymSetOptions(SymOptions);
 }
 
 
-BOOL WINAPI BfdSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
+BOOL WINAPI MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
 {
 #ifdef HAVE_BFD
 	struct find_handle info;
 		
-	if(bfdhelp_find_symbol(hProcess, Address, &info)) {
+	if(mgwhelp_find_symbol(hProcess, Address, &info)) {
 		strncpy(Symbol->Name, info.functionname, Symbol->MaxNameLen);
 
 		if(Displacement) {
@@ -356,12 +356,12 @@ BOOL WINAPI BfdSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displaceme
 }
 
 
-BOOL WINAPI BfdSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line)
+BOOL WINAPI MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line)
 {
 #ifdef HAVE_BFD
 	struct find_handle info;
 		
-	if(bfdhelp_find_symbol(hProcess, dwAddr, &info)) {
+	if(mgwhelp_find_symbol(hProcess, dwAddr, &info)) {
 		Line->FileName = (char *)info.filename;
 		Line->LineNumber = info.line;
 		
@@ -378,7 +378,7 @@ BOOL WINAPI BfdSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwD
 }
 
 
-DWORD WINAPI BfdUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
+DWORD WINAPI MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
 {
 #ifdef HAVE_BFD
 	char *res;
@@ -397,12 +397,12 @@ DWORD WINAPI BfdUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, 
 }
 
 
-BOOL WINAPI BfdSymCleanup(HANDLE hProcess)
+BOOL WINAPI MgwSymCleanup(HANDLE hProcess)
 {
 #ifdef HAVE_BFD
-	struct bfdhelp_process **link;
-	struct bfdhelp_process *process;
-	struct bfdhelp_module *module;
+	struct mgwhelp_process **link;
+	struct mgwhelp_process *process;
+	struct mgwhelp_module *module;
 		
 	link = &processes;
 	process = *link;
@@ -410,9 +410,9 @@ BOOL WINAPI BfdSymCleanup(HANDLE hProcess)
 		if(process->hProcess == hProcess) {
 			module = process->modules;
 			while(module) {
-				struct bfdhelp_module *next = module->next;
+				struct mgwhelp_module *next = module->next;
 
-				bfdhelp_module_destroy(module);
+				mgwhelp_module_destroy(module);
 
 				module = next;
 			}

@@ -1,0 +1,10 @@
+EXPORTS
+	SymInitialize = MgwSymInitialize
+	SymCleanup = MgwSymCleanup
+	SymSetOptions = MgwSymSetOptions
+	SymGetModuleBase64
+	SymFromAddr = MgwSymFromAddr
+	SymGetLineFromAddr64 = MgwSymGetLineFromAddr64
+	StackWalk64
+	SymFunctionTableAccess64
+	SymUnDName64

@@ -18,7 +18,7 @@
 #include "dialog.h"
 #include "misc.h"
 #include "pehelp.h"
-#include "bfdhelp.h"
+#include "mgwhelp.h"
 #include "symbols.h"
 #include "log.h"
 
@@ -104,7 +104,7 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 	pProcessInfo = &ProcessListInfo[i];
 	
 	/*assert(!bSymInitialize);
-	BfdSymSetOptions(SYMOPT_LOAD_LINES);
+	MgwSymSetOptions(SYMOPT_LOAD_LINES);
 	if(!pfnSymInitialize(hProcess, NULL, TRUE))
 	{
 		if(verbose_flag)
@@ -416,8 +416,8 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	
 	assert(!bSymInitialized);
 
-	BfdSymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
-	if(BfdSymInitialize(hProcess, NULL, TRUE))
+	MgwSymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
+	if(MgwSymInitialize(hProcess, NULL, TRUE))
 		bSymInitialized = TRUE;
 	else
 		if(verbose_flag)
@@ -506,7 +506,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 			if(bSymInitialized)
 				if((bSuccess = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
 				{
-					BfdUnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
+					MgwUnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 				
 					lprintf( _T("  %s"), szSymName);
 					
@@ -526,7 +526,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 	
 	if(bSymInitialized)
 	{
-		if(!BfdSymCleanup(hProcess))
+		if(!MgwSymCleanup(hProcess))
 			assert(0);
 		
 		bSymInitialized = FALSE;
