@@ -8,13 +8,13 @@ add_executable (test
 )
 
 add_executable (testcpp
-	testcpp.cxx
-	exchndl2.cxx
+    testcpp.cxx
+    exchndl2.cxx
 )
 
 add_executable (test-segv
-	test-segv.cxx
-	exchndl2.cxx
+    test-segv.cxx
+    exchndl2.cxx
 )
 
 install (FILES test.c testcpp.cxx exchndl2.cxx DESTINATION samples)

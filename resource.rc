@@ -3,18 +3,18 @@
 
 IDI_MAINICON ICON DISCARDABLE "icon.ico"
 
-IDM_MAINMENU MENU 
+IDM_MAINMENU MENU
 {
-	POPUP "&File"
-	{
-		MENUITEM "Save &As...", CM_FILE_SAVEAS
-		MENUITEM SEPARATOR
-		MENUITEM "E&xit", CM_FILE_EXIT
-	}
-	POPUP "&Help"
-	{
-		MENUITEM "&About", CM_HELP_ABOUT
-	}
+    POPUP "&File"
+    {
+        MENUITEM "Save &As...", CM_FILE_SAVEAS
+        MENUITEM SEPARATOR
+        MENUITEM "E&xit", CM_FILE_EXIT
+    }
+    POPUP "&Help"
+    {
+        MENUITEM "&About", CM_HELP_ABOUT
+    }
 }
 
 IDD_ABOUT DIALOG 0, 0, 155, 102

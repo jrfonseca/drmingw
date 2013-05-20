@@ -10,7 +10,7 @@
 /* From 'misc.c': */
 #include <stdio.h>
 static inline void
-	__attribute__ ((format (printf, 1, 2)))
+    __attribute__ ((format (printf, 1, 2)))
 OutputDebug (const char *format , ... )
 {
 
@@ -29,10 +29,10 @@ OutputDebug (const char *format , ... )
 
 #endif
 
-} 
+}
 
 #ifdef NDEBUG
-#define ErrorMessageBox(e, args...)	((void) 0)
+#define ErrorMessageBox(e, args...)    ((void) 0)
 
 #else
 #define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ## args)
@@ -40,21 +40,21 @@ OutputDebug (const char *format , ... )
 #endif
 #define FormatErrorMessage(n) \
 ({ \
-	LPVOID lpMsgBuf; \
+    LPVOID lpMsgBuf; \
  \
-	FormatMessage( \
-		FORMAT_MESSAGE_ALLOCATE_BUFFER | \
-		FORMAT_MESSAGE_FROM_SYSTEM | \
-		FORMAT_MESSAGE_IGNORE_INSERTS, \
-		NULL, \
-		n, \
-		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
-		(LPTSTR) &lpMsgBuf, \
-		0, \
-		NULL \
-	); \
+    FormatMessage( \
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | \
+        FORMAT_MESSAGE_FROM_SYSTEM | \
+        FORMAT_MESSAGE_IGNORE_INSERTS, \
+        NULL, \
+        n, \
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
+        (LPTSTR) &lpMsgBuf, \
+        0, \
+        NULL \
+    ); \
  \
-	(LPSTR) lpMsgBuf; \
+    (LPSTR) lpMsgBuf; \
 })
 #define LastErrorMessage() FormatErrorMessage(GetLastError())
 void _ErrorMessageBox (LPCTSTR lpszFile , DWORD dwLine , LPCTSTR lpszFormat , ... );

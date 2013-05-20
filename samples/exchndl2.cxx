@@ -9,12 +9,12 @@
 
 class ExceptionHandler
 {
-	public:
-	
-	ExceptionHandler()
-	{
-		LoadLibrary("exchndl.dll");
-	}
+    public:
+
+    ExceptionHandler()
+    {
+        LoadLibrary("exchndl.dll");
+    }
 };
 
-static ExceptionHandler gExceptionHandler;	//  global instance of class
+static ExceptionHandler gExceptionHandler;    //  global instance of class
