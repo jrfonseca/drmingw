@@ -102,7 +102,7 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
     struct mgwhelp_module *module;
 
     module = calloc(1, sizeof *module);
-    if(!module)
+    if (!module)
         return NULL;
 
     module->Base = Base;
@@ -111,25 +111,23 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
     process->modules = module;
 
     module->ModuleInfo.SizeOfStruct = sizeof module->ModuleInfo;
-    if(!SymGetModuleInfo64(process->hProcess, Base, &module->ModuleInfo)) {
+    if (!SymGetModuleInfo64(process->hProcess, Base, &module->ModuleInfo)) {
         OutputDebug("No module info");
         goto no_bfd;
     }
 
     module->abfd = bfd_openr(module->ModuleInfo.LoadedImageName, NULL);
-    if(!module->abfd) {
+    if (!module->abfd) {
         OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "could not open");
         goto no_bfd;
     }
 
-    if(!bfd_check_format(module->abfd, bfd_object))
-    {
+    if (!bfd_check_format(module->abfd, bfd_object)) {
         OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "bad format");
         goto bad_format;
     }
 
-    if(!(bfd_get_file_flags(module->abfd) & HAS_SYMS))
-    {
+    if (!(bfd_get_file_flags(module->abfd) & HAS_SYMS)) {
         OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no symbols");
         goto no_symbols;
     }
@@ -141,10 +139,10 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
     module->image_base_vma = (bfd_vma) PEGetImageBase(process->hProcess, Base);
 #endif
 
-    if(!slurp_symtab(module->abfd, &module->syms, &module->symcount))
+    if (!slurp_symtab(module->abfd, &module->syms, &module->symcount))
         goto no_symbols;
 
-    if(!module->symcount)
+    if (!module->symcount)
         goto no_symcount;
 
     return module;
@@ -165,10 +163,10 @@ no_bfd:
 static void
 mgwhelp_module_destroy(struct mgwhelp_module * module)
 {
-    if(module->syms)
+    if (module->syms)
         free(module->syms);
 
-    if(module->abfd)
+    if (module->abfd)
         bfd_close(module->abfd);
 
     free(module);
@@ -181,8 +179,8 @@ mgwhelp_module_lookup(struct mgwhelp_process * process, DWORD64 Base)
     struct mgwhelp_module *module;
 
     module = process->modules;
-    while(module) {
-        if(module->Base == Base)
+    while (module) {
+        if (module->Base == Base)
             return module;
 
         module = module->next;
@@ -198,15 +196,15 @@ mgwhelp_process_lookup(HANDLE hProcess)
     struct mgwhelp_process *process;
 
     process = processes;
-    while(process) {
-        if(process->hProcess == hProcess)
+    while (process) {
+        if (process->hProcess == hProcess)
             return process;
 
         process = process->next;
     }
 
     process = calloc(1, sizeof *process);
-    if(!process)
+    if (!process)
         return process;
 
     process->hProcess = hProcess;
@@ -231,7 +229,8 @@ struct find_handle
 
 
 // Look for an address in a section.  This is called via  bfd_map_over_sections.
-static void find_address_in_section (bfd *abfd, asection *section, void *data)
+static void
+find_address_in_section (bfd *abfd, asection *section, void *data)
 {
     struct find_handle *info = (struct find_handle *) data;
     bfd_vma vma;
@@ -261,27 +260,28 @@ static void find_address_in_section (bfd *abfd, asection *section, void *data)
 }
 
 
-static BOOL mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
+static BOOL
+mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
 {
     DWORD64 Base;
     struct mgwhelp_process *process;
     struct mgwhelp_module *module;
 
     process = mgwhelp_process_lookup(hProcess);
-    if(!process) {
+    if (!process) {
         return FALSE;
     }
 
     Base = SymGetModuleBase64(hProcess, Address);
-    if(!Base) {
+    if (!Base) {
         return FALSE;
     }
 
     module = mgwhelp_module_lookup(process, Base);
-    if(!module)
+    if (!module)
         return FALSE;
 
-    if(!module->abfd)
+    if (!module->abfd)
         return FALSE;
 
     assert(bfd_get_file_flags(module->abfd) & HAS_SYMS);
@@ -297,7 +297,7 @@ static BOOL mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_ha
         return FALSE;
     }
 
-    if(info->functionname == NULL || *info->functionname == '\0')
+    if (info->functionname == NULL || *info->functionname == '\0')
         return FALSE;
 
     return TRUE;
@@ -314,11 +314,11 @@ MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
     ret = SymInitialize(hProcess, UserSearchPath, fInvadeProcess);
 
 #ifdef HAVE_BFD
-    if(ret) {
+    if (ret) {
         struct mgwhelp_process *process;
 
         process = calloc(1, sizeof *process);
-        if(process) {
+        if (process) {
             process->hProcess = hProcess;
 
             process->next = processes;
@@ -343,10 +343,10 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 #ifdef HAVE_BFD
     struct find_handle info;
 
-    if(mgwhelp_find_symbol(hProcess, Address, &info)) {
+    if (mgwhelp_find_symbol(hProcess, Address, &info)) {
         strncpy(Symbol->Name, info.functionname, Symbol->MaxNameLen);
 
-        if(Displacement) {
+        if (Displacement) {
             /* TODO */
             *Displacement = 0;
         }
@@ -365,11 +365,11 @@ MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement,
 #ifdef HAVE_BFD
     struct find_handle info;
 
-    if(mgwhelp_find_symbol(hProcess, dwAddr, &info)) {
+    if (mgwhelp_find_symbol(hProcess, dwAddr, &info)) {
         Line->FileName = (char *)info.filename;
         Line->LineNumber = info.line;
 
-        if(pdwDisplacement) {
+        if (pdwDisplacement) {
             /* TODO */
             *pdwDisplacement = 0;
         }
@@ -390,7 +390,7 @@ MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD Undecor
 
     assert(DecoratedName != NULL);
 
-    if((res = demangle(DecoratedName)) != NULL)
+    if ((res = demangle(DecoratedName)) != NULL)
     {
         strncpy(UnDecoratedName, res, UndecoratedLength);
         free(res);
@@ -412,10 +412,10 @@ MgwSymCleanup(HANDLE hProcess)
 
     link = &processes;
     process = *link;
-    while(process) {
-        if(process->hProcess == hProcess) {
+    while (process) {
+        if (process->hProcess == hProcess) {
             module = process->modules;
-            while(module) {
+            while (module) {
                 struct mgwhelp_module *next = module->next;
 
                 mgwhelp_module_destroy(module);
