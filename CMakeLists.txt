@@ -5,7 +5,7 @@ project (drmingw)
 
 
 ##############################################################################
-# Find dependencies
+# Dependencies
 
 find_path (BINUTILS_INCLUDE_DIR bfd.h PATHS ${BINUTILS_ROOT}/include)
 find_library (BINUTILS_BFD_LIBRARY bfd PATHS ${BINUTILS_ROOT}/lib)
@@ -17,6 +17,9 @@ if (BINUTILS_INCLUDE_DIR AND BINUTILS_BFD_LIBRARY AND BINUTILS_LIBERTY_LIBRARY)
     add_definitions (-DHAVE_BFD)
 endif ()
 
+
+include_directories (${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/dwarf)
+add_subdirectory (thirdparty/dwarf)
 
 
 ##############################################################################
@@ -81,8 +84,6 @@ add_definitions (
 
 ##############################################################################
 # Targets
-
-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library (common STATIC
     demangle.cxx

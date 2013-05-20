@@ -1,0 +1,9 @@
+2012-04-04  DavidAnderson <davea42@earthlink.net>
+     * libdwarf.h: A pointer "*" was right next to
+       a "/*" so a space introduced between them for clarity.
+       Fixed comments on DW_DLC_SIZE_64 and DW_DLC_SIZE_32.
+     * dwarf_die_deliv.c: Two local variables were declared in the
+       middle of code, accidentally creating C99 dependencies.
+       Both trivially fixed with no change in logic.
+2012-01-01  DavidAnderson <davea42@earthlink.net>
+     * A new year starts.
