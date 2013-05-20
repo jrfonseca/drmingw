@@ -80,29 +80,6 @@ add_definitions (
 
 
 ##############################################################################
-# Automatic header generation
-
-find_program (CFUNCTIONS_EXECUTABLE cfunctions)
-if (CFUNCTIONS_EXECUTABLE)
-    set_directory_properties (PROPERTIES
-        CLEAN_NO_CUSTOM TRUE
-    )
-
-    set (HEADERS)
-    foreach (MODULE debugger dialog log misc symbols)
-        add_custom_command (
-            OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}.h
-            COMMAND ${CFUNCTIONS_EXECUTABLE} -i ${MODULE}.c
-            DEPENDS ${MODULE}.c
-        )
-        set (HEADERS ${HEADERS} ${CMAKE_CURRENT_SOURCE_DIR}/${MODULE}.h)
-    endforeach (MODULE)
-
-    add_custom_target (headers DEPENDS ${HEADERS})
-endif ()
-
-
-##############################################################################
 # Targets
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)

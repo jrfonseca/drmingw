@@ -1,19 +1,33 @@
-/* This is a Cfunctions (version 0.28) generated header file.
-   Cfunctions is a free program for extracting headers from C files.
-   Get Cfunctions from 'http://www.lemoda.net/cfunctions/'. */
+/*
+ * Copyright 2002-2013 Jose Fonseca
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 
-/* This file was generated with:
-'cfunctions -i debugger.c' */
-#ifndef CFH_DEBUGGER_H
-#define CFH_DEBUGGER_H
 
-/* From 'debugger.c': */
+#ifndef DEBUGGER_H
+#define DEBUGGER_H
+
+
 #define DBG_EXCEPTION_HANDLED    ((DWORD)0x00010001L)
 typedef struct {
     DWORD dwProcessId;
     HANDLE hProcess;
 }
 PROCESS_LIST_INFO, * PPROCESS_LIST_INFO;
+
 typedef struct {
     DWORD dwProcessId;
     DWORD dwThreadId;
@@ -22,6 +36,7 @@ typedef struct {
     LPTHREAD_START_ROUTINE lpStartAddress;
 }
 THREAD_LIST_INFO, * PTHREAD_LIST_INFO;
+
 typedef struct {
     DWORD dwProcessId;
     HANDLE hFile;
@@ -32,6 +47,7 @@ typedef struct {
     WORD fUnicode;
 }
 MODULE_LIST_INFO, * PMODULE_LIST_INFO;
+
 extern int breakpoint_flag;
 extern int verbose_flag;
 extern DWORD dwProcessId;
@@ -42,8 +58,9 @@ extern unsigned nThreads, maxThreads;
 extern PTHREAD_LIST_INFO ThreadListInfo;
 extern unsigned nModules, maxModules;
 extern PMODULE_LIST_INFO ModuleListInfo;
+
 BOOL ObtainSeDebugPrivilege (void);
 void DebugProcess (void * dummy );
 BOOL DebugMainLoop (void);
 
-#endif /* CFH_DEBUGGER_H */
+#endif /* DEBUGGER_H */

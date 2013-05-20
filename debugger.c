@@ -15,38 +15,6 @@
 #include "log.h"
 #include "misc.h"
 
-#ifdef HEADER
-
-#define DBG_EXCEPTION_HANDLED    ((DWORD)0x00010001L)
-
-typedef struct
-{
-    DWORD dwProcessId;
-    HANDLE hProcess;
-} PROCESS_LIST_INFO, *PPROCESS_LIST_INFO;
-
-typedef struct
-{
-    DWORD dwProcessId;
-    DWORD dwThreadId;
-    HANDLE hThread;
-    LPVOID lpThreadLocalBase;
-    LPTHREAD_START_ROUTINE lpStartAddress;
-} THREAD_LIST_INFO, *PTHREAD_LIST_INFO;
-
-typedef struct
-{
-    DWORD dwProcessId;
-    HANDLE hFile;
-    LPVOID lpBaseAddress;
-    DWORD dwDebugInfoFileOffset;
-    DWORD nDebugInfoSize;
-    LPVOID lpImageName;
-    WORD fUnicode;
-} MODULE_LIST_INFO, *PMODULE_LIST_INFO;
-
-#endif    /* HEADER */
-
 
 int breakpoint_flag = 0;    /* Treat breakpoints as exceptions (default=no).  */
 int verbose_flag = 0;    /* Verbose output (default=no).  */

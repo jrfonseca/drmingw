@@ -1,17 +1,30 @@
-/* This is a Cfunctions (version 0.28) generated header file.
-   Cfunctions is a free program for extracting headers from C files.
-   Get Cfunctions from 'http://www.lemoda.net/cfunctions/'. */
+/*
+ * Copyright 2002-2013 Jose Fonseca
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 
-/* This file was generated with:
-'cfunctions -i misc.c' */
-#ifndef CFH_MISC_H
-#define CFH_MISC_H
+#ifndef MISC_H
+#define MISC_H
 
-/* From 'misc.c': */
+
 #include <stdio.h>
+
 static inline void
     __attribute__ ((format (printf, 1, 2)))
-OutputDebug (const char *format , ... )
+OutputDebug (const char *format, ... )
 {
 
 #ifndef NDEBUG
@@ -57,6 +70,6 @@ OutputDebug (const char *format , ... )
     (LPSTR) lpMsgBuf; \
 })
 #define LastErrorMessage() FormatErrorMessage(GetLastError())
-void _ErrorMessageBox (LPCTSTR lpszFile , DWORD dwLine , LPCTSTR lpszFormat , ... );
+void _ErrorMessageBox (LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ... );
 
-#endif /* CFH_MISC_H */
+#endif /* MISC_H */

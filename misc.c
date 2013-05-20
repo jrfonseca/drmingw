@@ -10,54 +10,6 @@
 #include "log.h"
 #include "misc.h"
 
-#ifdef HEADER
-
-#include <stdio.h>
-
-static inline void
-    __attribute__ ((format (printf, 1, 2)))
-OutputDebug(const char *format, ...)
-{
-#ifndef NDEBUG
-       char buf[4096];
-       va_list ap;
-       va_start(ap, format);
-       _vsnprintf(buf, sizeof(buf), format, ap);
-       OutputDebugStringA(buf);
-       va_end(ap);
-#else
-       (void)format;
-#endif
-}
-
-#ifdef NDEBUG
-#define ErrorMessageBox(e, args...)    ((void) 0)
-#else
-#define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ## args)
-#endif
-
-#define FormatErrorMessage(n) \
-({ \
-    LPVOID lpMsgBuf; \
- \
-    FormatMessage( \
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | \
-        FORMAT_MESSAGE_FROM_SYSTEM | \
-        FORMAT_MESSAGE_IGNORE_INSERTS, \
-        NULL, \
-        n, \
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
-        (LPTSTR) &lpMsgBuf, \
-        0, \
-        NULL \
-    ); \
- \
-    (LPSTR) lpMsgBuf; \
-})
-
-#define LastErrorMessage() FormatErrorMessage(GetLastError())
-
-#endif /* HEADER */
 
 void _ErrorMessageBox(LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ...)
 {

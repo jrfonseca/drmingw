@@ -17,10 +17,6 @@
 #include "symbols.h"
 
 
-#ifdef HEADER
-#include <dbghelp.h>
-#endif /* HEADER */
-
 BOOL bSymInitialized = FALSE;
 
 BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
