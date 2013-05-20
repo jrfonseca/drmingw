@@ -108,6 +108,7 @@ endif ()
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library (common STATIC
+	demangle.cxx
 	misc.c
 	symbols.c
 	mgwhelp.c

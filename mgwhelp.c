@@ -27,6 +27,7 @@
 #include <psapi.h>
 
 #include "misc.h"
+#include "demangle.h"
 #include "pehelp.h"
 #include "mgwhelp.h"
 
@@ -44,7 +45,6 @@
 #endif
 
 #include <bfd.h>
-#include <demangle.h>
 
 
 struct mgwhelp_module
@@ -390,7 +390,7 @@ MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD Undecor
 	
 	assert(DecoratedName != NULL);
 
-	if((res = cplus_demangle(DecoratedName, 0)) != NULL)
+	if((res = demangle(DecoratedName)) != NULL)
 	{
 		strncpy(UnDecoratedName, res, UndecoratedLength);
 		free(res);
