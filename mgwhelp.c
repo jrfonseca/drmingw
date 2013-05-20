@@ -46,6 +46,8 @@
 
 #include <bfd.h>
 
+#endif
+
 
 struct mgwhelp_module
 {
@@ -55,11 +57,13 @@ struct mgwhelp_module
 
     IMAGEHLP_MODULE64 ModuleInfo;
 
-    bfd_vma image_base_vma;
+    DWORD64 image_base_vma;
 
+#ifdef HAVE_BFD
     bfd *abfd;
     asymbol **syms;
     long symcount;
+#endif  /* HAVE_BFD */
 };
 
 
@@ -75,6 +79,8 @@ struct mgwhelp_process
 
 struct mgwhelp_process *processes = NULL;
 
+
+#ifdef HAVE_BFD
 
 // Read in the symbol table.
 static bfd_boolean
@@ -94,6 +100,8 @@ slurp_symtab (bfd *abfd, asymbol ***syms, long *symcount)
 
     return TRUE;
 }
+
+#endif /* HAVE_BFD */
 
 
 static struct mgwhelp_module *
@@ -116,6 +124,10 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
         goto no_bfd;
     }
 
+    module->image_base_vma = PEGetImageBase(process->hProcess, Base);
+
+#ifdef HAVE_BFD
+
     module->abfd = bfd_openr(module->ModuleInfo.LoadedImageName, NULL);
     if (!module->abfd) {
         OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "could not open");
@@ -132,21 +144,17 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
         goto no_symbols;
     }
 
-#if 0
-    /* This requires access to BFD internal data structures */
-    module->image_base_vma = pe_data (module->abfd)->pe_opthdr.ImageBase;
-#else
-    module->image_base_vma = (bfd_vma) PEGetImageBase(process->hProcess, Base);
-#endif
-
     if (!slurp_symtab(module->abfd, &module->syms, &module->symcount))
         goto no_symbols;
 
     if (!module->symcount)
         goto no_symcount;
 
+#endif /* HAVE_BFD */
+
     return module;
 
+#ifdef HAVE_BFD
 no_symcount:
     free(module->syms);
     module->syms = NULL;
@@ -154,6 +162,7 @@ no_symbols:
 bad_format:
     bfd_close(module->abfd);
     module->abfd = NULL;
+#endif /* HAVE_BFD */
 no_bfd:
 
     return module;
@@ -163,11 +172,13 @@ no_bfd:
 static void
 mgwhelp_module_destroy(struct mgwhelp_module * module)
 {
+#ifdef HAVE_BFD
     if (module->syms)
         free(module->syms);
 
     if (module->abfd)
         bfd_close(module->abfd);
+#endif /* HAVE_BFD */
 
     free(module);
 }
@@ -216,6 +227,8 @@ mgwhelp_process_lookup(HANDLE hProcess)
 }
 
 
+#ifdef HAVE_BFD
+
 // This stucture is used to pass information between translate_addresses and find_address_in_section.
 struct find_handle
 {
@@ -260,6 +273,7 @@ find_address_in_section (bfd *abfd, asection *section, void *data)
 }
 
 
+
 static BOOL
 mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
 {
@@ -297,10 +311,10 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
         return FALSE;
     }
 
-    if (info->functionname == NULL || *info->functionname == '\0')
-        return FALSE;
+    if (info->functionname != NULL && *info->functionname != '\0')
+        return TRUE;
 
-    return TRUE;
+    return FALSE;
 }
 
 #endif /* HAVE_BFD */
@@ -385,7 +399,6 @@ MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement,
 DWORD WINAPI
 MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
 {
-#ifdef HAVE_BFD
     char *res;
 
     assert(DecoratedName != NULL);
@@ -396,7 +409,6 @@ MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD Undecor
         free(res);
         return strlen(UnDecoratedName);
     }
-#endif
 
     return UnDecorateSymbolName(DecoratedName, UnDecoratedName, UndecoratedLength, Flags);
 }
@@ -405,7 +417,6 @@ MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD Undecor
 BOOL WINAPI
 MgwSymCleanup(HANDLE hProcess)
 {
-#ifdef HAVE_BFD
     struct mgwhelp_process **link;
     struct mgwhelp_process *process;
     struct mgwhelp_module *module;
@@ -431,7 +442,6 @@ MgwSymCleanup(HANDLE hProcess)
         link = &process->next;
         process = *link;
     }
-#endif /* HAVE_BFD */
 
     return SymCleanup(hProcess);
 }
