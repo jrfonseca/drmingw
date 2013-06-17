@@ -46,7 +46,7 @@ if (MSVC)
     )
 else ()
     # Adjust warnings
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wmissing-prototypes")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wmissing-prototypes -std=gnu99")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
     # Use GDB extensions if available
@@ -87,12 +87,14 @@ add_definitions (
 
 add_library (common STATIC
     demangle.cxx
+    dwarf_pe.c
     misc.c
     symbols.c
     mgwhelp.c
     pehelp.c
 )
 target_link_libraries (common
+    dwarf
     dbghelp
     psapi
 )

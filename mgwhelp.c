@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <malloc.h>
 
@@ -31,6 +32,9 @@
 #include "pehelp.h"
 #include "mgwhelp.h"
 
+#include <dwarf.h>
+#include <libdwarf.h>
+#include "dwarf_pe.h"
 
 #ifdef HAVE_BFD
 
@@ -80,6 +84,226 @@ struct mgwhelp_process
 struct mgwhelp_process *processes = NULL;
 
 
+struct find_handle
+{
+    struct mgwhelp_module *module;
+    DWORD64 pc;
+    const char *filename;
+    const char *functionname;
+    unsigned int line;
+    bool found;
+};
+
+
+/*-
+ * elftoolchain-0.6.1/addr2line/addr2line.c
+ *
+ * Copyright (c) 2009 Kai Wang
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+static char unknown[] = { '?', '?', '\0' };
+static void
+search_func(Dwarf_Debug dbg,
+            Dwarf_Die die,
+            Dwarf_Addr addr,
+            char **rlt_func)
+{
+    Dwarf_Die ret_die, spec_die;
+    Dwarf_Error de;
+    Dwarf_Half tag;
+    Dwarf_Unsigned lopc, hipc;
+    Dwarf_Off ref;
+    Dwarf_Attribute sub_at, spec_at;
+    char *func0;
+    int ret;
+
+    if (*rlt_func != NULL)
+        return;
+
+    if (dwarf_tag(die, &tag, &de)) {
+        OutputDebug("dwarf_tag: %s", dwarf_errmsg(de));
+        goto cont_search;
+    }
+    if (tag == DW_TAG_subprogram) {
+        if (dwarf_lowpc(die, &lopc, &de) ||
+            dwarf_highpc(die, &hipc, &de))
+            goto cont_search;
+        if (addr < lopc || addr >= hipc)
+            goto cont_search;
+
+        /* Found it! */
+
+        *rlt_func = unknown;
+        ret = dwarf_attr(die, DW_AT_name, &sub_at, &de);
+        if (ret == DW_DLV_ERROR)
+            return;
+        if (ret == DW_DLV_OK) {
+            if (dwarf_formstring(sub_at, &func0, &de))
+                *rlt_func = unknown;
+            else
+                *rlt_func = func0;
+            return;
+        }
+
+        /*
+         * If DW_AT_name is not present, but DW_AT_specification is
+         * present, then probably the actual name is in the DIE
+         * referenced by DW_AT_specification.
+         */
+        if (dwarf_attr(die, DW_AT_specification, &spec_at, &de) != DW_DLV_OK)
+            return;
+        if (dwarf_global_formref(spec_at, &ref, &de) != DW_DLV_OK)
+            return;
+        if (dwarf_offdie(dbg, ref, &spec_die, &de) != DW_DLV_OK)
+            return;
+        if (dwarf_diename(spec_die, rlt_func, &de) != DW_DLV_OK)
+            *rlt_func = unknown;
+
+        return;
+    }
+
+cont_search:
+
+    /* Search children. */
+    ret = dwarf_child(die, &ret_die, &de);
+    if (ret == DW_DLV_ERROR)
+        OutputDebug("dwarf_child: %s", dwarf_errmsg(de));
+    else if (ret == DW_DLV_OK)
+        search_func(dbg, ret_die, addr, rlt_func);
+
+    /* Search sibling. */
+    ret = dwarf_siblingof(dbg, die, &ret_die, &de);
+    if (ret == DW_DLV_ERROR)
+        OutputDebug("dwarf_siblingof: %s", dwarf_errmsg(de));
+    else if (ret == DW_DLV_OK)
+        search_func(dbg, ret_die, addr, rlt_func);
+}
+
+static void
+find_dwarf_symbol(struct mgwhelp_module *module,
+                  DWORD64 addr,
+                  struct find_handle *info)
+{
+    Dwarf_Debug dbg;
+    Dwarf_Error error = 0;
+    char *funcname = NULL;
+
+    if (dwarf_pe_init(module->ModuleInfo.LoadedImageName, 0, 0, &dbg, &error) != DW_DLV_OK) {
+        goto no_dbg;
+    }
+
+    Dwarf_Arange *aranges;
+    Dwarf_Signed arange_count;
+    if (dwarf_get_aranges(dbg, &aranges, &arange_count, &error) != DW_DLV_OK) {
+        goto no_aranges;
+    }
+
+    Dwarf_Arange arange;
+    if (dwarf_get_arange(aranges, arange_count, addr, &arange, &error) != DW_DLV_OK) {
+        goto no_arange;
+    }
+
+    Dwarf_Off cu_die_offset;
+    if (dwarf_get_cu_die_offset(arange, &cu_die_offset, &error) != DW_DLV_OK) {
+        goto no_die_offset;
+    }
+
+    Dwarf_Die cu_die;
+    if (dwarf_offdie_b(dbg, cu_die_offset, 1, &cu_die, &error) != DW_DLV_OK) {
+        goto no_cu_die;
+    }
+
+    search_func(dbg, cu_die, addr, &funcname);
+    if (funcname) {
+        OutputDebug("funcname = %s!!!\n", funcname);
+        info->functionname = funcname;
+    }
+
+    Dwarf_Line *linebuf;
+    Dwarf_Signed linecount;
+    if (dwarf_srclines(cu_die, &linebuf, &linecount, &error) == DW_DLV_OK) {
+        Dwarf_Unsigned lineno, plineno;
+        Dwarf_Addr lineaddr, plineaddr;
+        char *file, *file0, *pfile;
+        plineaddr = ~0ULL;
+        plineno = 0;
+        pfile = unknown;
+        Dwarf_Signed i;
+        for (i = 0; i < linecount; i++) {
+            if (dwarf_lineaddr(linebuf[i], &lineaddr, &error) != DW_DLV_OK) {
+                OutputDebug("dwarf_lineaddr: %s",
+                    dwarf_errmsg(error));
+                break;
+            }
+            if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
+                OutputDebug("dwarf_lineno: %s",
+                    dwarf_errmsg(error));
+                break;
+            }
+            if (dwarf_linesrc(linebuf[i], &file0, &error) != DW_DLV_OK) {
+                OutputDebug("dwarf_linesrc: %s",
+                    dwarf_errmsg(error));
+            } else
+                file = file0;
+            if (addr == lineaddr)
+                break;
+            else if (addr < lineaddr && addr > plineaddr) {
+                lineno = plineno;
+                file = pfile;
+                break;
+            }
+            plineaddr = lineaddr;
+            plineno = lineno;
+            pfile = file;
+        }
+
+        info->filename = pfile;
+        info->line = plineno;
+
+        dwarf_srclines_dealloc(dbg, linebuf, linecount);
+    }
+
+    dwarf_dealloc(dbg, cu_die, DW_DLA_DIE);
+no_cu_die:
+    ;
+no_die_offset:
+    ;
+no_arange:
+    for (Dwarf_Signed i = 0; i < arange_count; ++i) {
+        dwarf_dealloc(dbg, aranges[i], DW_DLA_ARANGE);
+    }
+    dwarf_dealloc(dbg, aranges, DW_DLA_LIST);
+no_aranges:
+    dwarf_pe_finish(dbg, &error);
+no_dbg:
+    if (error) {
+        OutputDebug("libdwarf error: %s\n", dwarf_errmsg(error));
+    }
+}
+
+
 #ifdef HAVE_BFD
 
 // Read in the symbol table.
@@ -109,7 +333,7 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
 {
     struct mgwhelp_module *module;
 
-    module = calloc(1, sizeof *module);
+    module = (struct mgwhelp_module *)calloc(1, sizeof *module);
     if (!module)
         return NULL;
 
@@ -214,7 +438,7 @@ mgwhelp_process_lookup(HANDLE hProcess)
         process = process->next;
     }
 
-    process = calloc(1, sizeof *process);
+    process = (struct mgwhelp_process *)calloc(1, sizeof *process);
     if (!process)
         return process;
 
@@ -229,23 +453,12 @@ mgwhelp_process_lookup(HANDLE hProcess)
 
 #ifdef HAVE_BFD
 
-// This stucture is used to pass information between translate_addresses and find_address_in_section.
-struct find_handle
-{
-    asymbol **syms;
-    bfd_vma pc;
-    const char *filename;
-    const char *functionname;
-    unsigned int line;
-    bfd_boolean found;
-};
-
-
 // Look for an address in a section.  This is called via  bfd_map_over_sections.
 static void
 find_address_in_section (bfd *abfd, asection *section, void *data)
 {
     struct find_handle *info = (struct find_handle *) data;
+    struct mgwhelp_module *module = info->module;
     bfd_vma vma;
     bfd_size_type size;
 
@@ -259,7 +472,7 @@ find_address_in_section (bfd *abfd, asection *section, void *data)
     size = bfd_get_section_size (section);
 
     if (0)
-        OutputDebug("section: 0x%08" BFD_VMA_FMT "x - 0x%08" BFD_VMA_FMT "x (pc = 0x%08" BFD_VMA_FMT "x)\n",
+        OutputDebug("section: 0x%08" BFD_VMA_FMT "x - 0x%08" BFD_VMA_FMT "x (pc = 0x%08I64x)\n",
                 vma, vma + size, info->pc);
 
     if (info->pc < vma)
@@ -268,10 +481,11 @@ find_address_in_section (bfd *abfd, asection *section, void *data)
     if (info->pc >= vma + size)
         return;
 
-    info->found = bfd_find_nearest_line (abfd, section, info->syms, info->pc - vma,
-                                             &info->filename, &info->functionname, &info->line);
+    info->found = bfd_find_nearest_line (abfd, section, module->syms, info->pc - vma,
+                                         &info->filename, &info->functionname, &info->line);
 }
 
+#endif /* HAVE_BFD */
 
 
 static BOOL
@@ -295,29 +509,35 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
     if (!module)
         return FALSE;
 
-    if (!module->abfd)
-        return FALSE;
-
-    assert(bfd_get_file_flags(module->abfd) & HAS_SYMS);
-    assert(module->symcount);
+    DWORD64 Offset = module->image_base_vma + Address - (DWORD64)module->Base;
 
     memset(info, 0, sizeof *info);
-    info->pc = module->image_base_vma + (bfd_vma)Address - (bfd_vma)module->Base;
-    info->syms = module->syms;
-    info->found = FALSE;
+    info->module = module;
+    info->pc = Offset;
 
-    bfd_map_over_sections(module->abfd, find_address_in_section, info);
-    if (info->found == FALSE || info->line == 0) {
-        return FALSE;
+
+    find_dwarf_symbol(module, Offset, info);
+    if (info->found) {
+        return TRUE;
     }
 
-    if (info->functionname != NULL && *info->functionname != '\0')
-        return TRUE;
+#if HAVE_BFD
+    if (module->abfd) {
+        assert(bfd_get_file_flags(module->abfd) & HAS_SYMS);
+        assert(module->symcount);
+
+        bfd_map_over_sections(module->abfd, find_address_in_section, info);
+        if (info->found &&
+            info->line != 0 &&
+            info->functionname != NULL &&
+            *info->functionname != '\0') {
+            return TRUE;
+        }
+    }
+#endif /* HAVE_BFD */
 
     return FALSE;
 }
-
-#endif /* HAVE_BFD */
 
 
 BOOL WINAPI
@@ -327,11 +547,10 @@ MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
 
     ret = SymInitialize(hProcess, UserSearchPath, fInvadeProcess);
 
-#ifdef HAVE_BFD
     if (ret) {
         struct mgwhelp_process *process;
 
-        process = calloc(1, sizeof *process);
+        process = (struct mgwhelp_process *)calloc(1, sizeof *process);
         if (process) {
             process->hProcess = hProcess;
 
@@ -339,7 +558,6 @@ MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
             processes = process;
         }
     }
-#endif /* HAVE_BFD */
 
     return ret;
 }
@@ -354,7 +572,6 @@ MgwSymSetOptions(DWORD SymOptions)
 BOOL WINAPI
 MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
 {
-#ifdef HAVE_BFD
     struct find_handle info;
 
     if (mgwhelp_find_symbol(hProcess, Address, &info)) {
@@ -367,7 +584,6 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 
         return TRUE;
     }
-#endif /* HAVE_BFD */
 
     return SymFromAddr(hProcess, Address, Displacement, Symbol);
 }
@@ -376,7 +592,6 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 BOOL WINAPI
 MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line)
 {
-#ifdef HAVE_BFD
     struct find_handle info;
 
     if (mgwhelp_find_symbol(hProcess, dwAddr, &info)) {
@@ -390,7 +605,6 @@ MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement,
 
         return TRUE;
     }
-#endif /* HAVE_BFD */
 
     return SymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, Line);
 }
