@@ -344,10 +344,21 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
     process->modules = module;
 
     module->ModuleInfo.SizeOfStruct = sizeof module->ModuleInfo;
+#if 0
     if (!SymGetModuleInfo64(process->hProcess, Base, &module->ModuleInfo)) {
         OutputDebug("No module info");
         goto no_bfd;
     }
+#else
+    module->ModuleInfo.BaseOfImage = Base;
+    if (!module->ModuleInfo.LoadedImageName[0]) {
+        GetModuleFileNameExA(process->hProcess,
+                             (HMODULE)(UINT_PTR)module->ModuleInfo.BaseOfImage,
+                             module->ModuleInfo.LoadedImageName,
+                             sizeof module->ModuleInfo.LoadedImageName);
+    }
+#endif
+
 
     module->image_base_vma = PEGetImageBase(process->hProcess, Base);
 
@@ -501,7 +512,16 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
         return FALSE;
     }
 
-    Base = SymGetModuleBase64(hProcess, Address);
+    if (hProcess == GetCurrentProcess()) {
+        HMODULE hModule = 0;
+        BOOL bRet = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                                      (LPCTSTR)(UINT_PTR)Address,
+                                      &hModule);
+        assert(bRet);
+        Base = (DWORD64)(UINT_PTR)hModule;
+    } else {
+        Base = SymGetModuleBase64(hProcess, Address);
+    }
     if (!Base) {
         return FALSE;
     }
