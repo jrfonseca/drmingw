@@ -17,5 +17,13 @@ add_executable (test-segv
     exchndl2.cxx
 )
 
+add_executable (example
+    example.c
+)
+add_dependencies (example mgwhelp)
+target_link_libraries (example
+    ${CMAKE_BINARY_DIR}/mgwhelp.dll
+)
+
 install (FILES test.c testcpp.cxx exchndl2.cxx DESTINATION samples)
 install (TARGETS test testcpp RUNTIME DESTINATION samples)
