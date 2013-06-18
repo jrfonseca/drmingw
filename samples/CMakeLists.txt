@@ -20,9 +20,8 @@ add_executable (test-segv
 add_executable (example
     example.c
 )
-add_dependencies (example mgwhelp)
 target_link_libraries (example
-    ${CMAKE_BINARY_DIR}/mgwhelp.dll
+    mgwhelp
 )
 
 install (FILES test.c testcpp.cxx exchndl2.cxx DESTINATION samples)

@@ -129,10 +129,9 @@ add_executable (drmingw WIN32
     main.c
     resource.rc
 )
-add_dependencies (drmingw mgwhelp)
 target_link_libraries (drmingw
     common
-    ${CMAKE_BINARY_DIR}/mgwhelp.dll
+    mgwhelp
     psapi
 )
 install (TARGETS drmingw RUNTIME DESTINATION bin)
@@ -141,10 +140,9 @@ add_library (exchndl MODULE
     exchndl.c
     exchndl.def
 )
-add_dependencies (exchndl mgwhelp)
 target_link_libraries (exchndl LINK_PRIVATE
     common
-    ${CMAKE_BINARY_DIR}/mgwhelp.dll
+    mgwhelp
 )
 set_target_properties (exchndl PROPERTIES
     PREFIX ""
