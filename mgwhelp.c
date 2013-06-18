@@ -239,6 +239,7 @@ find_dwarf_symbol(struct mgwhelp_module *module,
     if (funcname) {
         OutputDebug("funcname = %s!!!\n", funcname);
         info->functionname = funcname;
+        info->found = true;
     }
 
     Dwarf_Line *linebuf;
