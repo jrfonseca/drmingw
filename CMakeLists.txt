@@ -74,9 +74,8 @@ if (MINGW)
         set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libstdc++")
     endif ()
 
-    # XXX: Ideally we'd use -Wl,--kill-at, but that causes link  failures somehow
     if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-        set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--add-stdcall-alias")
+        set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--kill-at")
     endif ()
 endif ()
 
@@ -127,6 +126,21 @@ if (BINUTILS_FOUND)
 endif ()
 install (TARGETS mgwhelp RUNTIME DESTINATION bin)
 
+if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    # XXX: We need to use a custom import lib to avoid link failures
+    string (REPLACE gcc dlltool DLLTOOL ${CMAKE_C_COMPILER})
+    set (MGWHELP_IMPLIB ${CMAKE_BINARY_DIR}/libmgwhelp.a)
+    add_custom_command (
+        OUTPUT ${MGWHELP_IMPLIB}
+        COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp --kill-at --input-def=${CMAKE_SOURCE_DIR}/dbghelp.def
+        DEPENDS ${CMAKE_SOURCE_DIR}/dbghelp.def
+    )
+else ()
+    set (MGWHELP_IMPLIB mgwhelp)
+endif ()
+add_custom_target (mgwhelp_implib DEPENDS ${MGWHELP_IMPLIB})
+
+
 add_executable (drmingw WIN32
     debugger.c
     dialog.c
@@ -134,9 +148,10 @@ add_executable (drmingw WIN32
     main.c
     resource.rc
 )
+add_dependencies (drmingw mgwhelp_implib)
 target_link_libraries (drmingw
     common
-    mgwhelp
+    ${MGWHELP_IMPLIB}
     psapi
 )
 install (TARGETS drmingw RUNTIME DESTINATION bin)
@@ -145,9 +160,10 @@ add_library (exchndl MODULE
     exchndl.c
     exchndl.def
 )
+add_dependencies (exchndl mgwhelp_implib)
 target_link_libraries (exchndl LINK_PRIVATE
     common
-    mgwhelp
+    ${MGWHELP_IMPLIB}
 )
 set_target_properties (exchndl PROPERTIES
     PREFIX ""

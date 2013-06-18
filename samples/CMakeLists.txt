@@ -20,8 +20,9 @@ add_executable (test-segv
 add_executable (example
     example.c
 )
+add_dependencies (example mgwhelp_implib)
 target_link_libraries (example
-    mgwhelp
+    ${MGWHELP_IMPLIB}
 )
 
 install (FILES test.c testcpp.cxx exchndl2.cxx DESTINATION samples)
