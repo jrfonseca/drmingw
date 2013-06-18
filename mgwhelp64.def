@@ -7,5 +7,4 @@ EXPORTS
 	SymGetLineFromAddr64 = MgwSymGetLineFromAddr64
 	StackWalk64
 	SymFunctionTableAccess64
-	SymUnDName64
 	UnDecorateSymbolName

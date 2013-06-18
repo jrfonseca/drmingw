@@ -1,11 +1,10 @@
 EXPORTS
-	SymInitialize = MgwSymInitialize@12
-	SymCleanup = MgwSymCleanup@4
-	SymSetOptions = MgwSymSetOptions@4
+	SymInitialize@12 = MgwSymInitialize@12
+	SymCleanup@4 = MgwSymCleanup@4
+	SymSetOptions@4 = MgwSymSetOptions@4
 	SymGetModuleBase64@12
-	SymFromAddr = MgwSymFromAddr@20
-	SymGetLineFromAddr64 = MgwSymGetLineFromAddr64@20
-	StackWalk64 = StackWalk64@36
-	SymFunctionTableAccess64 = SymFunctionTableAccess64@12
-	SymUnDName64 = SymUnDName64@12
-	UnDecorateSymbolName = UnDecorateSymbolName@16
+	SymFromAddr@20 = MgwSymFromAddr@20
+	SymGetLineFromAddr64@20 = MgwSymGetLineFromAddr64@20
+	StackWalk64@36 = StackWalk64@36
+	SymFunctionTableAccess64@12 = SymFunctionTableAccess64@12
+	UnDecorateSymbolName@16 = MgwUnDecorateSymbolName@16

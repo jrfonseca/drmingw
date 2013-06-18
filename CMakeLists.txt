@@ -103,7 +103,7 @@ add_library (mgwhelp SHARED
     dwarf_pe.c
     mgwhelp.c
 )
-target_link_libraries (mgwhelp
+target_link_libraries (mgwhelp LINK_PRIVATE
     common
     dwarf
     dbghelp
@@ -130,7 +130,7 @@ add_executable (drmingw WIN32
 add_dependencies (drmingw mgwhelp)
 target_link_libraries (drmingw
     common
-    mgwhelp
+    ${CMAKE_BINARY_DIR}/mgwhelp.dll
     psapi
 )
 install (TARGETS drmingw RUNTIME DESTINATION bin)
@@ -142,7 +142,7 @@ add_library (exchndl MODULE
 add_dependencies (exchndl mgwhelp)
 target_link_libraries (exchndl
     common
-    mgwhelp
+    ${CMAKE_BINARY_DIR}/mgwhelp.dll
 )
 set_target_properties (exchndl PROPERTIES
     PREFIX ""
