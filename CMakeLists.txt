@@ -14,7 +14,6 @@ find_library (BINUTILS_LIBERTY_LIBRARY liberty PATHS ${BINUTILS_ROOT}/lib)
 if (BINUTILS_INCLUDE_DIR AND BINUTILS_BFD_LIBRARY AND BINUTILS_LIBERTY_LIBRARY)
     set (BINUTILS_FOUND 1)
     include_directories (${BINUTILS_INCLUDE_DIR})
-    add_definitions (-DHAVE_BFD)
 endif ()
 
 
@@ -113,7 +112,10 @@ set_target_properties (mgwhelp PROPERTIES
     PREFIX ""
 )
 if (BINUTILS_FOUND)
-    target_link_libraries (mgwhelp
+    set_target_properties (mgwhelp PROPERTIES
+	COMPILE_DEFINITIONS HAVE_BFD=1
+    )
+    target_link_libraries (mgwhelp LINK_PRIVATE
         ${BINUTILS_BFD_LIBRARY}
         ${BINUTILS_LIBERTY_LIBRARY}
     )
@@ -140,7 +142,7 @@ add_library (exchndl MODULE
     exchndl.def
 )
 add_dependencies (exchndl mgwhelp)
-target_link_libraries (exchndl
+target_link_libraries (exchndl LINK_PRIVATE
     common
     ${CMAKE_BINARY_DIR}/mgwhelp.dll
 )
