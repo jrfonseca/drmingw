@@ -398,10 +398,9 @@ no_symbols:
 bad_format:
     bfd_close(module->abfd);
     module->abfd = NULL;
-#endif /* HAVE_BFD */
 no_bfd:
-
     return module;
+#endif /* HAVE_BFD */
 }
 
 
