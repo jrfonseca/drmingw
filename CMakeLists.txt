@@ -73,6 +73,11 @@ if (MINGW)
         set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++")
         set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libstdc++")
     endif ()
+
+    # XXX: Ideally we'd use -Wl,--kill-at, but that causes link  failures somehow
+    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+        set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--add-stdcall-alias")
+    endif ()
 endif ()
 
 add_definitions (
