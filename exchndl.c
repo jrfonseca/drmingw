@@ -57,8 +57,8 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
     assert(!bSymInitialized);
 
-    MgwSymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
-    if(MgwSymInitialize(hProcess, NULL, TRUE))
+    SymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
+    if(SymInitialize(hProcess, NULL, TRUE))
         bSymInitialized = TRUE;
 
     memset( &StackFrame, 0, sizeof(StackFrame) );
@@ -141,7 +141,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
                 {
                     rprintf( _T("  %s"), szSymName);
 
-                    MgwUnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
+                    UnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 
                     if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
                         rprintf( _T("  %s:%ld"), szFileName, LineNumber);
@@ -157,7 +157,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
     if(bSymInitialized)
     {
-        if(!MgwSymCleanup(hProcess))
+        if(!SymCleanup(hProcess))
             assert(0);
 
         bSymInitialized = FALSE;

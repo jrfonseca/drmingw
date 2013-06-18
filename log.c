@@ -104,7 +104,7 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
     pProcessInfo = &ProcessListInfo[i];
 
     /*assert(!bSymInitialize);
-    MgwSymSetOptions(SYMOPT_LOAD_LINES);
+    SymSetOptions(SYMOPT_LOAD_LINES);
     if(!pfnSymInitialize(hProcess, NULL, TRUE))
     {
         if(verbose_flag)
@@ -416,8 +416,8 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
     assert(!bSymInitialized);
 
-    MgwSymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
-    if(MgwSymInitialize(hProcess, NULL, TRUE))
+    SymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
+    if(SymInitialize(hProcess, NULL, TRUE))
         bSymInitialized = TRUE;
     else
         if(verbose_flag)
@@ -506,7 +506,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
             if(bSymInitialized)
                 if((bSuccess = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
                 {
-                    MgwUnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
+                    UnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 
                     lprintf( _T("  %s"), szSymName);
 
@@ -526,7 +526,7 @@ BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
     if(bSymInitialized)
     {
-        if(!MgwSymCleanup(hProcess))
+        if(!SymCleanup(hProcess))
             assert(0);
 
         bSymInitialized = FALSE;

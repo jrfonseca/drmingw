@@ -8,3 +8,4 @@ EXPORTS
 	StackWalk64
 	SymFunctionTableAccess64
 	SymUnDName64
+	UnDecorateSymbolName

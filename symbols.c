@@ -31,7 +31,7 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD 
 
     assert(bSymInitialized);
 
-    bRet = MgwSymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol);
+    bRet = SymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol);
 
     if (bRet) {
         lstrcpyn(lpSymName, pSymbol->Name, nSize);
@@ -60,7 +60,7 @@ BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileName, DWO
         //  a zero displacement.  I will walk backwards 100 bytes to
         //  find the line and return the proper displacement.
         DWORD64 dwTempDisp = 0 ;
-        while (dwTempDisp < 100 && !MgwSymGetLineFromAddr64(hProcess, dwAddress - dwTempDisp, &dwDisplacement, &Line))
+        while (dwTempDisp < 100 && !SymGetLineFromAddr64(hProcess, dwAddress - dwTempDisp, &dwDisplacement, &Line))
             ++dwTempDisp;
 
         if(dwTempDisp >= 100)
@@ -72,7 +72,7 @@ BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileName, DWO
             dwDisplacement = dwTempDisp;
     }
 #else
-    if(!MgwSymGetLineFromAddr64(hProcess, dwAddress, &dwDisplacement, &Line))
+    if(!SymGetLineFromAddr64(hProcess, dwAddress, &dwDisplacement, &Line))
         return FALSE;
 #endif
 

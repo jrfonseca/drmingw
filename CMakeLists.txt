@@ -86,25 +86,39 @@ add_definitions (
 # Targets
 
 add_library (common STATIC
-    demangle.cxx
-    dwarf_pe.c
     misc.c
     symbols.c
-    mgwhelp.c
     pehelp.c
 )
-target_link_libraries (common
+
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set (MGWHELP_DEF mgwhelp64.def)
+else ()
+    set (MGWHELP_DEF mgwhelp32.def)
+endif ()
+
+add_library (mgwhelp SHARED
+    ${MGWHELP_DEF}
+    demangle.cxx
+    dwarf_pe.c
+    mgwhelp.c
+)
+target_link_libraries (mgwhelp
+    common
     dwarf
     dbghelp
     psapi
 )
+set_target_properties (mgwhelp PROPERTIES
+    PREFIX ""
+)
 if (BINUTILS_FOUND)
-    target_link_libraries (common
+    target_link_libraries (mgwhelp
         ${BINUTILS_BFD_LIBRARY}
         ${BINUTILS_LIBERTY_LIBRARY}
     )
 endif ()
-
+install (TARGETS mgwhelp RUNTIME DESTINATION bin)
 
 add_executable (drmingw WIN32
     debugger.c
@@ -113,26 +127,26 @@ add_executable (drmingw WIN32
     main.c
     resource.rc
 )
-
+add_dependencies (drmingw mgwhelp)
 target_link_libraries (drmingw
     common
+    mgwhelp
+    psapi
 )
-
 install (TARGETS drmingw RUNTIME DESTINATION bin)
 
 add_library (exchndl MODULE
     exchndl.c
     exchndl.def
 )
-
+add_dependencies (exchndl mgwhelp)
 target_link_libraries (exchndl
     common
+    mgwhelp
 )
-
 set_target_properties (exchndl PROPERTIES
     PREFIX ""
 )
-
 install (TARGETS exchndl LIBRARY DESTINATION lib)
 
 add_subdirectory (samples)
