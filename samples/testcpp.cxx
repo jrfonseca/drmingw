@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef char * cp;
 
@@ -20,7 +21,7 @@ static void YetAnotherFunction( int i, double j, const char * pszString )
     (*((void (*)(void)) 0x12345678))();
 #endif
 
-    sscanf("12345", "%i", (int *) (k=i));
+    sscanf("12345", "%i", (int *) (size_t) (k=i));
 }
 
 static void MyWonderfulFunction( int i, float j )
