@@ -258,6 +258,11 @@ find_dwarf_symbol(struct mgwhelp_module *module,
                     dwarf_errmsg(error));
                 break;
             }
+            if (addr > plineaddr && addr < lineaddr) {
+                lineno = plineno;
+                file = pfile;
+                break;
+            }
             if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
                 OutputDebug("dwarf_lineno: %s",
                     dwarf_errmsg(error));
@@ -266,13 +271,10 @@ find_dwarf_symbol(struct mgwhelp_module *module,
             if (dwarf_linesrc(linebuf[i], &file0, &error) != DW_DLV_OK) {
                 OutputDebug("dwarf_linesrc: %s",
                     dwarf_errmsg(error));
-            } else
+            } else {
                 file = file0;
-            if (addr == lineaddr)
-                break;
-            else if (addr < lineaddr && addr > plineaddr) {
-                lineno = plineno;
-                file = pfile;
+            }
+            if (addr == lineaddr) {
                 break;
             }
             plineaddr = lineaddr;
@@ -280,8 +282,8 @@ find_dwarf_symbol(struct mgwhelp_module *module,
             pfile = file;
         }
 
-        info->filename = pfile;
-        info->line = plineno;
+        info->filename = file;
+        info->line = lineno;
 
         dwarf_srclines_dealloc(dbg, linebuf, linecount);
     }
