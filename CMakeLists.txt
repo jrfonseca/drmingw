@@ -132,7 +132,7 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 4)
     set (MGWHELP_IMPLIB ${CMAKE_BINARY_DIR}/libmgwhelp.a)
     add_custom_command (
         OUTPUT ${MGWHELP_IMPLIB}
-        COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp --kill-at --input-def=${CMAKE_SOURCE_DIR}/dbghelp.def
+        COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def=${CMAKE_SOURCE_DIR}/dbghelp.def
         DEPENDS ${CMAKE_SOURCE_DIR}/dbghelp.def
     )
 else ()
