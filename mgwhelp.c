@@ -63,6 +63,8 @@ struct mgwhelp_module
 
     DWORD64 image_base_vma;
 
+    Dwarf_Debug dbg;
+
 #ifdef HAVE_BFD
     bfd *abfd;
     asymbol **syms;
@@ -206,13 +208,9 @@ find_dwarf_symbol(struct mgwhelp_module *module,
                   DWORD64 addr,
                   struct find_handle *info)
 {
-    Dwarf_Debug dbg;
+    Dwarf_Debug dbg = module->dbg;
     Dwarf_Error error = 0;
     char *funcname = NULL;
-
-    if (dwarf_pe_init(module->ModuleInfo.LoadedImageName, 0, 0, &dbg, &error) != DW_DLV_OK) {
-        goto no_dbg;
-    }
 
     Dwarf_Arange *aranges;
     Dwarf_Signed arange_count;
@@ -299,8 +297,6 @@ no_arange:
     }
     dwarf_dealloc(dbg, aranges, DW_DLA_LIST);
 no_aranges:
-    dwarf_pe_finish(dbg, &error);
-no_dbg:
     if (error) {
         OutputDebug("libdwarf error: %s\n", dwarf_errmsg(error));
     }
@@ -364,8 +360,14 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
 
     module->image_base_vma = PEGetImageBase(process->hProcess, Base);
 
-#ifdef HAVE_BFD
+    Dwarf_Error error = 0;
+    if (dwarf_pe_init(module->ModuleInfo.LoadedImageName, 0, 0, &module->dbg, &error) == DW_DLV_OK) {
+        return module;
+    } else {
+        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no dwarf symbols");
+    }
 
+#ifdef HAVE_BFD
     module->abfd = bfd_openr(module->ModuleInfo.LoadedImageName, NULL);
     if (!module->abfd) {
         OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "could not open");
@@ -410,12 +412,19 @@ static void
 mgwhelp_module_destroy(struct mgwhelp_module * module)
 {
 #ifdef HAVE_BFD
-    if (module->syms)
-        free(module->syms);
+    if (module->abfd) {
+        if (module->syms) {
+            free(module->syms);
+        }
 
-    if (module->abfd)
         bfd_close(module->abfd);
+    }
 #endif /* HAVE_BFD */
+
+    if (module->dbg) {
+        Dwarf_Error error = 0;
+        dwarf_pe_finish(module->dbg, &error);
+    }
 
     free(module);
 }
@@ -537,10 +546,11 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
     info->module = module;
     info->pc = Offset;
 
-
-    find_dwarf_symbol(module, Offset, info);
-    if (info->found) {
-        return TRUE;
+    if (module->dbg) {
+        find_dwarf_symbol(module, Offset, info);
+        if (info->found) {
+            return TRUE;
+        }
     }
 
 #if HAVE_BFD
