@@ -1,0 +1,3 @@
+- Support .jdinfo
+
+  http://channel9.msdn.com/Shows/Defrag-Tools/Defrag-Tools-13-WinDbg#time=11m07s
