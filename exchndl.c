@@ -101,7 +101,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
                 pContext,
                 NULL,
                 SymFunctionTableAccess64,
-                SymGetModuleBase64,
+                GetModuleBase64,
                 NULL
             )
         )
@@ -131,7 +131,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
         rprintf( _T("%08I64X"), StackFrame.AddrPC.Offset);
 
-        if((hModule = (HMODULE)(INT_PTR)GetModuleBase(hProcess, (DWORD64)(INT_PTR)StackFrame.AddrPC.Offset)) &&
+        if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, (DWORD64)(INT_PTR)StackFrame.AddrPC.Offset)) &&
            GetModuleFileName(hModule, szModule, sizeof(szModule)))
         {
             //rprintf( _T("  %s:ModulBase %08lX"), szModule, hModule);
@@ -351,8 +351,8 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
     // Now print information about where the fault occured
     rprintf(_T(" at location %p"), pExceptionRecord->ExceptionAddress);
-    if((hModule = (HMODULE)(INT_PTR)GetModuleBase(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
-       GetModuleFileName(hModule, szModule, sizeof(szModule)))
+    if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
+       GetModuleFileName(hModule, szModule, sizeof szModule))
         rprintf(_T(" in module %s"), szModule);
 
     // If the exception was an access violation, print out some additional information, to the error log and the debugger.

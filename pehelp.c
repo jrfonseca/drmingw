@@ -1,22 +1,56 @@
+/*
+ * Copyright 2002-2013 Jose Fonseca
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
+
+
+#include <assert.h>
 #include <stddef.h>
 
 #include <windows.h>
 
 #include "misc.h"
+#include "dbghelp.h"
 #include "pehelp.h"
 
 
-// The GetModuleBase function retrieves the base address of the module that contains the specified address.
-DWORD64
-GetModuleBase(HANDLE hProcess, DWORD64 dwAddress)
+/*
+ * The GetModuleBase64 function retrieves the base address of the module that
+ * contains the specified address.
+ *
+ * Same as SymGetModuleBase64, but that seems to often cause problems.
+ */
+DWORD64 WINAPI
+GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
 {
-    MEMORY_BASIC_INFORMATION Buffer;
-
-    if (VirtualQueryEx(hProcess, (LPCVOID) (INT_PTR) dwAddress, &Buffer, sizeof Buffer) == 0) {
-        return 0;
+    if (hProcess == GetCurrentProcess()) {
+        HMODULE hModule = NULL;
+        BOOL bRet = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                                      (LPCTSTR)(UINT_PTR)dwAddress,
+                                      &hModule);
+        assert(bRet);
+        return (DWORD64)(UINT_PTR)hModule;
     }
 
-    return (DWORD64) (INT_PTR) Buffer.AllocationBase;
+    MEMORY_BASIC_INFORMATION Buffer;
+    if (VirtualQueryEx(hProcess, (LPCVOID)(UINT_PTR)dwAddress, &Buffer, sizeof Buffer) != 0) {
+        return (DWORD64)(UINT_PTR)Buffer.AllocationBase;
+    }
+
+    return SymGetModuleBase64(hProcess, dwAddress);
 }
 
 BOOL CALLBACK
@@ -68,7 +102,7 @@ PEGetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSi
     DWORD dwNearestName;
     int i;
 
-    if(!(hModule = GetModuleBase(hProcess, dwAddress)))
+    if(!(hModule = GetModuleBase64(hProcess, dwAddress)))
         return FALSE;
 
     if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))

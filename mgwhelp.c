@@ -522,16 +522,7 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
         return FALSE;
     }
 
-    if (hProcess == GetCurrentProcess()) {
-        HMODULE hModule = 0;
-        BOOL bRet = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-                                      (LPCTSTR)(UINT_PTR)Address,
-                                      &hModule);
-        assert(bRet);
-        Base = (DWORD64)(UINT_PTR)hModule;
-    } else {
-        Base = SymGetModuleBase64(hProcess, Address);
-    }
+    Base = GetModuleBase64(hProcess, Address);
     if (!Base) {
         return FALSE;
     }

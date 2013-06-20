@@ -154,7 +154,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
                 pContext,
                 NULL,
                 SymFunctionTableAccess64,
-                SymGetModuleBase64,
+                GetModuleBase64,
                 NULL
             )
         )
@@ -179,7 +179,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
         lprintf( _T("%08lX"), StackFrame.AddrPC.Offset);
 
-        if((hModule = (HMODULE)(INT_PTR)GetModuleBase(hProcess, StackFrame.AddrPC.Offset)) &&
+        if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, StackFrame.AddrPC.Offset)) &&
            GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
         {
 
@@ -392,7 +392,7 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 
     // Now print information about where the fault occured
     lprintf(_T(" at location %p"), DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
-    if((hModule = (HMODULE)(INT_PTR)GetModuleBase(pProcessInfo->hProcess, (DWORD64)(INT_PTR)DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) &&
+    if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(pProcessInfo->hProcess, (DWORD64)(INT_PTR)DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) &&
        GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof szModule))
         lprintf(_T(" in module %s"), GetBaseName(szModule));
 
