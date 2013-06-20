@@ -50,6 +50,7 @@ int __cdecl rprintf(const TCHAR * format, ...)
 static BOOL
 StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 {
+    DWORD MachineType;
     STACKFRAME64 StackFrame;
 
     HMODULE hModule = NULL;
@@ -66,6 +67,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     // Initialize the STACKFRAME structure for the first call.  This is only
     // necessary for Intel CPUs, and isn't mentioned in the documentation.
 #if defined(_M_IX86)
+    MachineType = IMAGE_FILE_MACHINE_I386;
     StackFrame.AddrPC.Offset = pContext->Eip;
     StackFrame.AddrPC.Mode = AddrModeFlat;
     StackFrame.AddrStack.Offset = pContext->Esp;
@@ -73,6 +75,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     StackFrame.AddrFrame.Offset = pContext->Ebp;
     StackFrame.AddrFrame.Mode = AddrModeFlat;
 #else
+    MachineType = IMAGE_FILE_MACHINE_AMD64;
     StackFrame.AddrPC.Offset = pContext->Rip;
     StackFrame.AddrPC.Mode = AddrModeFlat;
     StackFrame.AddrStack.Offset = pContext->Rsp;
@@ -91,10 +94,10 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         BOOL bSuccess = FALSE;
         TCHAR szSymName[512] = _T("");
         TCHAR szFileName[MAX_PATH] = _T("");
-        DWORD LineNumber = 0;
+        DWORD dwLineNumber = 0;
 
         if(!StackWalk64(
-                IMAGE_FILE_MACHINE_I386,
+                MachineType,
                 hProcess,
                 hThread,
                 &StackFrame,
@@ -143,8 +146,8 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
                     UnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 
-                    if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &LineNumber))
-                        rprintf( _T("  %s:%ld"), szFileName, LineNumber);
+                    if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
+                        rprintf( _T("  %s:%ld"), szFileName, dwLineNumber);
                 }
 
             if(!bSuccess)

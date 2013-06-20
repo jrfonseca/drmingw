@@ -90,7 +90,8 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     int i;
     PPROCESS_LIST_INFO pProcessListInfo;
 
-        STACKFRAME64 StackFrame;
+    DWORD MachineType;
+    STACKFRAME64 StackFrame;
 
     HMODULE hModule = NULL;
     TCHAR szModule[MAX_PATH];
@@ -118,7 +119,8 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
     // Initialize the STACKFRAME structure for the first call.  This is only
     // necessary for Intel CPUs, and isn't mentioned in the documentation.
-#if defined(i386)
+#if defined(_M_IX86)
+    MachineType = IMAGE_FILE_MACHINE_I386;
     StackFrame.AddrPC.Offset = pContext->Eip;
     StackFrame.AddrPC.Mode = AddrModeFlat;
     StackFrame.AddrStack.Offset = pContext->Esp;
@@ -126,6 +128,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     StackFrame.AddrFrame.Offset = pContext->Ebp;
     StackFrame.AddrFrame.Mode = AddrModeFlat;
 #else
+    MachineType = IMAGE_FILE_MACHINE_AMD64;
     StackFrame.AddrPC.Offset = pContext->Rip;
     StackFrame.AddrPC.Mode = AddrModeFlat;
     StackFrame.AddrStack.Offset = pContext->Rsp;
@@ -147,7 +150,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         DWORD dwLineNumber = 0;
 
         if(!StackWalk64(
-                IMAGE_FILE_MACHINE_I386,
+                MachineType,
                 hProcess,
                 hThread,
                 &StackFrame,
@@ -416,7 +419,8 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 
         // Get the thread context
         CONTEXT Context;
-        Context.ContextFlags = CONTEXT_DEBUG_REGISTERS | CONTEXT_FLOATING_POINT | CONTEXT_SEGMENTS | CONTEXT_INTEGER | CONTEXT_CONTROL;
+        ZeroMemory(&Context, sizeof Context);
+        Context.ContextFlags = CONTEXT_FULL;
         if(!GetThreadContext(pThreadInfo->hThread, &Context))
             assert(0);
 
