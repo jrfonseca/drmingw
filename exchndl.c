@@ -47,8 +47,8 @@ int __cdecl rprintf(const TCHAR * format, ...)
     return retValue;
 }
 
-static
-BOOL StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
+static BOOL
+StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 {
     STACKFRAME64 StackFrame;
 
