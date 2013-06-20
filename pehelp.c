@@ -41,8 +41,9 @@ GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
         BOOL bRet = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
                                       (LPCTSTR)(UINT_PTR)dwAddress,
                                       &hModule);
-        assert(bRet);
-        return (DWORD64)(UINT_PTR)hModule;
+        if (bRet) {
+            return (DWORD64)(UINT_PTR)hModule;
+        }
     }
 
     MEMORY_BASIC_INFORMATION Buffer;
