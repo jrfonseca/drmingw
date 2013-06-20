@@ -72,17 +72,6 @@ int __cdecl lprintf(const TCHAR * format, ...)
 //#define lprintf OutputDebug
 
 
-LPTSTR GetBaseName(LPTSTR lpFileName)
-{
-    LPTSTR lpChar = lpFileName + lstrlen(lpFileName);
-
-    while(lpChar > lpFileName && *(lpChar - 1) != '\\' && *(lpChar - 1) != '/' && *(lpChar - 1) != ':')
-        --lpChar;
-
-    return lpChar;
-}
-
-
 #define MAX_SYM_NAME_SIZE 512
 
 static BOOL
@@ -138,13 +127,10 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     StackFrame.AddrFrame.Mode = AddrModeFlat;
 #endif
 
-    lprintf( _T("Call stack:\r\n") );
-
-    if(verbose_flag)
-        lprintf( _T("AddrPC     AddrReturn AddrFrame  AddrStack  Params\r\n") );
+    lprintf( _T("AddrPC   Params\r\n") );
 
     while ( 1 )
-        {
+    {
         BOOL bSuccess = FALSE;
         TCHAR szSymName[MAX_SYM_NAME_SIZE] = _T("");
         TCHAR szFileName[MAX_PATH] = _T("");
@@ -168,26 +154,20 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         if ( 0 == StackFrame.AddrFrame.Offset )
             break;
 
-        if(verbose_flag)
-            lprintf(
-                _T("%08I64X   %08I64X   %08I64X   %08I64X   %08I64X   %08I64X   %08I64X   %08I64X\r\n"),
-                StackFrame.AddrPC.Offset,
-                StackFrame.AddrReturn.Offset,
-                StackFrame.AddrFrame.Offset,
-                StackFrame.AddrStack.Offset,
-                StackFrame.Params[0],
-                StackFrame.Params[1],
-                StackFrame.Params[2],
-                StackFrame.Params[3]
-            );
-
-        lprintf( _T("%08I64X"), StackFrame.AddrPC.Offset);
+        lprintf(
+            _T("%08I64X %08I64X %08I64X %08I64X %08I64X"),
+            StackFrame.AddrPC.Offset,
+            StackFrame.Params[0],
+            StackFrame.Params[1],
+            StackFrame.Params[2],
+            StackFrame.Params[3]
+        );
 
         if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, StackFrame.AddrPC.Offset)) &&
            GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
         {
 
-            lprintf( _T("  %s:%08I64X"), GetBaseName(szModule), StackFrame.AddrPC.Offset);
+            lprintf( _T(" %s"), GetBaseName(szModule));
 
             // Find the module from the module list
             assert(nModules);
@@ -203,14 +183,11 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
                 {
                     UnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 
-                    lprintf( _T("  %s"), szSymName);
+                    lprintf( _T("!%s"), szSymName);
 
-                    if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
-                        lprintf( _T("  %s:%ld"), GetBaseName(szFileName), dwLineNumber);
+                    if (GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
+                        lprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
                 }
-
-            if(!bSuccess && (bSuccess = PEGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
-                lprintf( _T("  %s"), szSymName);
         }
 
         lprintf(_T("\r\n"));
@@ -218,6 +195,8 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         if(bSuccess && DumpSource(szFileName, dwLineNumber))
             lprintf(_T("\r\n"));
     }
+
+    lprintf(_T("\r\n"));
 
     if(bSymInitialized)
     {

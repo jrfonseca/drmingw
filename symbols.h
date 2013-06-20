@@ -21,6 +21,7 @@
 
 #include <dbghelp.h>
 extern BOOL bSymInitialized;
+LPTSTR GetBaseName(LPTSTR lpFileName);
 BOOL GetSymFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize );
 BOOL GetLineFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber );
 BOOL PEGetSymFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize );

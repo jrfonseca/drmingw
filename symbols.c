@@ -19,6 +19,16 @@
 
 BOOL bSymInitialized = FALSE;
 
+LPTSTR GetBaseName(LPTSTR lpFileName)
+{
+    LPTSTR lpChar = lpFileName + lstrlen(lpFileName);
+
+    while(lpChar > lpFileName && *(lpChar - 1) != '\\' && *(lpChar - 1) != '/' && *(lpChar - 1) != ':')
+        --lpChar;
+
+    return lpChar;
+}
+
 BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
     PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + nSize * sizeof(TCHAR));
@@ -38,6 +48,11 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD 
     }
 
     free(pSymbol);
+
+    if (!bRet) {
+        // Fallback to exported symbols
+        bRet = PEGetSymFromAddr(hProcess, dwAddress, lpSymName, nSize);
+    }
 
     return bRet;
 }

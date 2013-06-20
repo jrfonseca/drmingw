@@ -84,10 +84,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     StackFrame.AddrFrame.Mode = AddrModeFlat;
 #endif
 
-    rprintf( _T("Call stack:\r\n") );
-
-    if(0)
-        rprintf( _T("AddrPC     AddrReturn AddrFrame  AddrStack\r\n") );
+    rprintf( _T("AddrPC   Params\r\n") );
 
     while ( 1 )
     {
@@ -114,45 +111,30 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         if ( 0 == StackFrame.AddrFrame.Offset )
             break;
 
-        if(0)
-        {
-            rprintf(
-                _T("%08I64X   %08I64X   %08I64X   %08I64X\r\n"),
-                StackFrame.AddrPC.Offset,
-                StackFrame.AddrReturn.Offset,
-                StackFrame.AddrFrame.Offset,
-                StackFrame.AddrStack.Offset
-            );
-            rprintf(
-                _T("%08I64X   %08I64X   %08I64X   %08I64X\r\n"),
-                StackFrame.Params[0],
-                StackFrame.Params[1],
-                StackFrame.Params[2],
-                StackFrame.Params[3]
-            );
-        }
-
-        rprintf( _T("%08I64X"), StackFrame.AddrPC.Offset);
+        rprintf(
+            _T("%08I64X %08I64X %08I64X %08I64X %08I64X"),
+            StackFrame.AddrPC.Offset,
+            StackFrame.Params[0],
+            StackFrame.Params[1],
+            StackFrame.Params[2],
+            StackFrame.Params[3]
+        );
 
         if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, (DWORD64)(INT_PTR)StackFrame.AddrPC.Offset)) &&
            GetModuleFileName(hModule, szModule, sizeof(szModule)))
         {
-            //rprintf( _T("  %s:ModulBase %08lX"), szModule, hModule);
+            rprintf( _T("  %s"), GetBaseName(szModule));
 
             if(!bSuccess && bSymInitialized)
                 if((bSuccess = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
                 {
-                    rprintf( _T("  %s"), szSymName);
+                    rprintf( _T("!%s"), szSymName);
 
                     UnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 
                     if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
-                        rprintf( _T("  %s:%ld"), szFileName, dwLineNumber);
+                        rprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
                 }
-
-            if(!bSuccess)
-                if((bSuccess = PEGetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
-                    rprintf( _T("  %s"), szSymName);
         }
 
         rprintf(_T("\r\n"));
