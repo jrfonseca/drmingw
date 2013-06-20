@@ -247,8 +247,8 @@ find_dwarf_symbol(struct mgwhelp_module *module,
         Dwarf_Addr lineaddr, plineaddr;
         char *file, *file0, *pfile;
         plineaddr = ~0ULL;
-        plineno = 0;
-        pfile = unknown;
+        plineno = lineno = 0;
+        pfile = file = unknown;
         Dwarf_Signed i;
         for (i = 0; i < linecount; i++) {
             if (dwarf_lineaddr(linebuf[i], &lineaddr, &error) != DW_DLV_OK) {
