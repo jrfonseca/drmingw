@@ -14,3 +14,7 @@
   - http://bazaar.launchpad.net/~dcplusplus-team/dcplusplus/trunk/revision/2564
   - http://dynamorio.org/docs/page__drsyms.html
 
+- Make a strace a-like
+
+  - http://www.howzatt.demon.co.uk/articles/DebuggingInWin64.html
+  - http://www.howzatt.demon.co.uk/articles/SimpleDebugger.html
