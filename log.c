@@ -252,16 +252,6 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
     assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
     pProcessInfo = &ProcessListInfo[i];
 
-    /*assert(!bSymInitialize);
-    SymSetOptions(SYMOPT_LOAD_LINES);
-    if(!pfnSymInitialize(hProcess, NULL, TRUE))
-    {
-        if(verbose_flag)
-            ErrorMessageBox(_T("SymInitialize: %s"), LastErrorMessage());
-        return FALSE;
-    }
-    bSymInitialized = TRUE;*/
-
     // First print information about the type of fault
     lprintf(_T("%s caused "),  GetModuleFileNameEx(pProcessInfo->hProcess, NULL, szModule, MAX_PATH) ? GetBaseName(szModule) : "Application");
     switch(DebugEvent.u.Exception.ExceptionRecord.ExceptionCode)
@@ -485,12 +475,6 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
         #endif
 
         StackBackTrace(pProcessInfo->hProcess, pThreadInfo->hThread, &Context);
-
-        /*if(bSymInitialized)
-        {
-            if(!pfnSymCleanup(hProcess))
-                assert(0);
-        }*/
     }
 
     lflush();
