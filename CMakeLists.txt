@@ -197,6 +197,4 @@ endif ()
 
 set (CPACK_GENERATOR "ZIP")
 
-set (CPACK_STRIP_FILES TRUE)
-
 include(CPack)
