@@ -168,7 +168,7 @@ target_link_libraries (exchndl LINK_PRIVATE
 set_target_properties (exchndl PROPERTIES
     PREFIX ""
 )
-install (TARGETS exchndl LIBRARY DESTINATION lib)
+install (TARGETS exchndl LIBRARY DESTINATION bin)
 
 add_subdirectory (samples)
 
