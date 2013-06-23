@@ -1,5 +1,6 @@
 ifeq ($(OS),Windows_NT)
 	PREFIX ?=
+	RM = del
 else
 	PREFIX ?= i686-w64-mingw32-
 endif
@@ -24,6 +25,7 @@ testcpp.exe: testcpp.cxx exchndl2.cxx
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
-	$(RM) test.exe testcpp.exe
+	-$(RM) testcpp.exe
+	-$(RM) test.exe
 
 .PHONE: all clean
