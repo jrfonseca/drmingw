@@ -23,14 +23,125 @@
 #undef VERSION
 #define VERSION "0.5.1"
 
+
+static int process_id_given = 0;    /* Whether process-id was given.  */
+static int install_given = 0;    /* Whether install was given.  */
+static int auto_given = 0;    /* Whether auto was given.  */
+static int uninstall_given = 0;    /* Whether uninstall was given.  */
+
+
+static DWORD
+install(void)
+{
+    TCHAR szFile[MAX_PATH];
+
+    if (!GetModuleFileName(NULL, szFile, MAX_PATH)) {
+        return GetLastError();
+    }
+        
+    TCHAR szFullCommand[MAX_PATH + 256];
+    HKEY hKey;
+    long lRet;
+    DWORD dwDisposition;
+
+    lstrcpy(szFullCommand, szFile);
+    lstrcat(szFullCommand, _T (" -p %ld -e %ld"));
+    if(verbose_flag)
+        lstrcat(szFullCommand, _T (" -v"));
+    if(breakpoint_flag)
+        lstrcat(szFullCommand, _T (" -b"));
+
+    lRet = RegCreateKeyEx(
+        HKEY_LOCAL_MACHINE,
+        _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug"),    // The AeDebug registry key.
+        0,
+        NULL,
+        REG_OPTION_NON_VOLATILE,
+        KEY_WRITE,
+        NULL,
+        &hKey,
+        &dwDisposition
+    );
+    if (lRet != ERROR_SUCCESS) {
+        return lRet;
+    }
+
+    // Write the Debugger value.
+    lRet = RegSetValueEx(
+        hKey,
+        _T("Debugger"),    // The debugger value.
+        0,
+        REG_SZ,
+        (CONST BYTE *) szFullCommand,
+        lstrlen(szFullCommand)*sizeof(TCHAR)
+    );
+    if (lRet == ERROR_SUCCESS) {
+        // Write the Auto value.
+        lRet = RegSetValueEx(
+            hKey,
+            _T("Auto"),    // The auto value.
+            0,
+            REG_SZ,
+            (CONST BYTE *)  (auto_given ? _T("1") : _T("0")),
+            sizeof(TCHAR)
+        );
+    }
+
+    // Close the key no matter what happened.
+    RegCloseKey(hKey);
+
+    return lRet;
+}
+
+
+static DWORD
+uninstall(void)
+{
+    HKEY hKey;
+    long lRet;
+
+    lRet = RegOpenKeyEx(
+        HKEY_LOCAL_MACHINE,
+        _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug"),    // The AeDebug registry key.
+        0,
+        KEY_ALL_ACCESS,
+        &hKey
+    );
+    if (lRet != ERROR_SUCCESS) {
+        return lRet;
+    }
+
+    // Write the Debugger value.
+    lRet = RegSetValueEx(
+        hKey,
+        _T("Debugger"),    // The debugger value.
+        0,
+        REG_SZ,
+        (CONST BYTE *) _T(""),
+        0
+    );
+    if (lRet == ERROR_SUCCESS) {
+        // Write the Auto value.
+        lRet = RegSetValueEx(
+            hKey,
+            _T("Auto"),    // The auto value.
+            0,
+            REG_SZ,
+            (CONST BYTE *)  _T("0"),
+            sizeof(TCHAR)
+        );
+    }
+
+    // Close the key no matter what happened.
+    RegCloseKey(hKey);
+
+    return lRet;
+}
+
+
 int main (int argc, char **argv)
 {
     int c;    /* Character of the parsed option.  */
-
-    int process_id_given = 0;    /* Whether process-id was given.  */
-    int install_given = 0;    /* Whether install was given.  */
-    int auto_given = 0;    /* Whether auto was given.  */
-    int uninstall_given = 0;    /* Whether uninstall was given.  */
 
     while (1)
     {
@@ -236,151 +347,46 @@ int main (int argc, char **argv)
         }
     }
 
-    if(install_given)
-    {
-        TCHAR szFile[MAX_PATH];
-
-        if(!GetModuleFileName(NULL, szFile, MAX_PATH))
-            ErrorMessageBox(_T("GetModuleFileName: %s"), LastErrorMessage());
-        else
-        {
-            TCHAR szFullCommand[MAX_PATH + 256];
-            HKEY hKey;
-            long lRet;
-            DWORD dwDisposition;
-
-            lstrcpy(szFullCommand, szFile);
-            lstrcat(szFullCommand, _T (" -p %ld -e %ld"));
-            if(verbose_flag)
-                lstrcat(szFullCommand, _T (" -v"));
-            if(breakpoint_flag)
-                lstrcat(szFullCommand, _T (" -b"));
-
-            lRet = RegCreateKeyEx(
-                HKEY_LOCAL_MACHINE,
-                _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug"),    // The AeDebug registry key.
-                0,
-                NULL,
-                REG_OPTION_NON_VOLATILE,
-                KEY_WRITE,
-                NULL,
-                &hKey,
-                &dwDisposition
-            );
-            if(lRet == ERROR_ACCESS_DENIED)
-                MessageBox(
-                    NULL,
-                    _T("You must have administrator privileges to install Dr. Mingw as the default application debugger"),
-                    _T("DrMingw"),
-                    MB_OK | MB_ICONERROR
-                );
-            else if(lRet != ERROR_SUCCESS)
-                ErrorMessageBox(_T("RegCreateKeyEx: %s"), FormatErrorMessage(lRet));
-            else
-            {
-                // Write the Debugger value.
-                lRet = RegSetValueEx(
-                    hKey,
-                    _T("Debugger"),    // The debugger value.
-                    0,
-                    REG_SZ,
-                    (CONST BYTE *) szFullCommand,
-                    lstrlen(szFullCommand)*sizeof(TCHAR)
-                );
-
-                if(lRet != ERROR_SUCCESS)
-                    ErrorMessageBox(_T("RegSetValueEx: %s"), FormatErrorMessage(lRet));
-                else
-                {
-                    // Write the Auto value.
-                    lRet = RegSetValueEx(
-                        hKey,
-                        _T("Auto"),    // The auto value.
-                        0,
-                        REG_SZ,
-                        (CONST BYTE *)  (auto_given ? _T("1") : _T("0")),
-                        sizeof(TCHAR)
-                    );
-
-                    if(lRet != ERROR_SUCCESS)
-                        ErrorMessageBox(_T("RegSetValueEx: %s"), FormatErrorMessage(lRet));
-                    else
-                        MessageBox(
-                            NULL,
-                            _T("Dr. Mingw has been installed as the default application debugger"),
-                            _T("DrMingw"),
-                            MB_OK | MB_ICONINFORMATION
-                        );
-                }
-
-                // Close the key no matter what happened.
-                RegCloseKey(hKey);
-            }
-        }
-    }
-
-    if(uninstall_given)
-    {
-        HKEY hKey;
-        long lRet;
-
-        lRet = RegOpenKeyEx(
-            HKEY_LOCAL_MACHINE,
-            _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug"),    // The AeDebug registry key.
-            0,
-            KEY_ALL_ACCESS,
-            &hKey
-        );
-
-        if(lRet == ERROR_ACCESS_DENIED)
+    if (install_given) {
+        DWORD dwRet = install();
+        if (dwRet != ERROR_SUCCESS) {
             MessageBox(
                 NULL,
-                _T("You must have administrator privileges to uninstall Dr. Mingw as the default application debugger"),
+                dwRet == ERROR_ACCESS_DENIED
+                ? _T("You must have administrator privileges to install Dr. Mingw as the default application debugger") 
+                : _T("Unexpected error when trying to install Dr. Mingw as the default application debugger"),
                 _T("DrMingw"),
                 MB_OK | MB_ICONERROR
             );
-        else if(lRet != ERROR_SUCCESS)
-            ErrorMessageBox(_T("RegOpenKeyEx: %s"), FormatErrorMessage(lRet));
-        else
-        {
-            // Write the Debugger value.
-            lRet = RegSetValueEx(
-                hKey,
-                _T("Debugger"),    // The debugger value.
-                0,
-                REG_SZ,
-                (CONST BYTE *) _T(""),
-                0
-            );
-
-            if(lRet != ERROR_SUCCESS)
-                ErrorMessageBox(_T("RegSetValueEx: %s"), FormatErrorMessage(lRet));
-            else
-            {
-                // Write the Auto value.
-                lRet = RegSetValueEx(
-                    hKey,
-                    _T("Auto"),    // The auto value.
-                    0,
-                    REG_SZ,
-                    (CONST BYTE *)  _T("0"),
-                    sizeof(TCHAR)
-                );
-
-                if(lRet != ERROR_SUCCESS)
-                    ErrorMessageBox(_T("RegSetValueEx: %s"), FormatErrorMessage(lRet));
-                else
-                    MessageBox(
-                        NULL,
-                        _T("Dr. Mingw has been uninstalled"),
-                        _T("DrMingw"),
-                        MB_OK | MB_ICONINFORMATION
-                    );
-            }
-
-            // Close the key no matter what happened.
-            RegCloseKey(hKey);
+            return 1;
         }
+        MessageBox(
+            NULL,
+            _T("Dr. Mingw has been installed as the default application debugger"),
+            _T("DrMingw"),
+            MB_OK | MB_ICONINFORMATION
+        );
+    }
+
+    if (uninstall_given) {
+        DWORD dwRet = uninstall();
+        if (dwRet != ERROR_SUCCESS) {
+            MessageBox(
+                NULL,
+                dwRet == ERROR_ACCESS_DENIED
+                ? _T("You must have administrator privileges to uninstall Dr. Mingw as the default application debugger") 
+                : _T("Unexpected error when trying to uninstall Dr. Mingw as the default application debugger"),
+                _T("DrMingw"),
+                MB_OK | MB_ICONERROR
+            );
+            return 1;
+        }
+        MessageBox(
+            NULL,
+            _T("Dr. Mingw has been uninstalled"),
+            _T("DrMingw"),
+            MB_OK | MB_ICONINFORMATION
+        );
     }
 
     if(process_id_given)
