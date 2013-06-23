@@ -43,10 +43,11 @@ void _ErrorMessageBox(LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ...)
     );
 
     // Display the string.
-    switch(MessageBox(NULL, szMsg, _T("DrMingw"), MB_ICONERROR | MB_ABORTRETRYIGNORE))
+    switch (MessageBox(NULL, szMsg, _T("DrMingw"), MB_ICONERROR | MB_ABORTRETRYIGNORE))
     {
         case IDABORT:
-            abort();
+            _exit(3);
+	    return;
 
         case IDRETRY:
             DebugBreak();
