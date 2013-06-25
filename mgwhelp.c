@@ -636,15 +636,15 @@ MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement,
 DWORD WINAPI
 MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
 {
-    char *res;
-
     assert(DecoratedName != NULL);
 
-    if ((res = demangle(DecoratedName)) != NULL)
-    {
-        strncpy(UnDecoratedName, res, UndecoratedLength);
-        free(res);
-        return strlen(UnDecoratedName);
+    if (DecoratedName[0] == '_' && DecoratedName[1] == 'Z') {
+        char *res = demangle(DecoratedName);
+        if (res) {
+            strncpy(UnDecoratedName, res, UndecoratedLength);
+            free(res);
+            return strlen(UnDecoratedName);
+        }
     }
 
     return UnDecorateSymbolName(DecoratedName, UnDecoratedName, UndecoratedLength, Flags);

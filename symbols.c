@@ -44,7 +44,9 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD 
     bRet = SymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol);
 
     if (bRet) {
-        lstrcpyn(lpSymName, pSymbol->Name, nSize);
+        if (UnDecorateSymbolName(pSymbol->Name, lpSymName, nSize, UNDNAME_COMPLETE) == 0) {
+            lstrcpyn(lpSymName, pSymbol->Name, nSize);
+        }
     }
 
     free(pSymbol);

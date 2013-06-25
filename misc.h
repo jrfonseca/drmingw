@@ -20,7 +20,10 @@
 #define MISC_H
 
 
+#include <windows.h>
 #include <stdio.h>
+#include <stdarg.h>
+
 
 static inline void
     __attribute__ ((format (printf, 1, 2)))
