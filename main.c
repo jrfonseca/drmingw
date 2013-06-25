@@ -174,7 +174,6 @@ int main (int argc, char **argv)
             { "version", 0, NULL, 'V'},
             { "install", 0, NULL, 'i'},
             { "auto", 0, NULL, 'a'},
-            { "install", 0, NULL, 'i'},
             { "uninstall", 0, NULL, 'u'},
             { "process-id", 1, NULL, 'p'},
             { "event", 1, NULL, 'e'},
@@ -198,7 +197,7 @@ int main (int argc, char **argv)
                         _T(PACKAGE),
                         MB_OK | MB_ICONSTOP
                     );
-                    return 0;
+                    return 1;
                 }
                 /* fall-through */
             case 'h':    /* Print help and exit.  */
@@ -215,16 +214,6 @@ int main (int argc, char **argv)
                 return 0;
 
             case 'i':    /* Install as the default JIT debugger.  */
-                if (install_given)
-                {
-                    MessageBox(
-                        NULL,
-                        _T("`--install' (`-i') option redeclared"),
-                        _T(PACKAGE),
-                        MB_OK | MB_ICONSTOP
-                    );
-                    return 0;
-                }
                 if (uninstall_given)
                 {
                     MessageBox(
@@ -239,16 +228,6 @@ int main (int argc, char **argv)
                 break;
 
             case 'a':    /* Automatically start.  */
-                if (auto_given)
-                {
-                    MessageBox(
-                        NULL,
-                        _T("`--auto' (`-a') option redeclared"),
-                        _T(PACKAGE),
-                        MB_OK | MB_ICONSTOP
-                    );
-                    return 0;
-                }
                 if (uninstall_given)
                 {
                     MessageBox(
@@ -263,16 +242,6 @@ int main (int argc, char **argv)
                 break;
 
             case 'u':    /* Uninstall.  */
-                if (uninstall_given)
-                {
-                    MessageBox(
-                        NULL,
-                        _T("`--uninstall' (`-u') option redeclared"),
-                        _T(PACKAGE),
-                        MB_OK | MB_ICONSTOP
-                    );
-                    return 0;
-                }
                 if (install_given)
                 {
                     MessageBox(
@@ -305,7 +274,7 @@ int main (int argc, char **argv)
                         _T(PACKAGE),
                         MB_OK | MB_ICONSTOP
                     );
-                    return 0;
+                    return 1;
                 }
                 process_id_given = 1;
                 dwProcessId = strtoul (optarg, NULL, 0);
@@ -320,7 +289,7 @@ int main (int argc, char **argv)
                         _T(PACKAGE),
                         MB_OK | MB_ICONSTOP
                     );
-                    return 0;
+                    return 1;
                 }
                 hEvent = (HANDLE) (INT_PTR) atol (optarg);
                 break;
@@ -345,7 +314,7 @@ int main (int argc, char **argv)
                     _T(PACKAGE),
                     MB_OK | MB_ICONSTOP
                 );
-                return 0;
+                return 1;
             }
         }
     }
