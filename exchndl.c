@@ -111,6 +111,15 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         if ( 0 == StackFrame.AddrFrame.Offset )
             break;
 
+#ifdef _M_IX86
+        rprintf(
+            _T("%08lX %08lX %08lX %08lX"),
+            (DWORD)StackFrame.AddrPC.Offset,
+            (DWORD)StackFrame.Params[0],
+            (DWORD)StackFrame.Params[1],
+            (DWORD)StackFrame.Params[2]
+        );
+#else
         rprintf(
             _T("%08I64X %08I64X %08I64X %08I64X"),
             StackFrame.AddrPC.Offset,
@@ -118,6 +127,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
             StackFrame.Params[1],
             StackFrame.Params[2]
         );
+#endif
 
         if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, (DWORD64)(INT_PTR)StackFrame.AddrPC.Offset)) &&
            GetModuleFileName(hModule, szModule, sizeof(szModule)))
