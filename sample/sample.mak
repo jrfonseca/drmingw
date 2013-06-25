@@ -12,11 +12,9 @@ CXX = $(PREFIX)g++
 CFLAGS = -ggdb3
 CXXFLAGS = $(CFLAGS)
 
-all: test.exe testcpp.exe
+all: sample.exe
 
-test.exe: test.c exchndl2.cxx
-
-testcpp.exe: testcpp.cxx exchndl2.cxx
+sample.exe: sample.cxx exchndl2.cxx
 
 %.exe: %.c
 	$(CC) $(CFLAGS) -o $@ $^
@@ -25,7 +23,6 @@ testcpp.exe: testcpp.cxx exchndl2.cxx
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
-	-$(RM) testcpp.exe
-	-$(RM) test.exe
+	-$(RM) sample.exe
 
 .PHONE: all clean
