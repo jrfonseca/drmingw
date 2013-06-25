@@ -44,13 +44,7 @@ OutputDebug (const char *format, ... )
 
 }
 
-#ifdef NDEBUG
-#define ErrorMessageBox(e, args...)    ((void) 0)
 
-#else
-#define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ## args)
-
-#endif
 #define FormatErrorMessage(n) \
 ({ \
     LPVOID lpMsgBuf; \
@@ -69,7 +63,10 @@ OutputDebug (const char *format, ... )
  \
     (LPSTR) lpMsgBuf; \
 })
+
 #define LastErrorMessage() FormatErrorMessage(GetLastError())
+
 void _ErrorMessageBox (LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ... );
+#define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ## args)
 
 #endif /* MISC_H */
