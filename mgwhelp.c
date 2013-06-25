@@ -380,15 +380,19 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
     }
 
     if (!(bfd_get_file_flags(module->abfd) & HAS_SYMS)) {
-        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no symbols");
+        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
         goto no_symbols;
     }
 
-    if (!slurp_symtab(module->abfd, &module->syms, &module->symcount))
+    if (!slurp_symtab(module->abfd, &module->syms, &module->symcount)) {
+        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
         goto no_symbols;
+    }
 
-    if (!module->symcount)
+    if (!module->symcount) {
+        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
         goto no_symcount;
+    }
 
 #endif /* HAVE_BFD */
 
