@@ -27,4 +27,3 @@ target_link_libraries (example
 
 install (FILES test.c testcpp.cxx exchndl2.cxx DESTINATION samples)
 install (FILES samples.mak DESTINATION samples RENAME Makefile)
-install (TARGETS test testcpp RUNTIME DESTINATION samples)
