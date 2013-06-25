@@ -360,13 +360,6 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
 
     module->image_base_vma = PEGetImageBase(process->hProcess, Base);
 
-    Dwarf_Error error = 0;
-    if (dwarf_pe_init(module->ModuleInfo.LoadedImageName, 0, 0, &module->dbg, &error) == DW_DLV_OK) {
-        return module;
-    } else {
-        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no dwarf symbols");
-    }
-
 #ifdef HAVE_BFD
     module->abfd = bfd_openr(module->ModuleInfo.LoadedImageName, NULL);
     if (!module->abfd) {
@@ -394,7 +387,16 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
         goto no_symcount;
     }
 
-#endif /* HAVE_BFD */
+#else /* !HAVE_BFD */
+
+    Dwarf_Error error = 0;
+    if (dwarf_pe_init(module->ModuleInfo.LoadedImageName, 0, 0, &module->dbg, &error) == DW_DLV_OK) {
+        return module;
+    } else {
+        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no dwarf symbols");
+    }
+
+#endif /* !HAVE_BFD */
 
     return module;
 
