@@ -30,6 +30,33 @@ static int auto_given = 0;    /* Whether auto was given.  */
 static int uninstall_given = 0;    /* Whether uninstall was given.  */
 
 
+static void
+help(void)
+{
+    MessageBox(
+        NULL,
+        _T(
+            "Usage: drmingw [OPTIONS]\r\n"
+            "\r\n"
+            "Options:\r\n"
+            "  -h, --help\tPrint help and exit\r\n"
+            "  -V, --version\tPrint version and exit\r\n"
+            "  -i, --install\tInstall as the default JIT debugger\r\n"
+            "  -a, --auto\tStart automatically (used with -i)\r\n"
+            "  -u, --uninstall\tUninstall\r\n"
+            "  -pLONG, --process-id=LONG\r\n"
+            "\t\tAttach to the process with the given identifier\r\n"
+            "  -eLONG, --event=LONG\r\n"
+            "\t\tSignal an event after process is attached\r\n"
+            "  -b, --breakpoint\tTreat debug breakpoints as exceptions\r\n"
+            "  -v, --verbose\tVerbose output\r\n"
+        ),
+        _T(PACKAGE),
+        MB_OK | MB_ICONINFORMATION
+    );
+}
+
+
 static DWORD
 install(void)
 {
@@ -180,26 +207,7 @@ int main (int argc, char **argv)
                 }
                 /* fall-through */
             case 'h':    /* Print help and exit.  */
-                MessageBox(
-                    NULL,
-                    _T(
-                        "Usage: drmingw [-h|--help] [-V|--version] [-i|--install] [-a|--auto] [-u|--uninstall]\r\n"
-                        "[-pLONG|--process-id=LONG] [-eLONG|--event=LONG] [-b|--breakpoint]\r\n"
-                        "[-v|--verbose]\r\n"
-                        "\r\n"
-                        "\t-h\t--help\t\tPrint help and exit\r\n"
-                        "\t-V\t--version\t\tPrint version and exit\r\n"
-                        "\t-i\t--install\t\tInstall as the default JIT debugger\r\n"
-                        "\t-a\t--auto\t\tAutomatically start. Used with --install' (`-i')\r\n"
-                        "\t-u\t--uninstall\t\tUninstall\r\n"
-                        "\t-pLONG\t--process-id=LONG\tAttach to the process with the given identifier\r\n"
-                        "\t-eLONG\t--event=LONG\tSignal an event after process is attached\r\n"
-                        "\t-b\t--breakpoint\t\tTreat debug breakpoints as exceptions\r\n"
-                        "\t-v\t--verbose\t\tVerbose output\r\n"
-                    ),
-                    _T(PACKAGE),
-                    MB_OK | MB_ICONINFORMATION
-                );
+                help();
                 return 0;
 
             case 'V':    /* Print version and exit.  */
@@ -366,6 +374,7 @@ int main (int argc, char **argv)
             _T("DrMingw"),
             MB_OK | MB_ICONINFORMATION
         );
+        return 0;
     }
 
     if (uninstall_given) {
@@ -387,10 +396,10 @@ int main (int argc, char **argv)
             _T("DrMingw"),
             MB_OK | MB_ICONINFORMATION
         );
+        return 0;
     }
 
-    if(process_id_given)
-    {
+    if (process_id_given) {
         SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
         if(!ObtainSeDebugPrivilege())
@@ -404,6 +413,8 @@ int main (int argc, char **argv)
         _beginthread(DebugProcess, 0, NULL);
 
         Dialog();
+    } else {
+        help();
     }
 
     return 0;
