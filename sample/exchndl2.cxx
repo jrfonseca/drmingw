@@ -7,13 +7,9 @@
 
 #include <windows.h>
 
-class ExceptionHandler
-{
-    public:
-
-    ExceptionHandler()
-    {
-        LoadLibrary("exchndl.dll");
+struct ExceptionHandler {
+    ExceptionHandler() {
+        LoadLibraryA("exchndl.dll");
     }
 };
 

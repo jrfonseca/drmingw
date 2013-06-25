@@ -170,7 +170,8 @@ set_target_properties (exchndl PROPERTIES
 )
 install (TARGETS exchndl LIBRARY DESTINATION bin)
 
-add_subdirectory (samples)
+add_subdirectory (sample)
+add_subdirectory (tests)
 
 
 ##############################################################################
