@@ -4,6 +4,11 @@ cmake_minimum_required (VERSION 2.8)
 project (drmingw)
 
 
+set (CPACK_PACKAGE_VERSION_MAJOR "0")
+set (CPACK_PACKAGE_VERSION_MINOR "6")
+set (CPACK_PACKAGE_VERSION_PATCH "1")
+
+
 ##############################################################################
 # Dependencies
 
@@ -148,6 +153,9 @@ add_executable (drmingw WIN32
     main.c
     resource.rc
 )
+set_target_properties (drmingw PROPERTIES
+    COMPILE_DEFINITIONS "PACKAGE=\"DrMingw\";VERSION=\"${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}\""
+)
 add_dependencies (drmingw mgwhelp_implib)
 target_link_libraries (drmingw
     common
@@ -184,10 +192,6 @@ install (
         README.txt
     DESTINATION doc
 )
-
-set (CPACK_PACKAGE_VERSION_MAJOR "0")
-set (CPACK_PACKAGE_VERSION_MINOR "6")
-set (CPACK_PACKAGE_VERSION_PATCH "1")
 
 # cpack mistakenly detects Mingw-w64 as win32
 if (MINGW)

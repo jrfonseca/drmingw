@@ -18,11 +18,6 @@
 #include "log.h"
 #include "misc.h"
 
-#undef PACKAGE
-#define PACKAGE "DrMingw"
-#undef VERSION
-#define VERSION "0.5.1"
-
 
 static int process_id_given = 0;    /* Whether process-id was given.  */
 static int install_given = 0;    /* Whether install was given.  */
