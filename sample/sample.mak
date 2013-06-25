@@ -12,15 +12,18 @@ CXX = $(PREFIX)g++
 CFLAGS = -ggdb3
 CXXFLAGS = $(CFLAGS)
 
+LDFLAGS = -static-libgcc -static-libstdc++
+
+
 all: sample.exe
 
 sample.exe: sample.cxx exchndl2.cxx
 
 %.exe: %.c
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
 %.exe: %.cxx
-	$(CXX) $(CXXFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 clean:
 	-$(RM) sample.exe
