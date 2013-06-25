@@ -155,12 +155,11 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
             break;
 
         lprintf(
-            _T("%08I64X %08I64X %08I64X %08I64X %08I64X"),
+            _T("%08I64X %08I64X %08I64X %08I64X"),
             StackFrame.AddrPC.Offset,
             StackFrame.Params[0],
             StackFrame.Params[1],
-            StackFrame.Params[2],
-            StackFrame.Params[3]
+            StackFrame.Params[2]
         );
 
         if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, StackFrame.AddrPC.Offset)) &&
