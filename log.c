@@ -381,8 +381,10 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
     assert(nThreads);
     for (i = 0; i < nThreads; ++i) {
         assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
-        if (ThreadListInfo[i].dwThreadId == DebugEvent.dwThreadId) {
-           lprintf(_T("XXXXXXXXXXXXXXXXXXXXXX\r\n"));
+        if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId) {
+            if (!verbose_flag) {
+	        continue;
+            }
         }
         pThreadInfo = &ThreadListInfo[i];
 
