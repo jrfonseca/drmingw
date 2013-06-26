@@ -433,6 +433,15 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 static
 LONG CALLBACK TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 {
+    PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
+
+    /*
+     * Ignore OutputDebugStringA exception.
+     */
+    if (pExceptionRecord->ExceptionCode == DBG_PRINTEXCEPTION_C) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
     static BOOL bBeenHere = FALSE;
 
     if(!bBeenHere)
