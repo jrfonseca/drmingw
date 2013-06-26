@@ -527,8 +527,8 @@ BOOL DebugMainLoop(void)
              default:
                 if(debug_flag)
                     OutputDebug(
-                        "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                        "UNLOAD_DLL_DEBUG_EVENT",
+                        "\tdwDebugEventCode = 0x%lX\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+                        DebugEvent.dwDebugEventCode,
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId
                     );
