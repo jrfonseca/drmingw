@@ -1,6 +1,7 @@
 EXPORTS
 	SymInitialize@12 = MgwSymInitialize@12
 	SymCleanup@4 = MgwSymCleanup@4
+	SymGetOptions@0
 	SymSetOptions@4 = MgwSymSetOptions@4
 	SymGetModuleBase64@12
 	SymFromAddr@20 = MgwSymFromAddr@20
