@@ -199,6 +199,10 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
                     if (GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
                         lprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
                 }
+
+            if (!bSuccess) {
+                lprintf( _T("!0x%I64x"), StackFrame.AddrPC.Offset - (DWORD)(INT_PTR)hModule);
+            }
         }
 
         lprintf(_T("\r\n"));
