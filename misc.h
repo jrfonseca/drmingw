@@ -32,7 +32,7 @@ OutputDebug (const char *format, ... )
 
 #ifndef NDEBUG
 
-       char buf[4096];
+       char buf[512];
        va_list ap;
        va_start(ap, format);
        _vsnprintf(buf, sizeof(buf), format, ap);
