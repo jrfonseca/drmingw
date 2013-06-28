@@ -58,7 +58,11 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
     assert(!bSymInitialized);
 
-    SymSetOptions(/* SYMOPT_UNDNAME | */ SYMOPT_LOAD_LINES);
+    DWORD dwSymOptions = SymGetOptions();
+    dwSymOptions |=
+        SYMOPT_LOAD_LINES |
+        SYMOPT_DEFERRED_LOADS;
+    SymSetOptions(dwSymOptions);
     if(SymInitialize(hProcess, NULL, TRUE))
         bSymInitialized = TRUE;
 
