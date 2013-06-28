@@ -51,11 +51,6 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD 
 
     free(pSymbol);
 
-    if (!bRet) {
-        // Fallback to exported symbols
-        bRet = PEGetSymFromAddr(hProcess, dwAddress, lpSymName, nSize);
-    }
-
     return bRet;
 }
 

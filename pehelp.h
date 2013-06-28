@@ -13,7 +13,4 @@ PEImageNtHeader(HANDLE hProcess, DWORD64 hModule);
 DWORD64
 PEGetImageBase(HANDLE hProcess, DWORD64 hModule);
 
-BOOL
-PEGetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize);
-
 #endif // PEHELP_H
