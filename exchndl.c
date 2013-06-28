@@ -472,20 +472,6 @@ LONG CALLBACK TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
             hReportFile = 0;
         }
 
-        if(fuOldErrorMode & SEM_NOGPFAULTERRORBOX)
-        {
-            TCHAR szBuffer[4196];
-
-            wsprintf(szBuffer, _T("An unhandled exception ocurred\r\nSee %s for more details\r\n"), szLogFileName);
-
-            MessageBox(
-                NULL,
-                szBuffer,
-                _T("Error"),
-                MB_OK | MB_ICONERROR
-            );
-        }
-
         SetErrorMode(fuOldErrorMode);
     }
 
