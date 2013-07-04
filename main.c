@@ -19,6 +19,10 @@
 #include "misc.h"
 
 
+/* Enable experimental WOW64 support */
+#define WOW64_SUPPORT 0
+
+
 static int process_id_given = 0;    /* Whether process-id was given.  */
 static int install_given = 0;    /* Whether install was given.  */
 static int auto_given = 0;    /* Whether auto was given.  */
@@ -53,7 +57,7 @@ help(void)
 
 
 static DWORD
-install(void)
+install(REGSAM samDesired)
 {
     TCHAR szFile[MAX_PATH];
 
@@ -79,7 +83,7 @@ install(void)
         0,
         NULL,
         REG_OPTION_NON_VOLATILE,
-        KEY_WRITE,
+        KEY_WRITE | samDesired,
         NULL,
         &hKey,
         &dwDisposition
@@ -117,7 +121,7 @@ install(void)
 
 
 static DWORD
-uninstall(void)
+uninstall(REGSAM samDesired)
 {
     HKEY hKey;
     long lRet;
@@ -126,7 +130,7 @@ uninstall(void)
         HKEY_LOCAL_MACHINE,
         _T("Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug"),    // The AeDebug registry key.
         0,
-        KEY_ALL_ACCESS,
+        KEY_ALL_ACCESS | samDesired,
         &hKey
     );
     if (lRet != ERROR_SUCCESS) {
@@ -320,7 +324,12 @@ int main (int argc, char **argv)
     }
 
     if (install_given) {
-        DWORD dwRet = install();
+        DWORD dwRet = install(0);
+#if defined(_WIN64) && WOW64_SUPPORT
+        if (dwRet == ERROR_SUCCESS) {
+            dwRet = install(KEY_WOW64_32KEY);
+        }
+#endif
         if (dwRet != ERROR_SUCCESS) {
             MessageBox(
                 NULL,
@@ -342,7 +351,12 @@ int main (int argc, char **argv)
     }
 
     if (uninstall_given) {
-        DWORD dwRet = uninstall();
+        DWORD dwRet = uninstall(0);
+#if defined(_WIN64) && WOW64_SUPPORT
+        if (dwRet == ERROR_SUCCESS) {
+            dwRet = uninstall(KEY_WOW64_32KEY);
+        }
+#endif
         if (dwRet != ERROR_SUCCESS) {
             MessageBox(
                 NULL,

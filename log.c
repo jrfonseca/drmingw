@@ -122,13 +122,30 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     StackFrame.AddrFrame.Offset = pContext->Ebp;
     StackFrame.AddrFrame.Mode = AddrModeFlat;
 #else
-    MachineType = IMAGE_FILE_MACHINE_AMD64;
-    StackFrame.AddrPC.Offset = pContext->Rip;
-    StackFrame.AddrPC.Mode = AddrModeFlat;
-    StackFrame.AddrStack.Offset = pContext->Rsp;
-    StackFrame.AddrStack.Mode = AddrModeFlat;
-    StackFrame.AddrFrame.Offset = pContext->Rbp;
-    StackFrame.AddrFrame.Mode = AddrModeFlat;
+    BOOL bWow64 = FALSE;
+    WOW64_CONTEXT Wow64Context;
+    IsWow64Process(hProcess, &bWow64);
+    if (bWow64) {
+        MachineType = IMAGE_FILE_MACHINE_I386;
+        ZeroMemory(&Wow64Context, sizeof Wow64Context);
+        Wow64Context.ContextFlags = WOW64_CONTEXT_FULL;
+        Wow64GetThreadContext(hThread, &Wow64Context);
+        StackFrame.AddrPC.Offset = Wow64Context.Eip;
+        StackFrame.AddrPC.Mode = AddrModeFlat;
+        StackFrame.AddrStack.Offset = Wow64Context.Esp;
+        StackFrame.AddrStack.Mode = AddrModeFlat;
+        StackFrame.AddrFrame.Offset = Wow64Context.Ebp;
+        StackFrame.AddrFrame.Mode = AddrModeFlat;
+        pContext = (PCONTEXT)&Wow64Context;
+    } else {
+        MachineType = IMAGE_FILE_MACHINE_AMD64;
+        StackFrame.AddrPC.Offset = pContext->Rip;
+        StackFrame.AddrPC.Mode = AddrModeFlat;
+        StackFrame.AddrStack.Offset = pContext->Rsp;
+        StackFrame.AddrStack.Mode = AddrModeFlat;
+        StackFrame.AddrFrame.Offset = pContext->Rbp;
+        StackFrame.AddrFrame.Mode = AddrModeFlat;
+    }
 #endif
 
     lprintf( _T("AddrPC   Params\r\n") );

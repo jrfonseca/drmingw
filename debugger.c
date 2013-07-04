@@ -8,6 +8,7 @@
 
 #include <windows.h>
 #include <tchar.h>
+#include <ntstatus.h>
 
 #include <stdlib.h>
 
@@ -181,7 +182,8 @@ BOOL DebugMainLoop(void)
                 }
 
                 dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
-                if (DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT) {
+                if (DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT ||
+                    DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_WX86_BREAKPOINT) {
                     if (DebugEvent.u.Exception.dwFirstChance)
                     {
                         // Signal the aedebug event
