@@ -21,7 +21,9 @@
 #define DEBUGGER_H
 
 
-#define DBG_EXCEPTION_HANDLED    ((DWORD)0x00010001L)
+#include <windows.h>
+
+
 typedef struct {
     DWORD dwProcessId;
     HANDLE hProcess;
