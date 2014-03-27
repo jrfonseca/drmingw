@@ -3,6 +3,9 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 4)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast")
 endif ()
 
+include_directories (${CMAKE_SOURCE_DIR}/thirdparty/elf)
+add_definitions (-DHAVE_ELF_H)
+
 add_library (dwarf STATIC
     dwarf_abbrev.c
     dwarf_addr_finder.c
