@@ -33,10 +33,12 @@ add_library (dwarf STATIC
     dwarf_sort_line.c
     dwarf_string.c
     dwarf_stubs.c
+    dwarf_tsearchhash.c
     dwarf_types.c
     dwarf_util.c
     dwarf_vars.c
     dwarf_weaks.c
     malloc_check.c
+    pro_encode_nm.c
 )
 

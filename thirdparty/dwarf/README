@@ -8,13 +8,20 @@ To build  both, type
         ./configure --enable-shared 
         make
 
+January 30, 2013: libdwarf.h is no longer in the distribution,
+but libdwarf.h.in is identical to libdwarf.h.  'configure'
+copies libdwarf.h.in to libdwarf.h and whether libelf.h defines
+'struct _Elf' or 'struct Elf' configure attempts to create
+libdwarf.h appropriately.  
+
 No real install target is provided here, so 'make install' does
 not do much. One can copy either or both of libdwarf.a libdwarf.so 
 to somewhere fairly standard (but intended for software you build)  
 like '/usr/local/lib'.  Or anywhere else you want to copy it.
 
 To use dwarf or libdwarf, you may want to copy dwarf.h and
-libdwarf.h somewhere convenient (possibly /usr/local/include), 
+a generated libdwarf.h somewhere convenient
+(possibly /usr/local/include), 
 and you may need to copy the libdwarf to a convenient spot 
 (/usr/local/lib is a traditional place for libraries one builds
 oneself on Unix and Linux).
@@ -34,6 +41,15 @@ Warnings like
  "warning: cast from pointer to integer of different size"
 at compile time are to be expected in dwarf_frame.c and
 dwarf_frame2.c.   Do not be alarmed.
+
+Warnings like
+ "warning: passing argument 1 of ‘dbg->de_callback_func_c’
+discards ‘const’ qualifier from pointer target type
+[enabled by default]" at compile time are to be expected in
+some pro*.c source files.  Fixing the public prototype could
+cause some producer-library user's code to fail to compile
+so we live with the warnings for now.
+
 
 If your headers are not in the expected places,
 use the make command line to add flags and include directories.
@@ -191,8 +207,36 @@ libdwarf.h somewhere convenient.
 You will also need libelf (libelf.a and/or libelf.so) and
 libelf.h installed. These are available from GNU repositories
 and from the normal Linux repositories for Linux releases.
-On Ubuntu 20/04 for example:
+On Ubuntu Linux for example:
 	sudo apt-get install libelf-dev libelf1 
+
+Compiler warnings:
+A few Warnings like:
+dwarf_frame.c:715:29: warning: cast from pointer to integer of different size [-
+Wpointer-to-int-cast]
+dwarf_arange.c:113:13: warning: variable ‘local_extension_size’ set but not used
+ [-Wunused-but-set-variable]
+are considered normal.
+
+
+As of January 2013 the code compiles with gcc without
+problems with -Wall and -Wsign-compare
+aside from the warnings hinted at above.
+
+The following gcc/clang options 
+have not all been tried as of January 2013,
+but will be as time permits.
+-Wsystem-headers 
+-Wall  -Wsign-compare
+-Wno-format-y2k -W 
+-Wno-unused-parameter -Wstrict-prototypes 
+-Wmissing-prototypes -Wpointer-arith 
+-Wreturn-type -Wcast-qual -Wwrite-strings 
+-Wswitch -Wshadow -Wunused-parameter 
+-Wcast-align -Wchar-subscripts -Winline 
+-Wnested-externs -Wredundant-decls 
+-Wold-style-definition -Wno-pointer-sign
+
 
 $Source: /home/davea/dwarf/dwarf-working/trunk/libdwarf/README,v $
 $Revision: 1.1 $

@@ -4,22 +4,22 @@
   Portions Copyright (C) 2007-2011 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -34,7 +34,7 @@
 
 */
 /* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, 
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
    Boston, MA 02110-1301, USA.
    SGI has moved from the Crittenden Lane address.
 */
@@ -50,17 +50,17 @@
 
 #ifdef __sgi  /* __sgi should only be defined for IRIX/MIPS. */
 /* The 'fixup' here intended for IRIX targets only.
-   With a  2+GB Elf64 IRIX executable (under 4GB in size),  
+   With a  2+GB Elf64 IRIX executable (under 4GB in size),
    some DIE offsets wrongly
    got the 32bit upper bit sign extended.  For the cu-header
    offset in the .debug_pubnames section  and in the
    .debug_aranges section.
    the 'varp' here is a pointer to an offset into .debug_info.
    We fix up the offset here if it seems advisable..
-   
+
    As of June 2005 we have identified a series of mistakes
    in ldx64 that can cause this (64 bit values getting passed
-   thru 32-bit signed knothole).  
+   thru 32-bit signed knothole).
 */
 void
 _dwarf_fix_up_offset_irix(Dwarf_Debug dbg,
@@ -102,7 +102,7 @@ dwarf_get_globals(Dwarf_Debug dbg,
     return _dwarf_internal_get_pubnames_like_data(dbg,
         dbg->de_debug_pubnames.dss_data,
         dbg->de_debug_pubnames.dss_size,
-        globals, 
+        globals,
         return_count,
         error,
         DW_DLA_GLOBAL_CONTEXT,
@@ -185,7 +185,7 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
     /* Points to the current global read. */
     Dwarf_Global global = 0;
 
-    /*  Used to chain the Dwarf_Global_s structs for creating contiguous 
+    /*  Used to chain the Dwarf_Global_s structs for creating contiguous
         list of pointers to the structs. */
     Dwarf_Chain curr_chain = 0;
     Dwarf_Chain prev_chain = 0;
@@ -223,7 +223,7 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
             cu's data.  Essentially the length in the header and the 0
             terminator of the data are redundant information. The
             dwarf2/3 spec does not mention what to do if the length is
-            past the 0 terminator. So we take any bytes left after the 0 
+            past the 0 terminator. So we take any bytes left after the 0
             as padding and ignore them. */
         Dwarf_Small *pubnames_ptr_past_end_cu = 0;
 
@@ -286,7 +286,7 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
         /* Loop thru pairs. DIE off with CU followed by string. */
         while (die_offset_in_cu != 0) {
 
-            /*  Already read offset, pubnames_like_ptr now points to the 
+            /*  Already read offset, pubnames_like_ptr now points to the
                 string. */
             global =
                 (Dwarf_Global) _dwarf_get_alloc(dbg, global_code, 1);
@@ -425,7 +425,7 @@ dwarf_global_die_offset(Dwarf_Global global,
 
     In early versions of this, the value returned was
     the offset of the compilation unit die, and
-    other cu-local die offsets were faked so adding this to 
+    other cu-local die offsets were faked so adding this to
     such a cu-local offset got a true section offset.
     Now things do as they say (adding *cu_header_offset to
     a cu-local offset gets the section offset).  */
@@ -462,7 +462,7 @@ dwarf_global_cu_offset(Dwarf_Global global,
   Various errors are possible.
 
   The string pointer returned thru ret_name is not
-  dwarf_get_alloc()ed, so no dwarf_dealloc() 
+  dwarf_get_alloc()ed, so no dwarf_dealloc()
   DW_DLA_STRING should be applied to it.
 
 */
@@ -491,7 +491,7 @@ dwarf_global_name_offsets(Dwarf_Global global,
 
     off = con->pu_offset_of_cu_header;
     /*  The offset had better not be too close to the end. If it is,
-        _dwarf_length_of_cu_header() will step off the end and therefore 
+        _dwarf_length_of_cu_header() will step off the end and therefore
         must not be used. 10 is a meaningless heuristic, but no CU
         header is that small so it is safe. An erroneous offset is due
         to a bug in the tool chain. A bug like this has been seen on
@@ -523,7 +523,7 @@ dwarf_global_name_offsets(Dwarf_Global global,
         if (res != DW_DLV_OK) {
             return res;
         }
-        /*  The offset had better not be too close to the end. If it is, 
+        /*  The offset had better not be too close to the end. If it is,
             _dwarf_length_of_cu_header() will step off the end and
             therefore must not be used. 10 is a meaningless heuristic,
             but no CU header is that small so it is safe. */
@@ -541,7 +541,7 @@ dwarf_global_name_offsets(Dwarf_Global global,
 
 /*  We have the offset to a CU header.
     Return thru outFileOffset the offset of the CU DIE.
-        
+
     New June, 2001.
     Used by SGI IRIX debuggers.
     No error is possible.
@@ -589,20 +589,20 @@ dwarf_get_cu_die_offset_given_cu_header_offset_b(Dwarf_Debug dbg,
 }
 /*  dwarf_CU_dieoffset_given_die returns
     the global debug_info section offset of the CU die
-    that is the CU containing the given (passed-in) die. 
+    that is the CU containing the given (passed-in) die.
     This information makes it possible for a consumer to
-    find and print context information for any die. 
+    find and print context information for any die.
 
     Use dwarf_offdie() passing in the offset this returns
-    to get a die pointer to the CU die.  */  
-int 
+    to get a die pointer to the CU die.  */
+int
 dwarf_CU_dieoffset_given_die(Dwarf_Die die,
     Dwarf_Off*       return_offset,
     Dwarf_Error*     error)
-{   
+{
     Dwarf_Off  dieoff = 0;
     Dwarf_CU_Context cucontext = 0;
-    
+
     CHECK_DIE(die, DW_DLV_ERROR);
     cucontext = die->di_cu_context;
     dieoff =  cucontext->cc_debug_offset;

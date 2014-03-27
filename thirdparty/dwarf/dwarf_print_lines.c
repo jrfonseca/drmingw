@@ -1,25 +1,26 @@
 /*
 
   Copyright (C) 2000,2002,2004,2005,2006 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2011 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2013 David Anderson. All Rights Reserved.
+  Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -34,7 +35,7 @@
 
 */
 /* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, 
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
    Boston, MA 02110-1301, USA.
    SGI has moved from the Crittenden Lane address.
 */
@@ -48,21 +49,25 @@
 #include <time.h>
 #include "dwarf_line.h"
 
+
 /* FIXME Need to add prologue_end epilogue_begin isa fields. */
 static void
-print_line_header(void)
+print_line_header(Dwarf_Debug dbg)
 {
-    printf
-        ("                                                         s b e p e i d\n"
-        "                                                         t l s r p s i\n"
-        "                                                         m c e o i a s\n"
-        " section    op                                       col t k q l l   c\n"
-        " offset     code               address     file line umn ? ? ? ? ? \n");
+/* Ugly indenting, but makes lines shorter to see them better. */
+dwarf_printf(dbg,
+"                                                         s b e p e i d\n"
+"                                                         t l s r p s i\n"
+"                                                         m c e o i a s\n"
+" section    op                                       col t k q l l   c\n"
+" offset     code               address     file line umn ? ? ? ? ? \n");
 }
 
 /* FIXME: print new line values:   prologue_end epilogue_begin isa */
 static void
-print_line_detail(char *prefix,
+print_line_detail(
+    Dwarf_Debug dbg,
+    const char *prefix,
     int opcode,
     Dwarf_Unsigned address,
     unsigned long file,
@@ -72,7 +77,8 @@ print_line_detail(char *prefix,
     int prologue_end, int epilogue_begin, int isa,
     Dwarf_Unsigned discriminator)
 {
-    printf("%-15s %2d 0x%" DW_PR_XZEROS DW_PR_DUx " "
+    dwarf_printf(dbg,
+        "%-15s %2d 0x%" DW_PR_XZEROS DW_PR_DUx " "
         "%2lu   %4lu %2lu   %1d %1d %1d",
         prefix,
         (int) opcode,
@@ -81,20 +87,25 @@ print_line_detail(char *prefix,
         (unsigned long) line,
         (unsigned long) column,
         (int) is_stmt, (int) basic_block, (int) end_sequence);
-    if(discriminator || prologue_end || epilogue_begin || isa) {
-        printf(" %1d", prologue_end);
-        printf(" %1d", epilogue_begin);
-        printf(" %1d", isa);
-        printf(" 0x%" DW_PR_DUx , discriminator);
-    } 
-    printf("\n");
+    if (discriminator || prologue_end || epilogue_begin || isa) {
+        dwarf_printf(dbg,
+            " %1d", prologue_end);
+        dwarf_printf(dbg,
+            " %1d", epilogue_begin);
+        dwarf_printf(dbg,
+            " %1d", isa);
+        dwarf_printf(dbg,
+            " 0x%" DW_PR_DUx , discriminator);
+    }
+    dwarf_printf(dbg,
+        "\n");
 }
 
 
 /*  return DW_DLV_OK if ok. else DW_DLV_NO_ENTRY or DW_DLV_ERROR
     If err_count_out is non-NULL, this is a special 'check'
     call.  */
-int
+static int
 _dwarf_internal_printlines(Dwarf_Die die, Dwarf_Error * error,
 int * err_count_out, int only_line_header)
 {
@@ -140,6 +151,7 @@ int * err_count_out, int only_line_header)
 
 
     Dwarf_Sword i=0;
+    Dwarf_Word u=0;
 
     /*  This is the current opcode read from the statement program. */
     Dwarf_Small opcode=0;
@@ -193,8 +205,8 @@ int * err_count_out, int only_line_header)
     }
 
 
-    /*  The list of relevant FORMs is small. 
-        DW_FORM_data4, DW_FORM_data8, DW_FORM_sec_offset 
+    /*  The list of relevant FORMs is small.
+        DW_FORM_data4, DW_FORM_data8, DW_FORM_sec_offset
     */
     lres = dwarf_whatform(stmt_list_attr,&attrform,error);
     if (lres != DW_DLV_OK) {
@@ -245,7 +257,7 @@ int * err_count_out, int only_line_header)
         int dres = dwarf_read_line_table_prefix(dbg,
             line_ptr,dbg->de_debug_line.dss_size - line_offset,
             &line_ptr_out,
-            &prefix, 
+            &prefix,
             &bogus_bytes_ptr,
             &bogus_bytes_count,
             error,
@@ -261,63 +273,81 @@ int * err_count_out, int only_line_header)
         line_ptr_end = prefix.pf_line_ptr_end;
         line_ptr = line_ptr_out;
     }
-    if(only_line_header) {
+    if (only_line_header) {
         /* Just checking for header errors, nothing more here.*/
         dwarf_free_line_table_prefix(&prefix);
         return DW_DLV_OK;
     }
 
-    printf("total line info length %ld bytes, "
+    dwarf_printf(dbg,
+        "total line info length %ld bytes, "
         "line offset 0x%" DW_PR_XZEROS DW_PR_DUx " %" DW_PR_DSd "\n",
         (long) prefix.pf_total_length,
         (Dwarf_Unsigned) line_offset, (Dwarf_Signed) line_offset);
-    printf("line table version %d\n",(int) prefix.pf_version);
-    printf("line table length field length %d prologue length %d\n",
+    dwarf_printf(dbg,
+        "line table version %d\n",(int) prefix.pf_version);
+    dwarf_printf(dbg,
+        "line table length field length %d prologue length %d\n",
         (int)prefix.pf_length_field_length,
         (int)prefix.pf_prologue_length);
-    printf("compilation_directory %s\n",
+    dwarf_printf(dbg,
+        "compilation_directory %s\n",
         comp_dir ? ((char *) comp_dir) : "");
 
-    printf("  min instruction length %d\n",
+    dwarf_printf(dbg,
+        "  min instruction length %d\n",
         (int) prefix.pf_minimum_instruction_length);
-    printf("  default is stmt        %d\n", (int) prefix.pf_default_is_stmt);
-    printf("  line base              %d\n", (int) prefix.pf_line_base);
-    printf("  line_range             %d\n", (int) prefix.pf_line_range);
-    printf("  opcode base            %d\n", (int) prefix.pf_opcode_base);
-    printf("  standard opcode count  %d\n", (int) prefix.pf_std_op_count);
+    dwarf_printf(dbg,
+        "  default is stmt        %d\n", (int) prefix.pf_default_is_stmt);
+    dwarf_printf(dbg,
+        "  line base              %d\n", (int) prefix.pf_line_base);
+    dwarf_printf(dbg,
+        "  line_range             %d\n", (int) prefix.pf_line_range);
+    dwarf_printf(dbg,
+        "  opcode base            %d\n", (int) prefix.pf_opcode_base);
+    dwarf_printf(dbg,
+        "  standard opcode count  %d\n", (int) prefix.pf_std_op_count);
 
     for (i = 1; i < prefix.pf_opcode_base; i++) {
-        printf("  opcode[%2d] length  %d\n", (int) i,
+        dwarf_printf(dbg,
+            "  opcode[%2d] length  %d\n", (int) i,
             (int) prefix.pf_opcode_length_table[i - 1]);
     }
-    printf("  include directories count %d\n", 
+    dwarf_printf(dbg,
+        "  include directories count %d\n",
         (int) prefix.pf_include_directories_count);
-    for (i = 0; i < prefix.pf_include_directories_count; ++i) {
-        printf("  include dir[%d] %s\n",
-            (int) i, prefix.pf_include_directories[i]);
+    for (u = 0; u < prefix.pf_include_directories_count; ++u) {
+        dwarf_printf(dbg,
+            "  include dir[%u] %s\n",
+            (int) u, prefix.pf_include_directories[u]);
     }
-    printf("  files count            %d\n", 
+    dwarf_printf(dbg,
+        "  files count            %d\n",
         (int) prefix.pf_files_count);
 
-    for (i = 0; i < prefix.pf_files_count; ++i) {
+    for (u = 0; u < prefix.pf_files_count; ++u) {
         struct Line_Table_File_Entry_s *lfile =
-            prefix.pf_line_table_file_entries + i;
+            prefix.pf_line_table_file_entries + u;
         Dwarf_Unsigned tlm2 = lfile->lte_last_modification_time;
         Dwarf_Unsigned di = lfile->lte_directory_index;
         Dwarf_Unsigned fl = lfile->lte_length_of_file;
 
-        printf("  file[%d]  %s (file-number: %d) \n",
-            (int) i, (char *) lfile->lte_filename,
-            (int)(i+1));
-        printf("    dir index %d\n", (int) di);
+        dwarf_printf(dbg,
+            "  file[%u]  %s (file-number: %u) \n",
+            (unsigned) u, (char *) lfile->lte_filename,
+            (unsigned)(u+1));
+        dwarf_printf(dbg,
+            "    dir index %d\n", (int) di);
         {
             time_t tt = (time_t) tlm2;
 
             /* ctime supplies newline */
-            printf("    last time 0x%x %s",
+            dwarf_printf(dbg,
+                "    last time 0x%x %s",
                 (unsigned) tlm2, ctime(&tt));
         }
-        printf("    file length %ld 0x%lx\n",
+        dwarf_printf(dbg,
+            "    file length %ld 0x%lx\n",
             (long) fl, (unsigned long) fl);
 
     }
@@ -325,10 +355,11 @@ int * err_count_out, int only_line_header)
 
     {
         Dwarf_Unsigned offset = 0;
-        if(bogus_bytes_count > 0) {
+        if (bogus_bytes_count > 0) {
             Dwarf_Unsigned wcount = bogus_bytes_count;
             Dwarf_Unsigned boffset = bogus_bytes_ptr - orig_line_ptr;
-            printf("*** DWARF CHECK: the line table prologue  header_length "
+            dwarf_printf(dbg,
+                "*** DWARF CHECK: the line table prologue  header_length "
                 " is %" DW_PR_DUu " too high, we pretend it is smaller."
                 "Section offset: 0x%" DW_PR_XZEROS DW_PR_DUx
                 " (%" DW_PR_DUu ") ***\n",
@@ -336,7 +367,8 @@ int * err_count_out, int only_line_header)
             *err_count_out += 1;
         }
         offset = line_ptr - orig_line_ptr;
-        printf("  statement prog offset in section: 0x%" 
+        dwarf_printf(dbg,
+            "  statement prog offset in section: 0x%"
             DW_PR_XZEROS DW_PR_DUx " (%" DW_PR_DUu ")\n",
             offset, offset);
     }
@@ -345,12 +377,13 @@ int * err_count_out, int only_line_header)
         prefix.  */
     is_stmt = prefix.pf_default_is_stmt;
 
-    print_line_header();
+    print_line_header(dbg);
     /* Start of statement program.  */
     while (line_ptr < line_ptr_end) {
         int type = 0;
 
-        printf(" [0x%06" DW_PR_DSx "] ", 
+        dwarf_printf(dbg,
+            " [0x%06" DW_PR_DSx "] ",
             (Dwarf_Signed) (line_ptr - orig_line_ptr));
         opcode = *(Dwarf_Small *) line_ptr;
         line_ptr++;
@@ -362,7 +395,8 @@ int * err_count_out, int only_line_header)
             int oc = 0;
             int opcnt = prefix.pf_opcode_length_table[opcode];
 
-            printf("*** DWARF CHECK: DISCARD standard opcode %d "
+            dwarf_printf(dbg,
+                "*** DWARF CHECK: DISCARD standard opcode %d "
                 "with %d operands: "
                 "not understood.", opcode, opcnt);
             *err_count_out += 1;
@@ -374,12 +408,14 @@ int * err_count_out, int only_line_header)
                 Dwarf_Unsigned utmp2 = 0;
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
-                printf(" %" DW_PR_DUu 
+                dwarf_printf(dbg,
+                    " %" DW_PR_DUu
                     " (0x%" DW_PR_XZEROS DW_PR_DUx ")",
                     (Dwarf_Unsigned) utmp2,
                     (Dwarf_Unsigned) utmp2);
             }
-            printf("***\n");
+            dwarf_printf(dbg,
+                "***\n");
             /* Do nothing, necessary ops done */
         } else if (type == LOP_SPECIAL) {
             /*  This op code is a special op in the object, no matter
@@ -393,7 +429,7 @@ int * err_count_out, int only_line_header)
 
             opcode = opcode - prefix.pf_opcode_base;
             operation_advance = (opcode / prefix.pf_line_range);
-            if(prefix.pf_maximum_ops_per_instruction < 2) {
+            if (prefix.pf_maximum_ops_per_instruction < 2) {
                 address = address + (prefix.pf_minimum_instruction_length *
                     operation_advance);
             } else {
@@ -406,7 +442,7 @@ int * err_count_out, int only_line_header)
             line = line + prefix.pf_line_base +
                 opcode % prefix.pf_line_range;
             sprintf(special, "Specialop %3u", origop);
-            print_line_detail(special,
+            print_line_detail(dbg,special,
                 opcode, address, (int) file, line, column,
                 is_stmt, basic_block, end_sequence,
                 prologue_end, epilogue_begin, isa,discriminator);
@@ -418,7 +454,7 @@ int * err_count_out, int only_line_header)
             switch (opcode) {
 
             case DW_LNS_copy:{
-                print_line_detail("DW_LNS_copy",
+                print_line_detail(dbg,"DW_LNS_copy",
                     opcode, address, file, line,
                     column, is_stmt, basic_block,
                     end_sequence, prologue_end,
@@ -434,8 +470,9 @@ int * err_count_out, int only_line_header)
                 Dwarf_Unsigned utmp2 = 0;
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
-                printf("DW_LNS_advance_pc val %" 
-                    DW_PR_DSd " 0x%" 
+                dwarf_printf(dbg,
+                    "DW_LNS_advance_pc val %"
+                    DW_PR_DSd " 0x%"
                     DW_PR_XZEROS DW_PR_DUx "\n",
                     (Dwarf_Signed) (Dwarf_Word) utmp2,
                     (Dwarf_Unsigned) (Dwarf_Word) utmp2);
@@ -449,7 +486,8 @@ int * err_count_out, int only_line_header)
 
                 DECODE_LEB128_SWORD(line_ptr, stmp);
                 advance_line = (Dwarf_Sword) stmp;
-                printf("DW_LNS_advance_line val %" DW_PR_DSd " 0x%" 
+                dwarf_printf(dbg,
+                    "DW_LNS_advance_line val %" DW_PR_DSd " 0x%"
                     DW_PR_XZEROS DW_PR_DSx "\n",
                     (Dwarf_Signed) advance_line,
                     (Dwarf_Signed) advance_line);
@@ -462,7 +500,8 @@ int * err_count_out, int only_line_header)
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
                 file = (Dwarf_Word) utmp2;
-                printf("DW_LNS_set_file  %ld\n", (long) file);
+                dwarf_printf(dbg,
+                    "DW_LNS_set_file  %ld\n", (long) file);
                 }
                 break;
             case DW_LNS_set_column:{
@@ -470,25 +509,28 @@ int * err_count_out, int only_line_header)
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
                 column = (Dwarf_Word) utmp2;
-                printf("DW_LNS_set_column val %" DW_PR_DSd " 0x%" 
+                dwarf_printf(dbg,
+                    "DW_LNS_set_column val %" DW_PR_DSd " 0x%"
                     DW_PR_XZEROS DW_PR_DSx "\n",
                     (Dwarf_Signed) column, (Dwarf_Signed) column);
                 }
                 break;
             case DW_LNS_negate_stmt:{
                 is_stmt = !is_stmt;
-                printf("DW_LNS_negate_stmt\n");
+                dwarf_printf(dbg,
+                    "DW_LNS_negate_stmt\n");
                 }
                 break;
             case DW_LNS_set_basic_block:{
-                printf("DW_LNS_set_basic_block\n");
+                dwarf_printf(dbg,
+                    "DW_LNS_set_basic_block\n");
                 basic_block = true;
                 }
                 break;
 
             case DW_LNS_const_add_pc:{
                 opcode = MAX_LINE_OP_CODE - prefix.pf_opcode_base;
-                if(prefix.pf_maximum_ops_per_instruction < 2) {
+                if (prefix.pf_maximum_ops_per_instruction < 2) {
                     Dwarf_Unsigned operation_advance =
                         (opcode / prefix.pf_line_range);
                     address = address +
@@ -504,7 +546,8 @@ int * err_count_out, int only_line_header)
                         prefix.pf_maximum_ops_per_instruction;
                 }
 
-                printf("DW_LNS_const_add_pc new address 0x%" 
+                dwarf_printf(dbg,
+                    "DW_LNS_const_add_pc new address 0x%"
                     DW_PR_XZEROS DW_PR_DSx "\n",
                     (Dwarf_Signed) address);
                 }
@@ -514,8 +557,9 @@ int * err_count_out, int only_line_header)
                     line_ptr, sizeof(Dwarf_Half));
                 line_ptr += sizeof(Dwarf_Half);
                 address = address + fixed_advance_pc;
-                printf("DW_LNS_fixed_advance_pc val %" DW_PR_DSd 
-                    " 0x%" DW_PR_XZEROS DW_PR_DSx 
+                dwarf_printf(dbg,
+                    "DW_LNS_fixed_advance_pc val %" DW_PR_DSd
+                    " 0x%" DW_PR_XZEROS DW_PR_DSx
                     " new address 0x%" DW_PR_XZEROS DW_PR_DSx "\n",
                     (Dwarf_Signed) fixed_advance_pc,
                     (Dwarf_Signed) fixed_advance_pc,
@@ -525,13 +569,15 @@ int * err_count_out, int only_line_header)
                 break;
             case DW_LNS_set_prologue_end:{
                 prologue_end = true;
-                printf("DW_LNS_set_prologue_end set true.\n");
+                dwarf_printf(dbg,
+                    "DW_LNS_set_prologue_end set true.\n");
                 }
                 break;
                 /* New in DWARF3 */
             case DW_LNS_set_epilogue_begin:{
                 epilogue_begin = true;
-                printf("DW_LNS_set_epilogue_begin set true.\n");
+                dwarf_printf(dbg,
+                    "DW_LNS_set_epilogue_begin set true.\n");
                 }
                 break;
 
@@ -541,7 +587,8 @@ int * err_count_out, int only_line_header)
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
                 isa = utmp2;
-                printf("DW_LNS_set_isa new value 0x%" 
+                dwarf_printf(dbg,
+                    "DW_LNS_set_isa new value 0x%"
                     DW_PR_XZEROS DW_PR_DUx ".\n",
                     (Dwarf_Unsigned) utmp2);
                 if (isa != utmp2) {
@@ -570,7 +617,7 @@ int * err_count_out, int only_line_header)
             case DW_LNE_end_sequence:{
                 end_sequence = true;
 
-                print_line_detail("DW_LNE_end_sequence extended",
+                print_line_detail(dbg,"DW_LNE_end_sequence extended",
                     opcode, address, file, line,
                     column, is_stmt, basic_block,
                     end_sequence, prologue_end,
@@ -592,11 +639,12 @@ int * err_count_out, int only_line_header)
                 break;
             case DW_LNE_set_address:{
                 READ_UNALIGNED(dbg, address, Dwarf_Addr,
-                    line_ptr, 
+                    line_ptr,
                     die->di_cu_context->cc_address_size);
 
                 line_ptr += die->di_cu_context->cc_address_size;
-                printf("DW_LNE_set_address address 0x%" 
+                dwarf_printf(dbg,
+                    "DW_LNE_set_address address 0x%"
                     DW_PR_XZEROS DW_PR_DUx "\n",
                     (Dwarf_Unsigned) address);
 
@@ -620,16 +668,20 @@ int * err_count_out, int only_line_header)
                     &leb128_length);
                 line_ptr = line_ptr + leb128_length;
 
-                printf("DW_LNE_define_file %s \n", fn);
-                printf("    dir index %d\n", (int) di);
+                dwarf_printf(dbg,
+                    "DW_LNE_define_file %s \n", fn);
+                dwarf_printf(dbg,
+                    "    dir index %d\n", (int) di);
                 {
                     time_t tt3 = (time_t) tlm;
 
                     /* ctime supplies newline */
-                    printf("    last time 0x%x %s",
+                    dwarf_printf(dbg,
+                        "    last time 0x%x %s",
                         (unsigned) tlm, ctime(&tt3));
                 }
-                printf("    file length %ld 0x%lx\n",
+                dwarf_printf(dbg,
+                    "    file length %ld 0x%lx\n",
                     (long) fl, (unsigned long) fl);
 
                 }
@@ -640,7 +692,8 @@ int * err_count_out, int only_line_header)
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
                 discriminator = (Dwarf_Word) utmp2;
-                printf("DW_LNE_set_discriminator 0x%"
+                dwarf_printf(dbg,
+                    "DW_LNE_set_discriminator 0x%"
                     DW_PR_XZEROS DW_PR_DUx "\n",utmp2);
                 }
                 break;
@@ -651,23 +704,28 @@ int * err_count_out, int only_line_header)
                     (and the op code and the bytes of operand). */
 
                 Dwarf_Unsigned remaining_bytes = instr_length -1;
-                if(instr_length < 1 || remaining_bytes > DW_LNE_LEN_MAX) {
+                if (instr_length < 1 || remaining_bytes > DW_LNE_LEN_MAX) {
                     dwarf_free_line_table_prefix(&prefix);
                     _dwarf_error(dbg, error,
                         DW_DLE_LINE_EXT_OPCODE_BAD);
                     return (DW_DLV_ERROR);
                 }
-                printf("DW_LNE extended op 0x%x ",ext_opcode);
-                printf("Bytecount: %" DW_PR_DUu , (Dwarf_Unsigned)instr_length);
-                if(remaining_bytes > 0) {
-                    printf(" linedata: 0x");
+                dwarf_printf(dbg,
+                    "DW_LNE extended op 0x%x ",ext_opcode);
+                dwarf_printf(dbg,
+                    "Bytecount: %" DW_PR_DUu , (Dwarf_Unsigned)instr_length);
+                if (remaining_bytes > 0) {
+                    dwarf_printf(dbg,
+                        " linedata: 0x");
                     while (remaining_bytes > 0) {
-                        printf("%02x",(unsigned char)(*(line_ptr)));
+                        dwarf_printf(dbg,
+                            "%02x",(unsigned char)(*(line_ptr)));
                         line_ptr++;
                         remaining_bytes--;
                     }
                 }
-                printf("\n");
+                dwarf_printf(dbg,
+                    "\n");
             }
             break;
             } /* Dnd switch */

@@ -1,22 +1,22 @@
 /*
 
   Copyright (C) 2000,2005 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2008-2011  David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2008-2012  David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
   You should have received a copy of the GNU Lesser General Public
   License along with this program; if not, write the Free Software
@@ -75,14 +75,14 @@
 #define DW_DLA_VAR_CONTEXT	DW_DLA_RANGES + 12
 #define DW_DLA_WEAK_CONTEXT	DW_DLA_RANGES + 13
 #define DW_DLA_PUBTYPES_CONTEXT	DW_DLA_RANGES + 14 /* DWARF3 */
-#define DW_DLA_HASH_TABLE_ENTRY	DW_DLA_RANGES + 15 
+#define DW_DLA_HASH_TABLE_ENTRY	DW_DLA_RANGES + 15
 
 /* Maximum number of allocation types for allocation routines. */
 #define MAX_DW_DLA		DW_DLA_HASH_TABLE_ENTRY
 
 /*Dwarf_Word  is unsigned word usable for index, count in memory */
 /*Dwarf_Sword is   signed word usable for index, count in memory */
-/*  The are 32 or 64 bits depending if 64 bit longs or not, which
+/*  They are 32 or 64 bits depending if 64 bit longs or not, which
     fits the  ILP32 and LP64 models
     These work equally well with ILP64.  */
 

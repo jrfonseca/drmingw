@@ -4,22 +4,22 @@
   Portions Copyright 2011 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -61,11 +61,11 @@ typedef unsigned long long ull;
 static int do_this_die_and_dealloc(Dwarf_Debug dbg, Dwarf_Die die,
     int *errval);
 static int handle_debug_info(Dwarf_Debug dbg, int *errval);
-static int handle_debug_frame(Dwarf_Debug dbg, 
+static int handle_debug_frame(Dwarf_Debug dbg,
     Dwarf_addr_callback_func cb_func, int *errval);
-static int handle_debug_aranges(Dwarf_Debug dbg, 
+static int handle_debug_aranges(Dwarf_Debug dbg,
     Dwarf_addr_callback_func cb_func, int *errval);
-static int handle_debug_line(Dwarf_Debug dbg, 
+static int handle_debug_line(Dwarf_Debug dbg,
     Dwarf_Die cu_die, Dwarf_addr_callback_func cb_func, int *errval);
 static int handle_debug_loc(void);
 
@@ -231,12 +231,12 @@ handle_debug_info(Dwarf_Debug dbg, int *errval)
     return DW_DLV_OK;
 }
 
-static int
+static const int
   might_have_addr[] = {
     DW_AT_high_pc,
     DW_AT_low_pc,
 };
-static int might_have_locdesc[] = {
+static  const int might_have_locdesc[] = {
     DW_AT_segment,
     DW_AT_return_addr,
     DW_AT_frame_base,
@@ -284,17 +284,17 @@ handle_attr_addr(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half attrnum,
                     send_addr_note(DW_SECTION_INFO, offset, addr);
                 } else if (ares == DW_DLV_ERROR) {
                     return ares;
-                }               
+                }
                 /* no entry: ok. */
             } else {
                 /* NO_ENTRY is impossible. */
-                res = DW_DLV_ERROR;     
+                res = DW_DLV_ERROR;
             }
             break;
 
         default:
-            /* surprising! An error? */ 
-            /* do nothing */ 
+            /* surprising! An error? */
+            /* do nothing */
             ;
         }
         dwarf_dealloc(dbg, attr, DW_DLA_ATTR);
@@ -420,9 +420,9 @@ process_this_die_attrs(Dwarf_Debug dbg, Dwarf_Die newdie, int *errval)
         return tres;
     }
     if (DW_TAG_compile_unit == ltag) {
-        /*  Because of the way the dwarf_line code works, we do lines 
+        /*  Because of the way the dwarf_line code works, we do lines
             only per compile unit. This may turn out to be wrong if
-            we have lines left unconnected to a CU. of course such 
+            we have lines left unconnected to a CU. of course such
             lines will not, at present, be used by gnome. This is
             not ideal as coded due to the dwarf_line.c issue. */
         int lres = handle_debug_line(dbg, newdie, send_addr_note, errval);

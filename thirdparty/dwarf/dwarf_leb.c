@@ -4,22 +4,22 @@
   Portions Copyright 2011 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -85,7 +85,7 @@ _dwarf_decode_u_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
         return (word_number);
     }
 
-    /*  The rest handles long numbers Because the 'number' may be larger 
+    /*  The rest handles long numbers Because the 'number' may be larger
         than the default int/unsigned, we must cast the 'byte' before
         the shift for the shift to have a defined result. */
     number = 0;
@@ -116,11 +116,11 @@ _dwarf_decode_s_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
 {
     Dwarf_Signed number = 0;
     Dwarf_Bool sign = 0;
-    Dwarf_Sword shift = 0;
+    Dwarf_Word shift = 0;
     unsigned char byte = *leb128;
     Dwarf_Sword byte_length = 1;
 
-    /*  byte_length being the number of bytes of data absorbed so far in 
+    /*  byte_length being the number of bytes of data absorbed so far in
         turning the leb into a Dwarf_Signed. */
 
     for (;;) {

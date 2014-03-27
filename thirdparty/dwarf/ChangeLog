@@ -1,9 +1,82 @@
-2012-04-04  DavidAnderson <davea42@earthlink.net>
-     * libdwarf.h: A pointer "*" was right next to
-       a "/*" so a space introduced between them for clarity.
-       Fixed comments on DW_DLC_SIZE_64 and DW_DLC_SIZE_32.
-     * dwarf_die_deliv.c: Two local variables were declared in the
-       middle of code, accidentally creating C99 dependencies.
-       Both trivially fixed with no change in logic.
-2012-01-01  DavidAnderson <davea42@earthlink.net>
-     * A new year starts.
+2014-02-08  David Anderson
+     * libdwarf2p.1.mm: Now version 1.35.  Added a few words
+       about the sect_name_index field in the callback
+       from libdwarf to your code for each new Elf section
+       to be generated.
+     * libdwarf2p.1.pdf: Regenerated.
+2014-02-02  David Anderson
+     * dwarf_alloc.c: Added commentary.
+     * dwarf_loc.c: Fixed two indents.
+     * gennames.c: Removed trailing newlines from the printf
+       output (dwarf_names_new.h is the file generated).
+     * libdwarf.h.in: Removed trailing whitespace.
+2014-02-01  David Anderson
+     * dwarf_alloc.c: Instead of doing a long list of address compares,
+       use the hash 'tree' and tfind() to determine if we malloced
+       the space or simply took an address from .debug_info (
+       or other in-memory section) when
+       we returned a _dwarf_get_alloc() pointer to the user.
+2014-01-31  David Anderson
+     * configure.in: The test to generate HAVE___UINT32_T_IN_SYS_TYPES_H
+       was in a strange place. Moved it up a few lines.
+     * configure: Regenerated.
+     * dwarf_alloc.c: Added comment hinting at how dwarf_dealloc
+       can be further simplified.
+2014-01-30  David Anderson
+     * dwarf_loc.c: Add support for DW_FORM_exprloc
+       to dwarf_loclist_n().
+     * libdwarf2.1.mm: Document support for DW_FORM_exprloc.Version 2.16
+     * libdwarf2.1.pdf: Regenerate.
+     * dwarf.h, dwarf_form.c, dwarf_line.c,
+       dwarf_query.c, dwarf_util.c: Add limited support for DW_FORM_GNU_ref_alt
+        and DW_FORM_GNU_strp_alt.
+2014-01-30  David Anderson
+     * dwarf_alloc.c: Refactored and added relevant commentary.
+       Added a check for debug_types in dwarf_dealloc().
+     * dwarf_init_finish.c: Corrected a comment and made one line
+       declation-is-initialization.
+     * dwarf_opaque.h: Added commentary.
+
+2014-01-29  David Anderson
+     * common.h,dwarf.h,dwarf_abbrev.c,dwarf_abbrev.h,dwarf_addr_finder.c,
+       dwarf_alloc.c,dwarf_alloc.h,dwarf_arange.c,dwarf_arange.h,
+       dwarf_base_types.h,dwarf_die_deliv.c,dwarf_die_deliv.h,
+       dwarf_elf_access.c,dwarf_elf_access.h,dwarf_error.c,dwarf_error.h,
+       dwarf_form.c,dwarf_frame.c,dwarf_frame.h,dwarf_frame2.c,
+       dwarf_frame3.c,dwarf_funcs.c,dwarf_funcs.h,dwarf_global.c,
+       dwarf_global.h,dwarf_harmless.c,dwarf_harmless.h,dwarf_incl.h,
+       dwarf_init_finish.c,dwarf_line.c,dwarf_line.h,dwarf_line2.c,
+       dwarf_loc.h,dwarf_macro.h,dwarf_opaque.h,dwarf_reloc_arm.h,
+       dwarf_reloc_mips.h,dwarf_reloc_ppc.h,dwarf_reloc_ppc64.h,
+       dwarf_reloc_x86_64.h,dwarf_tsearch.h,dwarf_types.h,dwarf_util.h,
+       dwarf_vars.h,dwarf_weaks.h,libdwarfdefs.h,malloc_check.h,
+       pro_alloc.h,pro_arange.h,pro_die.h,pro_encode_nm.h,pro_error.h,
+       pro_frame.h,pro_incl.h,pro_line.h,pro_opaque.h,dwarf_tsearch.h:
+       Remove trailing whitespace.
+2014-01-29  David Anderson
+     *  dwarf_tsearch.h, dwarf_tsearchhash.c: New files implementing
+        a hashed tree with tsearch() interfaces.
+     *  Makefile.in: Add dwarf_tsearchhash.c to the build.
+     *  dwarf_init_finish.c: Remove references to malloc_check and _dwarf_setup_debug()
+        and include of "malloc_check.h" as those are no longer needed.
+     *  dwarf_line.c: Removed a superfluous _dwarf_get_alloc().  The result of the call
+        was never used.
+     *  dwarf_opaque.h: Removed Dwarf_Alloc_Hdr_s references and simple malloc references.
+        added de_alloc_tree as base of a hash database replacing most of dwarf_alloc.c.
+     *  dwarf_query.c: Removed an unused local variable.
+     *  dwarf_alloc.h,dwarf_alloc.c: Removed simple malloc support and all the 
+        complicated code handling allocation record-keeping in favor of 
+        much simpler code calling functions
+        using a tsearch-like interface.
+2014-01-10  David Anderson
+     *  dwarf_print_lines.c,dwarf_macro.c: Remove trailing whitespace.
+     *  dwarf_ranges.c, dwarf_sort_lines.c: Remove trailing whitespace.
+     *  dwarf_query.c, dwarf_pubtypes.c: Remove trailing whitespace.
+     *  dwarf_original_elf_init.c,dwarf_loc.c: Remove trailing whitespace.
+     *  gennames.c: Fix a printf so the generated dwarf_names.c
+        does not have a trailing space.
+2014-01-10  David Anderson
+     *	gennames.c: Added comment clarifying why error is set
+        before the call to fgets, and fixing the declaration
+        order to avoid c99-ism.
+     *  dwarf_frame2.c: Use /* not // for comments in C.

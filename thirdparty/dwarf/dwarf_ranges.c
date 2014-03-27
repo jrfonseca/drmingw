@@ -1,24 +1,25 @@
 /*
 
-  Copyright (C) 2008-2011 David Anderson. All Rights Reserved.
+  Copyright (C) 2008-2012 David Anderson. All Rights Reserved.
+  Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -33,7 +34,7 @@
 
 */
 /* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, 
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
    Boston, MA 02110-1301, USA.
    SGI has moved from the Crittenden Lane address.
 */
@@ -76,27 +77,27 @@ int dwarf_get_ranges_a(Dwarf_Debug dbg,
         return res;
     }
 
-    if(rangesoffset >= dbg->de_debug_ranges.dss_size) {
+    if (rangesoffset >= dbg->de_debug_ranges.dss_size) {
         _dwarf_error(dbg, error, DW_DLE_DEBUG_RANGES_OFFSET_BAD);
         return (DW_DLV_ERROR);
 
     }
     address_size = _dwarf_get_address_size(dbg, die);
-    section_end = dbg->de_debug_ranges.dss_data + 
+    section_end = dbg->de_debug_ranges.dss_data +
         dbg->de_debug_ranges.dss_size;
     rangeptr = dbg->de_debug_ranges.dss_data + rangesoffset;
     beginrangeptr = rangeptr;
 
-    for(;;) {
+    for (;;) {
         struct ranges_entry * re = calloc(sizeof(struct ranges_entry),1);
-        if(!re) {
+        if (!re) {
             _dwarf_error(dbg, error, DW_DLE_DEBUG_RANGES_OUT_OF_MEM);
             return (DW_DLV_ERROR);
         }
-        if(rangeptr  >= section_end) {
+        if (rangeptr  >= section_end) {
             return (DW_DLV_NO_ENTRY);
         }
-        if((rangeptr + (2*address_size)) > section_end) {
+        if ((rangeptr + (2*address_size)) > section_end) {
             _dwarf_error(dbg, error, DW_DLE_DEBUG_RANGES_OFFSET_BAD);
             return (DW_DLV_ERROR);
         }
@@ -109,17 +110,17 @@ int dwarf_get_ranges_a(Dwarf_Debug dbg,
             Dwarf_Addr, rangeptr,
             address_size);
         rangeptr +=  address_size;
-        if(!base) {
+        if (!base) {
             base = re;
             last = re;
         } else {
             last->next = re;
             last = re;
         }
-        if(re->cur.dwr_addr1 == 0 && re->cur.dwr_addr2 == 0) {
+        if (re->cur.dwr_addr1 == 0 && re->cur.dwr_addr2 == 0) {
             re->cur.dwr_type =  DW_RANGES_END;
             break;
-        } else if ( re->cur.dwr_addr1 == MAX_ADDR) {
+        } else if (re->cur.dwr_addr1 == MAX_ADDR) {
             re->cur.dwr_type =  DW_RANGES_ADDRESS_SELECTION;
         } else {
             re->cur.dwr_type =  DW_RANGES_ENTRY;
@@ -128,14 +129,14 @@ int dwarf_get_ranges_a(Dwarf_Debug dbg,
 
     ranges_data_out =   (Dwarf_Ranges *)
     _dwarf_get_alloc(dbg,DW_DLA_RANGES,entry_count);
-    if(!ranges_data_out) {
+    if (!ranges_data_out) {
         _dwarf_error(dbg, error, DW_DLE_DEBUG_RANGES_OUT_OF_MEM);
         return (DW_DLV_ERROR);
     }
     curre = base;
     *rangesbuf = ranges_data_out;
     *listlen = entry_count;
-    for( copyindex = 0; curre && (copyindex < entry_count); 
+    for (copyindex = 0; curre && (copyindex < entry_count);
         ++copyindex,++ranges_data_out) {
 
         struct ranges_entry *r = curre;
@@ -144,10 +145,10 @@ int dwarf_get_ranges_a(Dwarf_Debug dbg,
         free(r);
     }
     /* Callers will often not care about the bytes used. */
-    if(bytecount) {
+    if (bytecount) {
         *bytecount = rangeptr - beginrangeptr;
     }
-    return DW_DLV_OK; 
+    return DW_DLV_OK;
 }
 int dwarf_get_ranges(Dwarf_Debug dbg,
     Dwarf_Off rangesoffset,
@@ -162,11 +163,10 @@ int dwarf_get_ranges(Dwarf_Debug dbg,
     return res;
 }
 
-void 
+void
 dwarf_ranges_dealloc(Dwarf_Debug dbg, Dwarf_Ranges * rangesbuf,
     Dwarf_Signed rangecount)
 {
     dwarf_dealloc(dbg,rangesbuf, DW_DLA_RANGES);
-   
 }
 

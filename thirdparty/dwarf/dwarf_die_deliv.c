@@ -1,25 +1,26 @@
 /*
 
   Copyright (C) 2000-2006 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2011 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2012 David Anderson. All Rights Reserved.
+  Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -34,7 +35,7 @@
 
 */
 /* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, 
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
    Boston, MA 02110-1301, USA.
    SGI has moved from the Crittenden Lane address.
 */
@@ -74,11 +75,11 @@ dwarf_get_die_infotypes_flag(Dwarf_Die die)
 }
 
 /*
-    For a given Dwarf_Debug dbg, this function checks 
-    if a CU that includes the given offset has been read 
-    or not.  If yes, it returns the Dwarf_CU_Context 
-    for the CU.  Otherwise it returns NULL.  Being an 
-    internal routine, it is assumed that a valid dbg 
+    For a given Dwarf_Debug dbg, this function checks
+    if a CU that includes the given offset has been read
+    or not.  If yes, it returns the Dwarf_CU_Context
+    for the CU.  Otherwise it returns NULL.  Being an
+    internal routine, it is assumed that a valid dbg
     is passed.
 
     **This is a sequential search.  May be too slow.
@@ -91,7 +92,7 @@ static Dwarf_CU_Context
 _dwarf_find_CU_Context(Dwarf_Debug dbg, Dwarf_Off offset,Dwarf_Bool is_info)
 {
     Dwarf_CU_Context cu_context = 0;
-    Dwarf_Debug_InfoTypes dis = is_info? &dbg->de_info_reading: 
+    Dwarf_Debug_InfoTypes dis = is_info? &dbg->de_info_reading:
         &dbg->de_types_reading;
 
     if (offset >= dis->de_last_offset)
@@ -136,15 +137,15 @@ _dwarf_find_CU_Context(Dwarf_Debug dbg, Dwarf_Off offset,Dwarf_Bool is_info)
 }
 
 
-/*  This routine checks the dwarf_offdie() list of 
+/*  This routine checks the dwarf_offdie() list of
     CU contexts for the right CU context.  */
 static Dwarf_CU_Context
 _dwarf_find_offdie_CU_Context(Dwarf_Debug dbg, Dwarf_Off offset,
     Dwarf_Bool is_info)
 {
     Dwarf_CU_Context cu_context = 0;
-    Dwarf_Debug_InfoTypes dis = is_info? &dbg->de_info_reading: 
-        &dbg->de_types_reading; 
+    Dwarf_Debug_InfoTypes dis = is_info? &dbg->de_info_reading:
+        &dbg->de_types_reading;
 
     for (cu_context = dis->de_offdie_cu_context;
         cu_context != NULL; cu_context = cu_context->cc_next)
@@ -161,7 +162,7 @@ _dwarf_find_offdie_CU_Context(Dwarf_Debug dbg, Dwarf_Off offset,
 
 
 /*  This function is used to create a CU Context for
-    a compilation-unit that begins at offset in 
+    a compilation-unit that begins at offset in
     .debug_info.  The CU Context is attached to the
     list of CU Contexts for this dbg.  It is assumed
     that the CU at offset has not been read before,
@@ -185,8 +186,8 @@ _dwarf_make_CU_Context(Dwarf_Debug dbg,
     Dwarf_Byte_Ptr cu_ptr = 0;
     int local_extension_size = 0;
     int local_length_size = 0;
-    Dwarf_Debug_InfoTypes dis = is_info? &dbg->de_info_reading: 
-        &dbg->de_types_reading; 
+    Dwarf_Debug_InfoTypes dis = is_info? &dbg->de_info_reading:
+        &dbg->de_types_reading;
     Dwarf_Unsigned section_size = is_info? dbg->de_debug_info.dss_size:
         dbg->de_debug_types.dss_size;
 
@@ -218,27 +219,27 @@ _dwarf_make_CU_Context(Dwarf_Debug dbg,
         cu_ptr, sizeof(Dwarf_Half));
     cu_ptr += sizeof(Dwarf_Half);
 
-    READ_UNALIGNED(dbg, abbrev_offset, Dwarf_Signed,
+    READ_UNALIGNED(dbg, abbrev_offset, Dwarf_Unsigned,
         cu_ptr, local_length_size);
     cu_ptr += local_length_size;
     cu_context->cc_abbrev_offset = (Dwarf_Sword) abbrev_offset;
 
     cu_context->cc_address_size = *(Dwarf_Small *) cu_ptr;
     ++cu_ptr;
-    
-    
 
-    if(cu_context->cc_address_size  > sizeof(Dwarf_Addr)) {
+
+
+    if (cu_context->cc_address_size  > sizeof(Dwarf_Addr)) {
         _dwarf_error(dbg, error, DW_DLE_CU_ADDRESS_SIZE_BAD);
         return (NULL);
     }
-    if(!is_info) {
+    if (!is_info) {
         /* debug_types CU headers have extra header bytes. */
         types_extra_len = sizeof(signaturedata) + local_length_size;
     }
-    if ((length < (CU_VERSION_STAMP_SIZE + local_length_size + 
+    if ((length < (CU_VERSION_STAMP_SIZE + local_length_size +
         CU_ADDRESS_SIZE_SIZE + types_extra_len)) ||
-        ((offset + length + local_length_size + local_extension_size) > 
+        ((offset + length + local_length_size + local_extension_size) >
             section_size)) {
 
         dwarf_dealloc(dbg, cu_context, DW_DLA_CU_CONTEXT);
@@ -268,9 +269,9 @@ _dwarf_make_CU_Context(Dwarf_Debug dbg,
         cu_context->cc_typeoffset = typeoffset;
         cu_context->cc_signature = signaturedata;
         {
-            Dwarf_Unsigned cu_len = length - (local_length_size + 
+            Dwarf_Unsigned cu_len = length - (local_length_size +
                 local_extension_size);
-            if(typeoffset >= cu_len) {
+            if (typeoffset >= cu_len) {
                 dwarf_dealloc(dbg, cu_context, DW_DLA_CU_CONTEXT);
                 _dwarf_error(dbg, error, DW_DLE_DEBUG_TYPEOFFSET_BAD);
                 return (NULL);
@@ -278,7 +279,7 @@ _dwarf_make_CU_Context(Dwarf_Debug dbg,
         }
     }
 
-    if (abbrev_offset >= dbg->de_debug_abbrev.dss_size) {
+    if ((Dwarf_Unsigned)abbrev_offset >= dbg->de_debug_abbrev.dss_size) {
         dwarf_dealloc(dbg, cu_context, DW_DLA_CU_CONTEXT);
         _dwarf_error(dbg, error, DW_DLE_ABBREV_OFFSET_ERROR);
         return (NULL);
@@ -311,7 +312,7 @@ static int
 reloc_incomplete(Dwarf_Error err)
 {
     int e = dwarf_errno(err);
-    if( e == DW_DLE_RELOC_MISMATCH_INDEX       ||
+    if (e == DW_DLE_RELOC_MISMATCH_INDEX       ||
         e == DW_DLE_RELOC_MISMATCH_RELOC_INDEX  ||
         e == DW_DLE_RELOC_MISMATCH_STRTAB_INDEX ||
         e == DW_DLE_RELOC_SECTION_MISMATCH      ||
@@ -448,8 +449,8 @@ dwarf_next_cu_header_internal(Dwarf_Debug dbg,
                 _dwarf_load_debug_types(dbg,&err2);
 
             if (res != DW_DLV_OK) {
-                if(reloc_incomplete(err2)) {
-                    /*  We will assume all is ok, though it is not. 
+                if (reloc_incomplete(err2)) {
+                    /*  We will assume all is ok, though it is not.
                         Relocation errors need not be fatal.  */
                     char msg_buf[200];
                     snprintf(msg_buf,sizeof(msg_buf),
@@ -458,12 +459,12 @@ dwarf_next_cu_header_internal(Dwarf_Debug dbg,
                     dwarf_insert_harmless_error(dbg,msg_buf);
                     res = DW_DLV_OK;
                 } else {
-                    if( error) {
+                    if (error) {
                         *error = err2;
                     }
                     return res;
                 }
-              
+
             }
         }
 
@@ -480,7 +481,7 @@ dwarf_next_cu_header_internal(Dwarf_Debug dbg,
         enable looping back through the cu's. */
     section_size = is_info? dbg->de_debug_info.dss_size:
         dbg->de_debug_types.dss_size;
-    if ((new_offset + _dwarf_length_of_cu_header_simple(dbg,is_info)) >= 
+    if ((new_offset + _dwarf_length_of_cu_header_simple(dbg,is_info)) >=
         section_size) {
         dis->de_cu_context = NULL;
         return (DW_DLV_NO_ENTRY);
@@ -523,11 +524,11 @@ dwarf_next_cu_header_internal(Dwarf_Debug dbg,
     if (extension_size != NULL) {
         *extension_size = cu_context->cc_extension_size;
     }
-    if(!is_info) {  
-        if(signature) {
+    if (!is_info) {
+        if (signature) {
             *signature = cu_context->cc_signature;
         }
-        if(typeoffset) {
+        if (typeoffset) {
             *typeoffset = cu_context->cc_typeoffset;
         }
     }
@@ -538,7 +539,7 @@ dwarf_next_cu_header_internal(Dwarf_Debug dbg,
     return (DW_DLV_OK);
 }
 
-static int 
+static int
 dwarf_ptr_CU_offset(Dwarf_CU_Context cu_context,
     Dwarf_Byte_Ptr di_ptr,
     Dwarf_Bool is_info,
@@ -569,16 +570,16 @@ void print_ptr_offset(Dwarf_CU_Context cu_context,Dwarf_Byte_Ptr di_ptr)
 
 
 /*  Validate the sibling DIE. This only makes sense to call
-    if the sibling's DIEs have been travsersed and 
+    if the sibling's DIEs have been travsersed and
     dwarf_child() called on each,
-    so that the last DIE dwarf_child saw was the last. 
+    so that the last DIE dwarf_child saw was the last.
     Essentially ensuring that (after such traversal) that we
     are in the same place a sibling attribute would identify.
     In case we return DW_DLV_ERROR, the global offset of the last
-    DIE traversed by dwarf_child is returned through *offset 
+    DIE traversed by dwarf_child is returned through *offset
 
-    It is essentially guaranteed that  dbg->de_last_die 
-    is a stale DIE pointer of a deallocated DIE when we get here. 
+    It is essentially guaranteed that  dbg->de_last_die
+    is a stale DIE pointer of a deallocated DIE when we get here.
     It must not be used as a DIE pointer here,
     just as a sort of anonymous pointer that we just check against
     NULL.
@@ -592,12 +593,12 @@ void print_ptr_offset(Dwarf_CU_Context cu_context,Dwarf_Byte_Ptr di_ptr)
 
     If one is switching between normal debug_frame and eh_frame
     (traversing them in tandem, let us say) in a single
-    Dwarf_Debug this validator makes no sense. 
+    Dwarf_Debug this validator makes no sense.
     It works if one processes a .debug_frame (entirely) and
     then an eh_frame (or vice versa) though.
     Use caution.
 */
-int 
+int
 dwarf_validate_die_sibling(Dwarf_Die sibling,Dwarf_Off *offset)
 {
     Dwarf_Debug dbg = 0;
@@ -607,7 +608,7 @@ dwarf_validate_die_sibling(Dwarf_Die sibling,Dwarf_Off *offset)
     dbg = sibling->di_cu_context->cc_dbg;
 
     dis = sibling->di_is_info? &dbg->de_info_reading: &dbg->de_types_reading;
-    
+
     *offset = 0;
     if (dis->de_last_die && dis->de_last_di_ptr) {
         if (sibling->di_debug_ptr == dis->de_last_di_ptr) {
@@ -625,24 +626,24 @@ dwarf_validate_die_sibling(Dwarf_Die sibling,Dwarf_Off *offset)
     this flag is true, it checks if the input die has
     a DW_AT_sibling attribute.  If it does it returns
     a pointer to the start of the sibling die in the
-    .debug_info section.  Otherwise it behaves the 
+    .debug_info section.  Otherwise it behaves the
     same as the want_AT_sibling false case.
 
     If the want_AT_sibling flag is false, it returns
-    a pointer to the immediately adjacent die in the 
+    a pointer to the immediately adjacent die in the
     .debug_info section.
 
-    Die_info_end points to the end of the .debug_info 
-    portion for the cu the die belongs to.  It is used 
-    to check that the search for the next die does not 
-    cross the end of the current cu.  Cu_info_start points 
-    to the start of the .debug_info portion for the 
-    current cu, and is used to add to the offset for 
-    DW_AT_sibling attributes.  Finally, has_die_child 
-    is a pointer to a Dwarf_Bool that is set true if 
-    the present die has children, false otherwise.  
-    However, in case want_AT_child is true and the die 
-    has a DW_AT_sibling attribute *has_die_child is set 
+    Die_info_end points to the end of the .debug_info
+    portion for the cu the die belongs to.  It is used
+    to check that the search for the next die does not
+    cross the end of the current cu.  Cu_info_start points
+    to the start of the .debug_info portion for the
+    current cu, and is used to add to the offset for
+    DW_AT_sibling attributes.  Finally, has_die_child
+    is a pointer to a Dwarf_Bool that is set true if
+    the present die has children, false otherwise.
+    However, in case want_AT_child is true and the die
+    has a DW_AT_sibling attribute *has_die_child is set
     false to indicate that the children are being skipped.
 
     die_info_end  points to the last byte+1 of the cu.  */
@@ -723,10 +724,10 @@ _dwarf_next_die_info_ptr(Dwarf_Byte_Ptr die_info_ptr,
             case DW_FORM_ref_addr:
                 /*  Very unusual.  The FORM is intended to refer to
                     a different CU, but a different CU cannot
-                    be a sibling, can it? 
+                    be a sibling, can it?
                     We could ignore this and treat as if no DW_AT_sibling
                     present.   Or derive the offset from it and if
-                    it is in the same CU use it directly. 
+                    it is in the same CU use it directly.
                     The offset here is *supposed* to be a global offset,
                     so adding cu_info_start is wrong  to any offset
                     we find here unless cu_info_start
@@ -755,7 +756,7 @@ _dwarf_next_die_info_ptr(Dwarf_Byte_Ptr die_info_ptr,
         no_sibling_attr:
         if (attr_form != 0) {
             info_ptr += _dwarf_get_size_of_val(cu_context->cc_dbg,
-                attr_form, 
+                attr_form,
                 cu_context->cc_address_size,
                 info_ptr,
                 cu_context->cc_length_size);
@@ -772,14 +773,14 @@ _dwarf_next_die_info_ptr(Dwarf_Byte_Ptr die_info_ptr,
 }
 
 /*  Multiple TAGs are in fact compile units.
-    Allow them all. 
+    Allow them all.
     Return non-zero if a CU tag.
     Else return 0.
 */
 static int
 is_cu_tag(int t)
 {
-    if(t == DW_TAG_compile_unit ||
+    if (t == DW_TAG_compile_unit ||
         t == DW_TAG_partial_unit ||
         t == DW_TAG_imported_unit ||
         t == DW_TAG_type_unit) {
@@ -788,23 +789,23 @@ is_cu_tag(int t)
     return 0;
 }
 
-/*  Given a Dwarf_Debug dbg, and a Dwarf_Die die, it returns 
-    a Dwarf_Die for the sibling of die.  In case die is NULL, 
-    it returns (thru ptr) a Dwarf_Die for the first die in the current 
+/*  Given a Dwarf_Debug dbg, and a Dwarf_Die die, it returns
+    a Dwarf_Die for the sibling of die.  In case die is NULL,
+    it returns (thru ptr) a Dwarf_Die for the first die in the current
     cu in dbg.  Returns DW_DLV_ERROR on error.
 
-    It is assumed that every sibling chain including those with 
-    only one element is terminated with a NULL die, except a 
+    It is assumed that every sibling chain including those with
+    only one element is terminated with a NULL die, except a
     chain with only a NULL die.
 
-    The algorithm moves from one die to the adjacent one.  It 
-    returns when the depth of children it sees equals the number 
-    of sibling chain terminations.  A single count, child_depth 
-    is used to track the depth of children and sibling terminations 
-    encountered.  Child_depth is incremented when a die has the 
-    Has-Child flag set unless the child happens to be a NULL die.  
-    Child_depth is decremented when a die has Has-Child false, 
-    and the adjacent die is NULL.  Algorithm returns when 
+    The algorithm moves from one die to the adjacent one.  It
+    returns when the depth of children it sees equals the number
+    of sibling chain terminations.  A single count, child_depth
+    is used to track the depth of children and sibling terminations
+    encountered.  Child_depth is incremented when a die has the
+    Has-Child flag set unless the child happens to be a NULL die.
+    Child_depth is decremented when a die has Has-Child false,
+    and the adjacent die is NULL.  Algorithm returns when
     child_depth is 0.
 
     **NOTE: Do not modify input die, since it is used at the end.  */
@@ -817,8 +818,8 @@ dwarf_siblingof(Dwarf_Debug dbg,
     return dwarf_siblingof_b(dbg,die,is_info,caller_ret_die,error);
 }
 /*  This is the new form, October 2011.  On calling with 'die' NULL,
-    we cannot tell if this is debug_info or debug_types, so 
-    we must be informed!. */ 
+    we cannot tell if this is debug_info or debug_types, so
+    we must be informed!. */
 int
 dwarf_siblingof_b(Dwarf_Debug dbg,
     Dwarf_Die die,
@@ -834,12 +835,12 @@ dwarf_siblingof_b(Dwarf_Debug dbg,
     Dwarf_Word abbrev_code = 0;
     Dwarf_Unsigned utmp = 0;
     /* Since die may be NULL, we rely on the input argument. */
-    Dwarf_Debug_InfoTypes dis = is_info? &dbg->de_info_reading: 
-        &dbg->de_types_reading; 
+    Dwarf_Debug_InfoTypes dis = is_info? &dbg->de_info_reading:
+        &dbg->de_types_reading;
     Dwarf_Small *dataptr = is_info? dbg->de_debug_info.dss_data:
         dbg->de_debug_types.dss_data;
 
-   
+
 
     if (dbg == NULL) {
         _dwarf_error(NULL, error, DW_DLE_DBG_NULL);
@@ -902,10 +903,10 @@ dwarf_siblingof_b(Dwarf_Debug dbg,
                 return (DW_DLV_ERROR);
             }
 
-            /*  die_info_end is one past end. Do not read it!  
+            /*  die_info_end is one past end. Do not read it!
                 A test for ``!= die_info_end''  would work as well,
                 but perhaps < reads more like the meaning. */
-            if(die_info_ptr < die_info_end) { 
+            if (die_info_ptr < die_info_end) {
                 if ((*die_info_ptr) == 0 && has_child) {
                     die_info_ptr++;
                     has_child = false;
@@ -949,7 +950,7 @@ dwarf_siblingof_b(Dwarf_Debug dbg,
 
     DECODE_LEB128_UWORD(die_info_ptr, utmp);
     if (die_info_ptr > die_info_end) {
-        /*  We managed to go past the end of the CU!. 
+        /*  We managed to go past the end of the CU!.
             Something is badly wrong. */
         dwarf_dealloc(dbg, ret_die, DW_DLA_DIE);
         _dwarf_error(dbg, error, DW_DLE_ABBREV_DECODE_ERROR);
@@ -969,7 +970,7 @@ dwarf_siblingof_b(Dwarf_Debug dbg,
         _dwarf_error(dbg, error, DW_DLE_DIE_ABBREV_LIST_NULL);
         return (DW_DLV_ERROR);
     }
-    if (die == NULL && !is_cu_tag(ret_die->di_abbrev_list->ab_tag)) { 
+    if (die == NULL && !is_cu_tag(ret_die->di_abbrev_list->ab_tag)) {
         dwarf_dealloc(dbg, ret_die, DW_DLA_DIE);
         _dwarf_error(dbg, error, DW_DLE_FIRST_DIE_NOT_CU);
         return (DW_DLV_ERROR);
@@ -998,8 +999,8 @@ dwarf_child(Dwarf_Die die,
 
     CHECK_DIE(die, DW_DLV_ERROR);
     dbg = die->di_cu_context->cc_dbg;
-    dis = die->di_is_info? &dbg->de_info_reading: 
-        &dbg->de_types_reading; 
+    dis = die->di_is_info? &dbg->de_info_reading:
+        &dbg->de_types_reading;
     die_info_ptr = die->di_debug_ptr;
 
     dataptr = die->di_is_info? dbg->de_debug_info.dss_data:
@@ -1034,7 +1035,7 @@ dwarf_child(Dwarf_Die die,
 
     if (!has_die_child) {
         /* Look for end of sibling chain. */
-        while ( dis->de_last_di_ptr < die_info_end) {
+        while (dis->de_last_di_ptr < die_info_end) {
             if (*dis->de_last_di_ptr) {
                 break;
             }
@@ -1059,14 +1060,14 @@ dwarf_child(Dwarf_Die die,
 
     if (abbrev_code == 0) {
         /* Look for end of sibling chain */
-        while ( dis->de_last_di_ptr < die_info_end) {
+        while (dis->de_last_di_ptr < die_info_end) {
             if (*dis->de_last_di_ptr) {
                 break;
             }
             ++dis->de_last_di_ptr;
         }
 
-        /*  We have arrived at a null DIE, at the end of a CU or the end 
+        /*  We have arrived at a null DIE, at the end of a CU or the end
             of a list of siblings. */
         *caller_ret_die = 0;
         dwarf_dealloc(dbg, ret_die, DW_DLA_DIE);
@@ -1088,7 +1089,7 @@ dwarf_child(Dwarf_Die die,
 /*  Given a (global, not cu_relative) die offset, this returns
     a pointer to a DIE thru *new_die.
     It is up to the caller to do a
-    dwarf_dealloc(dbg,*new_die,DW_DLE_DIE); 
+    dwarf_dealloc(dbg,*new_die,DW_DLE_DIE);
     The old form only works with debug_info.
     The new _b form works with debug_info or debug_types.
     */
@@ -1102,7 +1103,7 @@ dwarf_offdie(Dwarf_Debug dbg,
 
 int
 dwarf_offdie_b(Dwarf_Debug dbg,
-    Dwarf_Off offset, Dwarf_Bool is_info, 
+    Dwarf_Off offset, Dwarf_Bool is_info,
     Dwarf_Die * new_die, Dwarf_Error * error)
 {
     Dwarf_CU_Context cu_context = 0;

@@ -3,22 +3,22 @@
   Portions Copyright (C) 2007-2011 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -33,7 +33,7 @@
 
 */
 /* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor, 
+   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
    Boston, MA 02110-1301, USA.
    SGI has moved from the Crittenden Lane address.
 */
@@ -64,7 +64,7 @@
 #define MINIMUM_POSSIBLE_PROLOG_LEN 10  /* 10 is based on */
 /*  the definition of the DWARF2/3 line table prolog. The value
     here should be >8 (accounting for a 64 bit read) and <= the
-    length of a legal DWARF2/3 line prolog, which is at least 10 
+    length of a legal DWARF2/3 line prolog, which is at least 10
     bytes long (but can be longer). What this constant helps
     avoid is reading past the end of a malloc'd buffer in
     _dwarf_update_line_sec(). */
@@ -87,12 +87,12 @@ struct a_line_area {
 };
 
 
-/*  Written to support the SGI IRIX static linker. 
-    It helps SGI IRIX ld 
+/*  Written to support the SGI IRIX static linker.
+    It helps SGI IRIX ld
     rearrange lines in .debug_line in a .o created with a text
-    section per function.   The SGI IRIX linker option is: 
+    section per function.   The SGI IRIX linker option is:
         -OPT:procedure_reorder=ON
-    where ld-cord (cord(1)ing by ld, 
+    where ld-cord (cord(1)ing by ld,
     not by cord(1)) may have changed the function order.
 
     Returns
@@ -109,11 +109,11 @@ struct a_line_area {
     to a dwarf error code so the caller may
     print it for diagnostic purposes.
 
-    *any_change is set here 
+    *any_change is set here
         set 0 if no sorting (movement) done.
         set 1 if some sorting (movement) done.
     on all returns. On error return sets to 0.
-        
+
     The _dwarf name form is now obsolete,
     the dwarf_ name for is preferred.
     Both names supported.  */
@@ -194,7 +194,7 @@ dwarf_ld_sort_lines(void *orig_buffer,
 
     /* all passed */
     if (did_change) {
-        /*  So update the passed in buffer orig_buffer is caller's input 
+        /*  So update the passed in buffer orig_buffer is caller's input
             area. orig_line_ptr is our modified copy of input area. */
         memcpy(orig_buffer, orig_line_ptr, buffer_len);
         *any_change = 1;
@@ -235,17 +235,17 @@ cmpr(const void *lin, const void *rin)
 static void
 free_area_data(struct a_line_area *arp)
 {
-    while(arp) {
+    while (arp) {
         struct a_line_area *next = arp->ala_next;
         free(arp);
         arp = next;
-    }    
+    }
 }
 
 /*  On entry:
     line_ptr must point to first
     byte of a line group for one (original) .o
-          
+
     remaining_bytes is the size of the area pointed to
     by line_ptr: may be larger than the
     current original compilation unit .
@@ -255,7 +255,7 @@ free_area_data(struct a_line_area *arp)
 
 
     On return:
-    return DW_DLV_OK if all ok.  (ignore 
+    return DW_DLV_OK if all ok.  (ignore
     *err_code in this case)
 
     return DW_DLV_ERROR and set *err_code if an error.
@@ -286,7 +286,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
         current cu. */
     Dwarf_Small *line_ptr_end = 0;
 
-    /*  This points to the end of the statement program prologue for the 
+    /*  This points to the end of the statement program prologue for the
         current cu, and serves to check that the prologue was correctly
         decoded. */
 
@@ -335,7 +335,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
 
     memset(dbg, 0, sizeof(struct Dwarf_Debug_s));
     dbg->de_copy_word = memcpy;
-    /*  Following is a straightforward decoding of the statement program 
+    /*  Following is a straightforward decoding of the statement program
         prologue information. */
     *any_change = 0;
 
@@ -358,7 +358,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
             line_ptr,
             remaining_bytes,
             &line_ptr_out,
-            &prefix, 
+            &prefix,
             NULL, NULL,&error,
             NULL);
 
@@ -409,6 +409,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
                     understand.
                     arbitrary choice of unsigned read.
                     signed read would work as well.  */
+                /* utmp2 set but not used here */
                 Dwarf_Unsigned utmp2;
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
@@ -450,6 +451,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
                 }
 
             case DW_LNS_set_file:{
+                /* utmp2 set but not used here. */
                 Dwarf_Unsigned utmp2;
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
@@ -458,6 +460,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
                 }
 
             case DW_LNS_set_column:{
+                /* utmp2 set but not used here. */
                 Dwarf_Unsigned utmp2;
 
                 DECODE_LEB128_UWORD(line_ptr, utmp2);
@@ -478,7 +481,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
             case DW_LNS_const_add_pc:{
                 opcode = MAX_LINE_OP_CODE - prefix.pf_opcode_base;
                 address = address +
-                    prefix.pf_minimum_instruction_length * 
+                    prefix.pf_minimum_instruction_length *
                     (opcode / prefix.  pf_line_range);
                 break;
                 }
@@ -550,7 +553,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
 
                 READ_UNALIGNED(dbg, address, Dwarf_Addr,
                     line_ptr, length_size);
-                /*  Here we need to remember the offset into the 
+                /*  Here we need to remember the offset into the
                     buffer and check to see if address went
                     down. */
                 if (address < last_address) {
@@ -608,7 +611,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
     area_current->ala_length = (line_ptr - orig_line_ptr)
         -area_current->ala_offset;
 
-    /*  Build and sort a simple array of sections. Forcing a stable sort 
+    /*  Build and sort a simple array of sections. Forcing a stable sort
         by comparing on sequence number. We will use the sorted list to
         move sections of this part of the line table. Each 'section'
         starting with a DW_LNE_set_address opcode, on the assumption

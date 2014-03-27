@@ -1,7 +1,7 @@
 /*
   Copyright (C) 2000,2001,2003,2004,2005,2006 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright 2002-2010 Sun Microsystems, Inc. All rights reserved.
-  Portions Copyright 2007-2011 David Anderson. All rights reserved.
+  Portions Copyright 2007-2012 David Anderson. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -18,9 +18,9 @@
   any, provided herein do not apply to combinations of this program with
   other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301, 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
+  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
   Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
@@ -158,7 +158,7 @@ extern "C" {
 /* ALTIUM extensions */
     /* DSP-C/Starcore __circ qualifier */
 #define DW_TAG_ALTIUM_circ_type         0x5101 /* ALTIUM */
-    /* Starcore __mwa_circ qualifier */ 
+    /* Starcore __mwa_circ qualifier */
 #define DW_TAG_ALTIUM_mwa_circ_type     0x5102 /* ALTIUM */
     /* Starcore __rev_carry qualifier */
 #define DW_TAG_ALTIUM_rev_carry_type    0x5103 /* ALTIUM */
@@ -188,7 +188,7 @@ extern "C" {
 #define DW_TAG_SUN_f90_interface        0x420c /* SUN */
 #define DW_TAG_SUN_fortran_vax_structure 0x420d /* SUN */
 #define DW_TAG_SUN_hi                   0x42ff /* SUN */
-    
+
 
 #define DW_TAG_hi_user                  0xffff
 
@@ -223,6 +223,8 @@ extern "C" {
 #define DW_FORM_flag_present            0x19 /* DWARF4 */
 /* 0x1a thru 0x1f were left unused accidentally. Reserved for future use. */
 #define DW_FORM_ref_sig8                0x20 /* DWARF4 */
+#define DW_FORM_GNU_ref_alt             0x1f20 /* GNU extension. Offset in .debug_info. */
+#define DW_FORM_GNU_strp_alt            0x1f21 /* GNU extension. Offset in .debug_str. */
 
 #define DW_AT_sibling                           0x01
 #define DW_AT_location                          0x02
@@ -474,7 +476,7 @@ extern "C" {
 
 /* PGI (STMicroelectronics) extensions. */
 #define DW_AT_PGI_lbase                         0x3a00 /* PGI. Block, constant, reference. This attribute is an ASTPLAB extension used to describe the array local base.  */
-#define DW_AT_PGI_soffset                       0x3a01  /* PGI. Block, constant, reference. ASTPLAB adds this attribute to describe the section offset, or the offset to the first element in the dimension. */ 
+#define DW_AT_PGI_soffset                       0x3a01  /* PGI. Block, constant, reference. ASTPLAB adds this attribute to describe the section offset, or the offset to the first element in the dimension. */
 #define DW_AT_PGI_lstride                       0x3a02  /* PGI. Block, constant, reference. ASTPLAB adds this attribute to describe the linear stride or the distance between elements in the dimension. */
 
 /* There are two groups of Apple extensions here, it is
@@ -663,6 +665,14 @@ extern "C" {
 #define DW_OP_GNU_encoded_addr          0xf1 /* GNU */
 #define DW_OP_GNU_implicit_pointer      0xf2 /* GNU */
 #define DW_OP_GNU_entry_value           0xf3 /* GNU */
+#define DW_OP_GNU_const_type            0xf4 /* GNU */
+#define DW_OP_GNU_regval_type           0xf5 /* GNU */
+#define DW_OP_GNU_deref_type            0xf6 /* GNU */
+#define DW_OP_GNU_convert               0xf7 /* GNU */
+#define DW_OP_GNU_reinterpret           0xf9 /* GNU */
+#define DW_OP_GNU_parameter_ref         0xfa /* GNU */
+#define DW_OP_GNU_addr_index            0xfb /* GNU */
+#define DW_OP_GNU_const_index           0xfc /* GNU */
 
     /* HP extensions. */
 #define DW_OP_HP_unknown                0xe0 /* HP conflict: GNU */
@@ -676,7 +686,7 @@ extern "C" {
 #define DW_OP_INTEL_bit_piece           0xe8 /* Intel: made obsolete by DW_OP_bit_piece above. */
 
    /* Apple extension. */
-#define DW_OP_APPLE_uninit              0xf0 /* Apple */ 
+#define DW_OP_APPLE_uninit              0xf0 /* Apple */
 #define DW_OP_PGI_omp_thread_num        0xf8 /* PGI (STMicroelectronics) */
 
 #define DW_OP_hi_user                   0xff
@@ -753,7 +763,7 @@ extern "C" {
 #define DW_ATCF_SUN_branch_target       0x46 /* SUN */
 #define DW_ATCF_SUN_mop_stack_probe     0x47 /* SUN */
 #define DW_ATCF_SUN_func_epilog         0x48 /* SUN */
-#define DW_ATCF_hi_user                 0xff /* SUN */   
+#define DW_ATCF_hi_user                 0xff /* SUN */
 
 /* Accessibility code name. */
 #define DW_ACCESS_public                0x01
@@ -796,6 +806,8 @@ extern "C" {
    has objected. */
 #define DW_LANG_OpenCL                  0x0015 /* Provisionally DWARF5 */
 #define DW_LANG_Go                      0x0016 /* Provisionally DWARF5 */
+#define DW_LANG_Modula3                 0x0017 /* Provisionally DWARF5 */
+#define DW_LANG_Haskel                  0x0018 /* Provisionally DWARF5 */
 #define DW_LANG_lo_user                 0x8000
 #define DW_LANG_Mips_Assembler          0x8001 /* MIPS   */
 #define DW_LANG_Upc                     0x8765 /* UPC, use
@@ -833,10 +845,10 @@ extern "C" {
 #define DW_CC_ALTIUM_near_system_stack  0x66  /*ALTIUM */
 
 /* Near function model, return address on user stack. */
-#define DW_CC_ALTIUM_near_user_stack    0x67  /* ALTIUM */  
+#define DW_CC_ALTIUM_near_user_stack    0x67  /* ALTIUM */
 
 /* Huge function model, return address on user stack.  */
-#define DW_CC_ALTIUM_huge_user_stack    0x68  /* ALTIUM */    
+#define DW_CC_ALTIUM_huge_user_stack    0x68  /* ALTIUM */
 
 
 #define DW_CC_hi_user                   0xff
@@ -905,7 +917,7 @@ extern "C" {
 #define DW_MACINFO_vendor_ext           0xff
 
 /* CFA operator compaction (a space saving measure, see
-   the DWARF standard) means DW_CFA_extended and DW_CFA_nop 
+   the DWARF standard) means DW_CFA_extended and DW_CFA_nop
    have the same value here.  */
 #define DW_CFA_advance_loc        0x40
 #define DW_CFA_offset             0x80
@@ -950,9 +962,9 @@ extern "C" {
 #define DW_CFA_high_user         0x3f
 
 /* GNU exception header encoding.  See the Generic
-   Elf Specification of the Linux Standard Base (LSB). 
+   Elf Specification of the Linux Standard Base (LSB).
    http://refspecs.freestandards.org/LSB_3.0.0/LSB-Core-generic/LSB-Core-generic/dwarfext.html
-   The upper 4 bits indicate how the value is to be applied. 
+   The upper 4 bits indicate how the value is to be applied.
    The lower 4 bits indicate the format of the data.
 */
 #define DW_EH_PE_absptr   0x00  /* GNU */
@@ -974,26 +986,26 @@ extern "C" {
 #define DW_EH_PE_omit     0xff  /* GNU.  Means no value present. */
 
 
-/* Mapping from machine registers and pseudo-regs into the 
-   .debug_frame table.  DW_FRAME entries are machine specific. 
-   These describe MIPS/SGI R3000, R4K, R4400 and all later 
-   MIPS/SGI IRIX machines.  They describe a mapping from 
-   hardware register number to the number used in the table 
+/* Mapping from machine registers and pseudo-regs into the
+   .debug_frame table.  DW_FRAME entries are machine specific.
+   These describe MIPS/SGI R3000, R4K, R4400 and all later
+   MIPS/SGI IRIX machines.  They describe a mapping from
+   hardware register number to the number used in the table
    to identify that register.
 
-   The CFA (Canonical Frame Address) described in DWARF is 
+   The CFA (Canonical Frame Address) described in DWARF is
    called the Virtual Frame Pointer on MIPS/SGI machines.
 
    The DW_FRAME* names here are MIPS/SGI specific.
-   Libdwarf interfaces defined in 2008 make the 
-   frame definitions here (and the fixed table sizes 
-   they imply) obsolete.  They are left here for compatibility. 
+   Libdwarf interfaces defined in 2008 make the
+   frame definitions here (and the fixed table sizes
+   they imply) obsolete.  They are left here for compatibility.
 */
 /* Default column used for CFA in the libdwarf reader client.
    Assumes reg 0 never appears as
    a register in DWARF information. Usable for MIPS,
    but never a good idea, really.    */
-#define DW_FRAME_CFA_COL 0  
+#define DW_FRAME_CFA_COL 0
 
 #define DW_FRAME_REG1   1  /* integer reg 1 */
 #define DW_FRAME_REG2   2  /* integer reg 2 */
@@ -1065,55 +1077,54 @@ extern "C" {
 #define DW_FRAME_FREG30 62 /* 64-bit floating point reg 30 */
 #define DW_FRAME_FREG31 63 /* 64-bit floating point reg 31 */
 
-#define DW_FRAME_FREG32 64 /* 64-bit floating point reg 18 */
-#define DW_FRAME_FREG33 65 /* 64-bit floating point reg 19 */
-#define DW_FRAME_FREG34 66 /* 64-bit floating point reg 20 */
-#define DW_FRAME_FREG35 67 /* 64-bit floating point reg 21 */
-#define DW_FRAME_FREG36 68 /* 64-bit floating point reg 22 */
-#define DW_FRAME_FREG37 69 /* 64-bit floating point reg 23 */
-#define DW_FRAME_FREG38 70 /* 64-bit floating point reg 24 */
-#define DW_FRAME_FREG39 71 /* 64-bit floating point reg 25 */
-#define DW_FRAME_FREG40 72 /* 64-bit floating point reg 26 */
-#define DW_FRAME_FREG41 73 /* 64-bit floating point reg 27 */
-#define DW_FRAME_FREG42 74 /* 64-bit floating point reg 28 */
-#define DW_FRAME_FREG43 75 /* 64-bit floating point reg 29 */
-#define DW_FRAME_FREG44 76 /* 64-bit floating point reg 30 */
-#define DW_FRAME_FREG45 77 /* 64-bit floating point reg 31 */
-#define DW_FRAME_FREG46 78 /* 64-bit floating point reg 18 */
-#define DW_FRAME_FREG47 79 /* 64-bit floating point reg 19 */
-#define DW_FRAME_FREG48 80 /* 64-bit floating point reg 20 */
-#define DW_FRAME_FREG49 81 /* 64-bit floating point reg 21 */
-#define DW_FRAME_FREG50 82 /* 64-bit floating point reg 22 */
-#define DW_FRAME_FREG51 83 /* 64-bit floating point reg 23 */
-#define DW_FRAME_FREG52 84 /* 64-bit floating point reg 24 */
-#define DW_FRAME_FREG53 85 /* 64-bit floating point reg 25 */
-#define DW_FRAME_FREG54 86 /* 64-bit floating point reg 26 */
-#define DW_FRAME_FREG55 87 /* 64-bit floating point reg 27 */
-#define DW_FRAME_FREG56 88 /* 64-bit floating point reg 28 */
-#define DW_FRAME_FREG57 89 /* 64-bit floating point reg 29 */
-#define DW_FRAME_FREG58 90 /* 64-bit floating point reg 30 */
-#define DW_FRAME_FREG59 91 /* 64-bit floating point reg 31 */
-#define DW_FRAME_FREG60 92 /* 64-bit floating point reg 22 */
-#define DW_FRAME_FREG61 93 /* 64-bit floating point reg 23 */
-#define DW_FRAME_FREG62 94 /* 64-bit floating point reg 24 */
-#define DW_FRAME_FREG63 95 /* 64-bit floating point reg 25 */
-#define DW_FRAME_FREG64 96 /* 64-bit floating point reg 26 */
-#define DW_FRAME_FREG65 97 /* 64-bit floating point reg 27 */
-#define DW_FRAME_FREG66 98 /* 64-bit floating point reg 28 */
-#define DW_FRAME_FREG67 99 /* 64-bit floating point reg 29 */
-#define DW_FRAME_FREG68 100 /* 64-bit floating point reg 30 */
-#define DW_FRAME_FREG69 101 /* 64-bit floating point reg 31 */
-#define DW_FRAME_FREG70 102 /* 64-bit floating point reg 22 */
-#define DW_FRAME_FREG71 103 /* 64-bit floating point reg 23 */
-#define DW_FRAME_FREG72 104 /* 64-bit floating point reg 24 */
-#define DW_FRAME_FREG73 105 /* 64-bit floating point reg 25 */
-#define DW_FRAME_FREG74 106 /* 64-bit floating point reg 26 */
-#define DW_FRAME_FREG75 107 /* 64-bit floating point reg 27 */
-#define DW_FRAME_FREG76 108 /* 64-bit floating point reg 28 */
-
+#define DW_FRAME_FREG32 64 /* 64-bit floating point reg 32 */
+#define DW_FRAME_FREG33 65 /* 64-bit floating point reg 33 */
+#define DW_FRAME_FREG34 66 /* 64-bit floating point reg 34 */
+#define DW_FRAME_FREG35 67 /* 64-bit floating point reg 35 */
+#define DW_FRAME_FREG36 68 /* 64-bit floating point reg 36 */
+#define DW_FRAME_FREG37 69 /* 64-bit floating point reg 37 */
+#define DW_FRAME_FREG38 70 /* 64-bit floating point reg 38 */
+#define DW_FRAME_FREG39 71 /* 64-bit floating point reg 39 */
+#define DW_FRAME_FREG40 72 /* 64-bit floating point reg 40 */
+#define DW_FRAME_FREG41 73 /* 64-bit floating point reg 41 */
+#define DW_FRAME_FREG42 74 /* 64-bit floating point reg 42 */
+#define DW_FRAME_FREG43 75 /* 64-bit floating point reg 43 */
+#define DW_FRAME_FREG44 76 /* 64-bit floating point reg 44 */
+#define DW_FRAME_FREG45 77 /* 64-bit floating point reg 45 */
+#define DW_FRAME_FREG46 78 /* 64-bit floating point reg 46 */
+#define DW_FRAME_FREG47 79 /* 64-bit floating point reg 47 */
+#define DW_FRAME_FREG48 80 /* 64-bit floating point reg 48 */
+#define DW_FRAME_FREG49 81 /* 64-bit floating point reg 49 */
+#define DW_FRAME_FREG50 82 /* 64-bit floating point reg 50 */
+#define DW_FRAME_FREG51 83 /* 64-bit floating point reg 51 */
+#define DW_FRAME_FREG52 84 /* 64-bit floating point reg 52 */
+#define DW_FRAME_FREG53 85 /* 64-bit floating point reg 53 */
+#define DW_FRAME_FREG54 86 /* 64-bit floating point reg 54 */
+#define DW_FRAME_FREG55 87 /* 64-bit floating point reg 55 */
+#define DW_FRAME_FREG56 88 /* 64-bit floating point reg 56 */
+#define DW_FRAME_FREG57 89 /* 64-bit floating point reg 57 */
+#define DW_FRAME_FREG58 90 /* 64-bit floating point reg 58 */
+#define DW_FRAME_FREG59 91 /* 64-bit floating point reg 59 */
+#define DW_FRAME_FREG60 92 /* 64-bit floating point reg 60 */
+#define DW_FRAME_FREG61 93 /* 64-bit floating point reg 61 */
+#define DW_FRAME_FREG62 94 /* 64-bit floating point reg 62 */
+#define DW_FRAME_FREG63 95 /* 64-bit floating point reg 63 */
+#define DW_FRAME_FREG64 96 /* 64-bit floating point reg 64 */
+#define DW_FRAME_FREG65 97 /* 64-bit floating point reg 65 */
+#define DW_FRAME_FREG66 98 /* 64-bit floating point reg 66 */
+#define DW_FRAME_FREG67 99 /* 64-bit floating point reg 67 */
+#define DW_FRAME_FREG68 100 /* 64-bit floating point reg 68 */
+#define DW_FRAME_FREG69 101 /* 64-bit floating point reg 69 */
+#define DW_FRAME_FREG70 102 /* 64-bit floating point reg 70 */
+#define DW_FRAME_FREG71 103 /* 64-bit floating point reg 71 */
+#define DW_FRAME_FREG72 104 /* 64-bit floating point reg 72 */
+#define DW_FRAME_FREG73 105 /* 64-bit floating point reg 73 */
+#define DW_FRAME_FREG74 106 /* 64-bit floating point reg 74 */
+#define DW_FRAME_FREG75 107 /* 64-bit floating point reg 75 */
+#define DW_FRAME_FREG76 108 /* 64-bit floating point reg 76 */
 
 /*  ***IMPORTANT NOTE, TARGET DEPENDENCY ****
-    The following 4 #defines are dependent on 
+    The following 4 #defines are dependent on
     the target cpu(s) that you apply libdwarf to.
     Ensure that DW_FRAME_UNDEFINED_VAL  and DW_FRAME_SAME_VAL
     do not conflict with the range [0-DW_FRAME_STATIC_LINK].
@@ -1133,10 +1144,10 @@ extern "C" {
 #ifndef DW_FRAME_HIGHEST_NORMAL_REGISTER
 #define DW_FRAME_HIGHEST_NORMAL_REGISTER 188
 #endif
-/* This is the number of columns in the Frame Table. 
+/* This is the number of columns in the Frame Table.
    This constant should
-   be kept in sync with DW_REG_TABLE_SIZE defined in libdwarf.h 
-   It must also be large enough to be beyond the highest 
+   be kept in sync with DW_REG_TABLE_SIZE defined in libdwarf.h
+   It must also be large enough to be beyond the highest
    compiler-defined-register (meaning DW_FRAME_RA_COL DW_FRAME_STATIC_LINK
    in the MIPS/IRIX case */
 #ifndef DW_FRAME_LAST_REG_NUM
@@ -1144,7 +1155,7 @@ extern "C" {
 #endif
 
 
-/* Column recording ra (return address from a function call). 
+/* Column recording ra (return address from a function call).
    This is common to many architectures, but as a 'simple register'
    is not necessarily adequate for all architectures.
    For MIPS/IRIX this register number is actually recorded on disk
@@ -1152,7 +1163,7 @@ extern "C" {
    */
 #define DW_FRAME_RA_COL  (DW_FRAME_HIGHEST_NORMAL_REGISTER + 1)
 
-/* Column recording static link applicable to up-level      
+/* Column recording static link applicable to up-level
    addressing, as in IRIX mp code, pascal, etc.
    This is common to many architectures but
    is not necessarily adequate for all architectures.

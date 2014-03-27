@@ -48,7 +48,7 @@ dwarf_elf_object_access_init(dwarf_elf_handle  elf ,
 
 void
 dwarf_elf_object_access_finish(Dwarf_Obj_Access_Interface*  obj );
-  
+
 /* End ELF object access for the generic object file interface */
 
 

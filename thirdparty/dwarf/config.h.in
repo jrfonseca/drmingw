@@ -76,6 +76,9 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define 1 if libelf.h defines struct _Elf */
+#undef HAVE_STRUCT_UNDERSCORE_ELF
+
 /* Define to 1 if you have the <sys/ia64/elf.h> header file. */
 #undef HAVE_SYS_IA64_ELF_H
 

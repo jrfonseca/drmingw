@@ -4,22 +4,22 @@
   Portions Copyright 2008-2011 David Anderson, Inc. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -64,7 +64,7 @@ _dwarf_line_address_offsets(Dwarf_Debug dbg,
     int res;
     Dwarf_Line *linebuf;
 
-    res = _dwarf_internal_srclines(die, &linebuf, &lcount, 
+    res = _dwarf_internal_srclines(die, &linebuf, &lcount,
         /* addrlist= */ true, /* linelist= */ false, err);
     if (res != DW_DLV_OK) {
         return res;
@@ -102,6 +102,6 @@ _dwarf_line_address_offsets(Dwarf_Debug dbg,
 /*
    It's impossible for callers of dwarf_srclines() to get to and
    free all the resources (in particular, the li_context and its
-   lc_file_entries). 
-   So this function, new July 2005, does it.  
+   lc_file_entries).
+   So this function, new July 2005, does it.
 */

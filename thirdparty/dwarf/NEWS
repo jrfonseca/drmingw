@@ -1,3 +1,64 @@
+January 29, 2014
+  Now using dwarf_tsearch() instead of the original complicated
+  allocation code.
+October 14, 2013
+  The Callback_Func declarations in libdwarf.h were missing a
+  const on the name argument.  Adding it removes compiler warnings.
+  But removing it means client code calling
+  producer functions has to change to get their
+  callback function declarations/definitions to match.
+  The change does not affect those calling the consumer interfaces.
+August 15, 2013
+  Now the printf (stdout) here go through a callback function instead
+  of actually using stdout.  That way dwarfdump and other apps have full
+  control of libdwarf output from dwarf_print_lines() for example.
+  It also means callers of dwarf_print_lines() need to have called
+  dwarf_register_printf_callback() to get any actual print output.
+January 26, 2013
+  Retracted the incompatible change. The interfaces are
+  again compatible with previous releases and the January 25
+  release is withdrawn.  Has all the fixes of Jan 25 present
+  in the code.
+January 25, 2013
+  The definition of the Dwarf_Loc struct 
+  could not handle DW_OP_GNU_const_type
+  so it had to change. The new field added makes this version of libdwarf 
+  incompatible with any existing dwarfdump.  Rebuild dwarfdump
+  and dwarfdump2 to use it with this libdwarf.
+  Moved firmly into C89/C90 usage by more complete use of const
+  and be using int x(void) for example to prototype parameter-less
+  functions.  Compiles close to cleanly with
+  gcc options -Wsystem-headers 
+    -Wall  -Wsign-compare
+ -Wno-format-y2k -W 
+ -Wno-unused-parameter -Wstrict-prototypes 
+ -Wmissing-prototypes -Wpointer-arith 
+ -Wreturn-type -Wcast-qual -Wwrite-strings 
+ -Wswitch -Wshadow -Wunused-parameter 
+ -Wcast-align -Wchar-subscripts -Winline 
+ -Wnested-externs -Wredundant-decls 
+ -Wold-style-definition -Wno-pointer-sign
+
+November 29, 2012
+  The function dwarf_formflag() now returns the actual flag value
+  instead of just 1 or 0.   It has been coded wrong a very long time.
+  The DWARF documents (DWARF2 on) have always made it clear any non-zero
+  value means true and zero means false. Now consumers can properly
+  note the value the compiler actually put into the flag byte.
+November 17, 2012
+  New headers contain the relocation codes for various object
+  ABIs.   These headers are needed in libdwarf and expected
+  by builds of dwarfdump[2] for best dwarfdump[2] relocation
+  handling.
+  It is best to build libdwarf and dwarfdump together for 
+  best handling of relocatable objects.
+  GNU compilers may generate the operator 
+  DW_OP_GNU_implicit_pointer which is generated differently in
+  DWARF2 versus DWARF3/4. Hence a new interface to libdwarf 
+  dwarf_loclist_from_expr_b() adds the compilation unit
+  DWARF version number to the argument list (as compared
+  to dwarf_loclist_from_expr_a()).  Hopefully few
+  consumers will need to change to use the new interface.
 December 13, 2011
   dwarf_lineoff() is now deprecated, dwarf_lineoff_b() is
   strongly recommended instead.

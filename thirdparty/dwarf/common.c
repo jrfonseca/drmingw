@@ -1,9 +1,9 @@
-/* 
+/*
   Copyright (C) 2008-2010 SN Systems.  All Rights Reserved.
   Portions Copyright (C) 2008-2010 David Anderson.  All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
@@ -17,8 +17,8 @@
   any, provided herein do not apply to combinations of this program with
   other software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public 
-  License along with this program; if not, write the Free Software 
+  You should have received a copy of the GNU Lesser General Public
+  License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
@@ -39,9 +39,9 @@ void
 print_version(const char * name)
 {
 #ifdef _DEBUG
-    char *acType = "Debug";
+    const char *acType = "Debug";
 #else
-    char *acType = "Release";
+    const char *acType = "Release";
 #endif /* _DEBUG */
 
     char acVersion[60];

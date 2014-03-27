@@ -5,19 +5,19 @@
 
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
   You should have received a copy of the GNU Lesser General Public
   License along with this program; if not, write the Free Software
@@ -40,9 +40,9 @@
 
 typedef struct Dwarf_Global_Context_s *Dwarf_Global_Context;
 
-/* 
+/*
     This struct contains header information for a set of pubnames.
-    Essentially, they contain the context for a set of pubnames 
+    Essentially, they contain the context for a set of pubnames
     belonging to a compilation-unit.
 
     This is also used for the sgi-specific
@@ -65,11 +65,11 @@ struct Dwarf_Global_Context_s {
     /*  For this context, size of a length. 4 or 8 */
     unsigned char pu_length_size;
 
-    /*  For this CU, size of the extension 0 except for dwarf2 extension 
+    /*  For this CU, size of the extension 0 except for dwarf2 extension
         64bit, in which case is 4. */
     unsigned char pu_extension_size;
 
-    /*  Offset into .debug_info of the compilation-unit header (not DIE) 
+    /*  Offset into .debug_info of the compilation-unit header (not DIE)
         for this set of pubnames. */
     Dwarf_Off pu_offset_of_cu_header;
 

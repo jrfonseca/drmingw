@@ -3,11 +3,9 @@ coding style conventions in libdwarf.   Many of them
 will be obvious from the code, but over time some
 accidental diffences crept in.
 
-
 Code should be indented in multiples of 4 spaces, and
 tabs should not be used to indent the source code.
 Use the dicheck program to check indenting.
-
 
 dwarf.h and libdwarf.h must have all arguments commented
 out as these are public headers.  Because a  prototype like
@@ -53,9 +51,21 @@ Try to keep lines under 80 characters in length.
 
 Ensure every if() has {} to enclose the actions.
 
+There is a slight preference for if<single space>(
+over  if(. Similarly with for (, while (, and switch (.
+Not obsessing about these space-issues...
+
 Use libdwarf.h types for all the data objects you define,
 though sometimes an 'unsigned' or 'int' or 'size_t' is
 ok in restricted circumstances.  Dwarf_Unsigned Dwarf_Signed
 are the preferred integer types for general use.
+
+No .c file should ever have an 'extern *' to access some external.
+Instead, such external references should be defined in a header file
+and every .c with a reference to the external should #include
+the relevant header.  Being obsessive about this ensures that when
+the definition changes it will match the function declaration.
+There are a couple violations of this as of 2012, and those
+should be fixed!
 
 ------------

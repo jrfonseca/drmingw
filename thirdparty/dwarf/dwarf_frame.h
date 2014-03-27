@@ -4,19 +4,19 @@
   Portions Copyright (C) 2011 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License 
+  under the terms of version 2.1 of the GNU Lesser General Public License
   as published by the Free Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
   Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement 
-  or the like.  Any license provided herein, whether implied or 
+  free of the rightful claim of any third person regarding infringement
+  or the like.  Any license provided herein, whether implied or
   otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with 
-  other software, or any other product whatsoever.  
+  any, provided herein do not apply to combinations of this program with
+  other software, or any other product whatsoever.
 
   You should have received a copy of the GNU Lesser General Public
   License along with this program; if not, write the Free Software
@@ -58,13 +58,13 @@
         length_of_augmented fields
         Any new fields as necessary
         initial_instructions
-  
+
     The type of all the old data items are the same as what is
     described in dwarf 2.0 standard. The length_of_augmented_fields
     is an LEB128 data item that denotes the size (in bytes) of
     the augmented fields (not including the size of
     "length_of_augmented_fields" itself).
- 
+
     Handling of cie augmentation strings is necessarly a heuristic.
     See dwarf_frame.c for the currently known augmentation strings.
 
@@ -73,15 +73,15 @@
     SGI-IRIX versions of cie or fde  were intended to use "z1", "z2" as the
     augmenter strings if required for new augmentation.
     However, that never happened (as of March 2005).
-  
-    The fde's augmented by the string "z" have a new field 
+
+    The fde's augmented by the string "z" have a new field
     (signed constant, 4 byte field)
-    called offset_into_exception_tables, following the 
-    length_of_augmented field.   This field contains an offset 
+    called offset_into_exception_tables, following the
+    length_of_augmented field.   This field contains an offset
     into the "_MIPS_eh_region", which describes
     the IRIX CC exception handling tables.
     ---END SGI-ONLY COMMENT
- 
+
 
     GNU .eh_frame has an augmentation string of z[RLP]* (gcc 3.4)
     The similarity to IRIX 'z' (and proposed but never
@@ -107,31 +107,31 @@
 #define DW_FRAME_INSTR_OPCODE_SHIFT		6
 #define DW_FRAME_INSTR_OFFSET_MASK		0x3f
 
-/* 
+/*
     This struct denotes the rule for a register in a row of
-    the frame table.  In other words, it is one element of 
+    the frame table.  In other words, it is one element of
     the table.
 */
 struct Dwarf_Reg_Rule_s {
 
     /*  Is a flag indicating whether the rule includes the offset
-        field, ie whether the ru_offset field is valid or not. 
+        field, ie whether the ru_offset field is valid or not.
         Applies only if DW_EXPR_OFFSET or DW_EXPR_VAL_OFFSET.
         It is important, since reg+offset (offset of 0) is different from
         just 'register' since the former means 'read memory at address
         given by the sum of register contents plus offset to get the
         value'. whereas the latter means 'the value is in the register'.
- 
+
         The 'register' numbers are either real registers (ie, table
         columns defined as real registers) or defined entries that are
         not really hardware registers, such as DW_FRAME_SAME_VAL or
         DW_FRAME_CFA_COL.  */
-    Dwarf_Sbyte ru_is_off; 
+    Dwarf_Sbyte ru_is_off;
 
-    /*  DW_EXPR_OFFSET (0, DWARF2)  
+    /*  DW_EXPR_OFFSET (0, DWARF2)
         DW_EXPR_VAL_OFFSET 1 (dwarf2/3)
         DW_EXPR_EXPRESSION 2  (dwarf2/3)
-        DW_EXPR_VAL_EXPRESSION 3 (dwarf2/3) 
+        DW_EXPR_VAL_EXPRESSION 3 (dwarf2/3)
         See dwarf_frame.h. */
     Dwarf_Sbyte ru_value_type;
 
@@ -139,11 +139,11 @@ struct Dwarf_Reg_Rule_s {
     Dwarf_Half ru_register;
 
     /*  Offset to add to register, if indicated by ru_is_offset
-        and if DW_EXPR_OFFSET or DW_EXPR_VAL_OFFSET. 
+        and if DW_EXPR_OFFSET or DW_EXPR_VAL_OFFSET.
         If DW_EXPR_EXPRESSION or DW_EXPR_VAL_EXPRESSION
         this is DW_FORM_block block-length, not offset. */
     Dwarf_Unsigned ru_offset_or_block_len;
-    
+
     /*  For DW_EXPR_EXPRESSION DW_EXPR_VAL_EXPRESSION these is set,
         else 0. */
     Dwarf_Small *ru_block;
@@ -151,8 +151,8 @@ struct Dwarf_Reg_Rule_s {
 
 typedef struct Dwarf_Frame_s *Dwarf_Frame;
 
-/* 
-    This structure represents a row of the frame table. 
+/*
+    This structure represents a row of the frame table.
     Fr_loc is the pc value for this row, and Fr_reg
     contains the rule for each column.
 
@@ -184,14 +184,14 @@ struct Dwarf_Frame_Op_List_s {
 };
 
 /* See dwarf_frame.c for the heuristics used to set the
-   Dwarf_Cie ci_augmentation_type.  
+   Dwarf_Cie ci_augmentation_type.
 
    This succinctly helps interpret the size and meaning of .debug_frame
    and (for gcc) .eh_frame.
 
    In the case of gcc .eh_frame (gcc 3.3, 3.4)
    z may be followed by one or more of
-   L R P.  
+   L R P.
 
 */
 enum Dwarf_augmentation_type {
@@ -216,13 +216,13 @@ enum Dwarf_augmentation_type {
 };
 
 
-/* 
-    This structure contains all the pertinent info for a Cie. Most 
-    of the fields are taken straight from the definition of a Cie.  
-    Ci_cie_start points to the address (in .debug_frame) where this 
-    Cie begins.  Ci_cie_instr_start points to the first byte of the 
-    frame instructions for this Cie.  Ci_dbg points to the associated 
-    Dwarf_Debug structure.  Ci_initial_table is a pointer to the table 
+/*
+    This structure contains all the pertinent info for a Cie. Most
+    of the fields are taken straight from the definition of a Cie.
+    Ci_cie_start points to the address (in .debug_frame) where this
+    Cie begins.  Ci_cie_instr_start points to the first byte of the
+    frame instructions for this Cie.  Ci_dbg points to the associated
+    Dwarf_Debug structure.  Ci_initial_table is a pointer to the table
     row generated by the instructions for this Cie.
 */
 struct Dwarf_Cie_s {
@@ -310,13 +310,13 @@ struct Dwarf_Fde_s {
     Dwarf_Unsigned fd_gnu_eh_augmentation_len;
     Dwarf_Ptr fd_gnu_eh_augmentation_bytes;
     Dwarf_Addr fd_gnu_eh_lsda; /* If 'L' augmentation letter
-        present:  is address of the 
+        present:  is address of the
         Language Specific Data Area (LSDA). If not 'L" is zero. */
 
     /* The following 3 are about the Elf section the FDEs come from. */
     Dwarf_Small * fd_section_ptr;
     Dwarf_Unsigned fd_section_length;
-    Dwarf_Unsigned fd_section_index; 
+    Dwarf_Unsigned fd_section_index;
 
 };
 
@@ -368,8 +368,8 @@ struct cie_fde_prefix_s {
     /*  cf_section_ptr is a pointer to the first byte
         of the object section the prefix is read from.  */
     Dwarf_Small *  cf_section_ptr;
-    Dwarf_Unsigned cf_section_index; 
-    Dwarf_Unsigned cf_section_length; 
+    Dwarf_Unsigned cf_section_index;
+    Dwarf_Unsigned cf_section_length;
 };
 
 int

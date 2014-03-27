@@ -35,7 +35,7 @@
 
 
 
-/* malloc_check.c For checking dealloc completeness. 
+/* malloc_check.c For checking dealloc completeness.
 
    This code is as simple as possible and works ok for
    reasonable size allocation counts.
@@ -65,7 +65,7 @@
 
 struct mc_data_s {
     struct mc_data_s *mc_prev;
-    unsigned long mc_address;   /* Assumes this is large enough to hold 
+    unsigned long mc_address;   /* Assumes this is large enough to hold
         a pointer! */
 
     long mc_alloc_number;       /* Assigned in order by when record
@@ -77,9 +77,8 @@ struct mc_data_s {
         node. */
 };
 
-/* 
-   
-   
+/*
+
 */
 #define HASH_TABLE_SIZE 10501
 static struct mc_data_s *mc_data_hash[HASH_TABLE_SIZE];
@@ -334,6 +333,6 @@ dwarf_malloc_check_complete(char *msg)
 
 #else
 
-extern void *libdwarf_an_unused_function_so_not_empty_c_file();
+extern void *libdwarf_an_unused_function_so_not_empty_c_file(void);
 
 #endif /* WANT_LIBBDWARF_MALLOC_CHECK */

@@ -35,7 +35,7 @@
 
 /* malloc_check.h */
 
-/* A simple libdwarf-aware malloc checker. 
+/* A simple libdwarf-aware malloc checker.
    define WANT_LIBBDWARF_MALLOC_CHECK and rebuild libdwarf
    do make a checking-for-alloc-mistakes libdwarf.
    NOT  recommended for production use.
@@ -44,7 +44,7 @@
    files in Makefile.
 */
 
-#undef WANT_LIBBDWARF_MALLOC_CHECK 
+#undef WANT_LIBBDWARF_MALLOC_CHECK
 /*#define WANT_LIBBDWARF_MALLOC_CHECK  1 */
 
 #ifdef WANT_LIBBDWARF_MALLOC_CHECK
