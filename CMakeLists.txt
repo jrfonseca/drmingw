@@ -187,7 +187,6 @@ add_subdirectory (tests)
 
 install (
     FILES
-        COPYING
         COPYING.LIB
         README.txt
     DESTINATION doc
