@@ -134,12 +134,13 @@ search_func(Dwarf_Debug dbg,
 {
     Dwarf_Die ret_die, spec_die;
     Dwarf_Error de;
-    Dwarf_Half tag;
+    Dwarf_Half tag, return_form;
     Dwarf_Unsigned lopc, hipc;
     Dwarf_Off ref;
     Dwarf_Attribute sub_at, spec_at;
     char *func0;
     int ret;
+    enum Dwarf_Form_Class return_class;
 
     if (*rlt_func != NULL)
         return;
@@ -148,10 +149,13 @@ search_func(Dwarf_Debug dbg,
         OutputDebug("dwarf_tag: %s", dwarf_errmsg(de));
         goto cont_search;
     }
+
     if (tag == DW_TAG_subprogram) {
         if (dwarf_lowpc(die, &lopc, &de) ||
-            dwarf_highpc(die, &hipc, &de))
+            dwarf_highpc_b(die, &hipc, &return_form, &return_class, &de))
             goto cont_search;
+        if (return_class == DW_FORM_CLASS_CONSTANT)
+            hipc += lopc;
         if (addr < lopc || addr >= hipc)
             goto cont_search;
 
