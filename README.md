@@ -198,6 +198,6 @@ Suggested Reading
 
  * [A Crash Course on the Depths of Win32 Structured Exception Handling, MSJ January 1997](http://www.microsoft.com/msj/0197/exception/exception.htm)
  * [MSJEXHND - Part 1, Under the Hood, MSJ April 1997](http://www.microsoft.com/msj/0497/hood/hood0497.htm)
- * [Part 2, Under the Hood, MSJ May 1997](http://www.microsoft.com/msj/0597/hood0597.htm MSJEXHND)
+ * [MSJEXHND - Part 2, Under the Hood, MSJ May 1997](http://www.microsoft.com/msj/0597/hood0597.htm)
  * [Bugslayer, MSJ, August 1998](http://www.microsoft.com/msj/0898/bugslayer0898.htm)
  * [The Win32 Debugging Application Programming Interface](http://msdn.microsoft.com/library/techart/msdn_debug.htm)
