@@ -52,7 +52,7 @@ Dr. Mingw will register itself as the JIT debugger by writting into the system r
 
 If the installation is sucessful, the following message box should appear:
 
-![Install](http://wiki.jrfonseca.googlecode.com/git/drmingw-install.png)
+![Install](img/install.png)
 
 To enable other options they must be set them allong with the **-i** option. For example,
 
@@ -63,11 +63,11 @@ Usage
 
 You can easily try Dr. Mingw by building and running the included sample. Depending of your Windows version, you'll see a familiar dialog:
 
-![Exception](http://wiki.jrfonseca.googlecode.com/git/drmingw-exception.png)
+![Exception](img/exception.png)
 
 If you request to debug the program, Dr. Mingw will attach to the faulting application, collect information about the exception, and display the dialog
 
-![Sample](http://wiki.jrfonseca.googlecode.com/git/drmingw-sample.png)
+![Sample](img/sample.png)
 
 To resolve the addresses it's necessary to compile the application with debugging information. In case of address is in a DLL with no debugging information, it will resolve to the precedent exported symbol.
 
