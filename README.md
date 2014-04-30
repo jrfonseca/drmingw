@@ -190,8 +190,9 @@ Links
 Related tools
 -------------
 
- * http://code.google.com/p/backtrace-mingw/
  * [binutil's addr2line](http://sourceware.org/binutils/docs/binutils/addr2line.html) (included in MinGW)
+ * [cv2pdb - DWARF to PDB converter](http://dsource.org/projects/cv2pdb)
+ * [google-breakpad](https://code.google.com/p/google-breakpad)
 
 Suggested Reading
 -----------------
