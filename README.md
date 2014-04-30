@@ -35,7 +35,7 @@ Detailed change log available [here](https://github.com/jrfonseca/drmingw/commit
 Download
 ========
 
-Dr. Mingw can be downloaded [here](https://github.com/jrfonseca/drmingw/releases here).
+Dr. Mingw can be downloaded [here](https://github.com/jrfonseca/drmingw/releases).
 
 Git repository available [here](https://github.com/jrfonseca/drmingw).
 
