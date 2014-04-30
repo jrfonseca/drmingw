@@ -94,22 +94,22 @@ add_definitions (
 # Targets
 
 add_library (common STATIC
-    misc.c
-    symbols.c
-    pehelp.c
+    src/misc.c
+    src/symbols.c
+    src/pehelp.c
 )
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set (MGWHELP_DEF mgwhelp64.def)
+    set (MGWHELP_DEF src/mgwhelp64.def)
 else ()
-    set (MGWHELP_DEF mgwhelp32.def)
+    set (MGWHELP_DEF src/mgwhelp32.def)
 endif ()
 
 add_library (mgwhelp SHARED
     ${MGWHELP_DEF}
-    demangle.cxx
-    dwarf_pe.c
-    mgwhelp.c
+    src/demangle.cxx
+    src/dwarf_pe.c
+    src/mgwhelp.c
 )
 target_link_libraries (mgwhelp LINK_PRIVATE
     common
@@ -137,8 +137,8 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 4)
     set (MGWHELP_IMPLIB ${CMAKE_BINARY_DIR}/libmgwhelp.a)
     add_custom_command (
         OUTPUT ${MGWHELP_IMPLIB}
-        COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def=${CMAKE_SOURCE_DIR}/dbghelp.def
-        DEPENDS ${CMAKE_SOURCE_DIR}/dbghelp.def
+        COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def=${CMAKE_SOURCE_DIR}/src/dbghelp.def
+        DEPENDS ${CMAKE_SOURCE_DIR}/src/dbghelp.def
     )
 else ()
     set (MGWHELP_IMPLIB mgwhelp)
@@ -147,11 +147,11 @@ add_custom_target (mgwhelp_implib DEPENDS ${MGWHELP_IMPLIB})
 
 
 add_executable (drmingw WIN32
-    debugger.c
-    dialog.c
-    log.c
-    main.c
-    resource.rc
+    src/debugger.c
+    src/dialog.c
+    src/log.c
+    src/main.c
+    src/resource.rc
 )
 set_target_properties (drmingw PROPERTIES
     COMPILE_DEFINITIONS "PACKAGE=\"DrMingw\";VERSION=\"${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}\""
@@ -165,8 +165,8 @@ target_link_libraries (drmingw
 install (TARGETS drmingw RUNTIME DESTINATION bin)
 
 add_library (exchndl MODULE
-    exchndl.c
-    exchndl.def
+    src/exchndl.c
+    src/exchndl.def
 )
 add_dependencies (exchndl mgwhelp_implib)
 target_link_libraries (exchndl LINK_PRIVATE
