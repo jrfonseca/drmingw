@@ -13,22 +13,22 @@ Windows XP or later is required.  It relies upon the [DbgHelp library](http://ms
 Recent changes
 ==============
 
- * *2014-04-02, version 0.6.2*:
+ * **2014-04-02, version 0.6.2**:
    * Support DWARF4 address encoding
    * Experimental WOW64 support
    * Drop GPL text
    * Minor fixes and cleanups
- * *2013-06-25, version 0.6.1*:
+ * **2013-06-25, version 0.6.1**:
    * several bug fixes
- * *2013-06-20, version 0.6.0*:
+ * **2013-06-20, version 0.6.0**:
    * use libdwarf (binutils/BFD is now optional)
    * 64-bits support
- * *2013-05-20, version 0.5.1*:
+ * **2013-05-20, version 0.5.1**:
    * Update to binutils-2.23.2 (DWARF support)
    * Use dbghelp.dll instead of imagehlp.dll
- * *2009-03-21, version 0.4.4*:
+ * **2009-03-21, version 0.4.4**:
    * Update to binutils 2.18
- * *2003-11-25, version 0.4.3*
+ * **2003-11-25, version 0.4.3**
 
 Detailed change log available [here](https://github.com/jrfonseca/drmingw/commits/master).
 
@@ -54,7 +54,7 @@ If the installation is sucessful, the following message box should appear:
 
 ![Install](http://wiki.jrfonseca.googlecode.com/git/drmingw-install.png)
 
-To enable other options they must be set them allong with the *-i* option. For example,
+To enable other options they must be set them allong with the **-i** option. For example,
 
     drmingw -i -v
 
@@ -76,17 +76,17 @@ Command Line Options
 
 The following table describes the Dr. Mingw command-line options.  All comand-line options are case-sensitive.
 
-| Short        | Long                 | Action |
-| ------------ | -------------------- | ------ |
-| *-h*         | *--help*             | Print help and exit |
-| *-V*         | *--version*          | Print version and exit |
-| *-i*         | *--install*          | Install as the default JIT debugger |
-| *-a*         | *--auto*             | Automatically start (used with *-i* or *--install*) |
-| *-u*         | *--uninstall*        | Uninstall |
-| *-p* _pid_   | *--process-id=*_pid_ | Attach to the process with the given identifier |
-| *-e* _event_ | *--event=*_event_    | Signal an event after process is attached |
-| *-b*         | *--breakpoints*      | Treat breakpoints as exceptions |
-| *-v*         | *--verbose*          | Verbose output |
+| Short          | Long                   | Action |
+| -------------- | ---------------------- | ------ |
+| **-h**         | **--help**             | Print help and exit |
+| **-V**         | **--version**          | Print version and exit |
+| **-i**         | **--install**          | Install as the default JIT debugger |
+| **-a**         | **--auto**             | Automatically start (used with **-i** or **--install**) |
+| **-u**         | **--uninstall**        | Uninstall |
+| **-p** _pid_   | **--process-id=**_pid_ | Attach to the process with the given identifier |
+| **-e** _event_ | **--event=**_event_    | Signal an event after process is attached |
+| **-b**         | **--breakpoints**      | Treat breakpoints as exceptions |
+| **-v**         | **--verbose**          | Verbose output |
 
 MgwHelp
 ========
@@ -99,7 +99,7 @@ But the hope is that it will eventually be used by third-party Windows developme
 
 MgwHelp relies on [libdwarf](http://reality.sgiweb.org/davea/dwarf.html) to read DWARF debugging information.  It can optionally also use BFD to read stabs debugging information.
 
-*NOTE: It's still work in progress, and only exports a limited number of symbols. So it's not a complete solution yet*
+**NOTE: It's still work in progress, and only exports a limited number of symbols. So it's not a complete solution yet**
 
 ExcHndl DLL
 ===========
@@ -166,9 +166,9 @@ Which options should I pass to gcc when compiling?
 
 This options are _essential_ to produce suitable results are:
 
- * *`-g`* : produce debugging information
+ * **`-g`** : produce debugging information
 
- * *`-fno-omit-frame-pointer`* : use the frame pointer (frame pointer usage is disabled by default in some architectures like `x86_64` and for some optimization levels; and it may be impossible to walk the call stack without it)
+ * **`-fno-omit-frame-pointer`** : use the frame pointer (frame pointer usage is disabled by default in some architectures like `x86_64` and for some optimization levels; and it may be impossible to walk the call stack without it)
 
 You can choose more detailed debug info, e.g., `-g3`, `-ggdb`. But so far I have seen no evidence this will lead to better results, at least as far as Dr.MinGW is concerned.
 
