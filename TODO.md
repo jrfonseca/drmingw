@@ -18,3 +18,8 @@
 
   - http://www.howzatt.demon.co.uk/articles/DebuggingInWin64.html
   - http://www.howzatt.demon.co.uk/articles/SimpleDebugger.html
+
+- Generate gdb core dumps
+
+  - https://code.google.com/p/google-coredumper/source/browse/trunk/src/elfcore.c
+  - https://cygwin.com/viewvc/src/winsup/utils/dumper.cc?view=markup
