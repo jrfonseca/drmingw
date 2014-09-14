@@ -22,10 +22,15 @@
 #include "symbols.h"
 
 
+#define REPORT_FILE 1
+
+
 // Declare the static variables
-static TCHAR szLogFileName[MAX_PATH] = _T("");
 static LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter = NULL;
+#if REPORT_FILE
+static TCHAR szLogFileName[MAX_PATH] = _T("");
 static HANDLE hReportFile;
+#endif
 
 static
 #ifdef __GNUC__
@@ -33,6 +38,7 @@ static
 #endif
 int __cdecl rprintf(const TCHAR * format, ...)
 {
+#if REPORT_FILE
     TCHAR szBuff[4096];
     int retValue;
     DWORD cbWritten;
@@ -43,8 +49,21 @@ int __cdecl rprintf(const TCHAR * format, ...)
     va_end(argptr);
 
     WriteFile(hReportFile, szBuff, retValue * sizeof(TCHAR), &cbWritten, 0);
-
     return retValue;
+#else
+    static char buf[4096] = {'\0'};
+    // Buffer until a newline is found.
+    size_t len = strlen(buf);
+    va_list ap;
+    va_start(ap, format);
+    int ret = _vsnprintf(buf + len, sizeof(buf) - len, format, ap);
+    va_end(ap);
+    if (ret > (int)(sizeof(buf) - len - 1) || strchr(buf + len, '\n')) {
+        OutputDebugStringA(buf);
+        buf[0] = '\0';
+    }
+    return ret;
+#endif
 }
 
 static BOOL
@@ -63,7 +82,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         SYMOPT_LOAD_LINES |
         SYMOPT_DEFERRED_LOADS;
     SymSetOptions(dwSymOptions);
-    if(SymInitialize(hProcess, NULL, TRUE))
+    if(SymInitialize(hProcess, "srv*C:\\Symbols*http://msdl.microsoft.com/download/symbols", TRUE))
         bSymInitialized = TRUE;
 
     memset( &StackFrame, 0, sizeof(StackFrame) );
@@ -457,6 +476,7 @@ LONG CALLBACK TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 
         fuOldErrorMode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
+#if REPORT_FILE
         hReportFile = CreateFile(
             szLogFileName,
             GENERIC_WRITE,
@@ -476,6 +496,9 @@ LONG CALLBACK TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
             CloseHandle(hReportFile);
             hReportFile = 0;
         }
+#else
+        GenerateExceptionReport(pExceptionInfo);
+#endif
 
         SetErrorMode(fuOldErrorMode);
     }
@@ -488,6 +511,7 @@ static void OnStartup(void)
     // Install the unhandled exception filter function
     prevExceptionFilter = AddVectoredExceptionHandler(0, TopLevelExceptionFilter);
 
+#if REPORT_FILE
     // Figure out what the report file will be named, and store it away
     if(GetModuleFileName(NULL, szLogFileName, MAX_PATH))
     {
@@ -507,6 +531,7 @@ static void OnStartup(void)
     {
         _tcscat(szLogFileName, _T("EXCHNDL.RPT"));
     }
+#endif
 }
 
 static void OnExit(void)
