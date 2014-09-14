@@ -92,7 +92,6 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
     while ( 1 )
     {
-        BOOL bSuccess = FALSE;
         TCHAR szSymName[512] = _T("");
         TCHAR szFileName[MAX_PATH] = _T("");
         DWORD dwLineNumber = 0;
@@ -138,16 +137,18 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         {
             rprintf( _T("  %s"), GetBaseName(szModule));
 
-            if(!bSuccess && bSymInitialized)
-                if((bSuccess = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, 512)))
-                {
-                    rprintf( _T("!%s"), szSymName);
+            if (bSymInitialized &&
+                GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, 512))
+            {
+                rprintf( _T("!%s"), szSymName);
 
-                    UnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
+                UnDecorateSymbolName(szSymName, szSymName, 512, UNDNAME_COMPLETE);
 
-                    if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
-                        rprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
-                }
+                if(GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
+                    rprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
+            } else {
+                rprintf( _T("!%lx"), (DWORD)((INT_PTR)StackFrame.AddrPC.Offset - (INT_PTR)hModule));
+            }
         }
 
         rprintf(_T("\r\n"));
