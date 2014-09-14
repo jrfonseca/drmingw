@@ -85,3 +85,10 @@ set_target_properties (exchndl PROPERTIES
 )
 install (TARGETS exchndl LIBRARY DESTINATION bin)
 
+add_executable (addr2line
+    addr2line.cpp
+)
+add_dependencies (addr2line mgwhelp_implib)
+target_link_libraries (addr2line
+    ${MGWHELP_IMPLIB}
+)
