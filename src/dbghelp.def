@@ -15,9 +15,9 @@ EXPORTS
 	GetTimestampForLoadedLibrary@4
 	ImageDirectoryEntryToData@16
 	ImageDirectoryEntryToDataEx@20
-	ImageNtHeader@4=ntdll.RtlImageNtHeader
-	ImageRvaToSection@12=ntdll.RtlImageRvaToSection
-	ImageRvaToVa@16=ntdll.RtlImageRvaToVa
+	ImageNtHeader@4
+	ImageRvaToSection@12
+	ImageRvaToVa@16
 	ImagehlpApiVersion@0
 	ImagehlpApiVersionEx@4
 	MakeSureDirectoryPathExists@4
