@@ -71,6 +71,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 {
     DWORD MachineType;
     STACKFRAME64 StackFrame;
+    CONTEXT Context;
 
     HMODULE hModule = NULL;
     TCHAR szModule[MAX_PATH];
@@ -106,6 +107,10 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     StackFrame.AddrFrame.Offset = pContext->Rbp;
     StackFrame.AddrFrame.Mode = AddrModeFlat;
 #endif
+
+    // StackWalk modifies context, so use a local copy.
+    Context = *pContext;
+    pContext = &Context;
 
     rprintf( _T("AddrPC   Params\r\n") );
 
