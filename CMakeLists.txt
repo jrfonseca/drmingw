@@ -12,6 +12,10 @@ set (CPACK_PACKAGE_VERSION_PATCH "2")
 ##############################################################################
 # Dependencies
 
+set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+
+find_package (WinDbg)
+
 find_path (BINUTILS_INCLUDE_DIR bfd.h PATHS ${BINUTILS_ROOT}/include)
 find_library (BINUTILS_BFD_LIBRARY bfd PATHS ${BINUTILS_ROOT}/lib)
 find_library (BINUTILS_LIBERTY_LIBRARY liberty PATHS ${BINUTILS_ROOT}/lib)

@@ -92,3 +92,14 @@ add_dependencies (addr2line mgwhelp_implib)
 target_link_libraries (addr2line
     ${MGWHELP_IMPLIB}
 )
+
+# Bundle DbgHelp and SymSrv DLLs
+if (WINDBG_FOUND)
+    install (
+        FILES
+            "${WINDBG_DIR}/dbghelp.dll"
+            "${WINDBG_DIR}/symsrv.dll"
+            "${WINDBG_DIR}/symsrv.yes"
+        DESTINATION bin
+    )
+endif ()
