@@ -40,7 +40,7 @@ install (TARGETS mgwhelp RUNTIME DESTINATION bin)
 if (CMAKE_SIZEOF_VOID_P EQUAL 4)
     # XXX: We need to use a custom import lib to avoid link failures
     string (REPLACE gcc dlltool DLLTOOL ${CMAKE_C_COMPILER})
-    set (MGWHELP_IMPLIB ${CMAKE_BINARY_DIR}/libmgwhelp.a)
+    set (MGWHELP_IMPLIB ${CMAKE_CURRENT_BINARY_DIR}/libmgwhelp.a)
     add_custom_command (
         OUTPUT ${MGWHELP_IMPLIB}
 	COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def=${CMAKE_CURRENT_SOURCE_DIR}/dbghelp.def
