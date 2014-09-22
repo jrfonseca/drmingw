@@ -31,57 +31,32 @@ add_subdirectory (thirdparty/dwarf)
 
 include (CheckCXXCompilerFlag)
 
-if (MSVC)
-    # Use static runtime
-    # http://www.cmake.org/Wiki/CMake_FAQ#How_can_I_build_my_MSVC_application_with_a_static_runtime.3F
-    foreach (flag_var
-        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    )
-        if (${flag_var} MATCHES "/MD")
-            string (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-        endif ()
-    endforeach (flag_var)
+# Adjust warnings
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wmissing-prototypes -std=gnu99")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
-    add_definitions (
-        # http://msdn2.microsoft.com/en-us/library/6dwk3a1z.aspx,
-        -DVC_EXTRALEAN
-        -D_CRT_SECURE_NO_DEPRECATE
-    )
-else ()
-    # Adjust warnings
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wmissing-prototypes -std=gnu99")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+# Use GDB extensions
+set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -O0")
+set (CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -ggdb")
+set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb -O0")
+set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -ggdb")
 
-    # Use GDB extensions if available
-    if (CMAKE_COMPILER_IS_GNUCC)
-        set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -O0")
-        set (CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -ggdb")
-    endif ()
-    if (CMAKE_COMPILER_IS_GNUCXX)
-        set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb -O0")
-        set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -ggdb")
-    endif ()
+# Avoid depending on MinGW runtime DLLs
+check_cxx_compiler_flag (-static-libgcc HAVE_STATIC_LIBGCC_FLAG)
+if (HAVE_STATIC_LIBGCC_FLAG)
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc")
+    set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc")
+    set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc")
+endif ()
+check_cxx_compiler_flag (-static-libstdc++ HAVE_STATIC_LIBSTDCXX_FLAG)
+if (HAVE_STATIC_LIBSTDCXX_FLAG)
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++")
+    set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++")
+    set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libstdc++")
 endif ()
 
-if (MINGW)
-    # Avoid depending on MinGW runtime DLLs
-    check_cxx_compiler_flag (-static-libgcc HAVE_STATIC_LIBGCC_FLAG)
-    if (HAVE_STATIC_LIBGCC_FLAG)
-        set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc")
-        set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc")
-        set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc")
-    endif ()
-    check_cxx_compiler_flag (-static-libstdc++ HAVE_STATIC_LIBSTDCXX_FLAG)
-    if (HAVE_STATIC_LIBSTDCXX_FLAG)
-        set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++")
-        set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++")
-        set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libstdc++")
-    endif ()
-
-    if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-        set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--kill-at")
-    endif ()
+if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--kill-at")
 endif ()
 
 add_definitions (
@@ -109,10 +84,8 @@ install (
 )
 
 # cpack mistakenly detects Mingw-w64 as win32
-if (MINGW)
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set (CPACK_SYSTEM_NAME win64)
-    endif ()
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set (CPACK_SYSTEM_NAME win64)
 endif ()
 
 set (CPACK_GENERATOR "ZIP")
