@@ -4,12 +4,6 @@
 DWORD64 WINAPI
 GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress);
 
-BOOL CALLBACK
-ReadProcessMemory64(HANDLE hProcess, DWORD64 lpBaseAddress, PVOID lpBuffer, DWORD nSize, PDWORD lpNumberOfBytesRead);
-
-DWORD64
-PEImageNtHeader(HANDLE hProcess, DWORD64 hModule);
-
 DWORD64
 PEGetImageBase(HANDLE hProcess, DWORD64 hModule);
 

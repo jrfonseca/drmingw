@@ -4,6 +4,9 @@ add_library (common STATIC
     symbols.c
     pehelp.c
 )
+target_link_libraries (common LINK_PRIVATE
+    psapi
+)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set (MGWHELP_DEF mgwhelp64.def)
@@ -21,7 +24,6 @@ target_link_libraries (mgwhelp LINK_PRIVATE
     common
     dwarf
     dbghelp
-    psapi
 )
 set_target_properties (mgwhelp PROPERTIES
     PREFIX ""
@@ -67,7 +69,6 @@ add_dependencies (drmingw mgwhelp_implib)
 target_link_libraries (drmingw
     common
     ${MGWHELP_IMPLIB}
-    psapi
 )
 install (TARGETS drmingw RUNTIME DESTINATION bin)
 

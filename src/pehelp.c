@@ -21,6 +21,7 @@
 #include <stddef.h>
 
 #include <windows.h>
+#include <psapi.h>
 
 #include "misc.h"
 #include "dbghelp.h"
@@ -54,40 +55,52 @@ GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
     return SymGetModuleBase64(hProcess, dwAddress);
 }
 
-BOOL CALLBACK
-ReadProcessMemory64(HANDLE hProcess, DWORD64 lpBaseAddress, PVOID lpBuffer, DWORD nSize, PDWORD lpNumberOfBytesRead)
-{
-    SIZE_T NumberOfBytesRead = 0;
-    BOOL bRet = ReadProcessMemory(hProcess, (LPCVOID)(UINT_PTR)lpBaseAddress, lpBuffer, nSize, &NumberOfBytesRead);
-    if (lpNumberOfBytesRead) {
-        *lpNumberOfBytesRead = NumberOfBytesRead;
-    }
-    return bRet;
-}
-
-DWORD64
-PEImageNtHeader(HANDLE hProcess, DWORD64 hModule)
-{
-    LONG e_lfanew;
-
-    // From the DOS header, find the NT (PE) header
-    if (!ReadProcessMemory64(hProcess, hModule + offsetof(IMAGE_DOS_HEADER, e_lfanew), &e_lfanew, sizeof e_lfanew, NULL))
-        return 0;
-
-    return hModule + e_lfanew;
-}
-
 DWORD64
 PEGetImageBase(HANDLE hProcess, DWORD64 hModule)
 {
-    DWORD64 pNtHeaders;
-    IMAGE_NT_HEADERS NtHeaders;
+    char szImageName[MAX_PATH];
+    DWORD dwRet;
+    HANDLE hFile;
+    HANDLE hFileMapping;
+    PBYTE lpFileBase;
+    PIMAGE_DOS_HEADER pDosHeader;
+    PIMAGE_NT_HEADERS pNtHeaders;
+    DWORD64 ImageBase = 0;
 
-    if(!(pNtHeaders = PEImageNtHeader(hProcess, hModule)))
-        return FALSE;
+    dwRet = GetModuleFileNameExA(hProcess,
+                                 (HMODULE)(UINT_PTR)hModule,
+                                 szImageName,
+                                 sizeof szImageName);
+    if (dwRet == 0) {
+        goto no_file;
+    }
 
-    if(!ReadProcessMemory64(hProcess, pNtHeaders, &NtHeaders, sizeof NtHeaders, NULL))
-        return FALSE;
+    hFile = CreateFile(szImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
+                       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        goto no_file;
+    }
 
-    return NtHeaders.OptionalHeader.ImageBase;
+    hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (!hFileMapping) {
+        goto no_file_mapping;
+    }
+
+    lpFileBase = (PBYTE)MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
+    if (!lpFileBase) {
+        goto no_view_of_file;
+    }
+
+    pDosHeader = (PIMAGE_DOS_HEADER)lpFileBase;
+
+    pNtHeaders = (PIMAGE_NT_HEADERS)(lpFileBase + pDosHeader->e_lfanew);
+
+    ImageBase = pNtHeaders->OptionalHeader.ImageBase;
+
+no_view_of_file:
+    CloseHandle(hFileMapping);
+no_file_mapping:
+    CloseHandle(hFile);
+no_file:
+    return ImageBase;
 }
