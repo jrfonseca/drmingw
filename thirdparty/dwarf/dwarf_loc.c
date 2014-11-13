@@ -495,7 +495,8 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
                 (by the operations encountered so far in this
                 expression) onto the expression stack as the offset
                 in thread-local-storage of the variable. */
-        case DW_OP_GNU_push_tls_address: /* 0xe0 */
+        case DW_OP_GNU_push_tls_address: /* 0xe0  */
+            /* Believed to have no operands. */
             /* Unimplemented in gdb 7.5.1 ? */
             break;
         case DW_OP_GNU_deref_type: /* 0xf6 */
@@ -505,7 +506,7 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
             offset = offset + leb128_length;
             break;
 
-        case DW_OP_implicit_value: /* DWARF4 */
+        case DW_OP_implicit_value: /* DWARF4 0xa0 */
             /*  uleb length of value bytes followed by that
                 number of bytes of the value. */
             operand1 = _dwarf_decode_u_leb128(loc_ptr, &leb128_length);
@@ -522,12 +523,12 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
             break;
         case DW_OP_stack_value:  /* DWARF4 */
             break;
-        case DW_OP_GNU_uninit:            /*  0xf0  GNU */
+        case DW_OP_GNU_uninit:            /* 0xf0 */
             /* Unimplemented in gdb 7.5.1  */
             /*  Carolyn Tice: Follws a DW_OP_reg or DW_OP_regx
                 and marks the reg as being uninitialized. */
             break;
-        case DW_OP_GNU_encoded_addr: {      /*  0xf1  GNU */
+        case DW_OP_GNU_encoded_addr: {      /*  0xf1 */
             /*  Richard Henderson: The operand is an absolute
                 address.  The first byte of the value
                 is an encoding length: 0 2 4 or 8.  If zero
@@ -546,7 +547,8 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
                 offset  += length;
             }
             break;
-        case DW_OP_GNU_implicit_pointer:{  /*  0xf2  GNU */
+        case DW_OP_implicit_pointer:       /* DWARF5 */
+        case DW_OP_GNU_implicit_pointer:{  /* 0xf2 */
             /*  Jakub Jelinek: The value is an optimized-out
                 pointer value. Represented as
                 an offset_size DIE offset
@@ -570,7 +572,7 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
             }
 
             break;
-        case DW_OP_GNU_entry_value:       /*  0xf3  GNU */
+        case DW_OP_GNU_entry_value:       /* 0xf3 */
             /*  Jakub Jelinek: A register reused really soon,
                 but the value is unchanged.  So to represent
                 that value we have a uleb128 size followed
@@ -591,7 +593,7 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
             offset = offset + operand1;
             loc_ptr = loc_ptr + operand1;
             break;
-        case DW_OP_GNU_const_type:       /*  0xf4  GNU */
+        case DW_OP_GNU_const_type:       /* 0xf4 */
             {
             unsigned blocklen = 0;
             /* die offset as uleb. */
@@ -610,7 +612,7 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
             loc_ptr = loc_ptr + blocklen;
             }
             break;
-        case DW_OP_GNU_regval_type:       /*  0xf5  GNU */
+        case DW_OP_GNU_regval_type:       /* 0xf5 */
             /* reg num uleb*/
             operand1 = _dwarf_decode_u_leb128(loc_ptr, &leb128_length);
             loc_ptr = loc_ptr + leb128_length;
@@ -620,33 +622,35 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
             loc_ptr = loc_ptr + leb128_length;
             offset = offset + leb128_length;
             break;
-        case DW_OP_GNU_convert:       /*  0xf7  GNU */
-        case DW_OP_GNU_reinterpret:       /*  0xf9  GNU */
+        case DW_OP_GNU_convert:       /* 0xf7 */
+        case DW_OP_GNU_reinterpret:       /* 0xf9 */
             /* die offset  or zero */
             operand1 = _dwarf_decode_u_leb128(loc_ptr, &leb128_length);
             loc_ptr = loc_ptr + leb128_length;
             offset = offset + leb128_length;
             break;
-        case DW_OP_GNU_parameter_ref :       /*  0xfa  GNU */
+        case DW_OP_GNU_parameter_ref :       /* 0xfa */
             /* 4 byte unsigned int */
             READ_UNALIGNED(dbg, operand1, Dwarf_Unsigned, loc_ptr,
                 4);
             loc_ptr = loc_ptr + 4;
             offset = offset + 4;
             break;
-        case DW_OP_GNU_addr_index :       /*  0xfb  GNU */
-            /* Address size value */
-            READ_UNALIGNED(dbg, operand1, Dwarf_Unsigned, loc_ptr,
-                address_size);
-            loc_ptr = loc_ptr + address_size;
-            offset = offset + address_size;
+        case DW_OP_addrx :           /* DWARF5 */
+        case DW_OP_GNU_addr_index :  /* 0xfb DebugFission */
+            /*  Index into .debug_addr. The value in .debug_addr
+                is an address. */
+            operand1 = _dwarf_decode_u_leb128(loc_ptr, &leb128_length);
+            loc_ptr = loc_ptr + leb128_length;
+            offset = offset + leb128_length;
             break;
-        case DW_OP_GNU_const_index :       /*  0xfb  GNU */
-            /* Address size value */
-            READ_UNALIGNED(dbg, operand1, Dwarf_Unsigned, loc_ptr,
-                address_size);
-            loc_ptr = loc_ptr + address_size;
-            offset = offset + address_size;
+        case DW_OP_constx :          /* DWARF5 */
+        case DW_OP_GNU_const_index : /* 0xfc DebugFission */
+            /*  Index into .debug_addr. The value in .debug_addr
+                is a constant that fits in an address. */
+            operand1 = _dwarf_decode_u_leb128(loc_ptr, &leb128_length);
+            loc_ptr = loc_ptr + leb128_length;
+            offset = offset + leb128_length;
             break;
         default:
             /*  Some memory does leak here.  */
@@ -1003,8 +1007,9 @@ dwarf_loclist_n(Dwarf_Attribute attr,
                 return blkres;
             }
             loc_block.bl_from_loclist = 0;
-            loc_block.bl_section_offset  = loc_block.bl_data -
-                (Dwarf_Ptr)dbg->de_debug_info.dss_data;
+            loc_block.bl_section_offset  =
+                (char *)loc_block.bl_data -
+                (char *)dbg->de_debug_info.dss_data;
         } else {
             Dwarf_Block *tblock = 0;
             blkres = dwarf_formblock(loc_attr, &tblock, error);
@@ -1134,8 +1139,9 @@ dwarf_loclist(Dwarf_Attribute attr,
                 return blkres;
             }
             loc_block.bl_from_loclist = 0;
-            loc_block.bl_section_offset  = loc_block.bl_data -
-                (Dwarf_Ptr)dbg->de_debug_info.dss_data;
+            loc_block.bl_section_offset  =
+                (char *)loc_block.bl_data -
+                (char *)dbg->de_debug_info.dss_data;
         } else {
             Dwarf_Block *tblock = 0;
 

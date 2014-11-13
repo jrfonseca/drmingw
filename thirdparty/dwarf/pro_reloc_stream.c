@@ -207,12 +207,11 @@ _dwarf_stream_relocs_to_disk(Dwarf_P_Debug dbg,
                 section number of reloc section. */
             int rel_section_index = 0;
             Dwarf_Unsigned name_idx = 0;
-            int int_name = 0;
             int erri = 0;
 
-            if (dbg->de_callback_func_c) {
+            if (dbg->de_callback_func) {
                 rel_section_index =
-                    dbg->de_callback_func_c(_dwarf_rel_section_names[i],
+                    dbg->de_callback_func(_dwarf_rel_section_names[i],
                         /* size */ dbg->de_relocation_record_size,
                         /* type */ SHT_REL,
                         /* flags */ 0,
@@ -223,28 +222,6 @@ _dwarf_stream_relocs_to_disk(Dwarf_P_Debug dbg,
                         &name_idx,
                         dbg->de_user_data,
                         &erri);
-            } else if (dbg->de_callback_func_b) {
-                rel_section_index =
-                    dbg->de_callback_func_b(_dwarf_rel_section_names[i],
-                        /* size */ dbg->de_relocation_record_size,
-                        /* type */ SHT_REL,
-                        /* flags */ 0,
-                        /* link to symtab, which we cannot
-                            know */ 0,
-                        /* info == link to sec rels apply to */
-                            dbg->de_elf_sects[i],
-                        &name_idx, &erri);
-            } else {
-                rel_section_index =
-                    dbg->de_callback_func(_dwarf_rel_section_names[i],
-                        /* size */ dbg->de_relocation_record_size,
-                        /* type */ SHT_REL,
-                        /* flags */ 0,
-                        /* link to symtab, which we cannot
-                            know */ 0,
-                        /* info == link to sec rels apply to */
-                            dbg->de_elf_sects[i], &int_name, &erri);
-                name_idx = int_name;
             }
             if (rel_section_index == -1) {
                 {

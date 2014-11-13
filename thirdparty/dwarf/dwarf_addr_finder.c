@@ -248,7 +248,13 @@ static  const int might_have_locdesc[] = {
     DW_AT_vtable_elem_location,
 };
 
-/*  Return DW_DLV_OK if handling this went ok.  */
+/*  Return DW_DLV_OK if handling this went ok.
+    For any FORM except DW_FORM_addr we do nothing
+    and return DW_DLV_OK.
+    For DW_FORM_ref_addr (the offset in .debug_info
+    of an address) we don't need to do anything
+    as the offsets in .debug_info do not change.
+*/
 static int
 handle_attr_addr(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half attrnum,
     Dwarf_Error * perr)
@@ -275,7 +281,6 @@ handle_attr_addr(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half attrnum,
         }
 
         switch (form) {
-        case DW_FORM_ref_addr:
         case DW_FORM_addr:
             res = dwarf_attr_offset(die, attr, &offset, perr);
             if (res == DW_DLV_OK) {
@@ -293,8 +298,8 @@ handle_attr_addr(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half attrnum,
             break;
 
         default:
-            /* surprising! An error? */
-            /* do nothing */
+            /* Surprising FORM. An error? */
+            /* Do nothing */
             ;
         }
         dwarf_dealloc(dbg, attr, DW_DLA_ATTR);

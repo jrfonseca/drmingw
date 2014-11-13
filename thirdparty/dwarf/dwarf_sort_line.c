@@ -589,8 +589,8 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
                 }
 
             default:{
-                Dwarf_Unsigned remaining_bytes = instr_length -1;
-                line_ptr += remaining_bytes;
+                Dwarf_Unsigned remaining_bytes2 = instr_length -1;
+                line_ptr += remaining_bytes2;
                 break;
                 }
             }

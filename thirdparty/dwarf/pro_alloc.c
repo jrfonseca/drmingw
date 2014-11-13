@@ -39,6 +39,7 @@
 
 #include "config.h"
 #include "pro_incl.h"
+#include "pro_alloc.h"
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #else

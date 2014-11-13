@@ -208,16 +208,16 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
 
     {
         unsigned long count = dbg->de_arange_count + 1;
-        int res = 0;
+        int res2 = 0;
 
         if (dbg->de_reloc_pair) {
             count = (3 * dbg->de_arange_count) + 1;
         }
         /*  The following is a small optimization: not needed for
             correctness */
-        res = _dwarf_pro_pre_alloc_n_reloc_slots(dbg,
+        res2 = _dwarf_pro_pre_alloc_n_reloc_slots(dbg,
             DEBUG_ARANGES, count);
-        if (res != DW_DLV_OK) {
+        if (res2 != DW_DLV_OK) {
             _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
             return (0);
         }

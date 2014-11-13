@@ -1,3 +1,47 @@
+May 19, 2014
+  REASON FOR RELEASE
+  Now handles DebugFission (part of the unreleased standard
+  named DWARF5) in which debug information can be split from
+  objects and gathered into seperate object files.
+
+  MINOR POINT:
+
+  Added a caveat that dwarf_errmsg() returned string pointers are not
+  necessarily pointers that can be relied on to be valid for the
+  duration of the current executable.   It's best for consumers
+  to print or copy the string right away and then forget the returned
+  pointer.    This  restriction is probably already met by
+  most conservative consumer code: earlier, nothing was said about
+  the lifetime of the string!   Eventually it would be nice to
+  actually have more ephemeral strings as then some much better
+  error strings could easily be produced with no leakage and
+  no growth in the size of the running executable.
+  For now, though, all dwarf_errmsg() strings continue to point to
+  static strings.  Just please don't depend on it!
+
+  BINARY & SOURCE INCOMPATIBLITY:
+
+  The Producer code drops old dwarf_producer_init* functions
+  and provides an old name with a new interface: dwarf_producer_init().
+  The producer callback function is renamed Dwarf_Callback_Func.
+  Hence code calling the libdwarf producer must change.
+
+  Code calling the consumer interface is not affected.
+
+  The determination of what/how to emit DWARF is now determined
+  at run time, not at build time.  It's now much simpler to
+  get the sort of output you want. Provision is made for emitting
+  DWARF3,4,5 and 5 (though that provision is at a very early stage
+  and not much supported yet).
+
+  The postal addresses for SGI in the copyright comments
+  changed from time to time and are no longer accurate. 
+  So they are gradually being removed.
+March 17, 2014
+  The dwarf.v2.mm and index.v2.mm and their pdf files have been
+  removed from the distribution.    Those files are available
+  on dwarfstd.org and they are 20 years old, so removed
+  from libdwarf.
 January 29, 2014
   Now using dwarf_tsearch() instead of the original complicated
   allocation code.

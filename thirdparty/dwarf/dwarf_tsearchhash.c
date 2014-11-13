@@ -221,7 +221,7 @@ static void print_entry(struct ts_entry *t,const char *descr,
     unsigned long hashpos,
     unsigned long chainpos)
 {
-    char *v = "";
+    char *v = 0;
     if(!t->entryused) {
         return;
     }
@@ -237,7 +237,7 @@ static void print_entry(struct ts_entry *t,const char *descr,
 
 /* For debugging */
 static void
-dumptree_inner(struct hs_base *h,
+dumptree_inner(const struct hs_base *h,
     char *(* keyprint)(const void *),
     const char *descr, int printdetails)
 {
@@ -290,7 +290,7 @@ dwarf_tdump(const void*headp_in,
     char *(* keyprint)(const void *),
     const char *msg)
 {
-    struct hs_base *head = (struct hs_base *)headp_in;
+    const struct hs_base *head = (const struct hs_base *)headp_in;
     if(!head) {
         printf("dumptree null tree ptr : %s\n",msg);
         return;
@@ -439,7 +439,7 @@ tsearch_inner( const void *key, struct hs_base* head,
             empty slot. */
         *inserted = 1;
         head->record_count_++;
-        s->keyptr = (void *)key;
+        s->keyptr = (const void *)key;
         s->entryused = 1;
         s->next = 0;
         return s;
@@ -504,6 +504,8 @@ void *
 dwarf_tfind(const void *key, void *const *rootp,
     int (*compar)(const void *, const void *))
 {
+    /*  Nothing will change, but we discard const
+        so we can use tsearch_inner(). */
     struct hs_base **proot = (struct hs_base **)rootp;
     struct hs_base *head = *proot;
     struct ts_entry *r = 0;
@@ -582,7 +584,7 @@ dwarf_tdelete(const void *key, void **rootp,
 }
 
 static void
-dwarf_twalk_inner(struct hs_base *h,
+dwarf_twalk_inner(const struct hs_base *h,
     struct ts_entry *p,
     void (*action)(const void *nodep, const DW_VISIT which, const int depth),
     unsigned level)
@@ -604,7 +606,7 @@ void
 dwarf_twalk(const void *rootp,
     void (*action)(const void *nodep, const DW_VISIT which, const int depth))
 {
-    struct hs_base *head = (struct hs_base *)rootp;
+    const struct hs_base *head = (const struct hs_base *)rootp;
     struct ts_entry *root = 0;
     if(!head) {
         return;

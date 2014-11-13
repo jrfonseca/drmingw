@@ -149,6 +149,9 @@ dwarf_add_AT_ref_address(Dwarf_P_Debug dbg,
         break;
     }
 
+    /*  FIXME: For DWARF3 and later this call is problematic as
+        DW_FORM_ref_addr is really an offset in
+        .debug_info , not an address.  */
     return local_add_AT_address(dbg, ownerdie, attr, DW_FORM_ref_addr,
         pc_value, sym_index, error);
 }
@@ -194,10 +197,11 @@ local_add_AT_address(Dwarf_P_Debug dbg,
     new_attr->ar_rel_symidx = sym_index;
     new_attr->ar_reloc_len = upointer_size;
     new_attr->ar_next = 0;
-    if (sym_index != NO_ELF_SYM_INDEX)
+    if (sym_index != NO_ELF_SYM_INDEX) {
         new_attr->ar_rel_type = dbg->de_ptr_reloc;
-    else
+    } else {
         new_attr->ar_rel_type = R_MIPS_NONE;
+    }
 
     new_attr->ar_data = (char *)
         _dwarf_p_get_alloc(dbg, upointer_size);
@@ -777,7 +781,7 @@ dwarf_add_AT_location_expr(Dwarf_P_Debug dbg,
     the other die, and its di_offset value is used as
     the reference value.  */
 
-Dwarf_P_Attribute
+static Dwarf_P_Attribute
 _dwarf_add_AT_reference_internal(Dwarf_P_Debug dbg,
     Dwarf_P_Die ownerdie,
     Dwarf_Half attr,

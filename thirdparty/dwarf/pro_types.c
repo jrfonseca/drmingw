@@ -45,6 +45,7 @@
 #endif
 #include "pro_incl.h"
 #include "pro_section.h"
+#include "pro_types.h"
 
 
 /*

@@ -26,15 +26,6 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
 
 
@@ -512,6 +503,9 @@ typedef struct Dwarf_Abbrev_s*     Dwarf_Abbrev;
 typedef struct Dwarf_Fde_s*        Dwarf_Fde;
 typedef struct Dwarf_Cie_s*        Dwarf_Cie;
 typedef struct Dwarf_Arange_s*     Dwarf_Arange;
+typedef struct Dwarf_Gdbindex_s*   Dwarf_Gdbindex;
+typedef struct Dwarf_Xu_Index_Header_s* Dwarf_Xu_Index_Header;
+
 
 /* Opaque types for Producer Library. */
 typedef struct Dwarf_P_Debug_s*       Dwarf_P_Debug;
@@ -778,6 +772,11 @@ struct Dwarf_Obj_Access_Interface_s {
 #define DW_DLA_ADDR            0x1c     /* Dwarf_Addr sized entries */
 #define DW_DLA_RANGES          0x1d     /* Dwarf_Ranges */
 
+/* 0x1e (30) to 0x36 (54) reserved for internal to libdwarf types. */
+
+#define DW_DLA_GDBINDEX        0x37     /* Dwarf_Gdbindex */
+#define DW_DLA_XU_INDEX        0x38     /* Dwarf_Xu_Index_Header */
+
 /* The augmenter string for CIE */
 #define DW_CIE_AUGMENTER_STRING_V0              "z"
 
@@ -788,41 +787,55 @@ struct Dwarf_Obj_Access_Interface_s {
 #define DW_DLC_RDWR        2        /* read/write access NOT SUPPORTED*/
 
 /* dwarf_producer_init*() access flag modifiers
-   If HAVE_DWARF2_99_EXTENSION is defined at libdwarf build time
-   and DW_DLC_OFFSET_SIZE_64  is passed in producer_init()
-   flags then the DWARF3 64 bit offset extension is used
-   to generate 64 bit offsets.
+   No longer depends on compile-time settings for
+   how to produce 64bit offset. See DW_DLC_IRIX_OFFSET64.
+   Historic  versions. One of
+   If DW_DLC_POINTER64 is not set DW_DLC_POINTER32 is assumed.
+   If DW_DLC_OFFSET64 or DW_DLC_IRIX_OFFSET64 is not
+   set 32bit offset DWARF is assumed.
+   Non-MIPS Non IA64 should use DW_DLC_SYMBOLIC_RELOCATIONS
+   and handle the relocation creation for the target
+   itself using the symbolic relocations to do so, those
+   use the Dwarf_Rel_Type enum relocation indicators.
+
 */
-#define DW_DLC_SIZE_64     0x40000000 /* 64-bit address-size target */
-#define DW_DLC_SIZE_32     0x20000000 /* 32-bit address-size target */
-#define DW_DLC_OFFSET_SIZE_64 0x10000000 /* 64-bit offset-size DWARF */
+/*  The first three are traditional dwarf producer names.
+    These names still work.
+    Newer names below.
+*/
+#define DW_DLC_SIZE_64              0x40000000 /* 64-bit address-size target */
+#define DW_DLC_SIZE_32              0x20000000 /* 32-bit address-size target */
+#define DW_DLC_OFFSET_SIZE_64       0x10000000 /* 64-bit offset-size DWARF */
 
 /* dwarf_producer_init*() access flag modifiers
+   Some new April 2014.
+   If DW_DLC_STREAM_RELOCATIONS is set the
+   DW_DLC_ISA_* flags are ignored. See the Dwarf_Rel_Type enum.
 */
-#define DW_DLC_ISA_MIPS             0x00000000 /* MIPS target */
-#define DW_DLC_ISA_IA64             0x01000000 /* IA64 target */
-#define DW_DLC_STREAM_RELOCATIONS   0x02000000 /* Old style binary relocs */
 
-    /*  Usable with assembly output because it is up to the producer to
-        deal with locations in whatever manner the producer code wishes.
-        Possibly emitting text an assembler will recognize. */
+/* Old style Elf binary relocation (.rel) records. The default. */
+#define DW_DLC_STREAM_RELOCATIONS   0x02000000
+
+#define DW_DLC_OFFSET32             0x00010000 /* use 32-bit sec offsets */
+/* The following 3 are new sensible names. Old names above with same values. */
+#define DW_DLC_OFFSET64             0x10000000 /* use 64-bit sec offsets */
+#define DW_DLC_POINTER32            0x20000000 /* use 4 for address_size */
+#define DW_DLC_POINTER64            0x40000000 /* use 8 for address_size */
+/* Special for IRIX only */
+#define DW_DLC_IRIX_OFFSET64        0x00200000 /* use non-std IRIX 64bitoffset headers  */
+
+/*  Usable with assembly output because it is up to the producer to
+    deal with locations in whatever manner the calling producer
+    code wishes.  For example, when the libdwarf caller wishes
+    to produce relocations differently than the binary
+    relocation bits that libdwarf Stream Relocations generate.
+    */
 #define DW_DLC_SYMBOLIC_RELOCATIONS 0x04000000
+
 
 #define DW_DLC_TARGET_BIGENDIAN     0x08000000 /* Big    endian target */
 #define DW_DLC_TARGET_LITTLEENDIAN  0x00100000 /* Little endian target */
 
-#if 0
-  /*
-   The libdwarf producer interfaces jumble these two semantics together in
-   confusing ways.  We *should* have flags like these...
-   But changing the code means a lot of diffs.  So for now,
-   we leave things as they are
-  */
-  #define DW_DLC_SUN_OFFSET32        0x00010000 /* use 32-bit sec offsets */
-  #define DW_DLC_SUN_OFFSET64        0x00020000 /* use 64-bit sec offsets */
-  #define DW_DLC_SUN_POINTER32        0x00040000 /* use 4 for address_size */
-  #define DW_DLC_SUN_POINTER64        0x00080000 /* use 8 for address_size */
-#endif
 
 /* dwarf_pcline() slide arguments
 */
@@ -1078,10 +1091,39 @@ struct Dwarf_Obj_Access_Interface_s {
 #define DW_DLE_DEBUGPUBTYPES_ERROR             241
 #define DW_DLE_AT_FIXUP_NULL                   242
 #define DW_DLE_AT_FIXUP_DUP                    243
+#define DW_DLE_BAD_ABINAME                     244
+#define DW_DLE_TOO_MANY_DEBUG                  245
+#define DW_DLE_DEBUG_STR_OFFSETS_DUPLICATE     246
+#define DW_DLE_SECTION_DUPLICATION             247
+#define DW_DLE_SECTION_ERROR                   248
+#define DW_DLE_DEBUG_ADDR_DUPLICATE            249
+#define DW_DLE_DEBUG_CU_UNAVAILABLE_FOR_FORM   250
+#define DW_DLE_DEBUG_FORM_HANDLING_INCOMPLETE  251
+#define DW_DLE_NEXT_DIE_PAST_END               252
+#define DW_DLE_NEXT_DIE_WRONG_FORM             253
+#define DW_DLE_NEXT_DIE_NO_ABBREV_LIST         254
+#define DW_DLE_NESTED_FORM_INDIRECT_ERROR      255
+#define DW_DLE_CU_DIE_NO_ABBREV_LIST           256
+#define DW_DLE_MISSING_NEEDED_DEBUG_ADDR_SECTION 257
+#define DW_DLE_ATTR_FORM_NOT_ADDR_INDEX        258
+#define DW_DLE_ATTR_FORM_NOT_STR_INDEX         259
+#define DW_DLE_DUPLICATE_GDB_INDEX             260
+#define DW_DLE_ERRONEOUS_GDB_INDEX_SECTION     261
+#define DW_DLE_GDB_INDEX_COUNT_ERROR           262
+#define DW_DLE_GDB_INDEX_COUNT_ADDR_ERROR      263
+#define DW_DLE_GDB_INDEX_INDEX_ERROR           264
+#define DW_DLE_GDB_INDEX_CUVEC_ERROR           265
+#define DW_DLE_DUPLICATE_CU_INDEX              266
+#define DW_DLE_DUPLICATE_TU_INDEX              267
+#define DW_DLE_XU_TYPE_ARG_ERROR               268
+#define DW_DLE_XU_IMPOSSIBLE_ERROR             269
+#define DW_DLE_XU_NAME_COL_ERROR               270
+#define DW_DLE_XU_HASH_ROW_ERROR               271
+#define DW_DLE_XU_HASH_INDEX_ERROR             272
 
 
     /* DW_DLE_LAST MUST EQUAL LAST ERROR NUMBER */
-#define DW_DLE_LAST        243
+#define DW_DLE_LAST        272
 #define DW_DLE_LO_USER     0x10000
 
     /*  Taken as meaning 'undefined value', this is not
@@ -1186,6 +1228,14 @@ int dwarf_object_init(Dwarf_Obj_Access_Interface* /* obj */,
 
 int dwarf_object_finish(Dwarf_Debug /* dbg */,
     Dwarf_Error* /* error */);
+
+/*  Section name access.  Because sections might
+    now end with .dwo  or might not (as of DWARF5)  */
+int
+dwarf_get_die_section_name(Dwarf_Debug /*dbg*/,
+    Dwarf_Bool    /*is_info*/,
+    const char ** /*sec_name*/,
+    Dwarf_Error * /*error*/);
 
 
 /*  Die traversal operations.
@@ -1516,6 +1566,15 @@ int dwarf_formaddr(Dwarf_Attribute /*attr*/,
     Dwarf_Addr   *   /*returned_addr*/,
     Dwarf_Error*     /*error*/);
 
+/*  Part of DebugFission.  So a consumer can get the index when
+    the object with the actual .debug_addr section is
+    elsewhere. And so a print application can
+    print the index.  New May 2014*/
+int dwarf_get_debug_addr_index(Dwarf_Attribute /*attr*/,
+    Dwarf_Unsigned * /*return_index*/,
+    Dwarf_Error * /*error*/);
+
+
 int dwarf_formflag(Dwarf_Attribute /*attr*/,
     Dwarf_Bool *     /*returned_bool*/,
     Dwarf_Error*     /*error*/);
@@ -1535,6 +1594,16 @@ int dwarf_formblock(Dwarf_Attribute /*attr*/,
 int dwarf_formstring(Dwarf_Attribute /*attr*/,
     char   **        /*returned_string*/,
     Dwarf_Error*     /*error*/);
+
+/* DebugFission.  So a DWARF print application can
+   get the string index (DW_FORM_strx) and print it.
+   A convenience function.
+   New May 2014. */
+int
+dwarf_get_debug_str_index(Dwarf_Attribute /*attr*/,
+    Dwarf_Unsigned * /*return_index*/,
+    Dwarf_Error * /*error*/);
+
 
 int dwarf_formexprloc(Dwarf_Attribute /*attr*/,
     Dwarf_Unsigned * /*return_exprlen*/,
@@ -2235,6 +2304,175 @@ enum Dwarf_Form_Class dwarf_get_form_class(
     Dwarf_Half /*offset_size */,
     Dwarf_Half /*form*/);
 
+
+/*   BEGIN gdbindex operations interfaces. */
+/*  .gdb_index section operations.
+    A GDB extension.
+    The section is in some executables and if present
+    is used to quickly map an address or name to
+    a skeleton CU or TU.  If present then there are
+    .dwo or .dwp files somewhere to make detailed
+    debugging possible (up to user code to
+    find it/them and deal with them).
+
+    Version 8 built by gdb, so type entries are ok as is.
+    Version 7 built by the 'gold' linker and type index
+    entries for a CU must be derived othewise, the
+    type index is not correct... ? FIXME
+    */
+
+/*  Creates a Dwarf_Gdbindex, returning it and
+    its values through the pointers. */
+int dwarf_gdbindex_header(Dwarf_Debug /*dbg*/,
+    Dwarf_Gdbindex * /*gdbindexptr*/,
+    Dwarf_Unsigned * /*version*/,
+    Dwarf_Unsigned * /*cu_list_offset*/,
+    Dwarf_Unsigned * /*types_cu_list_offset*/,
+    Dwarf_Unsigned * /*address_area_offset*/,
+    Dwarf_Unsigned * /*symbol_table_offset*/,
+    Dwarf_Unsigned * /*constant_pool_offset*/,
+    Dwarf_Unsigned * /*section_size*/,
+    Dwarf_Unsigned * /*unused_reserved*/,
+    const char    ** /*section_name*/,
+    Dwarf_Error    * /*error*/);
+
+int dwarf_gdbindex_culist_array(Dwarf_Gdbindex /*gdbindexptr*/,
+    Dwarf_Unsigned       * /*list_length*/,
+    Dwarf_Error          * /*error*/);
+
+/*  entryindex: 0 to list_length-1 */
+int dwarf_gdbindex_culist_entry(Dwarf_Gdbindex /*gdbindexptr*/,
+    Dwarf_Unsigned   /*entryindex*/,
+    Dwarf_Unsigned * /*cu_offset*/,
+    Dwarf_Unsigned * /*cu_length*/,
+    Dwarf_Error    * /*error*/);
+
+int dwarf_gdbindex_types_culist_array(Dwarf_Gdbindex /*gdbindexptr*/,
+    Dwarf_Unsigned            * /*types_list_length*/,
+    Dwarf_Error               * /*error*/);
+
+/*  entryindex: 0 to types_list_length -1 */
+int dwarf_gdbindex_types_culist_entry(
+    Dwarf_Gdbindex   /*gdbindexptr*/,
+    Dwarf_Unsigned   /*entryindex*/,
+    Dwarf_Unsigned * /*cu_offset*/,
+    Dwarf_Unsigned * /*tu_offset*/,
+    Dwarf_Unsigned * /*type_signature*/,
+    Dwarf_Error    * /*error*/);
+
+int dwarf_gdbindex_addressarea(Dwarf_Gdbindex /*gdbindexptr*/,
+    Dwarf_Unsigned            * /*addressarea_list_length*/,
+    Dwarf_Error               * /*error*/);
+
+/*    entryindex: 0 to addressarea_list_length-1 */
+int dwarf_gdbindex_addressarea_entry(
+    Dwarf_Gdbindex   /*gdbindexptr*/,
+    Dwarf_Unsigned   /*entryindex*/,
+    Dwarf_Unsigned * /*low_adddress*/,
+    Dwarf_Unsigned * /*high_address*/,
+    Dwarf_Unsigned * /*cu_index*/,
+    Dwarf_Error    * /*error*/);
+
+int dwarf_gdbindex_symboltable_array(Dwarf_Gdbindex /*gdbindexptr*/,
+    Dwarf_Unsigned            * /*symtab_list_length*/,
+    Dwarf_Error               * /*error*/);
+
+/*  entryindex: 0 to symtab_list_length-1 */
+int dwarf_gdbindex_symboltable_entry(
+    Dwarf_Gdbindex   /*gdbindexptr*/,
+    Dwarf_Unsigned   /*entryindex*/,
+    Dwarf_Unsigned * /*string_offset*/,
+    Dwarf_Unsigned * /*cu_vector_offset*/,
+    Dwarf_Error    * /*error*/);
+
+int dwarf_gdbindex_cuvector_length(Dwarf_Gdbindex /*gdbindex*/,
+    Dwarf_Unsigned   /*cuvector_offset*/,
+    Dwarf_Unsigned * /*innercount*/,
+    Dwarf_Error    * /*error*/);
+
+
+int dwarf_gdbindex_cuvector_inner_attributes(Dwarf_Gdbindex /*gdbindex*/,
+    Dwarf_Unsigned   /*cuvector_offset*/,
+    Dwarf_Unsigned   /*innerindex*/,
+    /* The attr_value is a field of bits. For expanded version
+        use  dwarf_gdbindex_cuvector_expand_value() */
+    Dwarf_Unsigned * /*attr_value*/,
+    Dwarf_Error    * /*error*/);
+
+int dwarf_gdbindex_cuvector_instance_expand_value(Dwarf_Gdbindex /*gdbindex*/,
+    Dwarf_Unsigned   /*value*/,
+    Dwarf_Unsigned * /*cu_index*/,
+    Dwarf_Unsigned * /*reserved1*/,
+    Dwarf_Unsigned * /*symbol_kind*/,
+    Dwarf_Unsigned * /*is_static*/,
+    Dwarf_Error    * /*error*/);
+
+
+/*  The strings in the pool follow (in memory) the cu index
+    set and are NUL terminated. */
+
+int dwarf_gdbindex_string_by_offset(Dwarf_Gdbindex /*gdbindexptr*/,
+    Dwarf_Unsigned   /*stringoffset*/,
+    const char    ** /*string_ptr*/,
+    Dwarf_Error   *  /*error*/);
+
+void dwarf_gdbindex_free(Dwarf_Gdbindex /*gdbindexptr*/);
+
+/*  END gdbindex operations. */
+/*  START .debug_cu_index and .debug_tu_index operations. */
+
+int dwarf_get_xu_index_header(Dwarf_Debug /*dbg*/,
+    const char *  section_type, /* "tu" or "cu" */
+    Dwarf_Xu_Index_Header *     /*xuhdr*/,
+    Dwarf_Unsigned *            /*version_number*/,
+    Dwarf_Unsigned *            /*offsets_count L*/,
+    Dwarf_Unsigned *            /*units_count N*/,
+    Dwarf_Unsigned *            /*hash_slots_count M*/,
+    const char     **           /*sect_name*/,
+    Dwarf_Error *               /*err*/);
+
+int dwarf_get_xu_index_section_type(Dwarf_Xu_Index_Header /*xuhdr*/,
+    /*  the function returns a pointer to
+        the immutable string "tu" or "cu" via this arg. Do not free.  */
+    const char ** /*typename*/,
+    /*  the function returns a pointer to
+        the immutable section name. Do not free.
+        .debug_cu_index or .debug_tu_index */
+    const char ** /*sectionname*/,
+    Dwarf_Error * /*err*/);
+
+/*  Index values 0 to M-1 are valid. */
+int dwarf_get_xu_hash_entry(Dwarf_Xu_Index_Header /*xuhdr*/,
+    Dwarf_Unsigned    /*index*/,
+    /* returns the hash integer. 64 bits. */
+    Dwarf_Unsigned *  /*hash_value*/,
+
+    /* returns the index into rows of offset/size tables. */
+    Dwarf_Unsigned *  /*index_to_sections*/,
+    Dwarf_Error *     /*err*/);
+
+/*  Columns 0 to L-1,  valid. */
+int dwarf_get_xu_section_names(Dwarf_Xu_Index_Header /*xuhdr*/,
+    /* Row index defined to be row zero. */
+    Dwarf_Unsigned  /*column_index*/,
+    Dwarf_Unsigned* /*DW_SECT_ number*/,
+    const char **   /*DW_SECT_ name*/,
+    Dwarf_Error *   /*err*/);
+
+    /* Rows 1 to N col 0 to L-1  are valid */
+int dwarf_get_xu_section_offset(Dwarf_Xu_Index_Header /*xuhdr*/,
+    Dwarf_Unsigned  /*row_index*/,
+    Dwarf_Unsigned  /*column_index*/,
+    Dwarf_Unsigned* /*sec_offset*/,
+    Dwarf_Unsigned* /*sec_size*/,
+    Dwarf_Error *   /*err*/);
+
+void dwarf_xu_header_free(Dwarf_Xu_Index_Header /*xuhdr*/);
+
+
+/*  END .debug_cu_index and .debug_tu_index operations. */
+
+
 /*  Utility operations */
 Dwarf_Unsigned dwarf_errno(Dwarf_Error     /*error*/);
 
@@ -2279,7 +2517,7 @@ void dwarf_dealloc(Dwarf_Debug /*dbg*/, void* /*space*/,
 /* DWARF Producer Interface */
 
 /*  New form June, 2011. Adds user_data argument. */
-typedef int (*Dwarf_Callback_Func_c)(
+typedef int (*Dwarf_Callback_Func)(
     const char*     /*name*/,
     int             /*size*/,
     Dwarf_Unsigned  /*type*/,
@@ -2290,52 +2528,20 @@ typedef int (*Dwarf_Callback_Func_c)(
     void *          /*user_data*/,
     int*            /*error*/);
 
-/* New form June, 2011. Adds user_data */
-Dwarf_P_Debug dwarf_producer_init_c(
+/*  Returns DW_DLV_OK or DW_DLV_ERROR and
+    if DW_DLV_OK returns the Dwarf_P_Debug
+    pointer through the dbg_returned argument. */
+int dwarf_producer_init(
     Dwarf_Unsigned        /*flags*/,
-    Dwarf_Callback_Func_c /*func*/,
+    Dwarf_Callback_Func   /*func*/,
     Dwarf_Handler         /*errhand*/,
     Dwarf_Ptr             /*errarg*/,
     void *                /*user_data*/,
+    const char *isa_name, /* See isa/abi names in pro_init.c */
+    const char *dwarf_version, /* V2 V3 V4 or V5. */
+    const char *extra,    /* Extra input strings, comma separated. */
+    Dwarf_P_Debug *,      /* dbg_returned */
     Dwarf_Error *         /*error*/);
-
-typedef int (*Dwarf_Callback_Func_b)(
-    const char*     /*name*/,
-    int             /*size*/,
-    Dwarf_Unsigned  /*type*/,
-    Dwarf_Unsigned  /*flags*/,
-    Dwarf_Unsigned  /*link*/,
-    Dwarf_Unsigned  /*info*/,
-    Dwarf_Unsigned* /*sect_name_index*/,
-    int*            /*error*/);
-
-/* Intermediate form. Made obsolescent by dwarf_producer_init_c,
-   but supported. */
-Dwarf_P_Debug dwarf_producer_init_b(
-    Dwarf_Unsigned        /*flags*/,
-    Dwarf_Callback_Func_b /*func*/,
-    Dwarf_Handler         /*errhand*/,
-    Dwarf_Ptr             /*errarg*/,
-    Dwarf_Error *         /*error*/);
-
-/* Original, oldest form. From 1991. */
-typedef int (*Dwarf_Callback_Func)(
-    const char*     /*name*/,
-    int             /*size*/,
-    Dwarf_Unsigned  /*type*/,
-    Dwarf_Unsigned  /*flags*/,
-    Dwarf_Unsigned  /*link*/,
-    Dwarf_Unsigned  /*info*/,
-    int*            /*sect name index*/,
-    int*            /*error*/);
-
-/* Original, oldest form. From 1991. */
-Dwarf_P_Debug dwarf_producer_init(
-    Dwarf_Unsigned  /*creation_flags*/,
-    Dwarf_Callback_Func    /*func*/,
-    Dwarf_Handler   /*errhand*/,
-    Dwarf_Ptr       /*errarg*/,
-    Dwarf_Error*    /*error*/);
 
 Dwarf_Signed dwarf_transform_to_disk_form(Dwarf_P_Debug /*dbg*/,
     Dwarf_Error*     /*error*/);
@@ -3043,6 +3249,8 @@ extern int dwarf_get_EH_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_FRAME_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_CHILDREN_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_ADDR_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_SECT_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_MACRO_name (unsigned int /*val_in*/,const char ** /*s_out*/);
 
 /* END FILE */
 

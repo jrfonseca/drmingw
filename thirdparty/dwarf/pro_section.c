@@ -24,23 +24,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/*
-   SGI has moved from the Crittenden Lane address.
-*/
-
-
-
-
 
 #include "config.h"
 #include "libdwarfdefs.h"
@@ -323,28 +307,13 @@ dwarf_transform_to_disk_form(Dwarf_P_Debug dbg, Dwarf_Error * error)
         {
             int new_base_elf_sect = 0;
 
-            if (dbg->de_callback_func_c) {
+            if (dbg->de_callback_func) {
                 new_base_elf_sect =
-                    dbg->de_callback_func_c(_dwarf_sectnames[sect],
+                    dbg->de_callback_func(_dwarf_sectnames[sect],
                         /* rec size */ 1,
                         SECTION_TYPE,
                         flags, SHN_UNDEF, 0, &du,
                         dbg->de_user_data, &err);
-            } else if (dbg->de_callback_func_b) {
-                new_base_elf_sect =
-                    dbg->de_callback_func_b(_dwarf_sectnames[sect],
-                        /* rec size */ 1,
-                        SECTION_TYPE,
-                        flags, SHN_UNDEF, 0, &du, &err);
-            } else {
-                int name_idx = 0;
-                new_base_elf_sect = dbg->de_callback_func(
-                    _dwarf_sectnames[sect],
-                    dbg->de_relocation_record_size,
-                    SECTION_TYPE, flags,
-                    SHN_UNDEF, 0,
-                    &name_idx, &err);
-                du = name_idx;
             }
             if (new_base_elf_sect == -1) {
                 DWARF_P_DBG_ERROR(dbg, DW_DLE_ELF_SECT_ERR,
@@ -1091,7 +1060,9 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg, Dwarf_Error * error)
         }
         cie_no++;
         augmentation = curcie->cie_aug;
-        if (strcmp(augmentation, DW_CIE_AUGMENTER_STRING_V0) == 0) {
+        if (dbg->de_irix_exc_augmentation &&
+            (strcmp(augmentation, DW_CIE_AUGMENTER_STRING_V0) == 0)) {
+            /* IRIX specific. */
             augmented_fields_length = 0;
             res = _dwarf_pro_encode_leb128_nm(augmented_fields_length,
                 &a_bytes, buff3,
@@ -1899,20 +1870,11 @@ _dwarf_pro_generate_debuginfo(Dwarf_P_Debug dbg, Dwarf_Error * error)
                 {
                     /*  curattr->ar_ref_die == NULL!
 
-                        ref_addr doesn't take a CU-offset.
+                        DW_FORM_ref_addr doesn't take a CU-offset.
                         This is different than other refs.
                         This value will be set by the user of the
                         producer library using a relocation.
                         No need to set a value here.  */
-#if 0
-                    du = curattr->ar_ref_die->di_offset;
-                    {
-                        /* ref to offset of die */
-                        WRITE_UNALIGNED(dbg, (void *) data,
-                            (const void *) &du,
-                            sizeof(du), uwordb_size);
-                    }
-#endif
                     break;
 
                 }

@@ -178,10 +178,9 @@ _dwarf_symbolic_relocs_to_disk(Dwarf_P_Debug dbg,
         /* total_size = ct *len; */
         sec_index = p_reloc->pr_sect_num_of_reloc_sect;
         if (sec_index == 0) {
-            /*  Call de_callback_func or de_callback_func_b,
+            /*  Call de_callback_func
                 getting section number of reloc section. */
             int rel_section_index = 0;
-            int int_name = 0;
             Dwarf_Unsigned name_idx = 0;
 
             /*  This is a bit of a fake, as we do not really have true
@@ -191,9 +190,9 @@ _dwarf_symbolic_relocs_to_disk(Dwarf_P_Debug dbg,
                 data goes with what section when we are asked for the
                 real arrays. */
 
-            if (dbg->de_callback_func_c) {
+            if (dbg->de_callback_func) {
                 rel_section_index =
-                    dbg->de_callback_func_c(_dwarf_rel_section_names[i],
+                    dbg->de_callback_func(_dwarf_rel_section_names[i],
                         dbg->de_relocation_record_size,
                         /* type */ SHT_REL,
                         /* flags */ 0,
@@ -203,28 +202,6 @@ _dwarf_symbolic_relocs_to_disk(Dwarf_P_Debug dbg,
                         dbg->de_elf_sects[i],
                         &name_idx,
                         dbg->de_user_data,&err);
-            } else if (dbg->de_callback_func_b) {
-                rel_section_index =
-                    dbg->de_callback_func_b(_dwarf_rel_section_names[i],
-                        dbg->de_relocation_record_size,
-                        /* type */ SHT_REL,
-                        /* flags */ 0,
-                        /* link to symtab, which we cannot
-                            know */ SHN_UNDEF,
-                        /* sec rels apply to */
-                        dbg->de_elf_sects[i],
-                        &name_idx, &err);
-            } else {
-                rel_section_index =
-                    dbg->de_callback_func(_dwarf_rel_section_names[i],
-                        dbg->de_relocation_record_size,
-                        /* type */ SHT_REL,
-                        /* flags */ 0,
-                        /* link to symtab, which we cannot
-                            know */ SHN_UNDEF,
-                        /* sec rels apply to, in elf, sh_info */
-                        dbg->de_elf_sects[i], &int_name, &err);
-                name_idx = int_name;
             }
             if (rel_section_index == -1) {
                 {

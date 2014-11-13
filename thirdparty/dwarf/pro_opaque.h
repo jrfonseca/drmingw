@@ -2,7 +2,7 @@
 
   Copyright (C) 2000,2002,2004 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright 2002-2010 Sun Microsystems, Inc. All rights reserved.
-  Portions Copyright 2011 David Anderson. All Rights Reserved.
+  Portions Copyright 2011-2014 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -23,15 +23,6 @@
   License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
-
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
 
@@ -360,10 +351,8 @@ struct Dwarf_P_Debug_s {
     Dwarf_Ptr de_errarg;
 
     /*  Call back function, used to create .debug* sections. Provided
-        By user. Only of these used per dbg. */
+        By user.  */
     Dwarf_Callback_Func de_callback_func;
-    Dwarf_Callback_Func_b de_callback_func_b;
-    Dwarf_Callback_Func_c de_callback_func_c;
 
     /*  Flags from producer_init call */
     Dwarf_Unsigned de_flags;
@@ -452,6 +441,9 @@ struct Dwarf_P_Debug_s {
         example. Specific to the ABI being
         produced. relocates pointer size
         field */
+    unsigned char de_irix_exc_augmentation; /* If non-zero means
+        that producing an IRIX exception-table offset in a CIE header
+        is allowed (depending on the augmentation string). */
 
     unsigned char de_offset_size;  /* section offset. Here to
         avoid test of abi in macro
@@ -463,8 +455,6 @@ struct Dwarf_P_Debug_s {
         macro at run time MIPS -n32
         4, -64 is 8.  */
 
-    unsigned char de_is_64bit; /* non-zero if is 64bit. Else 32 bit:
-        used for passing this info as a flag */
     unsigned char de_relocation_record_size; /* reloc record size
         varies by ABI and
         relocation-output
@@ -475,7 +465,10 @@ struct Dwarf_P_Debug_s {
         offsets using dwarf2-99
         extension proposal */
 
-    int de_ar_data_attribute_form; /* data8, data4 abi dependent */
+    int de_output_version; /* 2,3,4, or 5. The version number
+        of the output. (not necessarily that of each section). */
+
+    int de_ar_data_attribute_form; /* data8, data4 abi &version dependent */
     int de_ar_ref_attr_form; /* ref8 ref4 , abi dependent */
 
     /* simple name relocations */

@@ -353,10 +353,16 @@ Dwarf_Unsigned _dwarf_get_return_address_reg(Dwarf_Small *frame_ptr,
 /*  Temporary recording of crucial cie/fde prefix data.
     Vastly simplifies some argument lists.  */
 struct cie_fde_prefix_s {
-    /*  cf_start_addr is a pointer to the first byte of this fde/cie
-        we are reading now. */
+    /*  cf_start_addr is a pointer to the first byte
+        of this fde/cie (meaning the length field itself) */
     Dwarf_Small *  cf_start_addr;
+    /*  cf_addr_after_prefix is a pointer
+        to the first byte of this fde/cie
+        we are reading now, immediately following
+        the length field read by READ_AREA_LENGTH. */
     Dwarf_Small *  cf_addr_after_prefix;
+    /*  cf_length is the length field value from the cie/fde
+        header.   */
     Dwarf_Unsigned cf_length;
     int            cf_local_length_size;
     int            cf_local_extension_size;

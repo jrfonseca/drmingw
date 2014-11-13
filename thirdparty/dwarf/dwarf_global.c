@@ -219,8 +219,9 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
         int local_length_size = 0;
 
         /*  Some compilers emit padding at the end of each cu's area.
-            pubnames_ptr_past_end_cu records the true area end for this
-            cu's data.  Essentially the length in the header and the 0
+            pubnames_ptr_past_end_cu records the true area end for the
+            pubnames(like) content of a cu.
+            Essentially the length in the header and the 0
             terminator of the data are redundant information. The
             dwarf2/3 spec does not mention what to do if the length is
             past the 0 terminator. So we take any bytes left after the 0

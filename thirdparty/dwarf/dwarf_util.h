@@ -268,12 +268,15 @@ Dwarf_Signed
 _dwarf_decode_s_leb128(Dwarf_Small * leb128,
     Dwarf_Word * leb128_length);
 
-Dwarf_Unsigned
+int
 _dwarf_get_size_of_val(Dwarf_Debug dbg,
     Dwarf_Unsigned form,
+    Dwarf_Half cu_version,
     Dwarf_Half address_size,
     Dwarf_Small * val_ptr,
-    int v_length_size);
+    int v_length_size,
+    Dwarf_Unsigned *size_out,
+    Dwarf_Error *error);
 
 struct Dwarf_Hash_Table_Entry_s;
 /* This single struct is the base for the hash table.
