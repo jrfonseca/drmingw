@@ -3,7 +3,7 @@ This file has instructions on how to build DrMingw from source.
 
 Dependencies:
 
- * MinGW
+ * MinGW-w64
  
  * CMake
  
@@ -11,8 +11,13 @@ Dependencies:
 
 
 I always build DrMinGW from Linux with MinGW cross compilation toolchain.  See
-http://www.vtk.org/Wiki/CmakeMingw for details.  It should be possible to
-build with a native MinGW toolchain, though I haven't tried.
+http://www.vtk.org/Wiki/CmakeMingw for details.
+
+It is also possible to build with a native MinGW toolchain, by doing:
+
+    set Path=C:\MinGW\bin;%Path%
+    cmake -G "MinGW Makefiles" -H. -Bbuild
+    cmake --build build
 
 
 BFD headers are not typically included in native/cross MinGW distributions.
