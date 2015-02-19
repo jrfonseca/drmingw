@@ -464,10 +464,12 @@ LONG CALLBACK TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 {
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
 
-    /*
-     * Ignore OutputDebugStringA exception.
-     */
-    if (pExceptionRecord->ExceptionCode == DBG_PRINTEXCEPTION_C) {
+    // Ignore a few exceptions
+    switch (pExceptionRecord->ExceptionCode) {
+    case DBG_PRINTEXCEPTION_C: // OutputDebugStringA
+    case 0x406d1388: // Thread naming exception
+    case 0xe0434352: // .NET exceptions
+    case 0xe06d7363: // Visual C++ exceptions
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
