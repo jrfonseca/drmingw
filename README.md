@@ -7,26 +7,10 @@ Dr. Mingw can read debugging information in _DWARF_ and _Stabs_ formats — gene
 
 The functionality to resolve symbols and dump stack backtraces is provided as DLLs so it can be embedded on your applications/tools.
 
-
 Recent changes
 ==============
 
- * **2014-04-02, version 0.6.2**:
-   * Support DWARF4 address encoding
-   * Experimental WOW64 support
-   * Drop GPL text
-   * Minor fixes and cleanups
- * **2013-06-25, version 0.6.1**:
-   * several bug fixes
- * **2013-06-20, version 0.6.0**:
-   * use libdwarf (binutils/BFD is now optional)
-   * 64-bits support
- * **2013-05-20, version 0.5.1**:
-   * Update to binutils-2.23.2 (DWARF support)
-   * Use dbghelp.dll instead of imagehlp.dll
- * **2009-03-21, version 0.4.4**:
-   * Update to binutils 2.18
- * **2003-11-25, version 0.4.3**
+See [here](https://github.com/jrfonseca/drmingw/releases) for summary of changes between releases.
 
 Detailed changelog available [here](https://github.com/jrfonseca/drmingw/commits/master).
 
