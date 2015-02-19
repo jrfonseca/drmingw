@@ -460,19 +460,8 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
 // Entry point where control comes on an unhandled exception
 static
-LONG CALLBACK TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
+LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 {
-    PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
-
-    // Ignore a few exceptions
-    switch (pExceptionRecord->ExceptionCode) {
-    case DBG_PRINTEXCEPTION_C: // OutputDebugStringA
-    case 0x406d1388: // Thread naming exception
-    case 0xe0434352: // .NET exceptions
-    case 0xe06d7363: // Visual C++ exceptions
-        return EXCEPTION_CONTINUE_SEARCH;
-    }
-
     static BOOL bBeenHere = FALSE;
 
     if(!bBeenHere)
@@ -510,13 +499,16 @@ LONG CALLBACK TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
         SetErrorMode(fuOldErrorMode);
     }
 
-    return EXCEPTION_CONTINUE_SEARCH;
+    if (prevExceptionFilter)
+        return prevExceptionFilter(pExceptionInfo);
+    else
+        return EXCEPTION_CONTINUE_SEARCH;
 }
 
 static void OnStartup(void)
 {
     // Install the unhandled exception filter function
-    prevExceptionFilter = AddVectoredExceptionHandler(0, TopLevelExceptionFilter);
+    prevExceptionFilter = SetUnhandledExceptionFilter(TopLevelExceptionFilter);
 
 #if REPORT_FILE
     // Figure out what the report file will be named, and store it away
@@ -543,7 +535,7 @@ static void OnStartup(void)
 
 static void OnExit(void)
 {
-    RemoveVectoredExceptionHandler(prevExceptionFilter);
+    SetUnhandledExceptionFilter(prevExceptionFilter);
 }
 
 BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
