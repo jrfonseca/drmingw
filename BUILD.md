@@ -3,11 +3,11 @@ This file has instructions on how to build DrMingw from source.
 
 Dependencies:
 
- * MinGW-w64
+ * [MinGW-w64](http://mingw-w64.sourceforge.net/)
  
- * CMake
+ * [CMake](http://www.cmake.org/)
  
- * BFD (optional)
+ * [BFD](http://www.gnu.org/software/binutils/) (optional)
 
 
 I always build DrMinGW from Linux with MinGW cross compilation toolchain.  See
