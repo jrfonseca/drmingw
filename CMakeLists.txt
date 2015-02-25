@@ -63,6 +63,9 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 4)
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--kill-at")
 endif ()
 
+# Put all executables into top-level bin subdirectory
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 add_definitions (
     -D_WIN32_WINNT=0x0601 # minimum required OS version
     -DWINVER=0x0601
