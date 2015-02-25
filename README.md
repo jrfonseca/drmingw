@@ -106,7 +106,7 @@ You can use ExcHndl by:
 Example
 -------
 
-The sample` sample.exe` application uses the second method above.  Copy `exchndl.dll`, `mgwhelp.dll`, etc. to the executable directory.  When you run it, even before general protection fault dialog box appears, it's written to the `sample.RPT` file a report of the fault.
+The sample` sample.exe` application uses the second method above.  Copy all DLLs mentioned above to the executable directory.  When you run it, even before general protection fault dialog box appears, it's written to the `sample.RPT` file a report of the fault.
 
 Here is how `sample.RPT` should look like:
 
