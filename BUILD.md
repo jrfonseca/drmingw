@@ -11,6 +11,9 @@ Required:
 
 Optional:
 
+ * [Debugging Tools for Windows](https://msdn.microsoft.com/en-us/library/windows/hardware/ff551063.aspx)
+   for the latest version of `dbghelp.dll` and `symsrv.dll` DLLs.
+
  * [BFD](http://www.gnu.org/software/binutils/)
 
 
