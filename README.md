@@ -95,7 +95,7 @@ Usage
 
 You can use ExcHndl by:
 
-  * including `mgwhelp.dll` and `exchndl.dll` with your application binaries
+  * including `exchndl.dll`, `mgwhelp.dll`, `dbghelp.dll`, `symsrv.dll`, and `symsrv.yes` with your application binaries
 
   * and loading `exchndl.dll` when your application starts, either by
 
@@ -106,7 +106,7 @@ You can use ExcHndl by:
 Example
 -------
 
-The sample` sample.exe` application uses the second method above. Copy `mgwhelp.dll` and `exchndl.dll` to executable directory. When you run it, even before general protection fault dialog box appears, it's written to the `sample.RPT` file a report of the fault.
+The sample` sample.exe` application uses the second method above.  Copy `exchndl.dll`, `mgwhelp.dll`, etc. to the executable directory.  When you run it, even before general protection fault dialog box appears, it's written to the `sample.RPT` file a report of the fault.
 
 Here is how `sample.RPT` should look like:
 
