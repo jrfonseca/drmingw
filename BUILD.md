@@ -1,24 +1,25 @@
-This file has instructions on how to build DrMingw from source.
+# Dependencies #
 
+Required:
 
-Dependencies:
+ * [MinGW-w64](http://mingw-w64.sourceforge.net/) toolchain
 
- * [MinGW-w64](http://mingw-w64.sourceforge.net/)
+   * _win32_ threads (as opposed to _posix_ threads) is recommended to avoid dependency on `libwinpthread-1.dll`
  
  * [CMake](http://www.cmake.org/)
  
- * [BFD](http://www.gnu.org/software/binutils/) (optional)
+
+Optional:
+
+ * [BFD](http://www.gnu.org/software/binutils/)
 
 
-I always build DrMinGW from Linux with MinGW cross compilation toolchain.  See
-http://www.vtk.org/Wiki/CmakeMingw for details.
+# Cross-compilation toolchain #
 
-It is also possible to build with a native MinGW toolchain, by doing:
+I always build DrMinGW from Linux with MinGW cross-compilation toolchain.  See
+[here](http://www.vtk.org/Wiki/CmakeMingw) for details.
 
-    set Path=C:\MinGW\bin;%Path%
-    cmake -G "MinGW Makefiles" -H. -Bbuild
-    cmake --build build
-
+## BFD ##
 
 BFD headers are not typically included in native/cross MinGW distributions.
 Binaries are but they too have several undesired dependencies.  So the best
@@ -33,3 +34,19 @@ toolchain):
     ./configure --host i686-w64-mingw32 --disable-nls --prefix=/
     make
     make install DESTDIR=$PWD/publish
+
+
+# Native toolchain #
+
+It is also possible to build with a native MinGW toolchain, by doing:
+
+    set Path=C:\path\to\mingw32\bin;%Path%
+    cmake -G "MinGW Makefiles" -H. -Bbuild
+    cmake --build build
+
+These instructions have been tested with
+[this MinGW-w64 toolchain](http://sourceforge.net/projects/mingwbuilds/files/host-windows/releases/4.8.1/32-bit/threads-win32/dwarf/x32-4.8.1-release-win32-dwarf-rev5.7z/download),
+but in theory it should work with any flavour of MinGW-w64 native toolchain,
+provided that it includes a native `mingw32-make.exe`.
+
+Note that building with MSYS or Cygwin is not necessary nor *supported*.
