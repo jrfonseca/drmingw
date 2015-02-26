@@ -570,6 +570,19 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
     return FALSE;
 }
 
+static void
+mgwhelp_initialize(HANDLE hProcess)
+{
+    struct mgwhelp_process *process;
+
+    process = (struct mgwhelp_process *)calloc(1, sizeof *process);
+    if (process) {
+        process->hProcess = hProcess;
+
+        process->next = processes;
+        processes = process;
+    }
+}
 
 BOOL WINAPI
 MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
@@ -579,15 +592,21 @@ MgwSymInitialize(HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess)
     ret = SymInitialize(hProcess, UserSearchPath, fInvadeProcess);
 
     if (ret) {
-        struct mgwhelp_process *process;
+        mgwhelp_initialize(hProcess);
+    }
 
-        process = (struct mgwhelp_process *)calloc(1, sizeof *process);
-        if (process) {
-            process->hProcess = hProcess;
+    return ret;
+}
 
-            process->next = processes;
-            processes = process;
-        }
+BOOL WINAPI
+MgwSymInitializeW(HANDLE hProcess, PCWSTR UserSearchPath, BOOL fInvadeProcess)
+{
+    BOOL ret;
+
+    ret = SymInitializeW(hProcess, UserSearchPath, fInvadeProcess);
+
+    if (ret) {
+        mgwhelp_initialize(hProcess);
     }
 
     return ret;
@@ -691,4 +710,32 @@ MgwSymCleanup(HANDLE hProcess)
     return SymCleanup(hProcess);
 }
 
+// Unicode stubs
 
+BOOL WINAPI
+MgwSymFromAddrW(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFOW SymbolW)
+{
+    PSYMBOL_INFO SymbolA = (PSYMBOL_INFO)malloc(offsetof(SYMBOL_INFO, Name) + SymbolW->MaxNameLen);
+    memcpy(SymbolA, SymbolW, offsetof(SYMBOL_INFO, Name));
+    if (MgwSymFromAddr(hProcess, Address, Displacement, SymbolA)) {
+        MultiByteToWideChar(CP_ACP, 0, SymbolA->Name, -1, SymbolW->Name, SymbolW->MaxNameLen);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+BOOL WINAPI
+MgwSymGetLineFromAddrW64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINEW64 LineW)
+{
+    IMAGEHLP_LINE64 LineA;
+    if (MgwSymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, &LineA)) {
+        static WCHAR FileName[MAX_PATH];
+        MultiByteToWideChar(CP_ACP, 0, LineA.FileName, -1, FileName, MAX_PATH);
+        memcpy(LineW, &LineA, sizeof LineA);
+        LineW->FileName = FileName;
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
