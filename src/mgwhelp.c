@@ -737,6 +737,11 @@ MgwSymGetLineFromAddrW64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement
 {
     IMAGEHLP_LINE64 LineA;
     if (MgwSymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, &LineA)) {
+        // https://msdn.microsoft.com/en-us/library/windows/desktop/ms681330.aspx
+        // states that SymGetLineFromAddrW64 "returns a pointer to a buffer
+        // that may be reused by another function" and that callers should be
+        // "sure to copy the data returned to another buffer immediately",
+        // therefore the static buffer should be safe.
         static WCHAR FileName[MAX_PATH];
         MultiByteToWideChar(CP_ACP, 0, LineA.FileName, -1, FileName, MAX_PATH);
         memcpy(LineW, &LineA, sizeof LineA);
