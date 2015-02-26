@@ -1,9 +1,12 @@
 EXPORTS
 	SymInitialize = MgwSymInitialize
+	SymInitializeW = MgwSymInitializeW
 	SymCleanup = MgwSymCleanup
 	SymSetOptions = MgwSymSetOptions
 	SymFromAddr = MgwSymFromAddr
+	SymFromAddrW = MgwSymFromAddrW
 	SymGetLineFromAddr64 = MgwSymGetLineFromAddr64
+	SymGetLineFromAddrW64 = MgwSymGetLineFromAddrW64
 	UnDecorateSymbolName = MgwUnDecorateSymbolName
 
 	EnumDirTree
@@ -47,12 +50,10 @@ EXPORTS
 	SymEnumerateSymbols64
 	SymFindFileInPath
 	SymFindFileInPathW
-	SymFromAddrW
 	SymFromName
 	SymFunctionTableAccess
 	SymFunctionTableAccess64
 	SymGetLineFromAddr
-	SymGetLineFromAddrW64
 	SymGetLineNext
 	SymGetLineNext64
 	SymGetLinePrev
@@ -78,7 +79,6 @@ EXPORTS
 	SymGetSymPrev64
 	SymGetTypeFromName
 	SymGetTypeInfo
-	SymInitializeW
 	SymLoadModule
 	SymLoadModule64
 	SymLoadModuleEx
