@@ -246,7 +246,6 @@ find_dwarf_symbol(struct mgwhelp_module *module,
 
     search_func(dbg, cu_die, addr, &funcname);
     if (funcname) {
-        OutputDebug("funcname = %s!!!\n", funcname);
         info->functionname = funcname;
         info->found = true;
     }
@@ -375,33 +374,33 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
     if (dwarf_pe_init(module->ModuleInfo.LoadedImageName, 0, 0, &module->dbg, &error) == DW_DLV_OK) {
         return module;
     } else {
-        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no dwarf symbols");
+        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no dwarf symbols");
     }
 
 #ifdef HAVE_BFD
     module->abfd = bfd_openr(module->ModuleInfo.LoadedImageName, NULL);
     if (!module->abfd) {
-        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "could not open");
+        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "could not open");
         goto no_bfd;
     }
 
     if (!bfd_check_format(module->abfd, bfd_object)) {
-        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "bad format");
+        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "bad format");
         goto bad_format;
     }
 
     if (!(bfd_get_file_flags(module->abfd) & HAS_SYMS)) {
-        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
+        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
         goto no_symbols;
     }
 
     if (!slurp_symtab(module->abfd, &module->syms, &module->symcount)) {
-        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
+        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
         goto no_symbols;
     }
 
     if (!module->symcount) {
-        OutputDebug("%s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
+        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
         goto no_symcount;
     }
 
