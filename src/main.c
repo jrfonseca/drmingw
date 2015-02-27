@@ -49,6 +49,9 @@ help(void)
             "\t\tSignal an event after process is attached\r\n"
             "  -b, --breakpoint\tTreat debug breakpoints as exceptions\r\n"
             "  -v, --verbose\tVerbose output\r\n"
+#ifndef NDEBUG
+            "  -d, --debug\tDebug output\r\n"
+#endif
         ),
         _T(PACKAGE),
         MB_OK | MB_ICONINFORMATION
@@ -183,10 +186,11 @@ int main (int argc, char **argv)
             { "event", 1, NULL, 'e'},
             { "breakpoint", 0, NULL, 'b'},
             { "verbose", 0, NULL, 'v'},
+            { "debug", 0, NULL, 'd'},
             { NULL, 0, NULL, 0}
         };
 
-        c = getopt_long (argc, argv, "?hViaup:e:vb", long_options, &option_index);
+        c = getopt_long (argc, argv, "?hViaup:e:vbd", long_options, &option_index);
 
         if (c == -1)
             break;    /* Exit from `while (1)' loop.  */
@@ -304,6 +308,10 @@ int main (int argc, char **argv)
 
             case 'v':    /* Verbose output.  */
                 verbose_flag = 1;
+                break;
+
+            case 'd':    /* Debug output.  */
+                debug_flag = 1;
                 break;
 
             default:    /* bug: option not considered.  */

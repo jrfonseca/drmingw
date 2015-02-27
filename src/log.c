@@ -117,6 +117,8 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     dwSymOptions |=
         SYMOPT_LOAD_LINES |
         SYMOPT_DEFERRED_LOADS;
+    if (debug_flag)
+        dwSymOptions |= SYMOPT_DEBUG;
     SymSetOptions(dwSymOptions);
     if(SymInitialize(hProcess, szSymSearchPath, TRUE))
         bSymInitialized = TRUE;
