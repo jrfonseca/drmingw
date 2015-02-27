@@ -145,14 +145,14 @@ search_func(Dwarf_Debug dbg,
     if (*rlt_func != NULL)
         return;
 
-    if (dwarf_tag(die, &tag, &de)) {
+    if (dwarf_tag(die, &tag, &de) != DW_DLV_OK) {
         OutputDebug("dwarf_tag: %s", dwarf_errmsg(de));
         goto cont_search;
     }
 
     if (tag == DW_TAG_subprogram) {
-        if (dwarf_lowpc(die, &lopc, &de) ||
-            dwarf_highpc_b(die, &hipc, &return_form, &return_class, &de))
+        if (dwarf_lowpc(die, &lopc, &de) != DW_DLV_OK ||
+            dwarf_highpc_b(die, &hipc, &return_form, &return_class, &de) != DW_DLV_OK)
             goto cont_search;
         if (return_class == DW_FORM_CLASS_CONSTANT)
             hipc += lopc;
@@ -166,7 +166,7 @@ search_func(Dwarf_Debug dbg,
         if (ret == DW_DLV_ERROR)
             return;
         if (ret == DW_DLV_OK) {
-            if (dwarf_formstring(sub_at, &func0, &de))
+            if (dwarf_formstring(sub_at, &func0, &de) != DW_DLV_OK)
                 *rlt_func = unknown;
             else
                 *rlt_func = func0;
