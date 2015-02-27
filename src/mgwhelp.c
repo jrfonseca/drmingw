@@ -132,7 +132,9 @@ search_func(Dwarf_Debug dbg,
             Dwarf_Addr addr,
             char **rlt_func)
 {
-    Dwarf_Die ret_die, spec_die;
+    Dwarf_Die spec_die;
+    Dwarf_Die child_die;
+    Dwarf_Die sibling_die;
     Dwarf_Error de;
     Dwarf_Half tag, return_form;
     Dwarf_Unsigned lopc, hipc;
@@ -142,69 +144,74 @@ search_func(Dwarf_Debug dbg,
     int ret;
     enum Dwarf_Form_Class return_class;
 
-    if (*rlt_func != NULL)
-        return;
+    do {
 
-    if (dwarf_tag(die, &tag, &de) != DW_DLV_OK) {
-        OutputDebug("dwarf_tag: %s", dwarf_errmsg(de));
-        goto cont_search;
-    }
-
-    if (tag == DW_TAG_subprogram) {
-        if (dwarf_lowpc(die, &lopc, &de) != DW_DLV_OK ||
-            dwarf_highpc_b(die, &hipc, &return_form, &return_class, &de) != DW_DLV_OK)
-            goto cont_search;
-        if (return_class == DW_FORM_CLASS_CONSTANT)
-            hipc += lopc;
-        if (addr < lopc || addr >= hipc)
-            goto cont_search;
-
-        /* Found it! */
-
-        *rlt_func = unknown;
-        ret = dwarf_attr(die, DW_AT_name, &sub_at, &de);
-        if (ret == DW_DLV_ERROR)
+        if (*rlt_func != NULL)
             return;
-        if (ret == DW_DLV_OK) {
-            if (dwarf_formstring(sub_at, &func0, &de) != DW_DLV_OK)
+
+        if (dwarf_tag(die, &tag, &de) != DW_DLV_OK) {
+            OutputDebug("dwarf_tag: %s", dwarf_errmsg(de));
+            goto cont_search;
+        }
+
+        if (tag == DW_TAG_subprogram) {
+            if (dwarf_lowpc(die, &lopc, &de) != DW_DLV_OK ||
+                dwarf_highpc_b(die, &hipc, &return_form, &return_class, &de) != DW_DLV_OK)
+                goto cont_search;
+            if (return_class == DW_FORM_CLASS_CONSTANT)
+                hipc += lopc;
+            if (addr < lopc || addr >= hipc)
+                goto cont_search;
+
+            /* Found it! */
+
+            *rlt_func = unknown;
+            ret = dwarf_attr(die, DW_AT_name, &sub_at, &de);
+            if (ret == DW_DLV_ERROR)
+                return;
+            if (ret == DW_DLV_OK) {
+                if (dwarf_formstring(sub_at, &func0, &de) != DW_DLV_OK)
+                    *rlt_func = unknown;
+                else
+                    *rlt_func = func0;
+                return;
+            }
+
+            /*
+             * If DW_AT_name is not present, but DW_AT_specification is
+             * present, then probably the actual name is in the DIE
+             * referenced by DW_AT_specification.
+             */
+            if (dwarf_attr(die, DW_AT_specification, &spec_at, &de) != DW_DLV_OK)
+                return;
+            if (dwarf_global_formref(spec_at, &ref, &de) != DW_DLV_OK)
+                return;
+            if (dwarf_offdie(dbg, ref, &spec_die, &de) != DW_DLV_OK)
+                return;
+            if (dwarf_diename(spec_die, rlt_func, &de) != DW_DLV_OK)
                 *rlt_func = unknown;
-            else
-                *rlt_func = func0;
+
             return;
         }
 
-        /*
-         * If DW_AT_name is not present, but DW_AT_specification is
-         * present, then probably the actual name is in the DIE
-         * referenced by DW_AT_specification.
-         */
-        if (dwarf_attr(die, DW_AT_specification, &spec_at, &de) != DW_DLV_OK)
-            return;
-        if (dwarf_global_formref(spec_at, &ref, &de) != DW_DLV_OK)
-            return;
-        if (dwarf_offdie(dbg, ref, &spec_die, &de) != DW_DLV_OK)
-            return;
-        if (dwarf_diename(spec_die, rlt_func, &de) != DW_DLV_OK)
-            *rlt_func = unknown;
+    cont_search:
 
-        return;
-    }
+        /* Recurse into children. */
+        ret = dwarf_child(die, &child_die, &de);
+        if (ret == DW_DLV_ERROR)
+            OutputDebug("dwarf_child: %s", dwarf_errmsg(de));
+        else if (ret == DW_DLV_OK)
+            search_func(dbg, child_die, addr, rlt_func);
 
-cont_search:
-
-    /* Search children. */
-    ret = dwarf_child(die, &ret_die, &de);
-    if (ret == DW_DLV_ERROR)
-        OutputDebug("dwarf_child: %s", dwarf_errmsg(de));
-    else if (ret == DW_DLV_OK)
-        search_func(dbg, ret_die, addr, rlt_func);
-
-    /* Search sibling. */
-    ret = dwarf_siblingof(dbg, die, &ret_die, &de);
-    if (ret == DW_DLV_ERROR)
-        OutputDebug("dwarf_siblingof: %s", dwarf_errmsg(de));
-    else if (ret == DW_DLV_OK)
-        search_func(dbg, ret_die, addr, rlt_func);
+        /* Advance to next sibling. */
+        ret = dwarf_siblingof(dbg, die, &sibling_die, &de);
+        if (ret != DW_DLV_OK) {
+            if (ret == DW_DLV_ERROR)
+                OutputDebug("dwarf_siblingof: %s", dwarf_errmsg(de));
+            break;
+        }
+        die = sibling_die;
+    } while (true);
 }
 
 static void
