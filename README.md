@@ -166,6 +166,13 @@ Dr. Mingw uses DbgHelp to handle .PDB files so it has the same behavior.
 
 If you test on the machine you built, you typically need to do nothing. Otherwise you'll need to tell where your .PDBs are trhough the `_NT_SYMBOL_PATH` environment variable, using the syntax described [here](http://msdn.microsoft.com/en-us/library/windows/hardware/ff558829.aspx).
 
+How can I get a stack trace from a process that is hung?
+-----------------------------------
+
+    drmingw -b -p 12345
+or
+    drmingw -b -p application.exe
+
 Links
 =====
 

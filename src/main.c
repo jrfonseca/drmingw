@@ -8,6 +8,7 @@
 
 #include <windows.h>
 #include <tchar.h>
+#include <tlhelp32.h>
 
 #include <process.h>
 #include <stdlib.h>
@@ -168,7 +169,33 @@ uninstall(REGSAM samDesired)
 }
 
 
-int main (int argc, char **argv)
+static DWORD
+getProcessIdByName(const char *szProcessName)
+{
+    DWORD dwProcessId = 0;
+
+    HANDLE hProcessSnap;
+    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hProcessSnap != INVALID_HANDLE_VALUE) {
+        PROCESSENTRY32 pe32;
+        pe32.dwSize = sizeof pe32;
+        if (Process32First(hProcessSnap, &pe32)) {
+            do {
+                if (stricmp(szProcessName, pe32.szExeFile) == 0) {
+                    dwProcessId = pe32.th32ProcessID;
+                    break;
+                }
+            } while (Process32Next(hProcessSnap, &pe32));
+        }
+        CloseHandle(hProcessSnap);
+    }
+
+    return dwProcessId;
+}
+
+
+int
+main(int argc, char **argv)
 {
     int c;    /* Character of the parsed option.  */
 
@@ -285,7 +312,10 @@ int main (int argc, char **argv)
                     return 1;
                 }
                 process_id_given = 1;
-                dwProcessId = strtoul (optarg, NULL, 0);
+                if (optarg[0] >= '0' && optarg[0] <= '9')
+                    dwProcessId = strtoul (optarg, NULL, 0);
+                else
+                    dwProcessId = getProcessIdByName(optarg);
                 break;
 
             case 'e':    /* Signal an event after process is attached.  */
