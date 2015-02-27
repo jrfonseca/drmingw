@@ -24,7 +24,7 @@ Git repository available [here](https://github.com/jrfonseca/drmingw).
 Installation
 ============
 
-Currently you will need to download and install the 32 bits version in order to debug 32 bits applications, and also the 64 bits version if you want to debug 64 bits applications.
+You should download and install the 64 bits binaries for Windows 64 bits (and it will handle both 64 and 32 bits applications), or the 32 bits versions for Windows 32 bits.
 
 To install enter
 

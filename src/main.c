@@ -20,10 +20,6 @@
 #include "misc.h"
 
 
-/* Enable experimental WOW64 support */
-#define WOW64_SUPPORT 0
-
-
 static int process_id_given = 0;    /* Whether process-id was given.  */
 static int install_given = 0;    /* Whether install was given.  */
 static int auto_given = 0;    /* Whether auto was given.  */
@@ -363,7 +359,7 @@ main(int argc, char **argv)
 
     if (install_given) {
         DWORD dwRet = install(0);
-#if defined(_WIN64) && WOW64_SUPPORT
+#if defined(_WIN64)
         if (dwRet == ERROR_SUCCESS) {
             dwRet = install(KEY_WOW64_32KEY);
         }
@@ -390,7 +386,7 @@ main(int argc, char **argv)
 
     if (uninstall_given) {
         DWORD dwRet = uninstall(0);
-#if defined(_WIN64) && WOW64_SUPPORT
+#if defined(_WIN64)
         if (dwRet == ERROR_SUCCESS) {
             dwRet = uninstall(KEY_WOW64_32KEY);
         }
