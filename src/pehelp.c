@@ -65,6 +65,9 @@ PEGetImageBase(HANDLE hProcess, DWORD64 hModule)
     PBYTE lpFileBase;
     PIMAGE_DOS_HEADER pDosHeader;
     PIMAGE_NT_HEADERS pNtHeaders;
+    PIMAGE_OPTIONAL_HEADER pOptionalHeader;
+    PIMAGE_OPTIONAL_HEADER32 pOptionalHeader32;
+    PIMAGE_OPTIONAL_HEADER64 pOptionalHeader64;
     DWORD64 ImageBase = 0;
 
     dwRet = GetModuleFileNameExA(hProcess,
@@ -95,7 +98,20 @@ PEGetImageBase(HANDLE hProcess, DWORD64 hModule)
 
     pNtHeaders = (PIMAGE_NT_HEADERS)(lpFileBase + pDosHeader->e_lfanew);
 
-    ImageBase = pNtHeaders->OptionalHeader.ImageBase;
+    pOptionalHeader = &pNtHeaders->OptionalHeader;
+    pOptionalHeader32 = (PIMAGE_OPTIONAL_HEADER32)pOptionalHeader;
+    pOptionalHeader64 = (PIMAGE_OPTIONAL_HEADER64)pOptionalHeader;
+
+    switch (pOptionalHeader->Magic) {
+    case IMAGE_NT_OPTIONAL_HDR32_MAGIC :
+        ImageBase = pOptionalHeader32->ImageBase;
+        break;
+    case IMAGE_NT_OPTIONAL_HDR64_MAGIC :
+        ImageBase = pOptionalHeader64->ImageBase;
+        break;
+    default:
+        assert(0);
+    }
 
 no_view_of_file:
     CloseHandle(hFileMapping);
