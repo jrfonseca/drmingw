@@ -22,5 +22,7 @@ add_custom_target (run_mgwhelp_test
     VERBATIM
 )
 
-cmake_policy (SET CMP0037 OLD)
+if (POLICY CMP0037)
+    cmake_policy (SET CMP0037 OLD)
+endif ()
 add_custom_target (test DEPENDS run_mgwhelp_test)
