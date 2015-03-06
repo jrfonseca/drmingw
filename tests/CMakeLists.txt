@@ -19,6 +19,7 @@ endif ()
 
 add_custom_target (run_mgwhelp_test
     COMMAND ${WINE_COMMAND} $<TARGET_FILE:mgwhelp_test>
+    DEPENDS mgwhelp_test mgwhelp
     VERBATIM
 )
 
