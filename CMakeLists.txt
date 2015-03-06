@@ -26,7 +26,11 @@ if (BINUTILS_INCLUDE_DIR AND BINUTILS_BFD_LIBRARY AND BINUTILS_LIBERTY_LIBRARY)
 endif ()
 
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/dwarf)
+include_directories (
+    ${CMAKE_SOURCE_DIR}/thirdparty/elf
+    ${CMAKE_SOURCE_DIR}/thirdparty/dwarf
+)
+
 add_subdirectory (thirdparty/dwarf)
 
 
