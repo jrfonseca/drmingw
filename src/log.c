@@ -22,13 +22,6 @@
 #include "symbols.h"
 #include "log.h"
 
-static TCHAR *lpszLog = NULL;
-
-void lflush(void)
-{
-    UpdateText(lpszLog);
-}
-
 #ifdef __GNUC__
     __attribute__ ((format (printf, 1, 2)))
 #endif
@@ -42,30 +35,8 @@ int __cdecl lprintf(const TCHAR * format, ...)
     retValue = _vstprintf(szBuffer, format, ap);
     va_end(ap);
 
-    if(!lpszLog)
-    {
-        lpszLog = HeapAlloc(
-            GetProcessHeap(),
-            0,
-            (retValue + 1)*sizeof(TCHAR)
-        );
+    AppendText(szBuffer);
 
-        lstrcpy(lpszLog, szBuffer);
-    }
-    else
-    {
-        lpszLog = HeapReAlloc(
-            GetProcessHeap(),
-            0,
-            lpszLog,
-            (lstrlen(lpszLog) + retValue + 1)*sizeof(TCHAR)
-        );
-
-        lstrcat(lpszLog, szBuffer);
-    }
-
-    if(strchr(szBuffer, '\n'))
-        lflush();
     return retValue;
 }
 
@@ -509,7 +480,6 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
         StackBackTrace(pProcessInfo->hProcess, pThreadInfo->hThread, &Context);
     }
 
-    lflush();
     return TRUE;
 }
 

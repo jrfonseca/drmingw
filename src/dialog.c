@@ -38,21 +38,22 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPa
 
 static HWND hEdit = NULL;
 
-void UpdateText(LPCTSTR lpszBuffer)
+void
+AppendText(LPCTSTR szText)
 {
-    if(hEdit)
-        if(
-            !SendMessage(
-                hEdit,    // handle to dialog box
-                WM_SETTEXT,    // message to send
-                (WPARAM) 0,    // not used; must be zero
-                (LPARAM) lpszBuffer    // text to set
-            )
-        )
-            ErrorMessageBox(_T("SendMessage: %s"), LastErrorMessage());
+    if (!hEdit) {
+        return;
+    }
+
+    // http://support.microsoft.com/kb/109550
+    int ndx = GetWindowTextLength(hEdit);
+    SetFocus(hEdit);
+    SendMessage(hEdit, EM_SETSEL, (WPARAM) ndx, (LPARAM) ndx);
+    SendMessage(hEdit, EM_REPLACESEL, (WPARAM) 0, (LPARAM) szText);
 }
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK
+WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
     switch(Message)
     {

@@ -24,8 +24,12 @@ INT_PTR CALLBACK
 AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 
 void
-UpdateText(LPCTSTR lpszBuffer );
-LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
-int Dialog(void);
+AppendText(LPCTSTR szText);
+
+LRESULT CALLBACK
+WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
+
+int
+Dialog(void);
 
 #endif /* DIALOG_H */

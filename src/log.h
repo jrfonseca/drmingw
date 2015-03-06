@@ -19,7 +19,6 @@
 #ifndef LOG_H
 #define LOG_H
 
-void lflush (void);
 int __cdecl lprintf (const TCHAR * format, ... );
 LPTSTR GetBaseName (LPTSTR lpFileName );
 BOOL LogException (DEBUG_EVENT DebugEvent );
