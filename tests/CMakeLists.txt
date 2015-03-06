@@ -17,7 +17,7 @@ else ()
     set (WINE_COMMAND)
 endif ()
 
-add_custom_target (run_mgwhelp_test
+add_custom_target (test_mgwhelp
     COMMAND ${WINE_COMMAND} $<TARGET_FILE:mgwhelp_test>
     DEPENDS mgwhelp_test mgwhelp
     VERBATIM
@@ -26,4 +26,4 @@ add_custom_target (run_mgwhelp_test
 if (POLICY CMP0037)
     cmake_policy (SET CMP0037 OLD)
 endif ()
-add_custom_target (test DEPENDS run_mgwhelp_test)
+add_custom_target (test DEPENDS test_mgwhelp)
