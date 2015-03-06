@@ -1,0 +1,36 @@
+language: cpp
+
+env:
+  global:
+  - MAKEFLAGS=-j2
+
+matrix:
+  fast_finish: true
+  include:
+  - compiler: ": Win32"
+    env:
+    - PACKAGES="binutils-mingw-w64-i686 gcc-mingw-w64-i686 g++-mingw-w64-i686"
+    - PREFIX=i686-w64-mingw32
+    - WINE=wine
+  - compiler: ": Win64"
+    env:
+    - PACKAGES="binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64"
+    - PREFIX=x86_64-w64-mingw32
+    - WINE=wine64
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq $PACKAGES wine
+
+script:
+- echo "set (CMAKE_SYSTEM_NAME Windows)" > Toolchain.cmake
+- echo "set (CMAKE_C_COMPILER $PREFIX-gcc)" >> Toolchain.cmake
+- echo "set (CMAKE_CXX_COMPILER $PREFIX-g++)" >> Toolchain.cmake
+- echo "set (CMAKE_RC_COMPILER $PREFIX-windres)" >> Toolchain.cmake
+- echo "set (CMAKE_FIND_ROOT_PATH /usr/$PREFIX)" >> Toolchain.cmake
+- echo "set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> Toolchain.cmake
+- echo "set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> Toolchain.cmake
+- echo "set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> Toolchain.cmake
+- cmake -H. -Bbuild -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake
+- cmake --build build --use-stderr -- all test package
+- $WINE build/bin/test.exe
