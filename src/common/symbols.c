@@ -13,7 +13,6 @@
 #include <dbghelp.h>
 
 #include "misc.h"
-#include "pehelp.h"
 #include "symbols.h"
 
 

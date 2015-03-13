@@ -40,8 +40,8 @@ add_subdirectory (thirdparty/dwarf)
 include (CheckCXXCompilerFlag)
 
 # Adjust warnings
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wmissing-prototypes -std=gnu99")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror=missing-prototypes -std=gnu99")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror=missing-prototypes")
 
 # Use GDB extensions
 set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -O0")
