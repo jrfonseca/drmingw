@@ -10,10 +10,10 @@
 #include <tchar.h>
 #include <stdlib.h>
 #include <psapi.h>
+#include <dbghelp.h>
 
 #include "misc.h"
 #include "pehelp.h"
-#include "mgwhelp.h"
 #include "symbols.h"
 
 

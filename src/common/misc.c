@@ -7,7 +7,6 @@
 #include <windows.h>
 #include <tchar.h>
 
-#include "log.h"
 #include "misc.h"
 
 

@@ -14,11 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
-
 #include <dbghelp.h>
 
 #include "pehelp.h"
-#include "mgwhelp.h"
 #include "symbols.h"
 
 
