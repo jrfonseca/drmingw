@@ -20,7 +20,6 @@
 #define LOG_H
 
 int __cdecl lprintf (const TCHAR * format, ... );
-LPTSTR GetBaseName (LPTSTR lpFileName );
 BOOL LogException (DEBUG_EVENT DebugEvent );
 BOOL DumpSource (LPCTSTR lpFileName, DWORD dwLineNumber );
 
