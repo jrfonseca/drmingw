@@ -59,8 +59,6 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
     {
         case WM_CREATE:
         {
-            LOGFONT lf;  // structure for font information
-
             hEdit = CreateWindow(
                 "EDIT",
                 "",
@@ -72,40 +70,40 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                 NULL
             );
 
-            // Get a handle to the ANSI fixed-pitch font, and copy
-            // information about the font to a LOGFONT structure.
+            // We used to use GetStockObject(ANSI_FIXED_FONT), but it's known
+            // to lead to unreliable results, particularly on Russion locales
+            // or high-DPI displays, so now we match Notepad's default font.
+            LOGFONT lf = {
+                10,                      // lfHeight
+                0,                       // lfWidth
+                0,                       // lfEscapement
+                0,                       // lfOrientation
+                FW_NORMAL,               // lfWeight
+                FALSE,                   // lfItalic
+                FALSE,                   // lfUnderline
+                FALSE,                   // lfStrikeOut
+                ANSI_CHARSET,            // lfCharSet
+                0,                       // lfOutPrecision
+                0,                       // lfClipPrecision
+                DEFAULT_QUALITY,         // lfQuality
+                FIXED_PITCH | FF_MODERN, // lfPitchAndFamily
+                _T("Lucida Console")     // lfFaceName
+            };
 
-            GetObject(GetStockObject(ANSI_FIXED_FONT), sizeof(LOGFONT), &lf);
+            // Apply the DPI scale factor
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/dn469266.aspx
+            if (lf.lfHeight > 0) {
+                HDC hdc = GetDC(NULL);
+                int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+                ReleaseDC(NULL, hdc);
 
-            // Set the font attributes, as appropriate.
+                lf.lfHeight = -MulDiv(lf.lfHeight, dpiY, 72);
+            }
 
-            lf.lfHeight = 10;
-            lf.lfWidth = 0;
+            HFONT hFont;
+            hFont = CreateFontIndirect(&lf);
 
-            // Create the font, and then return its handle.
-
-            SendDlgItemMessage(
-                hwnd,
-                IDC_MESSAGE,
-                WM_SETFONT,
-                (WPARAM) CreateFont(
-                    lf.lfHeight,
-                    lf.lfWidth,
-                    lf.lfEscapement,
-                    lf.lfOrientation,
-                    lf.lfWeight,
-                    lf.lfItalic,
-                    lf.lfUnderline,
-                    lf.lfStrikeOut,
-                    lf.lfCharSet,
-                    lf.lfOutPrecision,
-                    lf.lfClipPrecision,
-                    lf.lfQuality,
-                    lf.lfPitchAndFamily,
-                    lf.lfFaceName
-                ),
-                MAKELPARAM(TRUE, 0)
-            );
+            SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_SETFONT, (WPARAM) hFont, MAKELPARAM(TRUE, 0));
             break;
         }
         case WM_SIZE:
@@ -196,8 +194,8 @@ int Dialog(void)
     HWND hwnd;
     MSG Msg;
 
-    hInstance = GetModuleHandle (NULL);
-    GetStartupInfoA (&startinfo);
+    hInstance = GetModuleHandle(NULL);
+    GetStartupInfoA(&startinfo);
 
     WndClass.cbSize        = sizeof(WNDCLASSEX);
     WndClass.style         = 0;
