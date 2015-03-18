@@ -11,15 +11,18 @@ matrix:
     env:
     - APT_PACKAGES="binutils-mingw-w64-i686 gcc-mingw-w64-i686 g++-mingw-w64-i686"
     - MINGW_PREFIX=i686-w64-mingw32
+    - DBGHELP_URL=https://www.googledrive.com/host/0B1mEXoWzDm1McE81WFBKTzd5Z3M
   - compiler: ": Win64"
     env:
     - APT_PACKAGES="binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64"
     - MINGW_PREFIX=x86_64-w64-mingw32
+    - DBGHELP_URL=https://www.googledrive.com/host/0B1mEXoWzDm1MaGlUZ0syNEduTGs
 
 before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq --no-install-recommends $APT_PACKAGES
-  - sudo apt-get install -qq --no-install-recommends wine
+- sudo apt-get update -qq
+- sudo apt-get install -qq --no-install-recommends p7zip-full
+- sudo apt-get install -qq --no-install-recommends $APT_PACKAGES
+- sudo apt-get install -qq --no-install-recommends wine
 
 script:
 - echo "set (CMAKE_SYSTEM_NAME Windows)" > Toolchain.cmake
@@ -30,5 +33,7 @@ script:
 - echo "set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> Toolchain.cmake
 - echo "set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> Toolchain.cmake
 - echo "set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> Toolchain.cmake
-- cmake -H. -Bbuild -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake
+- wget -q -O dbghelp.7z "$DBGHELP_URL"
+- 7z x -othirdparty/dbghelp/ dbghelp.7z
+- cmake -H. -Bbuild -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake -DWINDBG_DIR=thirdparty/dbghelp
 - cmake --build build --use-stderr -- all test package
