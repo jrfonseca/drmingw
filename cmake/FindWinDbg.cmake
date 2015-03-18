@@ -3,7 +3,7 @@
 #   WINDBG_DIR               : full path to Windbg root dir
 #
 
-include (FindPackageMessage)
+include (FindPackageHandleStandardArgs)
 
 if (WIN32)
     find_path (WINDBG_DIR
@@ -21,8 +21,4 @@ if (WIN32)
     mark_as_advanced (WINDBG_DIR)
 endif (WIN32)
 
-if (WINDBG_DIR)
-    set (WINDBG_FOUND 1)
-    find_package_message (WINDBG "Found WinDbg: ${WINDBG_DIR}" "[${WINDBG_DIR}]")
-endif ()
-mark_as_advanced (WINDBG_FOUND)
+find_package_handle_standard_args (WinDbg DEFAULT_MSG WINDBG_DIR)
