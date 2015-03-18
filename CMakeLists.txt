@@ -100,6 +100,10 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set (CPACK_SYSTEM_NAME win64)
 endif ()
 
-set (CPACK_GENERATOR "ZIP")
+if (CMAKE_VERSION VERSION_LESS 3.1)
+    set (CPACK_GENERATOR "ZIP")
+else ()
+    set (CPACK_GENERATOR "7Z")
+endif ()
 
 include(CPack)
