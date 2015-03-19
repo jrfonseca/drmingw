@@ -36,3 +36,8 @@ add_library (dwarf STATIC
     pro_encode_nm.c
 )
 
+install (
+    FILES LIBDWARFCOPYRIGHT
+    DESTINATION doc
+    RENAME LICENSE-libdwarf.txt
+)
