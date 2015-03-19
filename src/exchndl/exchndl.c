@@ -1,11 +1,46 @@
 /*
- * exchndl.c
+ * Copyright 2002-2013 Jose Fonseca
  *
- * Author:
- *   Jose Fonseca <j_r_fonseca@yahoo.co.uk>
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ *
  *
  * Originally based on Matt Pietrek's MSJEXHND.CPP in Microsoft Systems
- * Journal, April 1997.
+ * Journal, April 1997, http://www.microsoft.com/msj/0597/hood0597.aspx.
+ *
+ * Copyright 1997, Microsoft Systems Journal
+ *
+ * Microsoft grants to you a royalty-free right to use and modify the source
+ * code version and to reproduce and distribute the object code version of
+ * the sample code, icons, cursors, and bitmaps provided within the Sample
+ * Code bin/folder on the SOFTWARE ("Sample Code") provided that you:
+ *
+ *   (a) distribute the Sample Code only in conjunction with and as a part of
+ *   your software product that adds primary and significant functionality to
+ *   the sample code;
+ *
+ *   (b) do not use Microsoft's name, logo, or trademarks to market your
+ *   software product; and
+ *
+ *   (c) agree to indemnify, hold harmless, and defend Microsoft and its
+ *   suppliers from and against any claims or lawsuits, including attorneys'
+ *   fees, that arise or result from your distribution of your software product
+ *   and
+ *
+ *   (d) all Microsoft Systems Journal (MSJ) code used within your program(s)
+ *   must be flagged: Copyright <year of publication>, Microsoft Systems
+ *   Journal.
  */
 
 #include <assert.h>

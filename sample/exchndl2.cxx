@@ -1,8 +1,6 @@
-/* exchndl2.cxx
+/* Public Domain.
  *
  * A portable way to load the EXCHNDL.DLL on startup.
- *
- * Jose Fonseca
  */
 
 #include <windows.h>

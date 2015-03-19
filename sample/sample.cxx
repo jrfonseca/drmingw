@@ -1,7 +1,6 @@
-/*
- * A sample C++ program for Dr.MinGW.
+/* Public Domain.
  *
- * Jose Fonseca
+ * A sample C++ program for Dr.MinGW.
  */
 
 #include <stdio.h>
