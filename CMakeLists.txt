@@ -90,7 +90,7 @@ add_subdirectory (tests)
 
 install (
     FILES
-        COPYING.LIB
+        LICENSE.txt
         README.md
     DESTINATION doc
 )
