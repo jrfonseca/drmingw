@@ -180,7 +180,7 @@ Related tools
 -------------
 
  * [binutil's addr2line](http://sourceware.org/binutils/docs/binutils/addr2line.html) (included in MinGW)
- * [cv2pdb - DWARF to PDB converter](http://dsource.org/projects/cv2pdb)
+ * [cv2pdb - DWARF to PDB converter](https://github.com/rainers/cv2pdb)
  * [google-breakpad](https://code.google.com/p/google-breakpad)
 
 Suggested Reading
@@ -190,4 +190,4 @@ Suggested Reading
  * [MSJEXHND - Part 1, Under the Hood, MSJ April 1997](http://www.microsoft.com/msj/0497/hood/hood0497.htm)
  * [MSJEXHND - Part 2, Under the Hood, MSJ May 1997](http://www.microsoft.com/msj/0597/hood0597.htm)
  * [Bugslayer, MSJ, August 1998](http://www.microsoft.com/msj/0898/bugslayer0898.htm)
- * [The Win32 Debugging Application Programming Interface](http://msdn.microsoft.com/library/techart/msdn_debug.htm)
+ * [The Win32 Debugging Application Programming Interface](https://msdn.microsoft.com/en-us/library/ms809754.aspx)
