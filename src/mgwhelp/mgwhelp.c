@@ -36,22 +36,6 @@
 #include <libdwarf.h>
 #include "dwarf_pe.h"
 
-#ifdef HAVE_BFD
-
-/*
- * bfd.h will complain without this.
- */
-#ifndef PACKAGE
-#define PACKAGE
-#endif
-#ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION
-#endif
-
-#include <bfd.h>
-
-#endif
-
 
 struct mgwhelp_module
 {
@@ -64,12 +48,6 @@ struct mgwhelp_module
     DWORD64 image_base_vma;
 
     Dwarf_Debug dbg;
-
-#ifdef HAVE_BFD
-    bfd *abfd;
-    asymbol **syms;
-    long symcount;
-#endif  /* HAVE_BFD */
 };
 
 
@@ -313,30 +291,6 @@ no_aranges:
 }
 
 
-#ifdef HAVE_BFD
-
-// Read in the symbol table.
-static bfd_boolean
-slurp_symtab (bfd *abfd, asymbol ***syms, long *symcount)
-{
-    unsigned int size;
-
-    if ((bfd_get_file_flags (abfd) & HAS_SYMS) == 0)
-        return FALSE;
-
-    *symcount = bfd_read_minisymbols (abfd, FALSE, (void *) syms, &size);
-    if (*symcount == 0)
-        *symcount = bfd_read_minisymbols (abfd, TRUE /* dynamic */, (void *) syms, &size);
-
-    if (*symcount < 0)
-        return FALSE;
-
-    return TRUE;
-}
-
-#endif /* HAVE_BFD */
-
-
 static struct mgwhelp_module *
 mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
 {
@@ -377,64 +331,13 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
         OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no dwarf symbols");
     }
 
-#ifdef HAVE_BFD
-    module->abfd = bfd_openr(module->ModuleInfo.LoadedImageName, NULL);
-    if (!module->abfd) {
-        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "could not open");
-        goto no_bfd;
-    }
-
-    if (!bfd_check_format(module->abfd, bfd_object)) {
-        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "bad format");
-        goto bad_format;
-    }
-
-    if (!(bfd_get_file_flags(module->abfd) & HAS_SYMS)) {
-        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
-        goto no_symbols;
-    }
-
-    if (!slurp_symtab(module->abfd, &module->syms, &module->symcount)) {
-        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
-        goto no_symbols;
-    }
-
-    if (!module->symcount) {
-        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no bfd symbols");
-        goto no_symcount;
-    }
-
-#endif /* HAVE_BFD */
-
     return module;
-
-#ifdef HAVE_BFD
-no_symcount:
-    free(module->syms);
-    module->syms = NULL;
-no_symbols:
-bad_format:
-    bfd_close(module->abfd);
-    module->abfd = NULL;
-no_bfd:
-    return module;
-#endif /* HAVE_BFD */
 }
 
 
 static void
 mgwhelp_module_destroy(struct mgwhelp_module * module)
 {
-#ifdef HAVE_BFD
-    if (module->abfd) {
-        if (module->syms) {
-            free(module->syms);
-        }
-
-        bfd_close(module->abfd);
-    }
-#endif /* HAVE_BFD */
-
     if (module->dbg) {
         Dwarf_Error error = 0;
         dwarf_pe_finish(module->dbg, &error);
@@ -487,43 +390,6 @@ mgwhelp_process_lookup(HANDLE hProcess)
 }
 
 
-#ifdef HAVE_BFD
-
-// Look for an address in a section.  This is called via  bfd_map_over_sections.
-static void
-find_address_in_section (bfd *abfd, asection *section, void *data)
-{
-    struct find_handle *info = (struct find_handle *) data;
-    struct mgwhelp_module *module = info->module;
-    bfd_vma vma;
-    bfd_size_type size;
-
-    if (info->found)
-        return;
-
-    if ((bfd_get_section_flags (abfd, section) & SEC_ALLOC) == 0)
-        return;
-
-    vma = bfd_get_section_vma (abfd, section);
-    size = bfd_get_section_size (section);
-
-    if (0)
-        OutputDebug("section: 0x%08" BFD_VMA_FMT "x - 0x%08" BFD_VMA_FMT "x (pc = 0x%08I64x)\n",
-                vma, vma + size, info->pc);
-
-    if (info->pc < vma)
-        return;
-
-    if (info->pc >= vma + size)
-        return;
-
-    info->found = bfd_find_nearest_line (abfd, section, module->syms, info->pc - vma,
-                                         &info->filename, &info->functionname, &info->line);
-}
-
-#endif /* HAVE_BFD */
-
-
 static BOOL
 mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
 {
@@ -557,21 +423,6 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_handle *info)
             return TRUE;
         }
     }
-
-#if HAVE_BFD
-    if (module->abfd) {
-        assert(bfd_get_file_flags(module->abfd) & HAS_SYMS);
-        assert(module->symcount);
-
-        bfd_map_over_sections(module->abfd, find_address_in_section, info);
-        if (info->found &&
-            info->line != 0 &&
-            info->functionname != NULL &&
-            *info->functionname != '\0') {
-            return TRUE;
-        }
-    }
-#endif /* HAVE_BFD */
 
     return FALSE;
 }

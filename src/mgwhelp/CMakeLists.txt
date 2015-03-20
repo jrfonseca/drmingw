@@ -21,16 +21,6 @@ set_target_properties (mgwhelp PROPERTIES
     PREFIX ""
 )
 
-if (BINUTILS_FOUND)
-    set_target_properties (mgwhelp PROPERTIES
-	COMPILE_DEFINITIONS HAVE_BFD=1
-    )
-    target_link_libraries (mgwhelp LINK_PRIVATE
-        ${BINUTILS_BFD_LIBRARY}
-        ${BINUTILS_LIBERTY_LIBRARY}
-    )
-endif ()
-
 install (TARGETS mgwhelp RUNTIME DESTINATION bin)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 4)

@@ -79,7 +79,7 @@ MgwHelp is used by Dr.MinGW and ExcHndl below to lookup symbols.
 
 But the hope is that it will eventually be used by third-party Windows development tools (like debuggers, profilers, etc.) to easily resolve symbol on binaries produced by the MinGW toolchain.
 
-MgwHelp relies on [libdwarf](http://reality.sgiweb.org/davea/dwarf.html) to read DWARF debugging information.  It can optionally also use BFD to read stabs debugging information.
+MgwHelp relies on [libdwarf](http://reality.sgiweb.org/davea/dwarf.html) to read DWARF debugging information.
 
 **NOTE: It's still work in progress, and only exports a limited number of symbols. So it's not a complete solution yet**
 

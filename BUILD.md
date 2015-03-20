@@ -14,29 +14,11 @@ Optional:
  * [Debugging Tools for Windows](https://msdn.microsoft.com/en-us/library/windows/hardware/ff551063.aspx)
    for the latest version of `dbghelp.dll` and `symsrv.dll` DLLs.
 
- * [BFD](http://www.gnu.org/software/binutils/)
-
 
 # Cross-compilation toolchain #
 
 I always build DrMinGW from Linux with MinGW cross-compilation toolchain.  See
 [here](http://www.vtk.org/Wiki/CmakeMingw) for details.
-
-## BFD ##
-
-BFD headers are not typically included in native/cross MinGW distributions.
-Binaries are but they too have several undesired dependencies.  So the best
-approach is to build BFD from source.
-
-These are roughly the steps (again, assuming a cross-compilation MinGW
-toolchain):
-
-    wget http://ftp.gnu.org/gnu/binutils/binutils-2.23.2.tar.bz2
-    tar -xjf binutils-2.23.2.tar.bz2
-    cd binutils-2.23.2
-    ./configure --host i686-w64-mingw32 --disable-nls --prefix=/
-    make
-    make install DESTDIR=$PWD/publish
 
 
 # Native toolchain #

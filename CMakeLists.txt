@@ -16,16 +16,6 @@ set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package (WinDbg)
 
-find_path (BINUTILS_INCLUDE_DIR bfd.h PATHS ${BINUTILS_ROOT}/include)
-find_library (BINUTILS_BFD_LIBRARY bfd PATHS ${BINUTILS_ROOT}/lib)
-find_library (BINUTILS_LIBERTY_LIBRARY liberty PATHS ${BINUTILS_ROOT}/lib)
-
-if (BINUTILS_INCLUDE_DIR AND BINUTILS_BFD_LIBRARY AND BINUTILS_LIBERTY_LIBRARY)
-    set (BINUTILS_FOUND 1)
-    include_directories (${BINUTILS_INCLUDE_DIR})
-endif ()
-
-
 include_directories (
     ${CMAKE_SOURCE_DIR}/thirdparty/elf
     ${CMAKE_SOURCE_DIR}/thirdparty/dwarf
