@@ -17,65 +17,12 @@
  */
 
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdarg.h>
+#include "tap.h"
+
+#include <stdlib.h>
 
 #include <windows.h>
 #include <dbghelp.h>
-
-
-static int
-status = EXIT_SUCCESS;
-
-static unsigned
-test_no = 0;
-
-// https://testanything.org/tap-specification.html
-__attribute__ ((format (printf, 2, 3)))
-static void
-test_line(bool ok, const char *format, ...)
-{
-    va_list ap;
-
-    if (!ok) {
-        status = EXIT_FAILURE;
-    }
-
-    fprintf(stdout, "%s %u",
-            ok ? "ok" : "not ok",
-            ++test_no);
-    if (format) {
-        fputs(" - ", stdout);
-        va_start(ap, format);
-        vfprintf(stdout, format, ap);
-        va_end(ap);
-    }
-    fputs("\n", stdout);
-    fflush(stdout);
-}
-
-__attribute__ ((format (printf, 1, 2)))
-static void
-test_diagnostic(const char *format, ...)
-{
-    va_list ap;
-
-    fputs("# ", stdout);
-    va_start(ap, format);
-    vfprintf(stdout, format, ap);
-    va_end(ap);
-    fputs("\n", stdout);
-    fflush(stdout);
-}
-
-static void
-test_plan(void)
-{
-    fprintf(stdout, "1..%u\n", test_no);
-    fflush(stdout);
-}
 
 
 static void
@@ -172,7 +119,5 @@ main()
         test_line(bRet, "SymCleanup()");
     }
 
-    test_plan();
-
-    return status;
+    test_exit();
 }
