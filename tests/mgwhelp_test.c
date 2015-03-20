@@ -28,9 +28,7 @@
 static void
 checkSym(HANDLE hProcess,
          const void *symbol,
-         const char *szSymbolName,
-         const char *szFileName,
-         DWORD dwLineNumber)
+         const char *szSymbolName)
 {
     bool ok;
     BOOL bRet;
@@ -56,6 +54,22 @@ checkSym(HANDLE hProcess,
                             s.Symbol.Name, szSymbolName);
         }
     }
+}
+
+
+static void
+checkSymLine(HANDLE hProcess,
+             const void *symbol,
+             const char *szSymbolName,
+             const char *szFileName,
+             DWORD dwLineNumber)
+{
+    bool ok;
+    BOOL bRet;
+
+    DWORD64 dwAddr = (DWORD64)(UINT_PTR)symbol;
+
+    checkSym(hProcess, symbol, szSymbolName);
 
     // Test SymGetLineFromAddr64
     DWORD dwDisplacement;
@@ -88,7 +102,7 @@ checkCaller(HANDLE hProcess,
             DWORD dwLineNumber)
 {
     void *addr = __builtin_return_address(0);
-    checkSym(hProcess, addr, szSymbolName, szFileName, dwLineNumber);
+    checkSymLine(hProcess, addr, szSymbolName, szFileName, dwLineNumber);
 }
 
 
@@ -111,9 +125,15 @@ main()
     bRet = SymInitialize(hProcess, NULL, FALSE);
     test_line(bRet, "SymInitialize()");
     if (bRet) {
-        checkSym(hProcess, &foo, "foo", __FILE__, foo_line);
+        checkSymLine(hProcess, &foo, "foo", __FILE__, foo_line);
 
         checkCaller(hProcess, "main", __FILE__, __LINE__); dummy();
+
+        // Test DbgHelp fallback
+        checkSym(hProcess,
+                 GetProcAddress(GetModuleHandleA("kernel32"),
+                                "ExitProcess"),
+                 "ExitProcess");
 
         bRet = SymCleanup(hProcess);
         test_line(bRet, "SymCleanup()");
