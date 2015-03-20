@@ -46,4 +46,5 @@ deploy:
   file: build/drmingw-*.zip
   on:
     repo: jrfonseca/drmingw
+    tags: true
     all_branches: true
