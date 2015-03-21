@@ -10,7 +10,7 @@ goto option_status
 
 :option_install
 reg add "%KeyName%" /v "Auto" /t REG_SZ /d "0" /f
-reg add "%KeyName%" /v "Debugger" /t REG_SZ /d "%CD%\drmingw.exe -p %%ld -e %%ld" /f
+reg add "%KeyName%" /v "Debugger" /t REG_SZ /d "%CD%\bin\drmingw.exe -p %%ld -e %%ld" /f
 goto option_status
 
 :option_uninstall
