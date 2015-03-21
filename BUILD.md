@@ -9,7 +9,7 @@ Required:
  * [CMake](http://www.cmake.org/)
  
 
-Optional:
+Recommended:
 
  * [Debugging Tools for Windows](https://msdn.microsoft.com/en-us/library/windows/hardware/ff551063.aspx)
    for the latest version of `dbghelp.dll` and `symsrv.dll` DLLs.
@@ -25,7 +25,7 @@ I always build DrMinGW from Linux with MinGW cross-compilation toolchain.  See
 
 It is also possible to build with a native MinGW toolchain, by doing:
 
-    set Path=C:\path\to\mingw32\bin;%Path%
+    set Path=C:\path\to\mingw\bin;%Path%
     cmake -G "MinGW Makefiles" -H. -Bbuild
     cmake --build build
 
@@ -39,3 +39,8 @@ but in theory it should work with any flavour of MinGW-w64 native toolchain,
 provided that it includes a native `mingw32-make.exe`.
 
 Note that building with MSYS or Cygwin is not necessary nor *supported*.
+
+
+# Continous integration #
+
+[![Build Status](https://travis-ci.org/jrfonseca/drmingw.svg?branch=master)](https://travis-ci.org/jrfonseca/drmingw)
