@@ -12,6 +12,10 @@ set (CPACK_PACKAGE_VERSION_PATCH "5")
 ##############################################################################
 # Dependencies
 
+if (NOT MINGW OR CYGWIN)
+    message (FATAL_ERROR "MinGW toolchain required")
+endif ()
+
 set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package (WinDbg)
