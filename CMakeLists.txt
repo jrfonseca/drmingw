@@ -62,8 +62,11 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_definitions (
-    -D_WIN32_WINNT=0x0601 # minimum required OS version
+    # minimum required OS version
+    -D_WIN32_WINNT=0x0601
     -DWINVER=0x0601
+    # https://msdn.microsoft.com/en-gb/library/windows/desktop/ms683198.aspx
+    -DPSAPI_VERSION=1
 )
 
 
