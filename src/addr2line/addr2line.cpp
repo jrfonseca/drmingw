@@ -88,7 +88,9 @@ main(int argc, char **argv)
 
 
     HANDLE hProcess = GetCurrentProcess();
-    bRet = SymInitialize(hProcess, "srv*C:\\Symbols*http://msdl.microsoft.com/download/symbols", FALSE);
+    bRet = SymInitialize(hProcess,
+                         ".sympath cache*;srv*http://msdl.microsoft.com/download/symbols",
+                         FALSE);
     assert(bRet);
 
 
