@@ -26,12 +26,38 @@
 
 
 static void
+logLastError(void)
+{
+    DWORD dwLastError = GetLastError();
+
+    // http://msdn.microsoft.com/en-gb/library/windows/desktop/ms680582.aspx
+    LPSTR lpErrorMsg = NULL;
+    DWORD cbWritten;
+    cbWritten = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                              FORMAT_MESSAGE_FROM_SYSTEM |
+                              FORMAT_MESSAGE_IGNORE_INSERTS,
+                              NULL,
+                              dwLastError,
+                              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                              (LPSTR) &lpErrorMsg,
+                              0, NULL);
+
+    if (cbWritten) {
+        test_diagnostic("%s", lpErrorMsg);
+    } else {
+        test_diagnostic("GetLastError() = %lu", dwLastError);
+    }
+
+    LocalFree(lpErrorMsg);
+}
+
+
+static void
 checkSym(HANDLE hProcess,
          const void *symbol,
          const char *szSymbolName)
 {
     bool ok;
-    BOOL bRet;
 
     DWORD64 dwAddr = (DWORD64)(UINT_PTR)symbol;
 
@@ -44,9 +70,11 @@ checkSym(HANDLE hProcess,
     memset(&s, 0, sizeof s);
     s.Symbol.SizeOfStruct = sizeof s.Symbol;
     s.Symbol.MaxNameLen = sizeof s.Symbol.Name + sizeof s.Name;
-    bRet = SymFromAddr(hProcess, dwAddr, &Displacement, &s.Symbol);
-    test_line(bRet, "SymFromAddr(&%s)", szSymbolName);
-    if (bRet) {
+    ok = SymFromAddr(hProcess, dwAddr, &Displacement, &s.Symbol);
+    test_line(ok, "SymFromAddr(&%s)", szSymbolName);
+    if (!ok) {
+        logLastError();
+    } else {
         ok = strcmp(s.Symbol.Name, szSymbolName) == 0;
         test_line(ok, "SymFromAddr(&%s).Name", szSymbolName);
         if (!ok) {
@@ -65,7 +93,6 @@ checkSymLine(HANDLE hProcess,
              DWORD dwLineNumber)
 {
     bool ok;
-    BOOL bRet;
 
     DWORD64 dwAddr = (DWORD64)(UINT_PTR)symbol;
 
@@ -76,9 +103,11 @@ checkSymLine(HANDLE hProcess,
     IMAGEHLP_LINE64 Line;
     ZeroMemory(&Line, sizeof Line);
     Line.SizeOfStruct = sizeof Line;
-    bRet = SymGetLineFromAddr64(hProcess, dwAddr, &dwDisplacement, &Line);
-    test_line(bRet, "SymGetLineFromAddr64(&%s)", szSymbolName);
-    if (bRet) {
+    ok = SymGetLineFromAddr64(hProcess, dwAddr, &dwDisplacement, &Line);
+    test_line(ok, "SymGetLineFromAddr64(&%s)", szSymbolName);
+    if (!ok) {
+        logLastError();
+    } else {
         ok = strcmp(Line.FileName, szFileName) == 0;
         test_line(ok, "SymGetLineFromAddr64(&%s).FileName", szSymbolName);
         if (!ok) {
@@ -106,6 +135,18 @@ checkCaller(HANDLE hProcess,
 }
 
 
+static void
+checkExport(HANDLE hProcess,
+            const char *szModuleName,
+            const char *szSymbolName)
+{
+    HMODULE hModule = GetModuleHandleA(szModuleName);
+    const void *pvSymbol = GetProcAddress(hModule, szSymbolName);
+    checkSym(hProcess, pvSymbol, szSymbolName);
+}
+
+
+
 static const DWORD foo_line = __LINE__; static int foo(int a, int b) {
     return a * b;
 }
@@ -113,30 +154,33 @@ static const DWORD foo_line = __LINE__; static int foo(int a, int b) {
 
 static void dummy(void)
 {
-    getenv("HOME");
+    getenv("USERPROFILE");
 }
+
 
 int
 main()
 {
     HMODULE hProcess = GetCurrentProcess();
-    BOOL bRet;
+    bool ok;
 
-    bRet = SymInitialize(hProcess, NULL, FALSE);
-    test_line(bRet, "SymInitialize()");
-    if (bRet) {
+    ok = SymInitialize(hProcess, "", TRUE);
+    test_line(ok, "SymInitialize()");
+    if (!ok) {
+        logLastError();
+    } {
         checkSymLine(hProcess, &foo, "foo", __FILE__, foo_line);
 
         checkCaller(hProcess, "main", __FILE__, __LINE__); dummy();
 
         // Test DbgHelp fallback
-        checkSym(hProcess,
-                 GetProcAddress(GetModuleHandleA("kernel32"),
-                                "ExitProcess"),
-                 "ExitProcess");
+        checkExport(hProcess, "kernel32", "Sleep");
 
-        bRet = SymCleanup(hProcess);
-        test_line(bRet, "SymCleanup()");
+        ok = SymCleanup(hProcess);
+        test_line(ok, "SymCleanup()");
+        if (!ok) {
+            logLastError();
+        }
     }
 
     test_exit();
