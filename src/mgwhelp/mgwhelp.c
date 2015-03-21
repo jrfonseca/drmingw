@@ -42,8 +42,7 @@ struct mgwhelp_module
     struct mgwhelp_module *next;
 
     DWORD64 Base;
-
-    IMAGEHLP_MODULE64 ModuleInfo;
+    char LoadedImageName[MAX_PATH];
 
     DWORD64 image_base_vma;
 
@@ -295,43 +294,45 @@ static struct mgwhelp_module *
 mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
 {
     struct mgwhelp_module *module;
+    DWORD dwRet;
 
     module = (struct mgwhelp_module *)calloc(1, sizeof *module);
-    if (!module)
-        return NULL;
+    if (!module) {
+        goto no_module;
+    }
 
     module->Base = Base;
 
     module->next = process->modules;
     process->modules = module;
 
-    module->ModuleInfo.SizeOfStruct = sizeof module->ModuleInfo;
-#if 0
-    if (!SymGetModuleInfo64(process->hProcess, Base, &module->ModuleInfo)) {
-        OutputDebug("No module info");
-        goto no_bfd;
+    /* SymGetModuleInfo64 is not reliable for this, as explained in
+     * https://msdn.microsoft.com/en-us/library/windows/desktop/ms681336.aspx
+     */
+    dwRet = GetModuleFileNameExA(process->hProcess,
+                                 (HMODULE)(UINT_PTR)Base,
+                                 module->LoadedImageName,
+                                 sizeof module->LoadedImageName);
+    if (dwRet == 0) {
+        goto no_module_name;
     }
-#else
-    module->ModuleInfo.BaseOfImage = Base;
-    if (!module->ModuleInfo.LoadedImageName[0]) {
-        GetModuleFileNameExA(process->hProcess,
-                             (HMODULE)(UINT_PTR)module->ModuleInfo.BaseOfImage,
-                             module->ModuleInfo.LoadedImageName,
-                             sizeof module->ModuleInfo.LoadedImageName);
-    }
-#endif
-
 
     module->image_base_vma = PEGetImageBase(process->hProcess, Base);
 
     Dwarf_Error error = 0;
-    if (dwarf_pe_init(module->ModuleInfo.LoadedImageName, 0, 0, &module->dbg, &error) == DW_DLV_OK) {
+    if (dwarf_pe_init(module->LoadedImageName, 0, 0, &module->dbg, &error) == DW_DLV_OK) {
         return module;
     } else {
-        OutputDebug("MGWHELP: %s: %s\n", module->ModuleInfo.LoadedImageName, "no dwarf symbols");
+        OutputDebug("MGWHELP: %s: %s\n", module->LoadedImageName, "no dwarf symbols");
     }
 
     return module;
+
+no_module_name:
+    OutputDebug("MGWHELP: no module name");
+    free(module);
+no_module:
+    return NULL;
 }
 
 
