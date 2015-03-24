@@ -81,20 +81,19 @@ pe_get_byte_order(void *obj)
 
 
 static Dwarf_Small
-pe_get_length_size(void *obj)
+pe_get_length_pointer_size(void *obj)
 {
     pe_access_object_t *pe_obj = (pe_access_object_t *)obj;
-    PIMAGE_FILE_HEADER pFileHeader = &pe_obj->pNtHeaders->FileHeader;
-    return pFileHeader->Machine == IMAGE_FILE_MACHINE_I386 ? 4 : 8;
-}
+    PIMAGE_OPTIONAL_HEADER pOptionalHeader = &pe_obj->pNtHeaders->OptionalHeader;
 
-
-static Dwarf_Small
-pe_get_pointer_size(void *obj)
-{
-    pe_access_object_t *pe_obj = (pe_access_object_t *)obj;
-    PIMAGE_FILE_HEADER pFileHeader = &pe_obj->pNtHeaders->FileHeader;
-    return pFileHeader->Machine == IMAGE_FILE_MACHINE_I386 ? 4 : 8;
+    switch (pOptionalHeader->Magic) {
+    case IMAGE_NT_OPTIONAL_HDR32_MAGIC:
+        return 4;
+    case IMAGE_NT_OPTIONAL_HDR64_MAGIC:
+        return 8;
+    default:
+        return 0;
+    }
 }
 
 
@@ -128,8 +127,8 @@ static const Dwarf_Obj_Access_Methods
 pe_methods = {
     pe_get_section_info,
     pe_get_byte_order,
-    pe_get_length_size,
-    pe_get_pointer_size,
+    pe_get_length_pointer_size,
+    pe_get_length_pointer_size,
     pe_get_section_count,
     pe_load_section
 };
