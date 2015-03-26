@@ -99,7 +99,7 @@ You can use ExcHndl by:
 
   * and loading `exchndl.dll` when your application starts, either by
 
-    * compiling and linking `exchndl2.cxx` source file
+    * compiling and linking `exchndl2.cpp` source file
 
     * or by explicitly calling `LoadLibrary("exchndl.dll")`
 
@@ -125,10 +125,10 @@ Here is how `sample.RPT` should look like:
     74D2ECC0 0028FE50 00403064 00000000  msvcrt.dll!_strxfrm_l
     74D2EDC8 74D2E991 00403064 00000000  msvcrt.dll!sscanf
     74D2ED67 00403067 00403064 00000001  msvcrt.dll!sscanf
-    004013DE 00000008 60000000 40166666  sample.exe!Function  [z:\projects\drmingw\sample/sample.cxx @ 12]
-    00401D3E 00000004 40B33333 0028FF08  sample.exe!Class::StaticMethod(int, float)  [z:\projects\drmingw\sample/sample.cxx @ 17]
-    00401D5E 00401970 00714458 0000000C  sample.exe!Class::Method()  [z:\projects\drmingw\sample/sample.cxx @ 21]
-    004013F9 00000001 00572F38 00571B38  sample.exe!main  [z:\projects\drmingw\sample/sample.cxx @ 27]
+    004013DE 00000008 60000000 40166666  sample.exe!Function  [z:\projects\drmingw\sample/sample.cpp @ 12]
+    00401D3E 00000004 40B33333 0028FF08  sample.exe!Class::StaticMethod(int, float)  [z:\projects\drmingw\sample/sample.cpp @ 17]
+    00401D5E 00401970 00714458 0000000C  sample.exe!Class::Method()  [z:\projects\drmingw\sample/sample.cpp @ 21]
+    004013F9 00000001 00572F38 00571B38  sample.exe!main  [z:\projects\drmingw\sample/sample.cpp @ 27]
     004010FD 7EFDE000 F769D382 00000000  sample.exe
     77269F42 00401280 7EFDE000 00000000  ntdll.dll!RtlInitializeExceptionChain
     77269F15 00401280 7EFDE000 00000000  ntdll.dll!RtlInitializeExceptionChain

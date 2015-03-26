@@ -17,12 +17,12 @@ LDFLAGS = -static-libgcc -static-libstdc++
 
 all: sample.exe
 
-sample.exe: sample.cxx exchndl2.cxx
+sample.exe: sample.cpp exchndl2.cpp
 
 %.exe: %.c
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
 
-%.exe: %.cxx
+%.exe: %.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 clean:
