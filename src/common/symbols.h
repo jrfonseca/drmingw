@@ -16,13 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef SYMBOLS_H
-#define SYMBOLS_H
+#pragma once
 
+#include <windows.h>
 #include <dbghelp.h>
+
 extern BOOL bSymInitialized;
 LPTSTR GetBaseName(LPTSTR lpFileName);
 BOOL GetSymFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize );
 BOOL GetLineFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber );
-
-#endif /* SYMBOLS_H */

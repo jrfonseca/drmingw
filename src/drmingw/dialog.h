@@ -16,9 +16,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#pragma once
 
-#ifndef DIALOG_H
-#define DIALOG_H
+#include <windows.h>
+
 
 INT_PTR CALLBACK
 AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
@@ -31,5 +32,3 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
 
 int
 Dialog(void);
-
-#endif /* DIALOG_H */

@@ -16,9 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#pragma once
 
-#ifndef DEMANGLE_H
-#define DEMANGLE_H
 
 #include <stddef.h>
 
@@ -32,5 +31,3 @@ demangle(const char *mangled_name);
 #ifdef __cplusplus
 }
 #endif
-
-#endif // DEMANGLE_H

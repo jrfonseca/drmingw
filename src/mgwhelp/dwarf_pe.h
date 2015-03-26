@@ -17,9 +17,7 @@
  */
 
 
-#ifndef _DWARF_PE_H_
-#define _DWARF_PE_H_
-
+#pragma once
 
 #include <dwarf.h>
 #include <libdwarf.h>
@@ -43,6 +41,3 @@ dwarf_pe_finish(Dwarf_Debug dbg, Dwarf_Error * error);
 #ifdef __cplusplus
 }
 #endif
-
-
-#endif /* _DWARF_PE_H_ */

@@ -16,8 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef MISC_H
-#define MISC_H
+#pragma once
 
 
 #include <windows.h>
@@ -71,5 +70,3 @@ OutputDebug (const char *format, ... )
 
 void _ErrorMessageBox (LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ... );
 #define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ## args)
-
-#endif /* MISC_H */

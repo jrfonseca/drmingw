@@ -16,8 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef _MGWHELP_H_
-#define _MGWHELP_H_
+#pragma once
 
 #include <windows.h>
 #include <dbghelp.h>
@@ -48,5 +47,3 @@ MgwSymFromAddrW(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL
 
 EXTERN_C BOOL WINAPI
 MgwSymGetLineFromAddrW64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINEW64 LineW);
-
-#endif

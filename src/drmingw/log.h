@@ -16,11 +16,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#ifndef LOG_H
-#define LOG_H
+#pragma once
+
+#include <windows.h>
+
 
 int __cdecl lprintf (const TCHAR * format, ... );
 BOOL LogException (DEBUG_EVENT DebugEvent );
 BOOL DumpSource (LPCTSTR lpFileName, DWORD dwLineNumber );
-
-#endif /* LOG_H */

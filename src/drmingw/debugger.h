@@ -17,9 +17,7 @@
  */
 
 
-#ifndef DEBUGGER_H
-#define DEBUGGER_H
-
+#pragma once
 
 #include <windows.h>
 
@@ -65,5 +63,3 @@ extern PMODULE_LIST_INFO ModuleListInfo;
 BOOL ObtainSeDebugPrivilege (void);
 void DebugProcess (void * dummy );
 BOOL DebugMainLoop (void);
-
-#endif /* DEBUGGER_H */

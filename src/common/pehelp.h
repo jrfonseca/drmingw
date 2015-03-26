@@ -16,14 +16,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#pragma once
 
-#ifndef PEHELP_H
-#define PEHELP_H
+#include <windows.h>
+
 
 DWORD64 WINAPI
 GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress);
 
 DWORD64
 PEGetImageBase(HANDLE hProcess, DWORD64 hModule);
-
-#endif // PEHELP_H
