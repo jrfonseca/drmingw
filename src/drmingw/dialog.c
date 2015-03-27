@@ -19,7 +19,7 @@
 #include <windows.h>
 #include <tchar.h>
 
-#include "misc.h"
+#include "errmsg.h"
 #include "resource.h"
 #include "dialog.h"
 

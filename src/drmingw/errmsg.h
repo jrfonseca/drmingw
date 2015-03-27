@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 Jose Fonseca
+ * Copyright 2002-2015 Jose Fonseca
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -20,26 +20,30 @@
 
 
 #include <windows.h>
-#include <stdio.h>
-#include <stdarg.h>
+#include <tchar.h>
 
 
-static inline void
-    __attribute__ ((format (printf, 1, 2)))
-OutputDebug (const char *format, ... )
-{
-#ifndef NDEBUG
+// XXX: This leaks the error message
+#define FormatErrorMessage(n) \
+({ \
+    LPVOID lpMsgBuf; \
+ \
+    FormatMessage( \
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | \
+        FORMAT_MESSAGE_FROM_SYSTEM | \
+        FORMAT_MESSAGE_IGNORE_INSERTS, \
+        NULL, \
+        n, \
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
+        (LPTSTR) &lpMsgBuf, \
+        0, \
+        NULL \
+    ); \
+ \
+    (LPSTR) lpMsgBuf; \
+})
 
-       char buf[512];
-       va_list ap;
-       va_start(ap, format);
-       _vsnprintf(buf, sizeof(buf), format, ap);
-       OutputDebugStringA(buf);
-       va_end(ap);
+#define LastErrorMessage() FormatErrorMessage(GetLastError())
 
-#else
-
-       (void)format;
-
-#endif
-}
+void _ErrorMessageBox (LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ... );
+#define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ## args)

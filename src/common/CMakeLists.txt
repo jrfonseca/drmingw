@@ -1,5 +1,4 @@
 add_library (common STATIC
-    misc.c
     symbols.c
     pehelp.c
 )

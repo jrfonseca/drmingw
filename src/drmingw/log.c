@@ -29,6 +29,7 @@
 
 #include "debugger.h"
 #include "dialog.h"
+#include "errmsg.h"
 #include "misc.h"
 #include "pehelp.h"
 #include "symbols.h"

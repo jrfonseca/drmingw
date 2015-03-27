@@ -26,6 +26,7 @@
 
 #include "debugger.h"
 #include "log.h"
+#include "errmsg.h"
 #include "misc.h"
 
 
