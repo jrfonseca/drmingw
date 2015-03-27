@@ -23,10 +23,13 @@
 #include "resource.h"
 #include "dialog.h"
 
-static HINSTANCE hInstance = NULL;
-static char szClassName[] = "MyWindowClass";
+static HINSTANCE g_hInstance = NULL;
 
-INT_PTR CALLBACK AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
+static HWND g_hEdit = NULL;
+
+
+static INT_PTR CALLBACK
+AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
    switch(Message)
    {
@@ -48,37 +51,37 @@ INT_PTR CALLBACK AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lPa
    return FALSE;
 }
 
-static HWND hEdit = NULL;
 
 void
-AppendText(LPCTSTR szText)
+appendText(LPCTSTR szText)
 {
-    if (!hEdit) {
+    if (!g_hEdit) {
         return;
     }
 
     // http://support.microsoft.com/kb/109550
-    int ndx = GetWindowTextLength(hEdit);
-    SetFocus(hEdit);
-    SendMessage(hEdit, EM_SETSEL, (WPARAM) ndx, (LPARAM) ndx);
-    SendMessage(hEdit, EM_REPLACESEL, (WPARAM) 0, (LPARAM) szText);
+    int ndx = GetWindowTextLength(g_hEdit);
+    SetFocus(g_hEdit);
+    SendMessage(g_hEdit, EM_SETSEL, (WPARAM) ndx, (LPARAM) ndx);
+    SendMessage(g_hEdit, EM_REPLACESEL, (WPARAM) 0, (LPARAM) szText);
 }
 
-LRESULT CALLBACK
+
+static LRESULT CALLBACK
 WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
     switch(Message)
     {
         case WM_CREATE:
         {
-            hEdit = CreateWindow(
+            g_hEdit = CreateWindow(
                 "EDIT",
                 "",
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY,
                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                 hwnd,
                 (HMENU)IDC_MESSAGE,
-                hInstance,
+                g_hInstance,
                 NULL
             );
 
@@ -154,14 +157,14 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                         if((hFile = CreateFile(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE)
                         {
                             DWORD dwTextLength;
-                            dwTextLength = GetWindowTextLength(hEdit);
+                            dwTextLength = GetWindowTextLength(g_hEdit);
                             if(dwTextLength > 0) // No need to bother if there's no text.
                             {
                                 LPSTR pszText;
 
                                 if((pszText = GlobalAlloc(GPTR, dwTextLength + 1)) != NULL)
                                 {
-                                    if(GetWindowText(hEdit, pszText, dwTextLength + 1))
+                                    if(GetWindowText(g_hEdit, pszText, dwTextLength + 1))
                                     {
                                         DWORD dwWritten;
                                         if(WriteFile(hFile, pszText, dwTextLength, &dwWritten, NULL))
@@ -183,7 +186,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                     break;
 
                 case CM_HELP_ABOUT:
-                    return DialogBox(hInstance, MAKEINTRESOURCE(IDD_ABOUT), hwnd, AboutDlgProc);
+                    return DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUT), hwnd, AboutDlgProc);
                   }
             break;
         case WM_CLOSE:
@@ -199,14 +202,14 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 }
 
 
-int Dialog(void)
+void
+createDialog(void)
 {
     STARTUPINFO startinfo;
     WNDCLASSEX WndClass;
     HWND hwnd;
-    MSG Msg;
 
-    hInstance = GetModuleHandle(NULL);
+    g_hInstance = GetModuleHandle(NULL);
     GetStartupInfoA(&startinfo);
 
     WndClass.cbSize        = sizeof(WNDCLASSEX);
@@ -214,45 +217,53 @@ int Dialog(void)
     WndClass.lpfnWndProc   = WndProc;
     WndClass.cbClsExtra    = 0;
     WndClass.cbWndExtra    = 0;
-    WndClass.hInstance     = hInstance;
-    WndClass.hIcon         = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MAINICON));
+    WndClass.hInstance     = g_hInstance;
+    WndClass.hIcon         = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
     WndClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
     WndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
     WndClass.lpszMenuName  = MAKEINTRESOURCE(IDM_MAINMENU);
-    WndClass.lpszClassName = szClassName;
-    WndClass.hIconSm       = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MAINICON)) /*LoadIcon(NULL, IDI_APPLICATION)*/;
+    WndClass.lpszClassName = "DrMingw";
+    WndClass.hIconSm       = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON)) /*LoadIcon(NULL, IDI_APPLICATION)*/;
 
-    if(!RegisterClassEx(&WndClass))
-    {
+    if (!RegisterClassEx(&WndClass)) {
         ErrorMessageBox(_T("RegisterClassEx: %s"), LastErrorMessage());
-        return 0;
+        exit(EXIT_FAILURE);
     }
 
     hwnd = CreateWindowEx(
         WS_EX_CLIENTEDGE,
-        szClassName,
+        WndClass.lpszClassName,
         "Dr. Mingw",
         WS_OVERLAPPEDWINDOW,
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
         NULL,
         NULL,
-        hInstance,
+        g_hInstance,
         NULL
     );
 
-    if(hwnd == NULL)
-    {
+    if (hwnd == NULL) {
         ErrorMessageBox(_T("CreateWindowEx: %s"), LastErrorMessage());
-        return 0;
+        exit(EXIT_FAILURE);
     }
 
     ShowWindow(hwnd, (startinfo.dwFlags & STARTF_USESHOWWINDOW) ? startinfo.wShowWindow : SW_SHOWDEFAULT);
     UpdateWindow(hwnd);
+}
 
-    while(GetMessage(&Msg, NULL, 0, 0))
-    {
+
+int
+mainLoop(void)
+{
+    MSG Msg;
+    BOOL bRet;
+
+    while ((bRet = GetMessage(&Msg, NULL, 0, 0)) > 0) {
         TranslateMessage(&Msg);
         DispatchMessage(&Msg);
+    }
+    if (bRet < 0) {
+        return EXIT_FAILURE;
     }
 
     return Msg.wParam;

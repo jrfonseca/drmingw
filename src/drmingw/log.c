@@ -47,7 +47,7 @@ int __cdecl lprintf(const TCHAR * format, ...)
     retValue = _vstprintf(szBuffer, format, ap);
     va_end(ap);
 
-    AppendText(szBuffer);
+    appendText(szBuffer);
 
     return retValue;
 }

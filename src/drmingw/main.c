@@ -434,9 +434,11 @@ main(int argc, char **argv)
                 MB_OK | MB_ICONERROR
             );
 
+        createDialog();
+
         _beginthread(DebugProcess, 0, NULL);
 
-        Dialog();
+        return mainLoop();
     } else {
         help();
     }

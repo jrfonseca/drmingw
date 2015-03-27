@@ -21,14 +21,11 @@
 #include <windows.h>
 
 
-INT_PTR CALLBACK
-AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
+void
+appendText(LPCTSTR szText);
 
 void
-AppendText(LPCTSTR szText);
-
-LRESULT CALLBACK
-WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
+createDialog(void);
 
 int
-Dialog(void);
+mainLoop(void);
