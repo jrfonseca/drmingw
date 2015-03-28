@@ -25,6 +25,9 @@
 #include "dwarf_incl.h"
 #include "dwarf_pe.h"
 
+#include "outdbg.h"
+#include "paths.h"
+
 
 typedef struct {
     HANDLE hFile;
@@ -141,7 +144,7 @@ dwarf_pe_init(const char *image,
               Dwarf_Debug *ret_dbg,
               Dwarf_Error *error)
 {
-    int res = 0;
+    int res = DW_DLV_ERROR;
     pe_access_object_t *pe_obj = 0;
     Dwarf_Obj_Access_Interface *intfc = 0;
 
@@ -154,6 +157,7 @@ dwarf_pe_init(const char *image,
     pe_obj->hFile = CreateFile(image, GENERIC_READ, FILE_SHARE_READ, NULL,
                        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (pe_obj->hFile == INVALID_HANDLE_VALUE) {
+        OutputDebug("MGWHELP: %s - file not found\n", image);
         goto no_file;
     }
 
@@ -193,13 +197,48 @@ dwarf_pe_init(const char *image,
     intfc->methods = &pe_methods;
 
     res = dwarf_object_init(intfc, errhand, errarg, ret_dbg, error);
-    if (res != DW_DLV_OK) {
-        goto no_dbg;
+    if (res == DW_DLV_OK) {
+        return res;
     }
 
-    return DW_DLV_OK;
+    // https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+    Dwarf_Unsigned section_count = pe_get_section_count(pe_obj);
+    int section_index;
+    for (section_index = 0; section_index < section_count; ++section_index) {
+        Dwarf_Obj_Access_Section doas;
+        memset(&doas, 0, sizeof doas);
+        int err = 0;
+        pe_get_section_info(pe_obj, section_index, &doas, &err);
+        if (!doas.size) {
+            continue;
+        }
 
-no_dbg:
+        if (strcmp(doas.name, ".gnu_debuglink") == 0) {
+            Dwarf_Small *data;
+            pe_load_section(pe_obj, section_index, &data, &err);
+            const char *debuglink = (const char *)data;
+
+            const char *pSeparator = getSeparator(image);
+            char *debugImage;
+            if (pSeparator) {
+                size_t cbDir = pSeparator - image;
+                size_t cbFile = strlen(debuglink);
+                debugImage = malloc(cbDir + cbFile + 1);
+                memcpy(debugImage, image, cbDir);
+                memcpy(debugImage + cbDir, debuglink, cbFile + 1);
+            } else {
+                debugImage = strdup(debuglink);
+            }
+
+            res = dwarf_pe_init(debugImage, errhand, errarg, ret_dbg, error);
+
+            free(debugImage);
+
+            break;
+        }
+    }
+
+
     free(intfc);
 no_intfc:
     ;
@@ -210,7 +249,7 @@ no_file_mapping:
 no_file:
     free(pe_obj);
 no_internals:
-    return DW_DLV_ERROR;
+    return res;
 }
 
 
