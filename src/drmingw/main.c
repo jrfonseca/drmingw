@@ -29,7 +29,7 @@
 #include "debugger.h"
 #include "dialog.h"
 #include "log.h"
-#include "misc.h"
+#include "outdbg.h"
 
 
 static int process_id_given = 0;    /* Whether process-id was given.  */

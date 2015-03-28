@@ -27,7 +27,7 @@
 #include "debugger.h"
 #include "log.h"
 #include "errmsg.h"
-#include "misc.h"
+#include "outdbg.h"
 
 
 int breakpoint_flag = 0;    /* Treat breakpoints as exceptions (default=no).  */

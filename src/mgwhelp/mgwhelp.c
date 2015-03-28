@@ -27,7 +27,7 @@
 #include <tchar.h>
 #include <psapi.h>
 
-#include "misc.h"
+#include "outdbg.h"
 #include "demangle.h"
 #include "pehelp.h"
 #include "mgwhelp.h"

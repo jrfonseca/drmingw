@@ -24,7 +24,7 @@
 #include <psapi.h>
 #include <dbghelp.h>
 
-#include "misc.h"
+#include "outdbg.h"
 #include "symbols.h"
 
 

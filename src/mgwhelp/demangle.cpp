@@ -23,7 +23,7 @@
 #include <stdlib.h>
 
 #include "demangle.h"
-#include "misc.h"
+#include "outdbg.h"
 
 
 /**

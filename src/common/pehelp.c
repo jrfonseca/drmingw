@@ -23,7 +23,7 @@
 #include <windows.h>
 #include <psapi.h>
 
-#include "misc.h"
+#include "outdbg.h"
 #include "dbghelp.h"
 #include "pehelp.h"
 
