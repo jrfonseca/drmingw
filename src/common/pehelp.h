@@ -25,4 +25,4 @@ DWORD64 WINAPI
 GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress);
 
 DWORD64
-PEGetImageBase(HANDLE hProcess, DWORD64 hModule);
+PEGetImageBase(const char *szImageName);

@@ -56,10 +56,8 @@ GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
 }
 
 DWORD64
-PEGetImageBase(HANDLE hProcess, DWORD64 hModule)
+PEGetImageBase(const char *szImageName)
 {
-    char szImageName[MAX_PATH];
-    DWORD dwRet;
     HANDLE hFile;
     HANDLE hFileMapping;
     PBYTE lpFileBase;
@@ -69,14 +67,6 @@ PEGetImageBase(HANDLE hProcess, DWORD64 hModule)
     PIMAGE_OPTIONAL_HEADER32 pOptionalHeader32;
     PIMAGE_OPTIONAL_HEADER64 pOptionalHeader64;
     DWORD64 ImageBase = 0;
-
-    dwRet = GetModuleFileNameExA(hProcess,
-                                 (HMODULE)(UINT_PTR)hModule,
-                                 szImageName,
-                                 sizeof szImageName);
-    if (dwRet == 0) {
-        goto no_file;
-    }
 
     hFile = CreateFile(szImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
                        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);

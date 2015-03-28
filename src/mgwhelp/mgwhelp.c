@@ -317,7 +317,7 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
         goto no_module_name;
     }
 
-    module->image_base_vma = PEGetImageBase(process->hProcess, Base);
+    module->image_base_vma = PEGetImageBase(module->LoadedImageName);
 
     Dwarf_Error error = 0;
     if (dwarf_pe_init(module->LoadedImageName, 0, 0, &module->dbg, &error) == DW_DLV_OK) {
