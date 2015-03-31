@@ -51,6 +51,17 @@ add_custom_target (test_mgwhelp_stripped
 )
 
 
+add_executable (exchndl_test
+    exchndl_test.c
+)
+add_custom_target (test_exchndl
+    COMMAND ${WINE_COMMAND} $<TARGET_FILE:exchndl_test>
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    DEPENDS exchndl_test exchndl mgwhelp
+    VERBATIM
+)
+
+
 if (POLICY CMP0037)
     cmake_policy (SET CMP0037 OLD)
 endif ()
@@ -59,4 +70,5 @@ add_custom_target (test
     DEPENDS
         test_mgwhelp
         test_mgwhelp_stripped
+        test_exchndl
 )

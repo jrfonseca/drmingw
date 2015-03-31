@@ -26,33 +26,6 @@
 
 
 static void
-logLastError(void)
-{
-    DWORD dwLastError = GetLastError();
-
-    // http://msdn.microsoft.com/en-gb/library/windows/desktop/ms680582.aspx
-    LPSTR lpErrorMsg = NULL;
-    DWORD cbWritten;
-    cbWritten = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                              FORMAT_MESSAGE_FROM_SYSTEM |
-                              FORMAT_MESSAGE_IGNORE_INSERTS,
-                              NULL,
-                              dwLastError,
-                              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                              (LPSTR) &lpErrorMsg,
-                              0, NULL);
-
-    if (cbWritten) {
-        test_diagnostic("%s", lpErrorMsg);
-    } else {
-        test_diagnostic("GetLastError() = %lu", dwLastError);
-    }
-
-    LocalFree(lpErrorMsg);
-}
-
-
-static void
 checkSym(HANDLE hProcess,
          const void *symbol,
          const char *szSymbolName)
@@ -73,7 +46,7 @@ checkSym(HANDLE hProcess,
     ok = SymFromAddr(hProcess, dwAddr, &Displacement, &s.Symbol);
     test_line(ok, "SymFromAddr(&%s)", szSymbolName);
     if (!ok) {
-        logLastError();
+        test_diagnostic_last_error();
     } else {
         ok = strcmp(s.Symbol.Name, szSymbolName) == 0;
         test_line(ok, "SymFromAddr(&%s).Name", szSymbolName);
@@ -106,7 +79,7 @@ checkSymLine(HANDLE hProcess,
     ok = SymGetLineFromAddr64(hProcess, dwAddr, &dwDisplacement, &Line);
     test_line(ok, "SymGetLineFromAddr64(&%s)", szSymbolName);
     if (!ok) {
-        logLastError();
+        test_diagnostic_last_error();
     } else {
         ok = strcmp(Line.FileName, szFileName) == 0;
         test_line(ok, "SymGetLineFromAddr64(&%s).FileName", szSymbolName);
@@ -167,7 +140,7 @@ main()
     ok = SymInitialize(hProcess, "", TRUE);
     test_line(ok, "SymInitialize()");
     if (!ok) {
-        logLastError();
+        test_diagnostic_last_error();
     } {
         checkSymLine(hProcess, &foo, "foo", __FILE__, foo_line);
 
@@ -179,7 +152,7 @@ main()
         ok = SymCleanup(hProcess);
         test_line(ok, "SymCleanup()");
         if (!ok) {
-            logLastError();
+            test_diagnostic_last_error();
         }
     }
 
