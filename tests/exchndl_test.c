@@ -27,8 +27,6 @@
 #include <windows.h>
 
 
-#define ARRAY_SIZE(_x) (sizeof(_x)/sizeof((_x)[0]))
-
 #define PROG_NAME "exchndl_test"
 
 
@@ -83,7 +81,7 @@ main(int argc, char **argv)
         ok = fp != NULL;
         test_line(ok, "fopen(\"%s\")", szReport);
         if (ok) {
-            const unsigned nPatterns = ARRAY_SIZE(g_szPatterns);
+            const unsigned nPatterns = _countof(g_szPatterns);
             bool found[nPatterns];
             ZeroMemory(found, sizeof found);
 
