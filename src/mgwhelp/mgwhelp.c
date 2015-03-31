@@ -175,7 +175,7 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_dwarf_info *in
         return FALSE;
     }
 
-    Base = GetModuleBase64(hProcess, Address);
+    Base = MgwSymGetModuleBase64(hProcess, Address);
     if (!Base) {
         return FALSE;
     }
@@ -248,6 +248,34 @@ DWORD WINAPI
 MgwSymSetOptions(DWORD SymOptions)
 {
     return SymSetOptions(SymOptions);
+}
+
+
+/*
+ * The GetModuleBase64 function retrieves the base address of the module that
+ * contains the specified address.
+ *
+ * Same as SymGetModuleBase64, but that seems to often cause problems.
+ */
+DWORD64 WINAPI
+MgwSymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
+{
+    if (hProcess == GetCurrentProcess()) {
+        HMODULE hModule = NULL;
+        BOOL bRet = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                                      (LPCTSTR)(UINT_PTR)dwAddress,
+                                      &hModule);
+        if (bRet) {
+            return (DWORD64)(UINT_PTR)hModule;
+        }
+    }
+
+    MEMORY_BASIC_INFORMATION Buffer;
+    if (VirtualQueryEx(hProcess, (LPCVOID)(UINT_PTR)dwAddress, &Buffer, sizeof Buffer) != 0) {
+        return (DWORD64)(UINT_PTR)Buffer.AllocationBase;
+    }
+
+    return SymGetModuleBase64(hProcess, dwAddress);
 }
 
 

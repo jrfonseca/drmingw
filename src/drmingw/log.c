@@ -31,7 +31,6 @@
 #include "dialog.h"
 #include "errmsg.h"
 #include "outdbg.h"
-#include "pehelp.h"
 #include "symbols.h"
 #include "log.h"
 
@@ -166,7 +165,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
                 pContext,
                 NULL,
                 SymFunctionTableAccess64,
-                GetModuleBase64,
+                SymGetModuleBase64,
                 NULL
             )
         )
@@ -194,7 +193,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         );
 #endif
 
-        if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, StackFrame.AddrPC.Offset)) &&
+        if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, StackFrame.AddrPC.Offset)) &&
            GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
         {
 
@@ -400,7 +399,7 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
 
     // Now print information about where the fault occured
     lprintf(_T(" at location %p"), DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
-    if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(pProcessInfo->hProcess, (DWORD64)(INT_PTR)DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) &&
+    if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(pProcessInfo->hProcess, (DWORD64)(INT_PTR)DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) &&
        GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof szModule))
         lprintf(_T(" in module %s"), GetBaseName(szModule));
 

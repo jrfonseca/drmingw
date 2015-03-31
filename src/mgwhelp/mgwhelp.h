@@ -30,6 +30,9 @@ MgwSymCleanup(HANDLE hProcess);
 EXTERN_C DWORD WINAPI
 MgwSymSetOptions(DWORD SymOptions);
 
+EXTERN_C DWORD64 WINAPI
+MgwSymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddress);
+
 EXTERN_C BOOL WINAPI
 MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol);
 

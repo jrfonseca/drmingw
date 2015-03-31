@@ -28,33 +28,6 @@
 #include "pehelp.h"
 
 
-/*
- * The GetModuleBase64 function retrieves the base address of the module that
- * contains the specified address.
- *
- * Same as SymGetModuleBase64, but that seems to often cause problems.
- */
-DWORD64 WINAPI
-GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
-{
-    if (hProcess == GetCurrentProcess()) {
-        HMODULE hModule = NULL;
-        BOOL bRet = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-                                      (LPCTSTR)(UINT_PTR)dwAddress,
-                                      &hModule);
-        if (bRet) {
-            return (DWORD64)(UINT_PTR)hModule;
-        }
-    }
-
-    MEMORY_BASIC_INFORMATION Buffer;
-    if (VirtualQueryEx(hProcess, (LPCVOID)(UINT_PTR)dwAddress, &Buffer, sizeof Buffer) != 0) {
-        return (DWORD64)(UINT_PTR)Buffer.AllocationBase;
-    }
-
-    return SymGetModuleBase64(hProcess, dwAddress);
-}
-
 DWORD64
 PEGetImageBase(const char *szImageName)
 {

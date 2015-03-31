@@ -51,7 +51,6 @@
 #include <malloc.h>
 #include <dbghelp.h>
 
-#include "pehelp.h"
 #include "symbols.h"
 
 
@@ -161,7 +160,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
                 pContext,
                 NULL,
                 SymFunctionTableAccess64,
-                GetModuleBase64,
+                SymGetModuleBase64,
                 NULL
             )
         )
@@ -189,7 +188,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         );
 #endif
 
-        if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, (DWORD64)(INT_PTR)StackFrame.AddrPC.Offset)) &&
+        if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)StackFrame.AddrPC.Offset)) &&
            GetModuleFileName(hModule, szModule, sizeof(szModule)))
         {
             rprintf( _T("  %s"), GetBaseName(szModule));
@@ -407,7 +406,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
     // Now print information about where the fault occured
     rprintf(_T(" at location %p"), pExceptionRecord->ExceptionAddress);
-    if((hModule = (HMODULE)(INT_PTR)GetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
+    if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
        GetModuleFileName(hModule, szModule, sizeof szModule))
         rprintf(_T(" in module %s"), szModule);
 

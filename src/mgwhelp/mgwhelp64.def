@@ -3,6 +3,7 @@ EXPORTS
 	SymInitializeW = MgwSymInitializeW
 	SymCleanup = MgwSymCleanup
 	SymSetOptions = MgwSymSetOptions
+	SymGetModuleBase64 = MgwSymGetModuleBase64
 	SymFromAddr = MgwSymFromAddr
 	SymFromAddrW = MgwSymFromAddrW
 	SymGetLineFromAddr64 = MgwSymGetLineFromAddr64
@@ -59,7 +60,6 @@ EXPORTS
 	SymGetLinePrev
 	SymGetLinePrev64
 	SymGetModuleBase
-	SymGetModuleBase64
 	SymGetModuleInfo
 	SymGetModuleInfo64
 	SymGetModuleInfoW

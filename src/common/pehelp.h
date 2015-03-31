@@ -21,8 +21,5 @@
 #include <windows.h>
 
 
-DWORD64 WINAPI
-GetModuleBase64(HANDLE hProcess, DWORD64 dwAddress);
-
 DWORD64
 PEGetImageBase(const char *szImageName);
