@@ -233,44 +233,13 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     // Start out with a banner
     rprintf(_T("-------------------\r\n\r\n"));
 
-    {
-        TCHAR *lpDayOfWeek[] = {
-            _T("Sunday"),
-            _T("Monday"),
-            _T("Tuesday"),
-            _T("Wednesday"),
-            _T("Thursday"),
-            _T("Friday"),
-            _T("Saturday")
-        };
-        TCHAR *lpMonth[] = {
-            NULL,
-            _T("January"),
-            _T("February"),
-            _T("March"),
-            _T("April"),
-            _T("May"),
-            _T("June"),
-            _T("July"),
-            _T("August"),
-            _T("September"),
-            _T("October"),
-            _T("November"),
-            _T("December")
-        };
-        SYSTEMTIME SystemTime;
-
-        GetLocalTime(&SystemTime);
-        rprintf(_T("Error occured on %s, %s %i, %i at %02i:%02i:%02i.\r\n\r\n"),
-            lpDayOfWeek[SystemTime.wDayOfWeek],
-            lpMonth[SystemTime.wMonth],
-            SystemTime.wDay,
-            SystemTime.wYear,
-            SystemTime.wHour,
-            SystemTime.wMinute,
-            SystemTime.wSecond
-        );
-    }
+    SYSTEMTIME SystemTime;
+    GetLocalTime(&SystemTime);
+    TCHAR szDateStr[128];
+    GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, &SystemTime, _T("dddd',' MMMM d',' yyyy"), szDateStr, _countof(szDateStr));
+    TCHAR szTimeStr[128];
+    GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &SystemTime, _T("HH':'mm':'ss"), szTimeStr, _countof(szTimeStr));
+    rprintf(_T("Error occured on %s at %s.\r\n\r\n"), szDateStr, szTimeStr);
 
     // First print information about the type of fault
     rprintf(_T("%s caused "),  GetModuleFileName(NULL, szModule, MAX_PATH) ? szModule : "Application");
