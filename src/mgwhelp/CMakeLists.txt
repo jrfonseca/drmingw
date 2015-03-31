@@ -7,6 +7,7 @@ endif ()
 add_library (mgwhelp SHARED
     ${MGWHELP_DEF}
     demangle.cpp
+    dwarf_find.c
     dwarf_pe.c
     mgwhelp.c
 )
