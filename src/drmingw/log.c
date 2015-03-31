@@ -58,21 +58,95 @@ static BOOL dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber);
 
 #define MAX_SYM_NAME_SIZE 512
 
-static BOOL
-dumpStackWithContext(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
+
+static void
+dumpContext(
+#ifdef _WIN64
+    PWOW64_CONTEXT
+#else
+    PCONTEXT
+#endif
+    pContext
+)
+{
+    // Show the registers
+    lprintf(_T("Registers:\r\n"));
+    if (pContext->ContextFlags & CONTEXT_INTEGER) {
+        lprintf(
+            _T("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\r\n"),
+            pContext->Eax,
+            pContext->Ebx,
+            pContext->Ecx,
+            pContext->Edx,
+            pContext->Esi,
+            pContext->Edi
+        );
+    }
+    if (pContext->ContextFlags & CONTEXT_CONTROL) {
+        lprintf(
+            _T("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\r\n"),
+            pContext->Eip,
+            pContext->Esp,
+            pContext->Ebp,
+            (pContext->EFlags >> 12) & 3,    //  IOPL level value
+            pContext->EFlags & 0x00100000 ? "vip" : "   ",    //  VIP (virtual interrupt pending)
+            pContext->EFlags & 0x00080000 ? "vif" : "   ",    //  VIF (virtual interrupt flag)
+            pContext->EFlags & 0x00000800 ? "ov" : "nv",    //  VIF (virtual interrupt flag)
+            pContext->EFlags & 0x00000400 ? "dn" : "up",    //  OF (overflow flag)
+            pContext->EFlags & 0x00000200 ? "ei" : "di",    //  IF (interrupt enable flag)
+            pContext->EFlags & 0x00000080 ? "ng" : "pl",    //  SF (sign flag)
+            pContext->EFlags & 0x00000040 ? "zr" : "nz",    //  ZF (zero flag)
+            pContext->EFlags & 0x00000010 ? "ac" : "na",    //  AF (aux carry flag)
+            pContext->EFlags & 0x00000004 ? "po" : "pe",    //  PF (parity flag)
+            pContext->EFlags & 0x00000001 ? "cy" : "nc"    //  CF (carry flag)
+        );
+    }
+    if (pContext->ContextFlags & CONTEXT_SEGMENTS) {
+        lprintf(
+            _T("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx"),
+            pContext->SegCs,
+            pContext->SegSs,
+            pContext->SegDs,
+            pContext->SegEs,
+            pContext->SegFs,
+            pContext->SegGs
+        );
+        if (pContext->ContextFlags & CONTEXT_CONTROL) {
+            lprintf(
+                _T("             efl=%08lx"),
+                pContext->EFlags
+            );
+        }
+    }
+    else {
+        if (pContext->ContextFlags & CONTEXT_CONTROL) {
+            lprintf(
+                _T("                                                                       efl=%08lx"),
+                pContext->EFlags
+            );
+        }
+    }
+    lprintf(_T("\r\n\r\n"));
+}
+
+
+void
+dumpStack(HANDLE hProcess, HANDLE hThread)
 {
     DWORD MachineType;
+
+    CONTEXT Context;
+    ZeroMemory(&Context, sizeof Context);
+    Context.ContextFlags = CONTEXT_FULL;
+    PCONTEXT pContext = &Context;
+
     STACKFRAME64 StackFrame;
+    ZeroMemory(&StackFrame, sizeof StackFrame);
 
-    HMODULE hModule = NULL;
-    TCHAR szModule[MAX_PATH];
-
-    memset( &StackFrame, 0, sizeof(StackFrame) );
-
-    // Initialize the STACKFRAME structure for the first call.  This is only
-    // necessary for Intel CPUs, and isn't mentioned in the documentation.
-#if defined(_M_IX86)
+#ifndef _WIN64
     MachineType = IMAGE_FILE_MACHINE_I386;
+    GetThreadContext(hThread, &Context);
+    dumpContext(pContext);
     StackFrame.AddrPC.Offset = pContext->Eip;
     StackFrame.AddrPC.Mode = AddrModeFlat;
     StackFrame.AddrStack.Offset = pContext->Esp;
@@ -88,15 +162,17 @@ dumpStackWithContext(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         ZeroMemory(&Wow64Context, sizeof Wow64Context);
         Wow64Context.ContextFlags = WOW64_CONTEXT_FULL;
         Wow64GetThreadContext(hThread, &Wow64Context);
+        pContext = (PCONTEXT)&Wow64Context;
+        dumpContext(&Wow64Context);
         StackFrame.AddrPC.Offset = Wow64Context.Eip;
         StackFrame.AddrPC.Mode = AddrModeFlat;
         StackFrame.AddrStack.Offset = Wow64Context.Esp;
         StackFrame.AddrStack.Mode = AddrModeFlat;
         StackFrame.AddrFrame.Offset = Wow64Context.Ebp;
         StackFrame.AddrFrame.Mode = AddrModeFlat;
-        pContext = (PCONTEXT)&Wow64Context;
     } else {
         MachineType = IMAGE_FILE_MACHINE_AMD64;
+        GetThreadContext(hThread, &Context);
         StackFrame.AddrPC.Offset = pContext->Rip;
         StackFrame.AddrPC.Mode = AddrModeFlat;
         StackFrame.AddrStack.Offset = pContext->Rsp;
@@ -106,16 +182,18 @@ dumpStackWithContext(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     }
 #endif
 
-    lprintf( _T("AddrPC   Params\r\n") );
+    if (MachineType == IMAGE_FILE_MACHINE_I386) {
+        lprintf( _T("AddrPC   Params\r\n") );
+    } else {
+        lprintf( _T("AddrPC           Params\r\n") );
+    }
 
-    while ( 1 )
-    {
-        BOOL bSuccess = FALSE;
+    while (TRUE) {
         TCHAR szSymName[MAX_SYM_NAME_SIZE] = _T("");
         TCHAR szFileName[MAX_PATH] = _T("");
         DWORD dwLineNumber = 0;
 
-        if(!StackWalk64(
+        if (!StackWalk64(
                 MachineType,
                 hProcess,
                 hThread,
@@ -133,55 +211,56 @@ dumpStackWithContext(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         if ( 0 == StackFrame.AddrFrame.Offset )
             break;
 
-#ifdef _M_IX86
-        lprintf(
-            _T("%08lX %08lX %08lX %08lX"),
-            (DWORD)StackFrame.AddrPC.Offset,
-            (DWORD)StackFrame.Params[0],
-            (DWORD)StackFrame.Params[1],
-            (DWORD)StackFrame.Params[2]
-        );
-#else
-        lprintf(
-            _T("%08I64X %08I64X %08I64X %08I64X"),
-            StackFrame.AddrPC.Offset,
-            StackFrame.Params[0],
-            StackFrame.Params[1],
-            StackFrame.Params[2]
-        );
-#endif
+        if (MachineType == IMAGE_FILE_MACHINE_I386) {
+            lprintf(
+                _T("%08lX %08lX %08lX %08lX"),
+                (DWORD)StackFrame.AddrPC.Offset,
+                (DWORD)StackFrame.Params[0],
+                (DWORD)StackFrame.Params[1],
+                (DWORD)StackFrame.Params[2]
+            );
+        } else {
+            lprintf(
+                _T("%016I64X %016I64X %016I64X %016I64X"),
+                StackFrame.AddrPC.Offset,
+                StackFrame.Params[0],
+                StackFrame.Params[1],
+                StackFrame.Params[2]
+            );
+        }
 
-        if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, StackFrame.AddrPC.Offset)) &&
-           GetModuleFileNameEx(hProcess, hModule, szModule, sizeof(szModule)))
-        {
+        BOOL bSymbol = TRUE;
+        BOOL bLine = FALSE;
+
+        HMODULE hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, StackFrame.AddrPC.Offset);
+        TCHAR szModule[MAX_PATH];
+        if (hModule &&
+            GetModuleFileNameEx(hProcess, hModule, szModule, MAX_PATH)) {
 
             lprintf( _T(" %s"), GetBaseName(szModule));
 
-            if(bSymInitialized)
-                if((bSuccess = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
-                {
-                    UnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
+            bSymbol = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE);
+            if (bSymbol) {
+                UnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 
-                    lprintf( _T("!%s"), szSymName);
+                lprintf( _T("!%s"), szSymName);
 
-                    if (GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber))
-                        lprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
+                bLine = GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber);
+                if (bLine) {
+                    lprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
                 }
-
-            if (!bSuccess) {
+            } else {
                 lprintf( _T("!0x%I64x"), StackFrame.AddrPC.Offset - (DWORD)(INT_PTR)hModule);
             }
         }
 
         lprintf(_T("\r\n"));
 
-        if(bSuccess && dumpSourceCode(szFileName, dwLineNumber))
+        if (bLine && dumpSourceCode(szFileName, dwLineNumber))
             lprintf(_T("\r\n"));
     }
 
     lprintf(_T("\r\n"));
-
-    return TRUE;
 }
 
 
@@ -338,79 +417,6 @@ dumpException(HANDLE hProcess,
             (void *)pExceptionRecord->ExceptionInformation[1]);
 
     lprintf(".\r\n\r\n");
-}
-
-
-void
-dumpStack(HANDLE hProcess, HANDLE hThread)
-{
-    // Get the thread context
-    CONTEXT Context;
-    ZeroMemory(&Context, sizeof Context);
-    Context.ContextFlags = CONTEXT_FULL;
-    if(!GetThreadContext(hThread, &Context))
-        assert(0);
-
-    #ifdef _M_IX86    // Intel Only!
-
-    // Show the registers
-    lprintf(_T("Registers:\r\n"));
-    if(Context.ContextFlags & CONTEXT_INTEGER)
-        lprintf(
-            _T("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\r\n"),
-            Context.Eax,
-            Context.Ebx,
-            Context.Ecx,
-            Context.Edx,
-            Context.Esi,
-            Context.Edi
-        );
-    if(Context.ContextFlags & CONTEXT_CONTROL)
-        lprintf(
-            _T("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\r\n"),
-            Context.Eip,
-            Context.Esp,
-            Context.Ebp,
-            (Context.EFlags >> 12) & 3,    //  IOPL level value
-            Context.EFlags & 0x00100000 ? "vip" : "   ",    //  VIP (virtual interrupt pending)
-            Context.EFlags & 0x00080000 ? "vif" : "   ",    //  VIF (virtual interrupt flag)
-            Context.EFlags & 0x00000800 ? "ov" : "nv",    //  VIF (virtual interrupt flag)
-            Context.EFlags & 0x00000400 ? "dn" : "up",    //  OF (overflow flag)
-            Context.EFlags & 0x00000200 ? "ei" : "di",    //  IF (interrupt enable flag)
-            Context.EFlags & 0x00000080 ? "ng" : "pl",    //  SF (sign flag)
-            Context.EFlags & 0x00000040 ? "zr" : "nz",    //  ZF (zero flag)
-            Context.EFlags & 0x00000010 ? "ac" : "na",    //  AF (aux carry flag)
-            Context.EFlags & 0x00000004 ? "po" : "pe",    //  PF (parity flag)
-            Context.EFlags & 0x00000001 ? "cy" : "nc"    //  CF (carry flag)
-        );
-    if(Context.ContextFlags & CONTEXT_SEGMENTS)
-    {
-        lprintf(
-            _T("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx"),
-            Context.SegCs,
-            Context.SegSs,
-            Context.SegDs,
-            Context.SegEs,
-            Context.SegFs,
-            Context.SegGs
-        );
-        if(Context.ContextFlags & CONTEXT_CONTROL)
-            lprintf(
-                _T("             efl=%08lx"),
-                Context.EFlags
-            );
-    }
-    else
-        if(Context.ContextFlags & CONTEXT_CONTROL)
-            lprintf(
-                _T("                                                                       efl=%08lx"),
-                Context.EFlags
-            );
-    lprintf(_T("\r\n\r\n"));
-
-    #endif
-
-    dumpStackWithContext(hProcess, hThread, &Context);
 }
 
 
