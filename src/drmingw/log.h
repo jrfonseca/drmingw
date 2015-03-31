@@ -21,6 +21,8 @@
 #include <windows.h>
 
 
-int lprintf (const TCHAR * format, ... );
-BOOL LogException (DEBUG_EVENT DebugEvent );
-BOOL DumpSource (LPCTSTR lpFileName, DWORD dwLineNumber );
+void
+dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
+
+void
+dumpStack(HANDLE hProcess, HANDLE hThread);

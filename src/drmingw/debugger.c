@@ -224,7 +224,36 @@ BOOL DebugMainLoop(void)
                     }
                 }
 
-                LogException(DebugEvent);
+                // Find the process in the process list
+                PPROCESS_LIST_INFO pProcessInfo;
+                PTHREAD_LIST_INFO pThreadInfo;
+                assert(nProcesses);
+                i = 0;
+                while (i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId) {
+                    ++i;
+                }
+                assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
+                pProcessInfo = &ProcessListInfo[i];
+
+                SymRefreshModuleList(pProcessInfo->hProcess);
+
+                dumpException(pProcessInfo->hProcess,
+                              &DebugEvent.u.Exception.ExceptionRecord);
+
+                // Find the thread in the thread list
+                assert(nThreads);
+                for (i = 0; i < nThreads; ++i) {
+                    assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
+                    if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId) {
+                        if (!verbose_flag) {
+                            continue;
+                        }
+                    }
+                    pThreadInfo = &ThreadListInfo[i];
+
+                    dumpStack(pProcessInfo->hProcess,
+                              pThreadInfo->hThread);
+                }
 
                 if (!DebugEvent.u.Exception.dwFirstChance) {
                     /*

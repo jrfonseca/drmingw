@@ -27,13 +27,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "debugger.h"
 #include "dialog.h"
-#include "errmsg.h"
 #include "outdbg.h"
 #include "symbols.h"
 #include "log.h"
 
+
+static
 #ifdef __GNUC__
     __attribute__ ((format (printf, 1, 2)))
 #endif
@@ -52,32 +52,21 @@ int lprintf(const TCHAR * format, ...)
     return retValue;
 }
 
-//#define lprintf OutputDebug
+
+static BOOL dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber);
 
 
 #define MAX_SYM_NAME_SIZE 512
 
 static BOOL
-StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
+dumpStackWithContext(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 {
-    int i;
-    PPROCESS_LIST_INFO pProcessListInfo;
-
     DWORD MachineType;
     STACKFRAME64 StackFrame;
 
     HMODULE hModule = NULL;
     TCHAR szModule[MAX_PATH];
 
-    // Remove the process from the process list
-    assert(nProcesses);
-    i = 0;
-    while(hProcess != ProcessListInfo[i].hProcess)
-    {
-        ++i;
-        assert(i < nProcesses);
-    }
-    pProcessListInfo = &ProcessListInfo[i];
     memset( &StackFrame, 0, sizeof(StackFrame) );
 
     // Initialize the STACKFRAME structure for the first call.  This is only
@@ -168,15 +157,6 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
             lprintf( _T(" %s"), GetBaseName(szModule));
 
-            // Find the module from the module list
-            assert(nModules);
-            i = 0;
-            while(i < nModules && (pProcessListInfo->dwProcessId > ModuleListInfo[i].dwProcessId || (pProcessListInfo->dwProcessId == ModuleListInfo[i].dwProcessId && (LPVOID)hModule > ModuleListInfo[i].lpBaseAddress)))
-                ++i;
-            assert(ModuleListInfo[i].dwProcessId == pProcessListInfo->dwProcessId);
-            assert(ModuleListInfo[i].lpBaseAddress == (LPVOID)hModule);
-            assert(ModuleListInfo[i].dwProcessId == pProcessListInfo->dwProcessId && ModuleListInfo[i].lpBaseAddress == (LPVOID)hModule);
-
             if(bSymInitialized)
                 if((bSuccess = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE)))
                 {
@@ -195,7 +175,7 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 
         lprintf(_T("\r\n"));
 
-        if(bSuccess && DumpSource(szFileName, dwLineNumber))
+        if(bSuccess && dumpSourceCode(szFileName, dwLineNumber))
             lprintf(_T("\r\n"));
     }
 
@@ -205,30 +185,16 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 }
 
 
-BOOL LogException(DEBUG_EVENT DebugEvent)
+void
+dumpException(HANDLE hProcess,
+              PEXCEPTION_RECORD pExceptionRecord)
 {
-    PPROCESS_LIST_INFO pProcessInfo;
-    PTHREAD_LIST_INFO pThreadInfo;
     TCHAR szModule[MAX_PATH];
     HMODULE hModule;
 
-    unsigned i;
-
-    OutputDebug("%s\n", __FUNCTION__);
-
-    assert(DebugEvent.dwDebugEventCode == EXCEPTION_DEBUG_EVENT);
-
-    // Find the process in the process list
-    assert(nProcesses);
-    i = 0;
-    while(i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId)
-        ++i;
-    assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
-    pProcessInfo = &ProcessListInfo[i];
-
     // First print information about the type of fault
-    lprintf(_T("%s caused "),  GetModuleFileNameEx(pProcessInfo->hProcess, NULL, szModule, MAX_PATH) ? GetBaseName(szModule) : "Application");
-    switch(DebugEvent.u.Exception.ExceptionRecord.ExceptionCode)
+    lprintf(_T("%s caused "),  GetModuleFileNameEx(hProcess, NULL, szModule, MAX_PATH) ? GetBaseName(szModule) : "Application");
+    switch(pExceptionRecord->ExceptionCode)
     {
         case EXCEPTION_ACCESS_VIOLATION:
             lprintf(_T("an Access Violation"));
@@ -354,109 +320,102 @@ BOOL LogException(DEBUG_EVENT DebugEvent)
                             dwCode, 0, szBuffer, sizeof(szBuffer), 0);
             */
 
-            lprintf(_T("an Unknown [0x%lX] Exception"), DebugEvent.u.Exception.ExceptionRecord.ExceptionCode);
+            lprintf(_T("an Unknown [0x%lX] Exception"), pExceptionRecord->ExceptionCode);
             break;
     }
 
     // Now print information about where the fault occured
-    lprintf(_T(" at location %p"), DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress);
-    if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(pProcessInfo->hProcess, (DWORD64)(INT_PTR)DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress)) &&
-       GetModuleFileNameEx(pProcessInfo->hProcess, hModule, szModule, sizeof szModule))
+    lprintf(_T(" at location %p"), pExceptionRecord->ExceptionAddress);
+    if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
+       GetModuleFileNameEx(hProcess, hModule, szModule, sizeof szModule))
         lprintf(_T(" in module %s"), GetBaseName(szModule));
 
     // If the exception was an access violation, print out some additional information, to the error log and the debugger.
-    if(DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
-       DebugEvent.u.Exception.ExceptionRecord.NumberParameters >= 2)
+    if(pExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
+       pExceptionRecord->NumberParameters >= 2)
         lprintf(" %s location %p",
-            DebugEvent.u.Exception.ExceptionRecord.ExceptionInformation[0] ? "Writing to" : "Reading from",
-            (void *)DebugEvent.u.Exception.ExceptionRecord.ExceptionInformation[1]);
+            pExceptionRecord->ExceptionInformation[0] ? "Writing to" : "Reading from",
+            (void *)pExceptionRecord->ExceptionInformation[1]);
 
     lprintf(".\r\n\r\n");
-
-    // Find the thread in the thread list
-    assert(nThreads);
-    for (i = 0; i < nThreads; ++i) {
-        assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
-        if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId) {
-            if (!verbose_flag) {
-	        continue;
-            }
-        }
-        pThreadInfo = &ThreadListInfo[i];
-
-        // Get the thread context
-        CONTEXT Context;
-        ZeroMemory(&Context, sizeof Context);
-        Context.ContextFlags = CONTEXT_FULL;
-        if(!GetThreadContext(pThreadInfo->hThread, &Context))
-            assert(0);
-
-        #ifdef _M_IX86    // Intel Only!
-
-        // Show the registers
-        lprintf(_T("Registers:\r\n"));
-        if(Context.ContextFlags & CONTEXT_INTEGER)
-            lprintf(
-                _T("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\r\n"),
-                Context.Eax,
-                Context.Ebx,
-                Context.Ecx,
-                Context.Edx,
-                Context.Esi,
-                Context.Edi
-            );
-        if(Context.ContextFlags & CONTEXT_CONTROL)
-            lprintf(
-                _T("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\r\n"),
-                Context.Eip,
-                Context.Esp,
-                Context.Ebp,
-                (Context.EFlags >> 12) & 3,    //  IOPL level value
-                Context.EFlags & 0x00100000 ? "vip" : "   ",    //  VIP (virtual interrupt pending)
-                Context.EFlags & 0x00080000 ? "vif" : "   ",    //  VIF (virtual interrupt flag)
-                Context.EFlags & 0x00000800 ? "ov" : "nv",    //  VIF (virtual interrupt flag)
-                Context.EFlags & 0x00000400 ? "dn" : "up",    //  OF (overflow flag)
-                Context.EFlags & 0x00000200 ? "ei" : "di",    //  IF (interrupt enable flag)
-                Context.EFlags & 0x00000080 ? "ng" : "pl",    //  SF (sign flag)
-                Context.EFlags & 0x00000040 ? "zr" : "nz",    //  ZF (zero flag)
-                Context.EFlags & 0x00000010 ? "ac" : "na",    //  AF (aux carry flag)
-                Context.EFlags & 0x00000004 ? "po" : "pe",    //  PF (parity flag)
-                Context.EFlags & 0x00000001 ? "cy" : "nc"    //  CF (carry flag)
-            );
-        if(Context.ContextFlags & CONTEXT_SEGMENTS)
-        {
-            lprintf(
-                _T("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx"),
-                Context.SegCs,
-                Context.SegSs,
-                Context.SegDs,
-                Context.SegEs,
-                Context.SegFs,
-                Context.SegGs
-            );
-            if(Context.ContextFlags & CONTEXT_CONTROL)
-                lprintf(
-                    _T("             efl=%08lx"),
-                    Context.EFlags
-                );
-        }
-        else
-            if(Context.ContextFlags & CONTEXT_CONTROL)
-                lprintf(
-                    _T("                                                                       efl=%08lx"),
-                    Context.EFlags
-                );
-        lprintf(_T("\r\n\r\n"));
-
-        #endif
-
-        StackBackTrace(pProcessInfo->hProcess, pThreadInfo->hThread, &Context);
-    }
-
-    return TRUE;
 }
 
-BOOL DumpSource(LPCTSTR lpFileName, DWORD dwLineNumber)
+
+void
+dumpStack(HANDLE hProcess, HANDLE hThread)
+{
+    // Get the thread context
+    CONTEXT Context;
+    ZeroMemory(&Context, sizeof Context);
+    Context.ContextFlags = CONTEXT_FULL;
+    if(!GetThreadContext(hThread, &Context))
+        assert(0);
+
+    #ifdef _M_IX86    // Intel Only!
+
+    // Show the registers
+    lprintf(_T("Registers:\r\n"));
+    if(Context.ContextFlags & CONTEXT_INTEGER)
+        lprintf(
+            _T("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\r\n"),
+            Context.Eax,
+            Context.Ebx,
+            Context.Ecx,
+            Context.Edx,
+            Context.Esi,
+            Context.Edi
+        );
+    if(Context.ContextFlags & CONTEXT_CONTROL)
+        lprintf(
+            _T("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\r\n"),
+            Context.Eip,
+            Context.Esp,
+            Context.Ebp,
+            (Context.EFlags >> 12) & 3,    //  IOPL level value
+            Context.EFlags & 0x00100000 ? "vip" : "   ",    //  VIP (virtual interrupt pending)
+            Context.EFlags & 0x00080000 ? "vif" : "   ",    //  VIF (virtual interrupt flag)
+            Context.EFlags & 0x00000800 ? "ov" : "nv",    //  VIF (virtual interrupt flag)
+            Context.EFlags & 0x00000400 ? "dn" : "up",    //  OF (overflow flag)
+            Context.EFlags & 0x00000200 ? "ei" : "di",    //  IF (interrupt enable flag)
+            Context.EFlags & 0x00000080 ? "ng" : "pl",    //  SF (sign flag)
+            Context.EFlags & 0x00000040 ? "zr" : "nz",    //  ZF (zero flag)
+            Context.EFlags & 0x00000010 ? "ac" : "na",    //  AF (aux carry flag)
+            Context.EFlags & 0x00000004 ? "po" : "pe",    //  PF (parity flag)
+            Context.EFlags & 0x00000001 ? "cy" : "nc"    //  CF (carry flag)
+        );
+    if(Context.ContextFlags & CONTEXT_SEGMENTS)
+    {
+        lprintf(
+            _T("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx"),
+            Context.SegCs,
+            Context.SegSs,
+            Context.SegDs,
+            Context.SegEs,
+            Context.SegFs,
+            Context.SegGs
+        );
+        if(Context.ContextFlags & CONTEXT_CONTROL)
+            lprintf(
+                _T("             efl=%08lx"),
+                Context.EFlags
+            );
+    }
+    else
+        if(Context.ContextFlags & CONTEXT_CONTROL)
+            lprintf(
+                _T("                                                                       efl=%08lx"),
+                Context.EFlags
+            );
+    lprintf(_T("\r\n\r\n"));
+
+    #endif
+
+    dumpStackWithContext(hProcess, hThread, &Context);
+}
+
+
+static BOOL
+dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber)
 {
     FILE *fp;
     int i;
