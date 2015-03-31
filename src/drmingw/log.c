@@ -78,37 +78,6 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
         assert(i < nProcesses);
     }
     pProcessListInfo = &ProcessListInfo[i];
-
-    assert(!bSymInitialized);
-
-    // Provide default symbol search path
-    // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
-    char szSymSearchPathBuf[512];
-    const char *szSymSearchPath = NULL;
-    if (getenv("_NT_SYMBOL_PATH") == NULL &&
-        getenv("_NT_ALTERNATE_SYMBOL_PATH") == NULL) {
-        const char *szLocalAppData = getenv("LOCALAPPDATA");
-        assert(szLocalAppData != NULL);
-        _snprintf(szSymSearchPathBuf,
-                  sizeof szSymSearchPathBuf,
-                  "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols",
-                  szLocalAppData);
-        szSymSearchPath = szSymSearchPathBuf;
-    }
-
-    DWORD dwSymOptions = SymGetOptions();
-    dwSymOptions |=
-        SYMOPT_LOAD_LINES |
-        SYMOPT_DEFERRED_LOADS;
-    if (debug_flag)
-        dwSymOptions |= SYMOPT_DEBUG;
-    SymSetOptions(dwSymOptions);
-    if(SymInitialize(hProcess, szSymSearchPath, TRUE))
-        bSymInitialized = TRUE;
-    else
-        if(verbose_flag)
-            lprintf(_T("SymInitialize: %s\r\n"), LastErrorMessage());
-
     memset( &StackFrame, 0, sizeof(StackFrame) );
 
     // Initialize the STACKFRAME structure for the first call.  This is only
@@ -231,14 +200,6 @@ StackBackTrace(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
     }
 
     lprintf(_T("\r\n"));
-
-    if(bSymInitialized)
-    {
-        if(!SymCleanup(hProcess))
-            assert(0);
-
-        bSymInitialized = FALSE;
-    }
 
     return TRUE;
 }

@@ -28,6 +28,7 @@
 #include "log.h"
 #include "errmsg.h"
 #include "outdbg.h"
+#include "symbols.h"
 
 
 int breakpoint_flag = 0;    /* Treat breakpoints as exceptions (default=no).  */
@@ -356,6 +357,36 @@ BOOL DebugMainLoop(void)
                 ModuleListInfo[i].lpImageName = DebugEvent.u.CreateProcessInfo.lpImageName;
                 ModuleListInfo[i].fUnicode = DebugEvent.u.CreateProcessInfo.fUnicode;
 
+                assert(!bSymInitialized);
+
+                // Provide default symbol search path
+                // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
+                char szSymSearchPathBuf[512];
+                const char *szSymSearchPath = NULL;
+                if (getenv("_NT_SYMBOL_PATH") == NULL &&
+                    getenv("_NT_ALTERNATE_SYMBOL_PATH") == NULL) {
+                    const char *szLocalAppData = getenv("LOCALAPPDATA");
+                    assert(szLocalAppData != NULL);
+                    _snprintf(szSymSearchPathBuf,
+                              sizeof szSymSearchPathBuf,
+                              "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols",
+                              szLocalAppData);
+                    szSymSearchPath = szSymSearchPathBuf;
+                }
+
+                DWORD dwSymOptions = SymGetOptions();
+                dwSymOptions |=
+                    SYMOPT_LOAD_LINES |
+                    SYMOPT_DEFERRED_LOADS;
+                if (debug_flag)
+                    dwSymOptions |= SYMOPT_DEBUG;
+                SymSetOptions(dwSymOptions);
+                if (!SymInitialize(DebugEvent.u.CreateProcessInfo.hProcess, szSymSearchPath, FALSE)) {
+                    ErrorMessageBox(_T("SymInitialize: %s"), LastErrorMessage());
+                }
+
+                bSymInitialized = TRUE;
+
                 break;
 
             case EXIT_THREAD_DEBUG_EVENT:
@@ -431,6 +462,14 @@ BOOL DebugMainLoop(void)
                 while(i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId)
                     ++i;
                 assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
+
+                if (bSymInitialized) {
+                    if (!SymCleanup(ProcessListInfo[i].hProcess))
+                        assert(0);
+
+                    bSymInitialized = FALSE;
+                }
+
                 while(++i < nProcesses)
                     ProcessListInfo[i - 1] = ProcessListInfo[i];
 
@@ -439,6 +478,7 @@ BOOL DebugMainLoop(void)
                     assert(!nThreads && !nModules);
                     fFinished = TRUE;
                 }
+
                 break;
 
             case LOAD_DLL_DEBUG_EVENT:
