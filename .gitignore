@@ -2,6 +2,7 @@
 *.RPT
 *.a
 *.cmake
+*.debug
 *.dll
 *.exe
 *.o
