@@ -86,6 +86,7 @@ EXPORTS
 	SymMatchFileName@16
 	SymMatchFileNameW@16
 	SymMatchString@12
+	SymRefreshModuleList@4
 	SymRegisterCallback@12
 	SymRegisterCallback64@16
 	SymRegisterCallbackW64@16
