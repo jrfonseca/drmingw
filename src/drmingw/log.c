@@ -37,7 +37,7 @@
 #ifdef __GNUC__
     __attribute__ ((format (printf, 1, 2)))
 #endif
-int __cdecl lprintf(const TCHAR * format, ...)
+int lprintf(const TCHAR * format, ...)
 {
     TCHAR szBuffer[1024];
     int retValue;

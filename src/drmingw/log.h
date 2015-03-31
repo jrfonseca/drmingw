@@ -21,6 +21,6 @@
 #include <windows.h>
 
 
-int __cdecl lprintf (const TCHAR * format, ... );
+int lprintf (const TCHAR * format, ... );
 BOOL LogException (DEBUG_EVENT DebugEvent );
 BOOL DumpSource (LPCTSTR lpFileName, DWORD dwLineNumber );

@@ -68,7 +68,7 @@ static
 #ifdef __GNUC__
     __attribute__ ((format (printf, 1, 2)))
 #endif
-int __cdecl rprintf(const TCHAR * format, ...)
+int rprintf(const TCHAR * format, ...)
 {
 #if REPORT_FILE
     TCHAR szBuff[4096];
