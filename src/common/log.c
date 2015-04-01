@@ -28,6 +28,7 @@
 #include <stdlib.h>
 
 #include "outdbg.h"
+#include "paths.h"
 #include "symbols.h"
 #include "log.h"
 
@@ -252,7 +253,7 @@ dumpStack(DumpCallback cb,
         if (hModule &&
             GetModuleFileNameEx(hProcess, hModule, szModule, MAX_PATH)) {
 
-            lprintf(cb,  _T("  %s"), GetBaseName(szModule));
+            lprintf(cb,  _T("  %s"), getBaseName(szModule));
 
             bSymbol = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE);
             if (bSymbol) {
@@ -288,7 +289,7 @@ dumpException(DumpCallback cb,
     HMODULE hModule;
 
     // First print information about the type of fault
-    lprintf(cb, _T("%s caused "),  GetModuleFileNameEx(hProcess, NULL, szModule, MAX_PATH) ? GetBaseName(szModule) : "Application");
+    lprintf(cb, _T("%s caused "),  GetModuleFileNameEx(hProcess, NULL, szModule, MAX_PATH) ? getBaseName(szModule) : "Application");
     switch(pExceptionRecord->ExceptionCode)
     {
         case EXCEPTION_ACCESS_VIOLATION:
@@ -423,7 +424,7 @@ dumpException(DumpCallback cb,
     lprintf(cb, _T(" at location %p"), pExceptionRecord->ExceptionAddress);
     if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
        GetModuleFileNameEx(hProcess, hModule, szModule, sizeof szModule))
-        lprintf(cb, _T(" in module %s"), GetBaseName(szModule));
+        lprintf(cb, _T(" in module %s"), getBaseName(szModule));
 
     // If the exception was an access violation, print out some additional information, to the error log and the debugger.
     if(pExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
