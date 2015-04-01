@@ -21,8 +21,11 @@
 #include <windows.h>
 
 
-void
-dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
+typedef void (*DumpCallback)(const char *);
 
 void
-dumpStack(HANDLE hProcess, HANDLE hThread);
+dumpException(DumpCallback cb, HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
+
+void
+dumpStack(DumpCallback cb, HANDLE hProcess, HANDLE hThread,
+          const CONTEXT *pContext);

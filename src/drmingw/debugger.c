@@ -26,6 +26,7 @@
 
 #include "debugger.h"
 #include "log.h"
+#include "dialog.h"
 #include "errmsg.h"
 #include "outdbg.h"
 #include "symbols.h"
@@ -237,7 +238,8 @@ BOOL DebugMainLoop(void)
 
                 SymRefreshModuleList(pProcessInfo->hProcess);
 
-                dumpException(pProcessInfo->hProcess,
+                dumpException(appendText,
+                              pProcessInfo->hProcess,
                               &DebugEvent.u.Exception.ExceptionRecord);
 
                 // Find the thread in the thread list
@@ -251,8 +253,9 @@ BOOL DebugMainLoop(void)
                     }
                     pThreadInfo = &ThreadListInfo[i];
 
-                    dumpStack(pProcessInfo->hProcess,
-                              pThreadInfo->hThread);
+                    dumpStack(appendText,
+                              pProcessInfo->hProcess,
+                              pThreadInfo->hThread, NULL);
                 }
 
                 if (!DebugEvent.u.Exception.dwFirstChance) {
