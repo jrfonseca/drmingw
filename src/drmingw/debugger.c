@@ -203,12 +203,15 @@ BOOL DebugMainLoop(void)
         switch (DebugEvent.dwDebugEventCode)
         {
             case EXCEPTION_DEBUG_EVENT:
+                ;
+
+                PEXCEPTION_RECORD pExceptionRecord = &DebugEvent.u.Exception.ExceptionRecord;
+
                 // Process the exception code. When handling
                 // exceptions, remember to set the continuation
                 // status parameter (dwContinueStatus). This value
                 // is used by the ContinueDebugEvent function.
-                if(debug_flag)
-                {
+                if (debug_flag) {
                     OutputDebug(
                         "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
                         "EXCEPTION_DEBUG_EVENT",
@@ -217,39 +220,39 @@ BOOL DebugMainLoop(void)
                     );
                     OutputDebug(
                         "\tExceptionCode = %lX\r\n\tExceptionFlags = %lX\r\n\tExceptionAddress = %p\r\n\tdwFirstChance = %lX\r\n",
-                        DebugEvent.u.Exception.ExceptionRecord.ExceptionCode,
-                        DebugEvent.u.Exception.ExceptionRecord.ExceptionFlags,
-                        DebugEvent.u.Exception.ExceptionRecord.ExceptionAddress,
+                        pExceptionRecord->ExceptionCode,
+                        pExceptionRecord->ExceptionFlags,
+                        pExceptionRecord->ExceptionAddress,
                         DebugEvent.u.Exception.dwFirstChance
                     );
                 }
 
                 dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
-                if (DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_BREAKPOINT ||
-                    DebugEvent.u.Exception.ExceptionRecord.ExceptionCode == STATUS_WX86_BREAKPOINT) {
-                    if (DebugEvent.u.Exception.dwFirstChance)
-                    {
-                        // Signal the aedebug event
-                        if(hEvent)
-                        {
-                            OutputDebug("SetEvent(%p)\n", hEvent);
-                            SetEvent(hEvent);
-                            CloseHandle(hEvent);
-                            hEvent = NULL;
-                        }
 
-                        dwContinueStatus = DBG_CONTINUE;
+                BOOL bFirstBreakPoint = (pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT ||
+                                         pExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT) &&
+                                         DebugEvent.u.Exception.dwFirstChance;
 
-                        /*
-                         * We ignore first-chance breakpoints by default.
-                         *
-                         * We get one of these whenever we attach to a process.
-                         * But in some cases, we never get a second-chance, e.g.,
-                         * when we're attached through MSVCRT's abort().
-                         */
-                        if (!breakpoint_flag) {
-                            break;
-                        }
+                if (bFirstBreakPoint) {
+                    // Signal the aedebug event
+                    if (hEvent) {
+                        OutputDebug("SetEvent(%p)\n", hEvent);
+                        SetEvent(hEvent);
+                        CloseHandle(hEvent);
+                        hEvent = NULL;
+                    }
+
+                    dwContinueStatus = DBG_CONTINUE;
+
+                    /*
+                     * We ignore first-chance breakpoints by default.
+                     *
+                     * We get one of these whenever we attach to a process.
+                     * But in some cases, we never get a second-chance, e.g.,
+                     * when we're attached through MSVCRT's abort().
+                     */
+                    if (!breakpoint_flag) {
+                        break;
                     }
                 }
 
@@ -274,10 +277,10 @@ BOOL DebugMainLoop(void)
                 assert(nThreads);
                 for (i = 0; i < nThreads; ++i) {
                     assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
-                    if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId) {
-                        if (!verbose_flag) {
+                    if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId &&
+                        !bFirstBreakPoint &&
+                        !verbose_flag) {
                             continue;
-                        }
                     }
                     pThreadInfo = &ThreadListInfo[i];
 
@@ -292,7 +295,7 @@ BOOL DebugMainLoop(void)
                      * to be invoked again.
                      */
                     TerminateProcessId(DebugEvent.dwProcessId,
-                               DebugEvent.u.Exception.ExceptionRecord.ExceptionCode);
+                                       pExceptionRecord->ExceptionCode);
                 }
 
                 break;
