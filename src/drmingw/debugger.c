@@ -39,14 +39,42 @@ int debug_flag = 0;
 DWORD dwProcessId;    /* Attach to the process with the given identifier.  */
 HANDLE hEvent = NULL;    /* Signal an event after process is attached.  */
 
-unsigned nProcesses = 0, maxProcesses = 0;
-PPROCESS_LIST_INFO ProcessListInfo = NULL;
 
-unsigned nThreads = 0, maxThreads = 0;
-PTHREAD_LIST_INFO ThreadListInfo = NULL;
+typedef struct {
+    DWORD dwProcessId;
+    HANDLE hProcess;
+}
+PROCESS_LIST_INFO, * PPROCESS_LIST_INFO;
 
-unsigned nModules = 0, maxModules = 0;
-PMODULE_LIST_INFO ModuleListInfo = NULL;
+typedef struct {
+    DWORD dwProcessId;
+    DWORD dwThreadId;
+    HANDLE hThread;
+    LPVOID lpThreadLocalBase;
+    LPTHREAD_START_ROUTINE lpStartAddress;
+}
+THREAD_LIST_INFO, * PTHREAD_LIST_INFO;
+
+typedef struct {
+    DWORD dwProcessId;
+    HANDLE hFile;
+    LPVOID lpBaseAddress;
+    DWORD dwDebugInfoFileOffset;
+    DWORD nDebugInfoSize;
+    LPVOID lpImageName;
+    WORD fUnicode;
+}
+MODULE_LIST_INFO, * PMODULE_LIST_INFO;
+
+
+static unsigned nProcesses = 0, maxProcesses = 0;
+static PPROCESS_LIST_INFO ProcessListInfo = NULL;
+
+static unsigned nThreads = 0, maxThreads = 0;
+static PTHREAD_LIST_INFO ThreadListInfo = NULL;
+
+static unsigned nModules = 0, maxModules = 0;
+static PMODULE_LIST_INFO ModuleListInfo = NULL;
 
 
 BOOL ObtainSeDebugPrivilege(void)
