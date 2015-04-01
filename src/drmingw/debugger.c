@@ -32,14 +32,6 @@
 #include "symbols.h"
 
 
-int breakpoint_flag = 0;    /* Treat breakpoints as exceptions (default=no).  */
-int verbose_flag = 0;    /* Verbose output (default=no).  */
-int debug_flag = 0;
-
-DWORD dwProcessId;    /* Attach to the process with the given identifier.  */
-HANDLE hEvent = NULL;    /* Signal an event after process is attached.  */
-
-
 typedef struct {
     DWORD dwProcessId;
     HANDLE hProcess;
@@ -165,20 +157,10 @@ static BOOL TerminateProcessId(DWORD dwProcessId, UINT uExitCode)
     return bRet;
 }
 
-void DebugProcess(void * dummy)
-{
-
-    OutputDebug("dwProcessId = %lu, hEvent=%p\n", dwProcessId, hEvent);
-    // attach debuggee
-    if(!DebugActiveProcess(dwProcessId))
-        ErrorMessageBox(_T("DebugActiveProcess: %s"), LastErrorMessage());
-    else
-        DebugMainLoop();
-}
-
-BOOL DebugMainLoop(void)
+BOOL DebugMainLoop(const DebugOptions *pOptions)
 {
     BOOL fFinished = FALSE;
+    BOOL fSignalled = FALSE;
 
     unsigned i, j;
 
@@ -196,7 +178,7 @@ BOOL DebugMainLoop(void)
             return FALSE;
         }
 
-        if (debug_flag)
+        if (pOptions->debug_flag)
             OutputDebug("DEBUG_EVENT:\r\n");
 
         // Process the debugging event code.
@@ -211,7 +193,7 @@ BOOL DebugMainLoop(void)
                 // exceptions, remember to set the continuation
                 // status parameter (dwContinueStatus). This value
                 // is used by the ContinueDebugEvent function.
-                if (debug_flag) {
+                if (pOptions->debug_flag) {
                     OutputDebug(
                         "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
                         "EXCEPTION_DEBUG_EVENT",
@@ -235,11 +217,11 @@ BOOL DebugMainLoop(void)
 
                 if (bFirstBreakPoint) {
                     // Signal the aedebug event
-                    if (hEvent) {
-                        OutputDebug("SetEvent(%p)\n", hEvent);
-                        SetEvent(hEvent);
-                        CloseHandle(hEvent);
-                        hEvent = NULL;
+                    if (pOptions->hEvent && !fSignalled) {
+                        OutputDebug("SetEvent(%p)\n", pOptions->hEvent);
+                        SetEvent(pOptions->hEvent);
+                        CloseHandle(pOptions->hEvent);
+                        fSignalled = TRUE;
                     }
 
                     dwContinueStatus = DBG_CONTINUE;
@@ -251,7 +233,7 @@ BOOL DebugMainLoop(void)
                      * But in some cases, we never get a second-chance, e.g.,
                      * when we're attached through MSVCRT's abort().
                      */
-                    if (!breakpoint_flag) {
+                    if (!pOptions->breakpoint_flag) {
                         break;
                     }
                 }
@@ -279,7 +261,7 @@ BOOL DebugMainLoop(void)
                     assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
                     if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId &&
                         !bFirstBreakPoint &&
-                        !verbose_flag) {
+                        !pOptions->verbose_flag) {
                             continue;
                     }
                     pThreadInfo = &ThreadListInfo[i];
@@ -305,7 +287,7 @@ BOOL DebugMainLoop(void)
                 // with the GetThreadContext and SetThreadContext functions;
                 // and suspend and resume thread execution with the
                 // SuspendThread and ResumeThread functions.
-                if(debug_flag)
+                if(pOptions->debug_flag)
                 {
                     OutputDebug(
                         "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
@@ -345,7 +327,7 @@ BOOL DebugMainLoop(void)
                 // WriteProcessMemory functions; and suspend and resume
                 // thread execution with the SuspendThread and ResumeThread
                 // functions.
-                if(debug_flag)
+                if(pOptions->debug_flag)
                 {
                     TCHAR szBuffer[MAX_PATH];
                     LPVOID lpImageName;
@@ -441,7 +423,7 @@ BOOL DebugMainLoop(void)
                 dwSymOptions |=
                     SYMOPT_LOAD_LINES |
                     SYMOPT_DEFERRED_LOADS;
-                if (debug_flag)
+                if (pOptions->debug_flag)
                     dwSymOptions |= SYMOPT_DEBUG;
                 SymSetOptions(dwSymOptions);
                 if (!SymInitialize(DebugEvent.u.CreateProcessInfo.hProcess, szSymSearchPath, FALSE)) {
@@ -454,7 +436,7 @@ BOOL DebugMainLoop(void)
 
             case EXIT_THREAD_DEBUG_EVENT:
                 // Display the thread's exit code.
-                if(debug_flag)
+                if(pOptions->debug_flag)
                 {
                     OutputDebug(
                         "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
@@ -481,7 +463,7 @@ BOOL DebugMainLoop(void)
 
             case EXIT_PROCESS_DEBUG_EVENT:
                 // Display the process's exit code.
-                if(debug_flag)
+                if(pOptions->debug_flag)
                 {
                     OutputDebug(
                         "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
@@ -547,7 +529,7 @@ BOOL DebugMainLoop(void)
             case LOAD_DLL_DEBUG_EVENT:
                 // Read the debugging information included in the newly
                 // loaded DLL.
-                if(debug_flag)
+                if(pOptions->debug_flag)
                 {
                     TCHAR szBuffer[MAX_PATH];
                     LPVOID lpImageName;
@@ -595,7 +577,7 @@ BOOL DebugMainLoop(void)
 
             case UNLOAD_DLL_DEBUG_EVENT:
                 // Display a message that the DLL has been unloaded.
-                if(debug_flag)
+                if(pOptions->debug_flag)
                 {
                     OutputDebug(
                         "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
@@ -624,7 +606,7 @@ BOOL DebugMainLoop(void)
 
             case OUTPUT_DEBUG_STRING_EVENT:
                 // Display the output debugging string.
-                if(debug_flag)
+                if(pOptions->debug_flag)
                 {
                     OutputDebug(
                         "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
@@ -643,7 +625,7 @@ BOOL DebugMainLoop(void)
                 break;
 
              default:
-                if(debug_flag)
+                if(pOptions->debug_flag)
                     OutputDebug(
                         "\tdwDebugEventCode = 0x%lX\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
                         DebugEvent.dwDebugEventCode,
@@ -661,6 +643,7 @@ BOOL DebugMainLoop(void)
         );
     }
 
+    appendText(_T("--\r\n"));
 
     return TRUE;
 }

@@ -22,12 +22,13 @@
 #include <windows.h>
 
 
-extern int breakpoint_flag;
-extern int verbose_flag;
-extern int debug_flag;
-extern DWORD dwProcessId;
-extern HANDLE hEvent;
+typedef struct {
+    int breakpoint_flag; /* Treat breakpoints as exceptions. */
+    int verbose_flag;    /* Verbose output. */
+    int debug_flag;
+    DWORD dwProcessId;   /* Attach to the process with the given identifier.  */
+    HANDLE hEvent;       /* Signal an event after process is attached.  */
+} DebugOptions;
 
-BOOL ObtainSeDebugPrivilege (void);
-void DebugProcess (void * dummy );
-BOOL DebugMainLoop (void);
+BOOL ObtainSeDebugPrivilege(void);
+BOOL DebugMainLoop(const DebugOptions *pOptions);

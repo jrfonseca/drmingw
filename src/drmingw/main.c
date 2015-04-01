@@ -28,6 +28,7 @@
 #include "getopt.h"
 #include "debugger.h"
 #include "dialog.h"
+#include "errmsg.h"
 #include "log.h"
 #include "outdbg.h"
 
@@ -37,6 +38,7 @@ static int install_given = 0;    /* Whether install was given.  */
 static int auto_given = 0;    /* Whether auto was given.  */
 static int uninstall_given = 0;    /* Whether uninstall was given.  */
 
+static DebugOptions debug_options;
 
 static void
 help(void)
@@ -84,9 +86,9 @@ install(REGSAM samDesired)
 
     lstrcpy(szFullCommand, szFile);
     lstrcat(szFullCommand, _T (" -p %ld -e %ld"));
-    if(verbose_flag)
+    if (debug_options.verbose_flag)
         lstrcat(szFullCommand, _T (" -v"));
-    if(breakpoint_flag)
+    if (debug_options.breakpoint_flag)
         lstrcat(szFullCommand, _T (" -b"));
 
     lRet = RegCreateKeyEx(
@@ -200,6 +202,18 @@ getProcessIdByName(const char *szProcessName)
 
     return dwProcessId;
 }
+
+
+static void debugThread(void *arg)
+{
+    OutputDebug("dwProcessId = %lu, hEvent=%p\n", debug_options.dwProcessId, debug_options.hEvent);
+    // attach debuggee
+    if (!DebugActiveProcess(debug_options.dwProcessId))
+        ErrorMessageBox(_T("DebugActiveProcess: %s"), LastErrorMessage());
+    else
+        DebugMainLoop(&debug_options);
+}
+
 
 
 int
@@ -321,13 +335,13 @@ main(int argc, char **argv)
                 }
                 process_id_given = 1;
                 if (optarg[0] >= '0' && optarg[0] <= '9')
-                    dwProcessId = strtoul (optarg, NULL, 0);
+                    debug_options.dwProcessId = strtoul (optarg, NULL, 0);
                 else
-                    dwProcessId = getProcessIdByName(optarg);
+                    debug_options.dwProcessId = getProcessIdByName(optarg);
                 break;
 
             case 'e':    /* Signal an event after process is attached.  */
-                if (hEvent)
+                if (debug_options.hEvent)
                 {
                     MessageBox(
                         NULL,
@@ -337,19 +351,19 @@ main(int argc, char **argv)
                     );
                     return 1;
                 }
-                hEvent = (HANDLE) (INT_PTR) atol (optarg);
+                debug_options.hEvent = (HANDLE) (INT_PTR) atol (optarg);
                 break;
 
             case 'b':    /* Treat debug breakpoints as exceptions */
-                breakpoint_flag = 1;
+                debug_options.breakpoint_flag = 1;
                 break;
 
             case 'v':    /* Verbose output.  */
-                verbose_flag = 1;
+                debug_options.verbose_flag = 1;
                 break;
 
             case 'd':    /* Debug output.  */
-                debug_flag = 1;
+                debug_options.debug_flag = 1;
                 break;
 
             default:    /* bug: option not considered.  */
@@ -436,7 +450,7 @@ main(int argc, char **argv)
 
         createDialog();
 
-        _beginthread(DebugProcess, 0, NULL);
+        _beginthread(debugThread, 0, NULL);
 
         return mainLoop();
     } else {
