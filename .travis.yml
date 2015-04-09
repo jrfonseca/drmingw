@@ -9,15 +9,15 @@ matrix:
   include:
   - compiler: ": Win32"
     env:
-    - APT_REPOS=""
-    - APT_PACKAGES="p7zip binutils-mingw-w64-i686 gcc-mingw-w64-i686 g++-mingw-w64-i686 wine1.4-i386:i386"
+    - APT_REPOS="ppa:kalakris/cmake"
+    - APT_PACKAGES="p7zip binutils-mingw-w64-i686 gcc-mingw-w64-i686 g++-mingw-w64-i686 cmake wine1.4-i386:i386"
     - MINGW_PREFIX=i686-w64-mingw32
     - DBGHELP_URL=https://www.googledrive.com/host/0B1mEXoWzDm1McE81WFBKTzd5Z3M
     - WINE_PROGRAM=/usr/bin/wine
   - compiler: ": Win64"
     env:
-    - APT_REPOS="ppa:ubuntu-wine/ppa"
-    - APT_PACKAGES="p7zip binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine1.6-amd64"
+    - APT_REPOS="ppa:kalakris/cmake ppa:ubuntu-wine/ppa"
+    - APT_PACKAGES="p7zip binutils-mingw-w64-x86-64 gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 cmake wine1.6-amd64"
     - MINGW_PREFIX=x86_64-w64-mingw32
     - DBGHELP_URL=https://www.googledrive.com/host/0B1mEXoWzDm1MaGlUZ0syNEduTGs
     - WINE_PROGRAM=/usr/bin/wine64
