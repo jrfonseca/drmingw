@@ -335,9 +335,18 @@ main(int argc, char **argv)
                 }
                 process_id_given = 1;
                 if (optarg[0] >= '0' && optarg[0] <= '9')
-                    debug_options.dwProcessId = strtoul (optarg, NULL, 0);
+                    debug_options.dwProcessId = strtoul(optarg, NULL, 0);
                 else
                     debug_options.dwProcessId = getProcessIdByName(optarg);
+                if (!debug_options.dwProcessId) {
+                    MessageBox(
+                        NULL,
+                        _T("Invalid process"),
+                        _T(PACKAGE),
+                        MB_OK | MB_ICONSTOP
+                    );
+                    return 1;
+                }
                 break;
 
             case 'e':    /* Signal an event after process is attached.  */
