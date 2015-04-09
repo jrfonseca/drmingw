@@ -157,12 +157,33 @@ static BOOL TerminateProcessId(DWORD dwProcessId, UINT uExitCode)
     return bRet;
 }
 
+
+static BOOL CALLBACK
+symCallback(HANDLE hProcess,
+            ULONG ActionCode,
+            ULONG64 CallbackData,
+            ULONG64 UserContext)
+{
+    if (ActionCode == CBA_DEBUG_INFO) {
+        OutputDebug("%s", (LPCSTR)(UINT_PTR)CallbackData);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+
 BOOL DebugMainLoop(const DebugOptions *pOptions)
 {
     BOOL fFinished = FALSE;
     BOOL fSignalled = FALSE;
 
     unsigned i, j;
+
+#ifndef NDEBUG
+    // http://msdn.microsoft.com/en-us/library/ms680687.aspx
+    SetEnvironmentVariableA("DBGHELP_DBGOUT", "1");
+#endif
 
     while(!fFinished)
     {
@@ -320,6 +341,9 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 break;
 
             case CREATE_PROCESS_DEBUG_EVENT:
+                ;
+                HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
+
                 // As needed, examine or change the registers of the
                 // process's initial thread with the GetThreadContext and
                 // SetThreadContext functions; read from and write to the
@@ -339,14 +363,14 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                         DebugEvent.dwThreadId
                     );
 
-                    if(!ReadProcessMemory(DebugEvent.u.CreateProcessInfo.hProcess, DebugEvent.u.CreateProcessInfo.lpImageName, &lpImageName, sizeof(LPVOID), NULL) ||
-                        !ReadProcessMemory(DebugEvent.u.CreateProcessInfo.hProcess, lpImageName, szBuffer, sizeof(szBuffer), NULL))
+                    if(!ReadProcessMemory(hProcess, DebugEvent.u.CreateProcessInfo.lpImageName, &lpImageName, sizeof(LPVOID), NULL) ||
+                        !ReadProcessMemory(hProcess, lpImageName, szBuffer, sizeof(szBuffer), NULL))
                         lstrcpyn(szBuffer, "NULL", sizeof(szBuffer));
 
                     OutputDebug(
                         "\thFile = %p\r\n\thProcess = %p\r\n\thThread = %p\r\n\tlpBaseOfImage = %p\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpThreadLocalBase = %p\r\n\tlpStartAddress = %p\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
                         DebugEvent.u.CreateProcessInfo.hFile,
-                        DebugEvent.u.CreateProcessInfo.hProcess,
+                        hProcess,
                         DebugEvent.u.CreateProcessInfo.hThread,
                         DebugEvent.u.CreateProcessInfo.lpBaseOfImage,
                         DebugEvent.u.CreateProcessInfo.dwDebugInfoFileOffset,
@@ -368,7 +392,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     --i;
                 }
                 ProcessListInfo[i].dwProcessId = DebugEvent.dwProcessId;
-                ProcessListInfo[i].hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
+                ProcessListInfo[i].hProcess = hProcess;
 
                 // Add the initial thread of the process to the thread list
                 if(nThreads == maxThreads)
@@ -426,9 +450,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 if (pOptions->debug_flag)
                     dwSymOptions |= SYMOPT_DEBUG;
                 SymSetOptions(dwSymOptions);
-                if (!SymInitialize(DebugEvent.u.CreateProcessInfo.hProcess, szSymSearchPath, FALSE)) {
+                if (!SymInitialize(hProcess, szSymSearchPath, FALSE)) {
                     ErrorMessageBox(_T("SymInitialize: %s"), LastErrorMessage());
                 }
+
+                SymRegisterCallback64(hProcess, &symCallback, 0);
 
                 bSymInitialized = TRUE;
 
