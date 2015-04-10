@@ -449,6 +449,15 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     SYMOPT_DEFERRED_LOADS;
                 if (pOptions->debug_flag)
                     dwSymOptions |= SYMOPT_DEBUG;
+
+#ifdef _WIN64
+                BOOL bWow64 = FALSE;
+                IsWow64Process(hProcess, &bWow64);
+                if (bWow64) {
+                    dwSymOptions |= SYMOPT_INCLUDE_32BIT_MODULES;
+                }
+#endif
+
                 SymSetOptions(dwSymOptions);
                 if (!SymInitialize(hProcess, szSymSearchPath, FALSE)) {
                     ErrorMessageBox(_T("SymInitialize: %s"), LastErrorMessage());
