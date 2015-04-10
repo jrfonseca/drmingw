@@ -22,6 +22,7 @@
 #include <tchar.h>
 #include <psapi.h>
 #include <dbghelp.h>
+#include <ntstatus.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -280,144 +281,134 @@ dumpStack(DumpCallback cb,
 }
 
 
+/*
+ * Get the message string for the exception code.
+ *
+ * Per https://support.microsoft.com/en-us/kb/259693 one could supposedly get
+ * these from ntdll.dll via FormatMessage but the matter of fact is that the
+ * FormatMessage is hopeless for that, as described in:
+ * - http://www.microsoft.com/msj/0497/hood/hood0497.aspx
+ * - http://stackoverflow.com/questions/321898/how-to-get-the-name-description-of-an-exception
+ * - http://www.tech-archive.net/Archive/Development/microsoft.public.win32.programmer.kernel/2006-05/msg00683.html
+ */
+static LPCTSTR
+getExceptionString(DWORD ExceptionCode)
+{
+    switch (ExceptionCode) {
+
+    case EXCEPTION_GUARD_PAGE: // 0x80000001
+        return _T("Guard Page Exception");
+    case EXCEPTION_DATATYPE_MISALIGNMENT: // 0x80000002
+        return _T("Alignment Fault");
+    case EXCEPTION_BREAKPOINT: // 0x80000003
+        return _T("Breakpoint");
+    case EXCEPTION_SINGLE_STEP: // 0x80000004
+        return _T("Single Step");
+
+    case EXCEPTION_ACCESS_VIOLATION: // 0xC0000005
+        return _T("Access Violation");
+    case EXCEPTION_IN_PAGE_ERROR: // 0xC0000006
+        return _T("In Page Error");
+
+    case EXCEPTION_INVALID_HANDLE: // 0xC0000008
+        return _T("Invalid Handle");
+
+    case EXCEPTION_ILLEGAL_INSTRUCTION: // 0xC000001D
+        return _T("Illegal Instruction");
+
+    case EXCEPTION_NONCONTINUABLE_EXCEPTION: // 0xC0000025
+        return _T("Cannot Continue");
+    case EXCEPTION_INVALID_DISPOSITION: // 0xC0000026
+        return _T("Invalid Disposition");
+
+    case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: // 0xC000008C
+        return _T("Array bounds exceeded");
+    case EXCEPTION_FLT_DENORMAL_OPERAND: // 0xC000008D
+        return _T("Floating-point denormal operand");
+    case EXCEPTION_FLT_DIVIDE_BY_ZERO: // 0xC000008E
+        return _T("Floating-point division by zero");
+    case EXCEPTION_FLT_INEXACT_RESULT: // 0xC000008F
+        return _T("Floating-point inexact result");
+    case EXCEPTION_FLT_INVALID_OPERATION: // 0xC0000090
+        return _T("Floating-point invalid operation");
+    case EXCEPTION_FLT_OVERFLOW: // 0xC0000091
+        return _T("Floating-point overflow");
+    case EXCEPTION_FLT_STACK_CHECK: // 0xC0000092
+        return _T("Floating-point stack check");
+    case EXCEPTION_FLT_UNDERFLOW: // 0xC0000093
+        return _T("Floating-point underflow");
+    case EXCEPTION_INT_DIVIDE_BY_ZERO: // 0xC0000094
+        return _T("Integer division by zero");
+    case EXCEPTION_INT_OVERFLOW:  // 0xC0000095
+        return _T("Integer overflow");
+    case EXCEPTION_PRIV_INSTRUCTION: // 0xC0000096
+        return _T("Privileged instruction");
+
+    case EXCEPTION_STACK_OVERFLOW: // 0xC00000FD
+        return _T("Stack Overflow");
+
+    case EXCEPTION_POSSIBLE_DEADLOCK: // 0xC0000194
+        return _T("Possible deadlock condition");
+
+    case DBG_TERMINATE_THREAD: // 0x40010003
+        return _T("Terminate Thread");
+    case DBG_TERMINATE_PROCESS: // 0x40010004
+        return _T("Terminate Process");
+    case DBG_CONTROL_C: // 0x40010005
+        return _T("Control+C");
+    case DBG_CONTROL_BREAK: // 0x40010008
+        return _T("Control+Break");
+
+    case RPC_S_UNKNOWN_IF:
+        return _T("Unknown Interface");
+    case RPC_S_SERVER_UNAVAILABLE:
+        return _T("Server Unavailable");
+
+    default:
+        return NULL;
+    }
+}
+
+
 void
 dumpException(DumpCallback cb,
               HANDLE hProcess,
               PEXCEPTION_RECORD pExceptionRecord)
 {
+    DWORD ExceptionCode = pExceptionRecord->ExceptionCode;
+
     TCHAR szModule[MAX_PATH];
+    LPCTSTR lpcszProcess;
     HMODULE hModule;
 
+    if (GetModuleFileNameEx(hProcess, NULL, szModule, MAX_PATH)) {
+        lpcszProcess = getBaseName(szModule);
+    } else {
+        lpcszProcess = _T("Application");
+    }
+
     // First print information about the type of fault
-    lprintf(cb, _T("%s caused "),  GetModuleFileNameEx(hProcess, NULL, szModule, MAX_PATH) ? getBaseName(szModule) : "Application");
-    switch(pExceptionRecord->ExceptionCode)
-    {
-        case EXCEPTION_ACCESS_VIOLATION:
-            lprintf(cb, _T("an Access Violation"));
-            break;
+    lprintf(cb, _T("%s caused"), lpcszProcess);
 
-        case EXCEPTION_ARRAY_BOUNDS_EXCEEDED:
-            lprintf(cb, _T("an Array Bound Exceeded"));
+    LPCTSTR lpcszException = getExceptionString(ExceptionCode);
+    if (lpcszException) {
+        LPCTSTR lpszArticle;
+        switch (lpcszException[0]) {
+        case 'A':
+        case 'E':
+        case 'I':
+        case 'O':
+        case 'U':
+            lpszArticle = _T("an");
             break;
-
-        case EXCEPTION_BREAKPOINT:
-            lprintf(cb, _T("a Breakpoint"));
-            break;
-
-        case EXCEPTION_DATATYPE_MISALIGNMENT:
-            lprintf(cb, _T("a Datatype Misalignment"));
-            break;
-
-        case EXCEPTION_FLT_DENORMAL_OPERAND:
-            lprintf(cb, _T("a Float Denormal Operand"));
-            break;
-
-        case EXCEPTION_FLT_DIVIDE_BY_ZERO:
-            lprintf(cb, _T("a Float Divide By Zero"));
-            break;
-
-        case EXCEPTION_FLT_INEXACT_RESULT:
-            lprintf(cb, _T("a Float Inexact Result"));
-            break;
-
-        case EXCEPTION_FLT_INVALID_OPERATION:
-            lprintf(cb, _T("a Float Invalid Operation"));
-            break;
-
-        case EXCEPTION_FLT_OVERFLOW:
-            lprintf(cb, _T("a Float Overflow"));
-            break;
-
-        case EXCEPTION_FLT_STACK_CHECK:
-            lprintf(cb, _T("a Float Stack Check"));
-            break;
-
-        case EXCEPTION_FLT_UNDERFLOW:
-            lprintf(cb, _T("a Float Underflow"));
-            break;
-
-        case EXCEPTION_GUARD_PAGE:
-            lprintf(cb, _T("a Guard Page"));
-            break;
-
-        case EXCEPTION_ILLEGAL_INSTRUCTION:
-            lprintf(cb, _T("an Illegal Instruction"));
-            break;
-
-        case EXCEPTION_IN_PAGE_ERROR:
-            lprintf(cb, _T("an In Page Error"));
-            break;
-
-        case EXCEPTION_INT_DIVIDE_BY_ZERO:
-            lprintf(cb, _T("an Integer Divide By Zero"));
-            break;
-
-        case EXCEPTION_INT_OVERFLOW:
-            lprintf(cb, _T("an Integer Overflow"));
-            break;
-
-        case EXCEPTION_INVALID_DISPOSITION:
-            lprintf(cb, _T("an Invalid Disposition"));
-            break;
-
-        case EXCEPTION_INVALID_HANDLE:
-            lprintf(cb, _T("an Invalid Handle"));
-            break;
-
-        case EXCEPTION_NONCONTINUABLE_EXCEPTION:
-            lprintf(cb, _T("a Noncontinuable Exception"));
-            break;
-
-        case EXCEPTION_PRIV_INSTRUCTION:
-            lprintf(cb, _T("a Privileged Instruction"));
-            break;
-
-        case EXCEPTION_SINGLE_STEP:
-            lprintf(cb, _T("a Single Step"));
-            break;
-
-        case EXCEPTION_STACK_OVERFLOW:
-            lprintf(cb, _T("a Stack Overflow"));
-            break;
-
-        case DBG_CONTROL_C:
-            lprintf(cb, _T("a Control+C"));
-            break;
-
-        case DBG_CONTROL_BREAK:
-            lprintf(cb, _T("a Control+Break"));
-            break;
-
-        case DBG_TERMINATE_THREAD:
-            lprintf(cb, _T("a Terminate Thread"));
-            break;
-
-        case DBG_TERMINATE_PROCESS:
-            lprintf(cb, _T("a Terminate Process"));
-            break;
-
-        case RPC_S_UNKNOWN_IF:
-            lprintf(cb, _T("an Unknown Interface"));
-            break;
-
-        case RPC_S_SERVER_UNAVAILABLE:
-            lprintf(cb, _T("a Server Unavailable"));
-            break;
-
         default:
-            /*
-            static TCHAR szBuffer[512] = { 0 };
-
-            // If not one of the "known" exceptions, try to get the string
-            // from NTDLL.DLL's message table.
-
-            FormatMessage(FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_HMODULE,
-                            GetModuleHandle(_T("NTDLL.DLL")),
-                            dwCode, 0, szBuffer, sizeof(szBuffer), 0);
-            */
-
-            lprintf(cb, _T("an Unknown [0x%lX] Exception"), pExceptionRecord->ExceptionCode);
+            lpszArticle = _T("a");
             break;
+        }
+
+        lprintf(cb, _T(" %s %s"), lpszArticle, lpcszException);
+    } else {
+        lprintf(cb, _T(" an Unknown [0x%lX] Exception"), ExceptionCode);
     }
 
     // Now print information about where the fault occured
@@ -427,11 +418,28 @@ dumpException(DumpCallback cb,
         lprintf(cb, _T(" in module %s"), getBaseName(szModule));
 
     // If the exception was an access violation, print out some additional information, to the error log and the debugger.
-    if(pExceptionRecord->ExceptionCode == EXCEPTION_ACCESS_VIOLATION &&
-       pExceptionRecord->NumberParameters >= 2)
-        lprintf(cb, " %s location %p",
-            pExceptionRecord->ExceptionInformation[0] ? "Writing to" : "Reading from",
-            (void *)pExceptionRecord->ExceptionInformation[1]);
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/aa363082%28v=vs.85%29.aspx
+    if ((ExceptionCode == EXCEPTION_ACCESS_VIOLATION ||
+         ExceptionCode == EXCEPTION_IN_PAGE_ERROR) &&
+        pExceptionRecord->NumberParameters >= 2) {
+        LPCTSTR lpszVerb;
+        switch (pExceptionRecord->ExceptionInformation[0]) {
+        case 0:
+            lpszVerb = _T("Reading from");
+            break;
+        case 1:
+            lpszVerb = _T("Writing to");
+            break;
+        case 8:
+            lpszVerb = _T("DEP violation at");
+            break;
+        default:
+            lpszVerb = _T("Accessing");
+            break;
+        }
+
+        lprintf(cb, " %s location %p", lpszVerb, (PVOID)pExceptionRecord->ExceptionInformation[1]);
+    }
 
     lprintf(cb, ".\r\n\r\n");
 }
