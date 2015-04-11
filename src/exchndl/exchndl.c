@@ -47,22 +47,6 @@ writeReport(const char *szText)
     }
 }
 
-static
-#ifdef __GNUC__
-    __attribute__ ((format (printf, 1, 2)))
-#endif
-void rprintf(const TCHAR * format, ...)
-{
-    TCHAR szBuf[4096];
-    va_list argptr;
-
-    va_start(argptr, format);
-    wvsprintf(szBuf, format, argptr);
-    va_end(argptr);
-
-    writeReport(szBuf);
-}
-
 
 static
 void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
@@ -70,7 +54,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
 
     // Start out with a banner
-    rprintf(_T("-------------------\r\n\r\n"));
+    lprintf(_T("-------------------\r\n\r\n"));
 
     SYSTEMTIME SystemTime;
     GetLocalTime(&SystemTime);
@@ -78,7 +62,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, &SystemTime, _T("dddd',' MMMM d',' yyyy"), szDateStr, _countof(szDateStr));
     TCHAR szTimeStr[128];
     GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &SystemTime, _T("HH':'mm':'ss"), szTimeStr, _countof(szTimeStr));
-    rprintf(_T("Error occured on %s at %s.\r\n\r\n"), szDateStr, szTimeStr);
+    lprintf(_T("Error occured on %s at %s.\r\n\r\n"), szDateStr, szTimeStr);
 
     HANDLE hProcess = GetCurrentProcess();
 
@@ -93,11 +77,11 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     if (SymInitialize(hProcess, "srv*C:\\Symbols*http://msdl.microsoft.com/download/symbols", TRUE)) {
         bSymInitialized = TRUE;
 
-        dumpException(writeReport, hProcess, pExceptionRecord);
+        dumpException(hProcess, pExceptionRecord);
 
         PCONTEXT pContext = pExceptionInfo->ContextRecord;
 
-        dumpStack(writeReport, hProcess, GetCurrentThread(), pContext);
+        dumpStack(hProcess, GetCurrentThread(), pContext);
 
         if (!SymCleanup(hProcess))
             assert(0);
@@ -161,6 +145,8 @@ static void OnStartup(void)
 {
     // Install the unhandled exception filter function
     prevExceptionFilter = SetUnhandledExceptionFilter(TopLevelExceptionFilter);
+
+    setDumpCallback(writeReport);
 
     if (REPORT_FILE) {
         // Figure out what the report file will be named, and store it away

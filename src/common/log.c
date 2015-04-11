@@ -34,11 +34,27 @@
 #include "log.h"
 
 
-static
+static void
+defaultCallback(const char *s)
+{
+    OutputDebugStringA(s);
+}
+
+
+static DumpCallback g_Cb = defaultCallback;
+
+
+void
+setDumpCallback(DumpCallback cb)
+{
+    g_Cb = cb;
+}
+
+
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 2, 3)))
+    __attribute__ ((format (printf, 1, 2)))
 #endif
-int lprintf(DumpCallback cb, const char * format, ...)
+int lprintf(const char * format, ...)
 {
     char szBuffer[1024];
     int retValue;
@@ -48,21 +64,21 @@ int lprintf(DumpCallback cb, const char * format, ...)
     retValue = _vsnprintf(szBuffer, sizeof szBuffer, format, ap);
     va_end(ap);
 
-    cb(szBuffer);
+    g_Cb(szBuffer);
 
     return retValue;
 }
 
 
 static BOOL
-dumpSourceCode(DumpCallback cb, LPCTSTR lpFileName, DWORD dwLineNumber);
+dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber);
 
 
 #define MAX_SYM_NAME_SIZE 512
 
 
 static void
-dumpContext(DumpCallback cb,
+dumpContext(
 #ifdef _WIN64
             PWOW64_CONTEXT pContext
 #else
@@ -71,9 +87,9 @@ dumpContext(DumpCallback cb,
 )
 {
     // Show the registers
-    lprintf(cb, _T("Registers:\r\n"));
+    lprintf(_T("Registers:\r\n"));
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
-        lprintf(cb,
+        lprintf(
             _T("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\r\n"),
             pContext->Eax,
             pContext->Ebx,
@@ -84,7 +100,7 @@ dumpContext(DumpCallback cb,
         );
     }
     if (pContext->ContextFlags & CONTEXT_CONTROL) {
-        lprintf(cb,
+        lprintf(
             _T("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\r\n"),
             pContext->Eip,
             pContext->Esp,
@@ -103,7 +119,7 @@ dumpContext(DumpCallback cb,
         );
     }
     if (pContext->ContextFlags & CONTEXT_SEGMENTS) {
-        lprintf(cb,
+        lprintf(
             _T("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx"),
             pContext->SegCs,
             pContext->SegSs,
@@ -113,7 +129,7 @@ dumpContext(DumpCallback cb,
             pContext->SegGs
         );
         if (pContext->ContextFlags & CONTEXT_CONTROL) {
-            lprintf(cb,
+            lprintf(
                 _T("             efl=%08lx"),
                 pContext->EFlags
             );
@@ -121,19 +137,18 @@ dumpContext(DumpCallback cb,
     }
     else {
         if (pContext->ContextFlags & CONTEXT_CONTROL) {
-            lprintf(cb,
+            lprintf(
                 _T("                                                                       efl=%08lx"),
                 pContext->EFlags
             );
         }
     }
-    lprintf(cb, _T("\r\n\r\n"));
+    lprintf(_T("\r\n\r\n"));
 }
 
 
 void
-dumpStack(DumpCallback cb,
-          HANDLE hProcess, HANDLE hThread,
+dumpStack(HANDLE hProcess, HANDLE hThread,
           const CONTEXT *pTargetContext)
 {
     DWORD MachineType;
@@ -161,7 +176,7 @@ dumpStack(DumpCallback cb,
         Wow64GetThreadContext(hThread, &Wow64Context);
         assert(pTargetContext == NULL);
         pContext = (PCONTEXT)&Wow64Context;
-        dumpContext(cb, &Wow64Context);
+        dumpContext(&Wow64Context);
         StackFrame.AddrPC.Offset = Wow64Context.Eip;
         StackFrame.AddrPC.Mode = AddrModeFlat;
         StackFrame.AddrStack.Offset = Wow64Context.Esp;
@@ -181,7 +196,7 @@ dumpStack(DumpCallback cb,
 
 #ifndef _WIN64
         MachineType = IMAGE_FILE_MACHINE_I386;
-        dumpContext(cb, pContext);
+        dumpContext(pContext);
         StackFrame.AddrPC.Offset = pContext->Eip;
         StackFrame.AddrPC.Mode = AddrModeFlat;
         StackFrame.AddrStack.Offset = pContext->Esp;
@@ -200,9 +215,9 @@ dumpStack(DumpCallback cb,
     }
 
     if (MachineType == IMAGE_FILE_MACHINE_I386) {
-        lprintf(cb,  _T("AddrPC   Params\r\n") );
+        lprintf( _T("AddrPC   Params\r\n") );
     } else {
-        lprintf(cb,  _T("AddrPC           Params\r\n") );
+        lprintf( _T("AddrPC           Params\r\n") );
     }
 
     while (TRUE) {
@@ -229,7 +244,7 @@ dumpStack(DumpCallback cb,
             break;
 
         if (MachineType == IMAGE_FILE_MACHINE_I386) {
-            lprintf(cb,
+            lprintf(
                 _T("%08lX %08lX %08lX %08lX"),
                 (DWORD)StackFrame.AddrPC.Offset,
                 (DWORD)StackFrame.Params[0],
@@ -237,7 +252,7 @@ dumpStack(DumpCallback cb,
                 (DWORD)StackFrame.Params[2]
             );
         } else {
-            lprintf(cb,
+            lprintf(
                 _T("%016I64X %016I64X %016I64X %016I64X"),
                 StackFrame.AddrPC.Offset,
                 StackFrame.Params[0],
@@ -254,30 +269,30 @@ dumpStack(DumpCallback cb,
         if (hModule &&
             GetModuleFileNameEx(hProcess, hModule, szModule, MAX_PATH)) {
 
-            lprintf(cb,  _T("  %s"), getBaseName(szModule));
+            lprintf( _T("  %s"), getBaseName(szModule));
 
             bSymbol = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE);
             if (bSymbol) {
                 UnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 
-                lprintf(cb,  _T("!%s"), szSymName);
+                lprintf( _T("!%s"), szSymName);
 
                 bLine = GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber);
                 if (bLine) {
-                    lprintf(cb,  _T("  [%s @ %ld]"), szFileName, dwLineNumber);
+                    lprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
                 }
             } else {
-                lprintf(cb,  _T("!0x%I64x"), StackFrame.AddrPC.Offset - (DWORD)(INT_PTR)hModule);
+                lprintf( _T("!0x%I64x"), StackFrame.AddrPC.Offset - (DWORD)(INT_PTR)hModule);
             }
         }
 
-        lprintf(cb, _T("\r\n"));
+        lprintf(_T("\r\n"));
 
-        if (bLine && dumpSourceCode(cb, szFileName, dwLineNumber))
-            lprintf(cb, _T("\r\n"));
+        if (bLine && dumpSourceCode(szFileName, dwLineNumber))
+            lprintf(_T("\r\n"));
     }
 
-    lprintf(cb, _T("\r\n"));
+    lprintf(_T("\r\n"));
 }
 
 
@@ -371,8 +386,7 @@ getExceptionString(DWORD ExceptionCode)
 
 
 void
-dumpException(DumpCallback cb,
-              HANDLE hProcess,
+dumpException(HANDLE hProcess,
               PEXCEPTION_RECORD pExceptionRecord)
 {
     DWORD ExceptionCode = pExceptionRecord->ExceptionCode;
@@ -388,7 +402,7 @@ dumpException(DumpCallback cb,
     }
 
     // First print information about the type of fault
-    lprintf(cb, _T("%s caused"), lpcszProcess);
+    lprintf(_T("%s caused"), lpcszProcess);
 
     LPCTSTR lpcszException = getExceptionString(ExceptionCode);
     if (lpcszException) {
@@ -406,16 +420,16 @@ dumpException(DumpCallback cb,
             break;
         }
 
-        lprintf(cb, _T(" %s %s"), lpszArticle, lpcszException);
+        lprintf(_T(" %s %s"), lpszArticle, lpcszException);
     } else {
-        lprintf(cb, _T(" an Unknown [0x%lX] Exception"), ExceptionCode);
+        lprintf(_T(" an Unknown [0x%lX] Exception"), ExceptionCode);
     }
 
     // Now print information about where the fault occured
-    lprintf(cb, _T(" at location %p"), pExceptionRecord->ExceptionAddress);
+    lprintf(_T(" at location %p"), pExceptionRecord->ExceptionAddress);
     if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
        GetModuleFileNameEx(hProcess, hModule, szModule, sizeof szModule))
-        lprintf(cb, _T(" in module %s"), getBaseName(szModule));
+        lprintf(_T(" in module %s"), getBaseName(szModule));
 
     // If the exception was an access violation, print out some additional information, to the error log and the debugger.
     // https://msdn.microsoft.com/en-us/library/windows/desktop/aa363082%28v=vs.85%29.aspx
@@ -438,15 +452,15 @@ dumpException(DumpCallback cb,
             break;
         }
 
-        lprintf(cb, " %s location %p", lpszVerb, (PVOID)pExceptionRecord->ExceptionInformation[1]);
+        lprintf(" %s location %p", lpszVerb, (PVOID)pExceptionRecord->ExceptionInformation[1]);
     }
 
-    lprintf(cb, ".\r\n\r\n");
+    lprintf(".\r\n\r\n");
 }
 
 
 static BOOL
-dumpSourceCode(DumpCallback cb, LPCTSTR lpFileName, DWORD dwLineNumber)
+dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber)
 {
     FILE *fp;
     int i;
@@ -465,7 +479,7 @@ dumpSourceCode(DumpCallback cb, LPCTSTR lpFileName, DWORD dwLineNumber)
     if((fp = fopen(szFileName, "r")) == NULL)
         return FALSE;
 
-    lprintf(cb, "\t...\r\n");
+    lprintf("\t...\r\n");
 
     i = 0;
     while(!feof(fp) && ++i <= (int) dwLineNumber + dwContext)
@@ -474,18 +488,18 @@ dumpSourceCode(DumpCallback cb, LPCTSTR lpFileName, DWORD dwLineNumber)
 
         if(i >= (int) dwLineNumber - dwContext)
         {
-            lprintf(cb, i == dwLineNumber ? ">\t" : "\t");
+            lprintf(i == dwLineNumber ? ">\t" : "\t");
             while(!feof(fp) && (c = fgetc(fp)) != '\n')
                 if(isprint(c))
-                    lprintf(cb, "%c", c);
-            lprintf(cb, "\r\n");
+                    lprintf("%c", c);
+            lprintf("\r\n");
         }
         else
             while(!feof(fp) && (c = fgetc(fp)) != '\n')
                 ;
     }
 
-    lprintf(cb, "\t...\r\n");
+    lprintf("\t...\r\n");
 
     fclose(fp);
     return TRUE;
