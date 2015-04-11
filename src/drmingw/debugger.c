@@ -27,7 +27,6 @@
 #include "debugger.h"
 #include "log.h"
 #include "dialog.h"
-#include "errmsg.h"
 #include "outdbg.h"
 #include "symbols.h"
 
@@ -82,7 +81,7 @@ BOOL ObtainSeDebugPrivilege(void)
     // Make sure we have access to adjust and to get the old token privileges
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
     {
-        OutputDebug("OpenProcessToken failed with %s\n", LastErrorMessage());
+        OutputDebug("OpenProcessToken failed with 0x%08lx\n", GetLastError());
 
         return FALSE;
     }
@@ -96,10 +95,7 @@ BOOL ObtainSeDebugPrivilege(void)
         LMEM_ZEROINIT,
         sizeof(TOKEN_PRIVILEGES) + (1 - ANYSIZE_ARRAY)*sizeof(LUID_AND_ATTRIBUTES)
     );
-    if(NewPrivileges == NULL)
-    {
-        OutputDebug("LocalAlloc failed with %s", LastErrorMessage());
-
+    if(NewPrivileges == NULL) {
         return FALSE;
     }
 
@@ -125,9 +121,7 @@ BOOL ObtainSeDebugPrivilege(void)
         if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
 
             pbOldPriv = LocalAlloc(LMEM_FIXED, cbNeeded);
-            if (pbOldPriv == NULL)
-            {
-                OutputDebug("LocalAlloc: %s", LastErrorMessage());
+            if (pbOldPriv == NULL) {
                 return FALSE;
             }
 
@@ -194,7 +188,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
         // that the function does not return until a debugging event occurs.
         if(!WaitForDebugEvent(&DebugEvent, INFINITE))
         {
-            ErrorMessageBox(_T("WaitForDebugEvent: %s"), LastErrorMessage());
+            OutputDebug("WaitForDebugEvent: 0x%08lx", GetLastError());
 
             return FALSE;
         }
@@ -460,7 +454,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
                 SymSetOptions(dwSymOptions);
                 if (!SymInitialize(hProcess, szSymSearchPath, FALSE)) {
-                    ErrorMessageBox(_T("SymInitialize: %s"), LastErrorMessage());
+                    OutputDebug("SymInitialize failed: 0x%08lx", GetLastError());
                 }
 
                 SymRegisterCallback64(hProcess, &symCallback, 0);
