@@ -29,6 +29,8 @@
 #include <windows.h>
 #include <dbghelp.h>
 
+#include "symbols.h"
+
 
 static BOOL CALLBACK
 callback(HANDLE hProcess,
@@ -88,9 +90,7 @@ main(int argc, char **argv)
 
 
     HANDLE hProcess = GetCurrentProcess();
-    bRet = SymInitialize(hProcess,
-                         ".sympath cache*;srv*http://msdl.microsoft.com/download/symbols",
-                         FALSE);
+    bRet = InitializeSym(hProcess, FALSE);
     assert(bRet);
 
 

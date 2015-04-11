@@ -419,21 +419,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
                 assert(!bSymInitialized);
 
-                // Provide default symbol search path
-                // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
-                char szSymSearchPathBuf[512];
-                const char *szSymSearchPath = NULL;
-                if (getenv("_NT_SYMBOL_PATH") == NULL &&
-                    getenv("_NT_ALTERNATE_SYMBOL_PATH") == NULL) {
-                    const char *szLocalAppData = getenv("LOCALAPPDATA");
-                    assert(szLocalAppData != NULL);
-                    _snprintf(szSymSearchPathBuf,
-                              sizeof szSymSearchPathBuf,
-                              "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols",
-                              szLocalAppData);
-                    szSymSearchPath = szSymSearchPathBuf;
-                }
-
                 DWORD dwSymOptions = SymGetOptions();
                 dwSymOptions |=
                     SYMOPT_LOAD_LINES |
@@ -450,7 +435,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 #endif
 
                 SymSetOptions(dwSymOptions);
-                if (!SymInitialize(hProcess, szSymSearchPath, FALSE)) {
+                if (!InitializeSym(hProcess, FALSE)) {
                     OutputDebug("SymInitialize failed: 0x%08lx", GetLastError());
                 }
 

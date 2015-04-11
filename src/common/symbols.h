@@ -21,6 +21,13 @@
 #include <windows.h>
 #include <dbghelp.h>
 
-extern BOOL bSymInitialized;
-BOOL GetSymFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize );
-BOOL GetLineFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber );
+EXTERN_C BOOL bSymInitialized;
+
+EXTERN_C BOOL
+InitializeSym(HANDLE hProcess, BOOL fInvadeProcess);
+
+EXTERN_C BOOL
+GetSymFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize );
+
+EXTERN_C BOOL
+GetLineFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber );

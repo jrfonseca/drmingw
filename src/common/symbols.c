@@ -30,6 +30,30 @@
 
 BOOL bSymInitialized = FALSE;
 
+
+EXTERN_C BOOL
+InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
+{
+    // Provide default symbol search path
+    // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
+    char szSymSearchPathBuf[512];
+    const char *szSymSearchPath = NULL;
+    if (getenv("_NT_SYMBOL_PATH") == NULL &&
+        getenv("_NT_ALTERNATE_SYMBOL_PATH") == NULL) {
+        const char *szLocalAppData = getenv("LOCALAPPDATA");
+        assert(szLocalAppData != NULL);
+        _snprintf(szSymSearchPathBuf,
+                  sizeof szSymSearchPathBuf,
+                  "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols",
+                  szLocalAppData);
+        szSymSearchPath = szSymSearchPathBuf;
+    }
+
+    return SymInitialize(hProcess, szSymSearchPath, fInvadeProcess);
+}
+
+
+
 BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
 {
     PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + nSize * sizeof(TCHAR));

@@ -74,7 +74,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
         SYMOPT_LOAD_LINES |
         SYMOPT_DEFERRED_LOADS;
     SymSetOptions(dwSymOptions);
-    if (SymInitialize(hProcess, "srv*C:\\Symbols*http://msdl.microsoft.com/download/symbols", TRUE)) {
+    if (InitializeSym(hProcess, TRUE)) {
         bSymInitialized = TRUE;
 
         dumpException(hProcess, pExceptionRecord);
