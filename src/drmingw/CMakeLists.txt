@@ -1,5 +1,4 @@
 add_executable (drmingw WIN32
-    debugger.c
     dialog.c
     errmsg.c
     main.c
