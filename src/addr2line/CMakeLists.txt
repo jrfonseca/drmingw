@@ -1,5 +1,5 @@
 add_executable (addr2line
-    addr2line.cpp
+    addr2line.c
 )
 
 add_dependencies (addr2line mgwhelp_implib)
