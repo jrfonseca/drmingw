@@ -252,6 +252,10 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     }
                 }
 
+                if (DebugEvent.u.Exception.dwFirstChance && !pOptions->first_chance) {
+                    break;
+                }
+
                 // Find the process in the process list
                 PPROCESS_LIST_INFO pProcessInfo;
                 PTHREAD_LIST_INFO pThreadInfo;

@@ -12,3 +12,5 @@ add_subdirectory (drmingw)
 add_subdirectory (exchndl)
 
 add_subdirectory (addr2line)
+
+add_subdirectory (catchsegv)

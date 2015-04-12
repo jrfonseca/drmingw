@@ -26,6 +26,7 @@ typedef struct {
     int breakpoint_flag; /* Treat breakpoints as exceptions. */
     int verbose_flag;    /* Verbose output. */
     int debug_flag;
+    int first_chance;
     DWORD dwProcessId;   /* Attach to the process with the given identifier.  */
     HANDLE hEvent;       /* Signal an event after process is attached.  */
 } DebugOptions;

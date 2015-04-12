@@ -225,6 +225,8 @@ main(int argc, char **argv)
 {
     int c;    /* Character of the parsed option.  */
 
+    debug_options.first_chance = 1;
+
     while (1)
     {
         int option_index = 0;
