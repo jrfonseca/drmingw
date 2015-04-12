@@ -28,11 +28,16 @@
 #include <psapi.h>
 
 #include "outdbg.h"
-#include "demangle.h"
+
 #include "mgwhelp.h"
 
 #include "dwarf_pe.h"
 #include "dwarf_find.h"
+
+
+extern char *
+__cxa_demangle(const char * __mangled_name, char * __output_buffer,
+               size_t * __length, int * __status);
 
 
 struct mgwhelp_module
@@ -385,10 +390,18 @@ MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD Undecor
     assert(DecoratedName != NULL);
 
     if (DecoratedName[0] == '_' && DecoratedName[1] == 'Z') {
-        char *res = demangle(DecoratedName);
-        if (res) {
-            strncpy(UnDecoratedName, res, UndecoratedLength);
-            free(res);
+        /**
+         * See http://gcc.gnu.org/onlinedocs/libstdc++/manual/ext_demangling.html
+         */
+
+        int status = 0;
+        char *output_buffer;
+        output_buffer = __cxa_demangle(DecoratedName, 0, 0, &status);
+        if (status != 0) {
+            OutputDebug("MGWHELP: __cxa_demangle failed with status %i\n", status);
+        } else {
+            strncpy(UnDecoratedName, output_buffer, UndecoratedLength);
+            free(output_buffer);
             return strlen(UnDecoratedName);
         }
     }

@@ -6,7 +6,6 @@ endif ()
 
 add_library (mgwhelp SHARED
     ${MGWHELP_DEF}
-    demangle.cpp
     dwarf_find.c
     dwarf_pe.c
     mgwhelp.c
@@ -20,6 +19,7 @@ target_link_libraries (mgwhelp LINK_PRIVATE
 
 set_target_properties (mgwhelp PROPERTIES
     PREFIX ""
+    LINKER_LANGUAGE CXX # for __cxa_demangle
 )
 
 install (TARGETS mgwhelp RUNTIME DESTINATION bin)
