@@ -139,9 +139,6 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
 
     module->Base = Base;
 
-    module->next = process->modules;
-    process->modules = module;
-
     /* SymGetModuleInfo64 is not reliable for this, as explained in
      * https://msdn.microsoft.com/en-us/library/windows/desktop/ms681336.aspx
      */
@@ -150,6 +147,7 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
                                  module->LoadedImageName,
                                  sizeof module->LoadedImageName);
     if (dwRet == 0) {
+        OutputDebug("MGWHELP: could not determined module name\n");
         goto no_module_name;
     }
 
@@ -162,10 +160,12 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
         OutputDebug("MGWHELP: %s: %s\n", module->LoadedImageName, "no dwarf symbols");
     }
 
+    module->next = process->modules;
+    process->modules = module;
+
     return module;
 
 no_module_name:
-    OutputDebug("MGWHELP: no module name");
     free(module);
 no_module:
     return NULL;
