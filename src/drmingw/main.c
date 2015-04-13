@@ -90,6 +90,8 @@ install(REGSAM samDesired)
         lstrcat(szFullCommand, _T (" -v"));
     if (debug_options.breakpoint_flag)
         lstrcat(szFullCommand, _T (" -b"));
+    if (debug_options.debug_flag)
+        lstrcat(szFullCommand, _T (" -d"));
 
     lRet = RegCreateKeyEx(
         HKEY_LOCAL_MACHINE,
