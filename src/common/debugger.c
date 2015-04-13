@@ -218,7 +218,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                         fBreakpointSignalled = TRUE;
 
                         if (pOptions->hEvent) {
-                            OutputDebug("SetEvent(%p)\n", pOptions->hEvent);
                             SetEvent(pOptions->hEvent);
                             CloseHandle(pOptions->hEvent);
                         }

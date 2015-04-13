@@ -26,20 +26,12 @@
 
 static inline void
     __attribute__ ((format (printf, 1, 2)))
-OutputDebug (const char *format, ... )
+OutputDebug(const char *format, ... )
 {
-#ifndef NDEBUG
-
-       char buf[512];
-       va_list ap;
-       va_start(ap, format);
-       _vsnprintf(buf, sizeof(buf), format, ap);
-       OutputDebugStringA(buf);
-       va_end(ap);
-
-#else
-
-       (void)format;
-
-#endif
+    char buf[512];
+    va_list ap;
+    va_start(ap, format);
+    _vsnprintf(buf, sizeof(buf), format, ap);
+    OutputDebugStringA(buf);
+    va_end(ap);
 }

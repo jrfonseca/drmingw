@@ -63,7 +63,7 @@ search_func(Dwarf_Debug dbg,
             return;
 
         if (dwarf_tag(die, &tag, &de) != DW_DLV_OK) {
-            OutputDebug("dwarf_tag: %s", dwarf_errmsg(de));
+            OutputDebug("MGWHELP: dwarf_tag failed - %s", dwarf_errmsg(de));
             goto cont_search;
         }
 
@@ -112,7 +112,7 @@ search_func(Dwarf_Debug dbg,
         /* Recurse into children. */
         ret = dwarf_child(die, &child_die, &de);
         if (ret == DW_DLV_ERROR)
-            OutputDebug("dwarf_child: %s", dwarf_errmsg(de));
+            OutputDebug("MGWHELP: dwarf_child failed - %s\n", dwarf_errmsg(de));
         else if (ret == DW_DLV_OK)
             search_func(dbg, child_die, addr, rlt_func);
 
@@ -120,7 +120,7 @@ search_func(Dwarf_Debug dbg,
         ret = dwarf_siblingof(dbg, die, &sibling_die, &de);
         if (ret != DW_DLV_OK) {
             if (ret == DW_DLV_ERROR)
-                OutputDebug("dwarf_siblingof: %s", dwarf_errmsg(de));
+                OutputDebug("MGWHELP: dwarf_siblingof failed - %s\n", dwarf_errmsg(de));
             break;
         }
         die = sibling_die;
@@ -175,8 +175,7 @@ find_dwarf_symbol(Dwarf_Debug dbg,
         Dwarf_Signed i;
         for (i = 0; i < linecount; i++) {
             if (dwarf_lineaddr(linebuf[i], &lineaddr, &error) != DW_DLV_OK) {
-                OutputDebug("dwarf_lineaddr: %s",
-                    dwarf_errmsg(error));
+                OutputDebug("MGWHELP: dwarf_lineaddr failed - %s\n", dwarf_errmsg(error));
                 break;
             }
             if (addr > plineaddr && addr < lineaddr) {
@@ -185,13 +184,11 @@ find_dwarf_symbol(Dwarf_Debug dbg,
                 break;
             }
             if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
-                OutputDebug("dwarf_lineno: %s",
-                    dwarf_errmsg(error));
+                OutputDebug("MGWHELP: dwarf_lineno failed - %s\n", dwarf_errmsg(error));
                 break;
             }
             if (dwarf_linesrc(linebuf[i], &file0, &error) != DW_DLV_OK) {
-                OutputDebug("dwarf_linesrc: %s",
-                    dwarf_errmsg(error));
+                OutputDebug("MGWHELP: dwarf_linesrc failed - %s\n", dwarf_errmsg(error));
             } else {
                 file = file0;
             }
@@ -221,6 +218,6 @@ no_arange:
     dwarf_dealloc(dbg, aranges, DW_DLA_LIST);
 no_aranges:
     if (error) {
-        OutputDebug("libdwarf error: %s\n", dwarf_errmsg(error));
+        OutputDebug("MGWHELP: libdwarf error - %s\n", dwarf_errmsg(error));
     }
 }

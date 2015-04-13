@@ -208,7 +208,6 @@ getProcessIdByName(const char *szProcessName)
 
 static void debugThread(void *arg)
 {
-    OutputDebug("dwProcessId = %lu, hEvent=%p\n", debug_options.dwProcessId, debug_options.hEvent);
     // attach debuggee
     if (!DebugActiveProcess(debug_options.dwProcessId)) {
         ErrorMessageBox(_T("DebugActiveProcess: %s"), LastErrorMessage());
