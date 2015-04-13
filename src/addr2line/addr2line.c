@@ -66,11 +66,6 @@ main(int argc, char **argv)
         return 1;
     }
 
-    if (0) {
-        // http://msdn.microsoft.com/en-us/library/ms680687.aspx
-        SetEnvironmentVariableA("DBGHELP_DBGOUT", "1");
-    }
-
     DWORD dwSymOptions = SymGetOptions();
 
     dwSymOptions |= SYMOPT_LOAD_LINES;

@@ -173,11 +173,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
     unsigned i, j;
 
-#ifndef NDEBUG
-    // http://msdn.microsoft.com/en-us/library/ms680687.aspx
-    SetEnvironmentVariableA("DBGHELP_DBGOUT", "1");
-#endif
-
     while(!fFinished)
     {
         DEBUG_EVENT DebugEvent;            // debugging event information
