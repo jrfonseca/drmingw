@@ -45,17 +45,6 @@ typedef struct {
 }
 THREAD_LIST_INFO, * PTHREAD_LIST_INFO;
 
-typedef struct {
-    DWORD dwProcessId;
-    HANDLE hFile;
-    LPVOID lpBaseAddress;
-    DWORD dwDebugInfoFileOffset;
-    DWORD nDebugInfoSize;
-    LPVOID lpImageName;
-    WORD fUnicode;
-}
-MODULE_LIST_INFO, * PMODULE_LIST_INFO;
-
 
 static unsigned nProcesses = 0, maxProcesses = 0;
 static PPROCESS_LIST_INFO ProcessListInfo = NULL;
