@@ -63,9 +63,6 @@ static PPROCESS_LIST_INFO ProcessListInfo = NULL;
 static unsigned nThreads = 0, maxThreads = 0;
 static PTHREAD_LIST_INFO ThreadListInfo = NULL;
 
-static unsigned nModules = 0, maxModules = 0;
-static PMODULE_LIST_INFO ModuleListInfo = NULL;
-
 
 BOOL ObtainSeDebugPrivilege(void)
 {
@@ -137,19 +134,6 @@ BOOL ObtainSeDebugPrivilege(void)
     return fRc;
 }
 
-static BOOL TerminateProcessId(DWORD dwProcessId, UINT uExitCode)
-{
-    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
-    if (hProcess == NULL)
-        return FALSE;
-
-    BOOL bRet = TerminateProcess(hProcess, uExitCode);
-
-    CloseHandle(hProcess);
-
-    return bRet;
-}
-
 
 static BOOL CALLBACK
 symCallback(HANDLE hProcess,
@@ -158,7 +142,7 @@ symCallback(HANDLE hProcess,
             ULONG64 UserContext)
 {
     if (ActionCode == CBA_DEBUG_INFO) {
-        OutputDebug("%s", (LPCSTR)(UINT_PTR)CallbackData);
+        lprintf("%s", (LPCSTR)(UINT_PTR)CallbackData);
         return TRUE;
     }
 
@@ -166,17 +150,35 @@ symCallback(HANDLE hProcess,
 }
 
 
+static char *
+readProcessString(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T nSize)
+{
+    LPSTR lpszBuffer = malloc(nSize + 1);
+    SIZE_T NumberOfBytesRead = 0;
+
+    if (!ReadProcessMemory(hProcess, lpBaseAddress, lpszBuffer, nSize, &NumberOfBytesRead)) {
+        lpszBuffer[0] = '\0';
+    }
+
+    assert(NumberOfBytesRead <= nSize);
+    lpszBuffer[NumberOfBytesRead] = '\0';
+    return lpszBuffer;
+}
+
+
 BOOL DebugMainLoop(const DebugOptions *pOptions)
 {
     BOOL fFinished = FALSE;
-    BOOL fSignalled = FALSE;
-
+    BOOL fBreakpointSignalled = FALSE;
+    BOOL fWowBreakpointSignalled = FALSE;
     unsigned i, j;
 
     while(!fFinished)
     {
         DEBUG_EVENT DebugEvent;            // debugging event information
         DWORD dwContinueStatus = DBG_CONTINUE;    // exception continuation
+        PPROCESS_LIST_INFO pProcessInfo;
+        PTHREAD_LIST_INFO pThreadInfo;
 
         // Wait for a debugging event to occur. The second parameter indicates
         // that the function does not return until a debugging event occurs.
@@ -186,9 +188,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             return FALSE;
         }
-
-        if (pOptions->debug_flag)
-            OutputDebug("DEBUG_EVENT:\r\n");
 
         // Process the debugging event code.
         switch (DebugEvent.dwDebugEventCode) {
@@ -202,57 +201,55 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // status parameter (dwContinueStatus). This value
             // is used by the ContinueDebugEvent function.
             if (pOptions->debug_flag) {
-                OutputDebug(
-                    "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                    "EXCEPTION_DEBUG_EVENT",
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
-                );
-                OutputDebug(
-                    "\tExceptionCode = %lX\r\n\tExceptionFlags = %lX\r\n\tExceptionAddress = %p\r\n\tdwFirstChance = %lX\r\n",
-                    pExceptionRecord->ExceptionCode,
-                    pExceptionRecord->ExceptionFlags,
-                    pExceptionRecord->ExceptionAddress,
-                    DebugEvent.u.Exception.dwFirstChance
+                lprintf("EXCEPTION PID=%lu TID=%lu ExceptionCode=0x%lx dwFirstChance=%lu\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId,
+                        pExceptionRecord->ExceptionCode,
+                        DebugEvent.u.Exception.dwFirstChance
                 );
             }
 
             dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
 
-            BOOL bFirstBreakPoint = (pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT ||
-                                     pExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT) &&
-                                     DebugEvent.u.Exception.dwFirstChance;
+            if (DebugEvent.u.Exception.dwFirstChance) {
+                if (pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT) {
+                    // Signal the aedebug event
+                    if (!fBreakpointSignalled) {
+                        fBreakpointSignalled = TRUE;
 
-            if (bFirstBreakPoint) {
-                // Signal the aedebug event
-                if (pOptions->hEvent && !fSignalled) {
-                    OutputDebug("SetEvent(%p)\n", pOptions->hEvent);
-                    SetEvent(pOptions->hEvent);
-                    CloseHandle(pOptions->hEvent);
-                    fSignalled = TRUE;
+                        if (pOptions->hEvent) {
+                            OutputDebug("SetEvent(%p)\n", pOptions->hEvent);
+                            SetEvent(pOptions->hEvent);
+                            CloseHandle(pOptions->hEvent);
+                        }
+
+                        /*
+                         * We ignore first-chance breakpoints by default.
+                         *
+                         * We get one of these whenever we attach to a process.
+                         * But in some cases, we never get a second-chance, e.g.,
+                         * when we're attached through MSVCRT's abort().
+                         */
+                        if (!pOptions->breakpoint_flag) {
+                            dwContinueStatus = DBG_CONTINUE;
+                            break;
+                        }
+                    }
                 }
 
-                dwContinueStatus = DBG_CONTINUE;
+                if (pExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT) {
+                    if (!fWowBreakpointSignalled) {
+                        fWowBreakpointSignalled = TRUE;
+                        dwContinueStatus = DBG_CONTINUE;
+                    }
+                }
 
-                /*
-                 * We ignore first-chance breakpoints by default.
-                 *
-                 * We get one of these whenever we attach to a process.
-                 * But in some cases, we never get a second-chance, e.g.,
-                 * when we're attached through MSVCRT's abort().
-                 */
-                if (!pOptions->breakpoint_flag) {
+                if (!pOptions->first_chance) {
                     break;
                 }
             }
 
-            if (DebugEvent.u.Exception.dwFirstChance && !pOptions->first_chance) {
-                break;
-            }
-
             // Find the process in the process list
-            PPROCESS_LIST_INFO pProcessInfo;
-            PTHREAD_LIST_INFO pThreadInfo;
             assert(nProcesses);
             i = 0;
             while (i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId) {
@@ -271,7 +268,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             for (i = 0; i < nThreads; ++i) {
                 assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
                 if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId &&
-                    !bFirstBreakPoint &&
+                    pExceptionRecord->ExceptionCode != STATUS_BREAKPOINT &&
                     !pOptions->verbose_flag) {
                         continue;
                 }
@@ -286,30 +283,17 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                  * Terminate the process. As continuing would cause the JIT debugger
                  * to be invoked again.
                  */
-                TerminateProcessId(DebugEvent.dwProcessId,
-                                   pExceptionRecord->ExceptionCode);
+                TerminateProcess(pProcessInfo->hProcess,
+                                 pExceptionRecord->ExceptionCode);
             }
 
             break;
 
         case CREATE_THREAD_DEBUG_EVENT:
-            // As needed, examine or change the thread's registers
-            // with the GetThreadContext and SetThreadContext functions;
-            // and suspend and resume thread execution with the
-            // SuspendThread and ResumeThread functions.
-            if(pOptions->debug_flag)
-            {
-                OutputDebug(
-                    "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                    "CREATE_THREAD_DEBUG_EVENT",
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
-                );
-                OutputDebug(
-                    "\thThread = %p\r\n\tlpThreadLocalBase = %p\r\n\tlpStartAddress = %p\r\n",
-                    DebugEvent.u.CreateThread.hThread,
-                    DebugEvent.u.CreateThread.lpThreadLocalBase,
-                    DebugEvent.u.CreateThread.lpStartAddress
+            if (pOptions->debug_flag) {
+                lprintf("CREATE_THREAD PID=%lu TID=%lu\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId
                 );
             }
 
@@ -330,46 +314,14 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             break;
 
         case CREATE_PROCESS_DEBUG_EVENT:
-            ;
-            HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
-
-            // As needed, examine or change the registers of the
-            // process's initial thread with the GetThreadContext and
-            // SetThreadContext functions; read from and write to the
-            // process's virtual memory with the ReadProcessMemory and
-            // WriteProcessMemory functions; and suspend and resume
-            // thread execution with the SuspendThread and ResumeThread
-            // functions.
-            if(pOptions->debug_flag)
-            {
-                TCHAR szBuffer[MAX_PATH];
-                LPVOID lpImageName;
-
-                OutputDebug(
-                    "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                    "CREATE_PROCESS_DEBUG_EVENT",
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
-                );
-
-                if(!ReadProcessMemory(hProcess, DebugEvent.u.CreateProcessInfo.lpImageName, &lpImageName, sizeof(LPVOID), NULL) ||
-                    !ReadProcessMemory(hProcess, lpImageName, szBuffer, sizeof(szBuffer), NULL))
-                    lstrcpyn(szBuffer, "NULL", sizeof(szBuffer));
-
-                OutputDebug(
-                    "\thFile = %p\r\n\thProcess = %p\r\n\thThread = %p\r\n\tlpBaseOfImage = %p\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpThreadLocalBase = %p\r\n\tlpStartAddress = %p\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
-                    DebugEvent.u.CreateProcessInfo.hFile,
-                    hProcess,
-                    DebugEvent.u.CreateProcessInfo.hThread,
-                    DebugEvent.u.CreateProcessInfo.lpBaseOfImage,
-                    DebugEvent.u.CreateProcessInfo.dwDebugInfoFileOffset,
-                    DebugEvent.u.CreateProcessInfo.nDebugInfoSize,
-                    DebugEvent.u.CreateProcessInfo.lpThreadLocalBase,
-                    DebugEvent.u.CreateProcessInfo.lpStartAddress,
-                    szBuffer,
-                    DebugEvent.u.CreateProcessInfo.fUnicode
+            if (pOptions->debug_flag) {
+                lprintf("CREATE_PROCESS PID=%lu TID=%lu\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId
                 );
             }
+
+            HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
 
             // Add the process to the process list
             if(nProcesses == maxProcesses)
@@ -398,31 +350,15 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             ThreadListInfo[i].lpThreadLocalBase = DebugEvent.u.CreateProcessInfo.lpThreadLocalBase;
             ThreadListInfo[i].lpStartAddress = DebugEvent.u.CreateProcessInfo.lpStartAddress;
 
-            // Add the initial module of the process to the module list
-            if(nModules == maxModules)
-                ModuleListInfo = (PMODULE_LIST_INFO) (maxModules ? realloc(ModuleListInfo, (maxModules *= 2)*sizeof(MODULE_LIST_INFO)) : malloc((maxModules = 4)*sizeof(MODULE_LIST_INFO)));
-            i = nModules++;
-            while(i > 0 && (DebugEvent.dwProcessId < ModuleListInfo[i - 1].dwProcessId || (DebugEvent.dwProcessId == ModuleListInfo[i - 1].dwProcessId && DebugEvent.u.CreateProcessInfo.lpBaseOfImage < ModuleListInfo[i - 1].lpBaseAddress)))
-            {
-                ModuleListInfo[i] = ModuleListInfo[i - 1];
-                --i;
-            }
-            ModuleListInfo[i].dwProcessId = DebugEvent.dwProcessId;
-            ModuleListInfo[i].hFile = DebugEvent.u.CreateProcessInfo.hFile;
-            ModuleListInfo[i].lpBaseAddress = DebugEvent.u.CreateProcessInfo.lpBaseOfImage;
-            ModuleListInfo[i].dwDebugInfoFileOffset = DebugEvent.u.CreateProcessInfo.dwDebugInfoFileOffset;
-            ModuleListInfo[i].nDebugInfoSize = DebugEvent.u.CreateProcessInfo.nDebugInfoSize;
-            ModuleListInfo[i].lpImageName = DebugEvent.u.CreateProcessInfo.lpImageName;
-            ModuleListInfo[i].fUnicode = DebugEvent.u.CreateProcessInfo.fUnicode;
-
             assert(!bSymInitialized);
 
             DWORD dwSymOptions = SymGetOptions();
             dwSymOptions |=
                 SYMOPT_LOAD_LINES |
                 SYMOPT_DEFERRED_LOADS;
-            if (pOptions->debug_flag)
-                dwSymOptions |= SYMOPT_DEBUG;
+            if (pOptions->debug_flag) {
+                //dwSymOptions |= SYMOPT_DEBUG;
+            }
 
 #ifdef _WIN64
             BOOL bWow64 = FALSE;
@@ -444,18 +380,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             break;
 
         case EXIT_THREAD_DEBUG_EVENT:
-            // Display the thread's exit code.
-            if(pOptions->debug_flag)
-            {
-                OutputDebug(
-                    "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                    "EXIT_THREAD_DEBUG_EVENT",
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
-                );
-                OutputDebug(
-                    "\tdwExitCode = %lX\r\n",
-                    DebugEvent.u.ExitThread.dwExitCode
+            if (pOptions->debug_flag) {
+                lprintf("EXIT_THREAD PID=%lu TID=%lu dwExitCode=0x%lx\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId,
+                        DebugEvent.u.ExitThread.dwExitCode
                 );
             }
 
@@ -471,18 +400,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             break;
 
         case EXIT_PROCESS_DEBUG_EVENT:
-            // Display the process's exit code.
-            if(pOptions->debug_flag)
-            {
-                OutputDebug(
-                    "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                    "EXIT_PROCESS_DEBUG_EVENT",
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
-                );
-                OutputDebug(
-                    "\tdwExitCode = %lX\r\n",
-                    DebugEvent.u.ExitProcess.dwExitCode
+            if (pOptions->debug_flag) {
+                lprintf("EXIT_PROCESS PID=%lu TID=%lu dwExitCode=0x%lx\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId,
+                        DebugEvent.u.ExitProcess.dwExitCode
                 );
             }
 
@@ -499,16 +421,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     ThreadListInfo[j] = ThreadListInfo[i];
             }
             nThreads = j;
-
-            // Remove all modules of the process from the module list
-            for(i = j = 0; i < nModules; ++i)
-            {
-                if(ModuleListInfo[i].dwProcessId != DebugEvent.dwProcessId)
-                    ++j;
-                if(j != i)
-                    ModuleListInfo[j] = ModuleListInfo[i];
-            }
-            nModules = j;
 
             // Remove the process from the process list
             assert(nProcesses);
@@ -529,119 +441,79 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             if(!--nProcesses)
             {
-                assert(!nThreads && !nModules);
+                assert(!nThreads);
                 fFinished = TRUE;
             }
 
             break;
 
         case LOAD_DLL_DEBUG_EVENT:
-            // Read the debugging information included in the newly
-            // loaded DLL.
-            if(pOptions->debug_flag)
-            {
-                TCHAR szBuffer[MAX_PATH];
-                LPVOID lpImageName;
-
-                OutputDebug(
-                    "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                    "LOAD_DLL_DEBUG_EVENT",
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
-                );
-
-                if(!ReadProcessMemory(DebugEvent.u.CreateProcessInfo.hProcess, DebugEvent.u.CreateProcessInfo.lpImageName, &lpImageName, sizeof(LPVOID), NULL) ||
-                    !ReadProcessMemory(DebugEvent.u.CreateProcessInfo.hProcess, lpImageName, szBuffer, sizeof(szBuffer), NULL))
-                    lstrcpyn(szBuffer, "NULL", sizeof szBuffer);
-
-                OutputDebug(
-                    "\thFile = %p\r\n\tlpBaseOfDll = %p\r\n\tdwDebugInfoFileOffset = %lX\r\n\tnDebugInfoSize = %lX\r\n\tlpImageName = %s\r\n\tfUnicoded = %X\r\n",
-                    DebugEvent.u.LoadDll.hFile,
-                    DebugEvent.u.LoadDll.lpBaseOfDll,
-                    DebugEvent.u.LoadDll.dwDebugInfoFileOffset,
-                    DebugEvent.u.LoadDll.nDebugInfoSize,
-                    szBuffer,
-                    DebugEvent.u.LoadDll.fUnicode
+            if (pOptions->debug_flag) {
+                lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId,
+                        DebugEvent.u.LoadDll.lpBaseOfDll
                 );
             }
-
-            // Add the module to the module list
-            if(nModules == maxModules)
-                ModuleListInfo = (PMODULE_LIST_INFO) (maxModules ? realloc(ModuleListInfo, (maxModules *= 2)*sizeof(MODULE_LIST_INFO)) : malloc((maxModules = 4)*sizeof(MODULE_LIST_INFO)));
-            i = nModules++;
-            while(i > 0 && (DebugEvent.dwProcessId < ModuleListInfo[i - 1].dwProcessId || (DebugEvent.dwProcessId == ModuleListInfo[i - 1].dwProcessId && DebugEvent.u.LoadDll.lpBaseOfDll < ModuleListInfo[i - 1].lpBaseAddress)))
-            {
-                ModuleListInfo[i] = ModuleListInfo[i - 1];
-                --i;
-            }
-            ModuleListInfo[i].dwProcessId = DebugEvent.dwProcessId;
-            ModuleListInfo[i].hFile = DebugEvent.u.LoadDll.hFile;
-            ModuleListInfo[i].lpBaseAddress = DebugEvent.u.LoadDll.lpBaseOfDll;
-            ModuleListInfo[i].dwDebugInfoFileOffset = DebugEvent.u.LoadDll.dwDebugInfoFileOffset;
-            ModuleListInfo[i].nDebugInfoSize = DebugEvent.u.LoadDll.nDebugInfoSize;
-            ModuleListInfo[i].lpImageName = DebugEvent.u.LoadDll.lpImageName;
-            ModuleListInfo[i].fUnicode = DebugEvent.u.LoadDll.fUnicode;
 
             break;
 
         case UNLOAD_DLL_DEBUG_EVENT:
-            // Display a message that the DLL has been unloaded.
-            if(pOptions->debug_flag)
-            {
-                OutputDebug(
-                    "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                    "UNLOAD_DLL_DEBUG_EVENT",
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
-                );
-                OutputDebug(
-                    "\tlpBaseOfDll = %p\r\n",
-                    DebugEvent.u.UnloadDll.lpBaseOfDll
+            if (pOptions->debug_flag) {
+                lprintf("UNLOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId,
+                        DebugEvent.u.UnloadDll.lpBaseOfDll
                 );
             }
-
-            // Remove the module from the module list
-            assert(nModules);
-            i = 0;
-            while(i < nModules && (DebugEvent.dwProcessId > ModuleListInfo[i].dwProcessId || (DebugEvent.dwProcessId == ModuleListInfo[i].dwProcessId && DebugEvent.u.UnloadDll.lpBaseOfDll > ModuleListInfo[i].lpBaseAddress)))
-                ++i;
-            assert(ModuleListInfo[i].dwProcessId == DebugEvent.dwProcessId && ModuleListInfo[i].lpBaseAddress == DebugEvent.u.UnloadDll.lpBaseOfDll);
-
-            while(++i < nModules)
-                ModuleListInfo[i - 1] = ModuleListInfo[i];
-            --nModules;
-            assert(nModules);
             break;
 
         case OUTPUT_DEBUG_STRING_EVENT:
-            // Display the output debugging string.
-            if(pOptions->debug_flag)
-            {
-                OutputDebug(
-                    "\tdwDebugEventCode = %s\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
-                    "OUTPUT_DEBUG_STRING_EVENT",
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
+            if (pOptions->debug_flag) {
+                lprintf("OUTPUT_DEBUG_STRING PID=%lu TID=%lu\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId
                 );
-                /* XXX: Must use ReadProcessMemory */
-#if 0
-                OutputDebug(
-                    "\tlpDebugStringData = %s\r\n",
-                    DebugEvent.u.DebugString.lpDebugStringData
+            }
+
+            // Find the process in the process list
+            assert(nProcesses);
+            i = 0;
+            while (i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId) {
+                ++i;
+            }
+            assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
+            pProcessInfo = &ProcessListInfo[i];
+
+            assert(!DebugEvent.u.DebugString.fUnicode);
+
+            LPSTR lpDebugStringData = readProcessString(pProcessInfo->hProcess,
+                                                        DebugEvent.u.DebugString.lpDebugStringData,
+                                                        DebugEvent.u.DebugString.nDebugStringLength);
+
+            fputs(lpDebugStringData, stderr);
+
+            free(lpDebugStringData);
+            break;
+
+        case RIP_EVENT:
+            if (pOptions->debug_flag) {
+                lprintf("RIP PID=%lu TID=%lu\r\n",
+                        DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId
                 );
-#endif
             }
             break;
 
-         default:
-            if(pOptions->debug_flag)
-                OutputDebug(
-                    "\tdwDebugEventCode = 0x%lX\r\n\tdwProcessId = %lX\r\n\tdwThreadId = %lX\r\n",
+        default:
+            if (pOptions->debug_flag) {
+                lprintf("EVENT%lu PID=%lu TID=%lu\r\n",
                     DebugEvent.dwDebugEventCode,
                     DebugEvent.dwProcessId,
                     DebugEvent.dwThreadId
                 );
-
+            }
+            break;
         }
 
         // Resume executing the thread that reported the debugging event.
@@ -651,8 +523,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             dwContinueStatus
         );
     }
-
-    lprintf(_T("--\r\n"));
 
     return TRUE;
 }
