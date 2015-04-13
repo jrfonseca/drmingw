@@ -191,3 +191,4 @@ Suggested Reading
  * [MSJEXHND - Part 2, Under the Hood, MSJ May 1997](http://www.microsoft.com/msj/0597/hood0597.htm)
  * [Bugslayer, MSJ, August 1998](http://www.microsoft.com/msj/0898/bugslayer0898.htm)
  * [The Win32 Debugging Application Programming Interface](https://msdn.microsoft.com/en-us/library/ms809754.aspx)
+ * [Using the Windows debugging API on Windows 64](http://www.howzatt.demon.co.uk/articles/DebuggingInWin64.html)
