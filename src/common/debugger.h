@@ -31,5 +31,5 @@ typedef struct {
     HANDLE hEvent;       /* Signal an event after process is attached.  */
 } DebugOptions;
 
-BOOL ObtainSeDebugPrivilege(void);
-BOOL DebugMainLoop(const DebugOptions *pOptions);
+EXTERN_C BOOL ObtainSeDebugPrivilege(void);
+EXTERN_C BOOL DebugMainLoop(const DebugOptions *pOptions);

@@ -1,5 +1,5 @@
 add_library (common STATIC
-    debugger.c
+    debugger.cpp
     log.c
     symbols.c
 )

@@ -23,18 +23,18 @@
 
 typedef void (*DumpCallback)(const char *);
 
-void
+EXTERN_C void
 setDumpCallback(DumpCallback cb);
 
+EXTERN_C int
 #ifdef __GNUC__
     __attribute__ ((format (printf, 1, 2)))
 #endif
-int
 lprintf(const char * format, ...);
 
-void
+EXTERN_C void
 dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
 
-void
+EXTERN_C void
 dumpStack(HANDLE hProcess, HANDLE hThread,
           const CONTEXT *pContext);

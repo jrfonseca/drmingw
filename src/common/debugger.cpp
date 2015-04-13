@@ -105,7 +105,7 @@ BOOL ObtainSeDebugPrivilege(void)
         // then allocate off the heap
         if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
 
-            pbOldPriv = LocalAlloc(LMEM_FIXED, cbNeeded);
+            pbOldPriv = (PBYTE)LocalAlloc(LMEM_FIXED, cbNeeded);
             if (pbOldPriv == NULL) {
                 return FALSE;
             }
@@ -142,7 +142,7 @@ symCallback(HANDLE hProcess,
 static char *
 readProcessString(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T nSize)
 {
-    LPSTR lpszBuffer = malloc(nSize + 1);
+    LPSTR lpszBuffer = (LPSTR)malloc(nSize + 1);
     SIZE_T NumberOfBytesRead = 0;
 
     if (!ReadProcessMemory(hProcess, lpBaseAddress, lpszBuffer, nSize, &NumberOfBytesRead)) {
@@ -180,10 +180,9 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
         // Process the debugging event code.
         switch (DebugEvent.dwDebugEventCode) {
-        case EXCEPTION_DEBUG_EVENT:
-            ;
-
+        case EXCEPTION_DEBUG_EVENT: {
             PEXCEPTION_RECORD pExceptionRecord = &DebugEvent.u.Exception.ExceptionRecord;
+            NTSTATUS ExceptionCode = pExceptionRecord->ExceptionCode;
 
             // Process the exception code. When handling
             // exceptions, remember to set the continuation
@@ -201,7 +200,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
 
             if (DebugEvent.u.Exception.dwFirstChance) {
-                if (pExceptionRecord->ExceptionCode == STATUS_BREAKPOINT) {
+                if (pExceptionRecord->ExceptionCode == (DWORD)STATUS_BREAKPOINT) {
                     // Signal the aedebug event
                     if (!fBreakpointSignalled) {
                         fBreakpointSignalled = TRUE;
@@ -225,7 +224,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     }
                 }
 
-                if (pExceptionRecord->ExceptionCode == STATUS_WX86_BREAKPOINT) {
+                if (ExceptionCode == STATUS_WX86_BREAKPOINT) {
                     if (!fWowBreakpointSignalled) {
                         fWowBreakpointSignalled = TRUE;
                         dwContinueStatus = DBG_CONTINUE;
@@ -256,7 +255,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             for (i = 0; i < nThreads; ++i) {
                 assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
                 if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId &&
-                    pExceptionRecord->ExceptionCode != STATUS_BREAKPOINT &&
+                    ExceptionCode != STATUS_BREAKPOINT &&
                     !pOptions->verbose_flag) {
                         continue;
                 }
@@ -271,11 +270,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                  * Terminate the process. As continuing would cause the JIT debugger
                  * to be invoked again.
                  */
-                TerminateProcess(pProcessInfo->hProcess,
-                                 pExceptionRecord->ExceptionCode);
+                TerminateProcess(pProcessInfo->hProcess, (UINT)ExceptionCode);
             }
 
             break;
+        }
 
         case CREATE_THREAD_DEBUG_EVENT:
             if (pOptions->debug_flag) {
@@ -301,7 +300,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             ThreadListInfo[i].lpStartAddress = DebugEvent.u.CreateThread.lpStartAddress;
             break;
 
-        case CREATE_PROCESS_DEBUG_EVENT:
+        case CREATE_PROCESS_DEBUG_EVENT: {
             if (pOptions->debug_flag) {
                 lprintf("CREATE_PROCESS PID=%lu TID=%lu\r\n",
                         DebugEvent.dwProcessId,
@@ -366,6 +365,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             bSymInitialized = TRUE;
 
             break;
+        }
 
         case EXIT_THREAD_DEBUG_EVENT:
             if (pOptions->debug_flag) {
@@ -456,7 +456,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
             break;
 
-        case OUTPUT_DEBUG_STRING_EVENT:
+        case OUTPUT_DEBUG_STRING_EVENT: {
             if (pOptions->debug_flag) {
                 lprintf("OUTPUT_DEBUG_STRING PID=%lu TID=%lu\r\n",
                         DebugEvent.dwProcessId,
@@ -483,6 +483,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             free(lpDebugStringData);
             break;
+        }
 
         case RIP_EVENT:
             if (pOptions->debug_flag) {
