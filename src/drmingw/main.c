@@ -342,10 +342,12 @@ main(int argc, char **argv)
                     return 1;
                 }
                 process_id_given = 1;
-                if (optarg[0] >= '0' && optarg[0] <= '9')
+                if (optarg[0] >= '0' && optarg[0] <= '9') {
                     debug_options.dwProcessId = strtoul(optarg, NULL, 0);
-                else
+                } else {
+                    debug_options.breakpoint_flag = 1;
                     debug_options.dwProcessId = getProcessIdByName(optarg);
+                }
                 if (!debug_options.dwProcessId) {
                     MessageBox(
                         NULL,
