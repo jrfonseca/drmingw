@@ -62,6 +62,9 @@ add_custom_target (test_exchndl
 )
 
 
+add_subdirectory (apps)
+
+
 if (POLICY CMP0037)
     cmake_policy (SET CMP0037 OLD)
 endif ()
