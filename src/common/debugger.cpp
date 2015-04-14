@@ -16,13 +16,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+
+#include <map>
+
 #include <assert.h>
+#include <stdlib.h>
 
 #include <windows.h>
 #include <tchar.h>
 #include <ntstatus.h>
-
-#include <stdlib.h>
 
 #include "debugger.h"
 #include "log.h"
@@ -31,26 +33,20 @@
 
 
 typedef struct {
-    DWORD dwProcessId;
-    HANDLE hProcess;
+    HANDLE hThread;
 }
-PROCESS_LIST_INFO, * PPROCESS_LIST_INFO;
+THREAD_INFO, * PTHREAD_INFO;
+
+typedef std::map< DWORD, THREAD_INFO > THREAD_INFO_LIST;
 
 typedef struct {
-    DWORD dwProcessId;
-    DWORD dwThreadId;
-    HANDLE hThread;
-    LPVOID lpThreadLocalBase;
-    LPTHREAD_START_ROUTINE lpStartAddress;
+    HANDLE hProcess;
+    THREAD_INFO_LIST Threads;
 }
-THREAD_LIST_INFO, * PTHREAD_LIST_INFO;
+PROCESS_INFO, * PPROCESS_INFO;
 
-
-static unsigned nProcesses = 0, maxProcesses = 0;
-static PPROCESS_LIST_INFO ProcessListInfo = NULL;
-
-static unsigned nThreads = 0, maxThreads = 0;
-static PTHREAD_LIST_INFO ThreadListInfo = NULL;
+typedef std::map< DWORD, PROCESS_INFO> PROCESS_INFO_LIST;
+static PROCESS_INFO_LIST g_Processes;
 
 
 BOOL ObtainSeDebugPrivilege(void)
@@ -160,14 +156,13 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
     BOOL fFinished = FALSE;
     BOOL fBreakpointSignalled = FALSE;
     BOOL fWowBreakpointSignalled = FALSE;
-    unsigned i, j;
 
     while(!fFinished)
     {
         DEBUG_EVENT DebugEvent;            // debugging event information
         DWORD dwContinueStatus = DBG_CONTINUE;    // exception continuation
-        PPROCESS_LIST_INFO pProcessInfo;
-        PTHREAD_LIST_INFO pThreadInfo;
+        PPROCESS_INFO pProcessInfo;
+        PTHREAD_INFO pThreadInfo;
 
         // Wait for a debugging event to occur. The second parameter indicates
         // that the function does not return until a debugging event occurs.
@@ -237,13 +232,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
 
             // Find the process in the process list
-            assert(nProcesses);
-            i = 0;
-            while (i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId) {
-                ++i;
-            }
-            assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
-            pProcessInfo = &ProcessListInfo[i];
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
 
             SymRefreshModuleList(pProcessInfo->hProcess);
 
@@ -251,15 +240,14 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                           &DebugEvent.u.Exception.ExceptionRecord);
 
             // Find the thread in the thread list
-            assert(nThreads);
-            for (i = 0; i < nThreads; ++i) {
-                assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId);
-                if (ThreadListInfo[i].dwThreadId != DebugEvent.dwThreadId &&
+            THREAD_INFO_LIST::const_iterator it;
+            for (it = pProcessInfo->Threads.begin(); it != pProcessInfo->Threads.end(); ++it) {
+                DWORD dwThreadId = it->first;
+                if (dwThreadId != DebugEvent.dwThreadId &&
                     ExceptionCode != STATUS_BREAKPOINT &&
                     !pOptions->verbose_flag) {
                         continue;
                 }
-                pThreadInfo = &ThreadListInfo[i];
 
                 dumpStack(pProcessInfo->hProcess,
                           pThreadInfo->hThread, NULL);
@@ -285,19 +273,9 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
 
             // Add the thread to the thread list
-            if(nThreads == maxThreads)
-                ThreadListInfo = (PTHREAD_LIST_INFO) (maxThreads ? realloc(ThreadListInfo, (maxThreads *= 2)*sizeof(THREAD_LIST_INFO)) : malloc((maxThreads = 4)*sizeof(THREAD_LIST_INFO)));
-            i = nThreads++;
-            while(i > 0 && (DebugEvent.dwProcessId < ThreadListInfo[i - 1].dwProcessId || (DebugEvent.dwProcessId == ThreadListInfo[i - 1].dwProcessId && DebugEvent.dwThreadId < ThreadListInfo[i - 1].dwThreadId)))
-            {
-                ThreadListInfo[i] = ThreadListInfo[i - 1];
-                --i;
-            }
-            ThreadListInfo[i].dwProcessId = DebugEvent.dwProcessId;
-            ThreadListInfo[i].dwThreadId = DebugEvent.dwThreadId;
-            ThreadListInfo[i].hThread = DebugEvent.u.CreateThread.hThread;
-            ThreadListInfo[i].lpThreadLocalBase = DebugEvent.u.CreateThread.lpThreadLocalBase;
-            ThreadListInfo[i].lpStartAddress = DebugEvent.u.CreateThread.lpStartAddress;
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
+            pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
+            pThreadInfo->hThread = DebugEvent.u.CreateThread.hThread;
             break;
 
         case CREATE_PROCESS_DEBUG_EVENT: {
@@ -310,32 +288,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
 
-            // Add the process to the process list
-            if(nProcesses == maxProcesses)
-                ProcessListInfo = (PPROCESS_LIST_INFO) (maxProcesses ? realloc(ThreadListInfo, (maxProcesses *= 2)*sizeof(PROCESS_LIST_INFO)) : malloc((maxProcesses = 4)*sizeof(PROCESS_LIST_INFO)));
-            i = nProcesses++;
-            while(i > 0 && DebugEvent.dwProcessId < ProcessListInfo[i - 1].dwProcessId)
-            {
-                ProcessListInfo[i] = ProcessListInfo[i - 1];
-                --i;
-            }
-            ProcessListInfo[i].dwProcessId = DebugEvent.dwProcessId;
-            ProcessListInfo[i].hProcess = hProcess;
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
+            pProcessInfo->hProcess = hProcess;
 
-            // Add the initial thread of the process to the thread list
-            if(nThreads == maxThreads)
-                ThreadListInfo = (PTHREAD_LIST_INFO) (maxThreads ? realloc(ThreadListInfo, (maxThreads *= 2)*sizeof(THREAD_LIST_INFO)) : malloc((maxThreads = 4)*sizeof(THREAD_LIST_INFO)));
-            i = nThreads++;
-            while(i > 0 && (DebugEvent.dwProcessId < ThreadListInfo[i - 1].dwProcessId || (DebugEvent.dwProcessId == ThreadListInfo[i - 1].dwProcessId && DebugEvent.dwThreadId < ThreadListInfo[i - 1].dwThreadId)))
-            {
-                ThreadListInfo[i] = ThreadListInfo[i - 1];
-                --i;
-            }
-            ThreadListInfo[i].dwProcessId = DebugEvent.dwProcessId;
-            ThreadListInfo[i].dwThreadId = DebugEvent.dwThreadId;
-            ThreadListInfo[i].hThread = DebugEvent.u.CreateProcessInfo.hThread;
-            ThreadListInfo[i].lpThreadLocalBase = DebugEvent.u.CreateProcessInfo.lpThreadLocalBase;
-            ThreadListInfo[i].lpStartAddress = DebugEvent.u.CreateProcessInfo.lpStartAddress;
+            pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
+            pThreadInfo->hThread = DebugEvent.u.CreateProcessInfo.hThread;
 
             assert(!bSymInitialized);
 
@@ -377,17 +334,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
 
             // Remove the thread from the thread list
-            assert(nThreads);
-            i = 0;
-            while(i < nThreads && (DebugEvent.dwProcessId > ThreadListInfo[i].dwProcessId || (DebugEvent.dwProcessId == ThreadListInfo[i].dwProcessId && DebugEvent.dwThreadId > ThreadListInfo[i].dwThreadId)))
-                ++i;
-            assert(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId && ThreadListInfo[i].dwThreadId == DebugEvent.dwThreadId);
-            while(++i < nThreads)
-                ThreadListInfo[i - 1] = ThreadListInfo[i];
-            --nThreads;
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
+            pProcessInfo->Threads.erase(DebugEvent.dwThreadId);
             break;
 
-        case EXIT_PROCESS_DEBUG_EVENT:
+        case EXIT_PROCESS_DEBUG_EVENT: {
             if (pOptions->debug_flag) {
                 lprintf("EXIT_PROCESS PID=%lu TID=%lu dwExitCode=0x%lx\r\n",
                         DebugEvent.dwProcessId,
@@ -396,44 +347,23 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 );
             }
 
-            // Remove all threads of the process from the thread list
-            for(i = j = 0; i < nThreads; ++i)
-            {
-                if(ThreadListInfo[i].dwProcessId == DebugEvent.dwProcessId)
-                {
-                }
-                else
-                    ++j;
-
-                if(j != i)
-                    ThreadListInfo[j] = ThreadListInfo[i];
-            }
-            nThreads = j;
-
             // Remove the process from the process list
-            assert(nProcesses);
-            i = 0;
-            while(i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId)
-                ++i;
-            assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
+            HANDLE hProcess = g_Processes[DebugEvent.dwProcessId].hProcess;
+            g_Processes.erase(DebugEvent.dwProcessId);
 
             if (bSymInitialized) {
-                if (!SymCleanup(ProcessListInfo[i].hProcess))
+                if (!SymCleanup(hProcess))
                     assert(0);
 
                 bSymInitialized = FALSE;
             }
 
-            while(++i < nProcesses)
-                ProcessListInfo[i - 1] = ProcessListInfo[i];
-
-            if(!--nProcesses)
-            {
-                assert(!nThreads);
+            if (g_Processes.empty()) {
                 fFinished = TRUE;
             }
 
             break;
+        }
 
         case LOAD_DLL_DEBUG_EVENT:
             if (pOptions->debug_flag) {
@@ -464,14 +394,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 );
             }
 
-            // Find the process in the process list
-            assert(nProcesses);
-            i = 0;
-            while (i < nProcesses && DebugEvent.dwProcessId > ProcessListInfo[i].dwProcessId) {
-                ++i;
-            }
-            assert(ProcessListInfo[i].dwProcessId == DebugEvent.dwProcessId);
-            pProcessInfo = &ProcessListInfo[i];
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
 
             assert(!DebugEvent.u.DebugString.fUnicode);
 
