@@ -182,6 +182,7 @@ Related tools
  * [binutil's addr2line](http://sourceware.org/binutils/docs/binutils/addr2line.html) (included in MinGW)
  * [cv2pdb - DWARF to PDB converter](https://github.com/rainers/cv2pdb)
  * [google-breakpad](https://code.google.com/p/google-breakpad)
+ * [CrashRpt](https://code.google.com/p/crashrpt/)
 
 Suggested Reading
 -----------------
@@ -192,3 +193,4 @@ Suggested Reading
  * [Bugslayer, MSJ, August 1998](http://www.microsoft.com/msj/0898/bugslayer0898.htm)
  * [The Win32 Debugging Application Programming Interface](https://msdn.microsoft.com/en-us/library/ms809754.aspx)
  * [Using the Windows debugging API on Windows 64](http://www.howzatt.demon.co.uk/articles/DebuggingInWin64.html)
+ * [About Exceptions and Exception Handling](http://crashrpt.sourceforge.net/docs/html/exception_handling.html)
