@@ -310,10 +310,18 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             DWORD dwSymOptions = SymGetOptions();
             dwSymOptions |=
+                SYMOPT_UNDNAME |
                 SYMOPT_LOAD_LINES |
-                SYMOPT_DEFERRED_LOADS;
+                SYMOPT_OMAP_FIND_NEAREST;
+
+            // FIXME: This prevents catchsegv from resolving symbols upon
+            // EXIT_PROCESS_DEBUG_EVENT
+            if (0) {
+                dwSymOptions |= SYMOPT_DEFERRED_LOADS;
+            }
+
             if (pOptions->debug_flag) {
-                //dwSymOptions |= SYMOPT_DEBUG;
+                dwSymOptions |= SYMOPT_DEBUG;
             }
 
 #ifdef _WIN64
