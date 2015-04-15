@@ -135,6 +135,19 @@ symCallback(HANDLE hProcess,
 }
 
 
+static void
+loadModule(HANDLE hProcess, HANDLE hFile, LPVOID lpBaseOfDll)
+{
+    if (!SymLoadModuleEx(hProcess, hFile, NULL, NULL, (UINT_PTR)lpBaseOfDll, 0, NULL, 0)) {
+        OutputDebug("warning: SymLoadModule64 failed: 0x%08lx\n", GetLastError());
+    }
+
+    if (hFile) {
+        CloseHandle(hFile);
+    }
+}
+
+
 static char *
 readProcessString(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T nSize)
 {
@@ -319,6 +332,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             SymRegisterCallback64(hProcess, &symCallback, 0);
 
+            loadModule(hProcess, DebugEvent.u.CreateProcessInfo.hFile, DebugEvent.u.CreateProcessInfo.lpBaseOfImage);
 
             break;
         }
@@ -378,6 +392,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 );
             }
 
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
+            hProcess = pProcessInfo->hProcess;
+
+            loadModule(hProcess, DebugEvent.u.LoadDll.hFile, DebugEvent.u.LoadDll.lpBaseOfDll);
+
             break;
 
         case UNLOAD_DLL_DEBUG_EVENT:
@@ -388,6 +407,12 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                         DebugEvent.u.UnloadDll.lpBaseOfDll
                 );
             }
+
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
+            hProcess = pProcessInfo->hProcess;
+
+            SymUnloadModule64(hProcess, (UINT_PTR)DebugEvent.u.UnloadDll.lpBaseOfDll);
+
             break;
 
         case OUTPUT_DEBUG_STRING_EVENT: {
