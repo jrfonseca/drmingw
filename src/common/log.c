@@ -225,6 +225,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         TCHAR szFileName[MAX_PATH] = _T("");
         DWORD dwLineNumber = 0;
 
+        DWORD PrevFrameStackOffset = StackFrame.AddrStack.Offset;
         if (!StackWalk64(
                 MachineType,
                 hProcess,
@@ -240,7 +241,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
             break;
 
         // Basic sanity check to make sure  the frame is OK.  Bail if not.
-        if ( 0 == StackFrame.AddrFrame.Offset )
+        if (StackFrame.AddrFrame.Offset == 0)
             break;
 
         if (MachineType == IMAGE_FILE_MACHINE_I386) {
@@ -290,6 +291,10 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
 
         if (bLine && dumpSourceCode(szFileName, dwLineNumber))
             lprintf(_T("\r\n"));
+
+        if (StackFrame.AddrStack.Offset < PrevFrameStackOffset) {
+            break;
+        }
     }
 
     lprintf(_T("\r\n"));
