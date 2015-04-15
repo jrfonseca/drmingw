@@ -58,7 +58,7 @@ TerminateProcessById(DWORD dwProcessId)
     BOOL bTerminated = FALSE;
     HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
     if (hProcess) {
-        bTerminated = TerminateProcess(hProcess, EXIT_FAILURE);
+        bTerminated = TerminateProcess(hProcess, 3);
         CloseHandle(hProcess);
     }
     if (!bTerminated) {
