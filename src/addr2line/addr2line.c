@@ -60,7 +60,10 @@ main(int argc, char **argv)
 
     // Load the module
     char *szModule = argv[1];
-    HMODULE hModule = LoadLibraryExA(szModule, NULL, DONT_RESOLVE_DLL_REFERENCES);
+    HMODULE hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
+    if (!hModule) {
+        LoadLibraryExA(szModule, NULL, DONT_RESOLVE_DLL_REFERENCES);
+    }
     if (!hModule) {
         fprintf(stderr, "error: failed to load %s\n", szModule);
         return 1;
@@ -110,7 +113,7 @@ main(int argc, char **argv)
         } else {
             dwRelAddr = atol(arg);
         }
-        printf("dwRelAddr = %08I64X\n", dwRelAddr);
+        printf("dwRelAddr = 0x%08I64X\n", dwRelAddr);
 
         UINT_PTR dwAddr = (UINT_PTR)hModule + dwRelAddr;
 
