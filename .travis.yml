@@ -2,7 +2,7 @@ language: cpp
 
 env:
   global:
-  - MAKEFLAGS=-j2
+  - MAKEFLAGS=-j1
 
 matrix:
   fast_finish: true
