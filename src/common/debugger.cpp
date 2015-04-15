@@ -163,6 +163,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
         DWORD dwContinueStatus = DBG_CONTINUE;    // exception continuation
         PPROCESS_INFO pProcessInfo;
         PTHREAD_INFO pThreadInfo;
+        HANDLE hProcess;
 
         // Wait for a debugging event to occur. The second parameter indicates
         // that the function does not return until a debugging event occurs.
@@ -286,7 +287,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 );
             }
 
-            HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
+            hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
             pProcessInfo->hProcess = hProcess;
@@ -345,8 +346,16 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 );
             }
 
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
+            hProcess = pProcessInfo->hProcess;
+
+            // Dump the stack on abort()
+            if (DebugEvent.u.ExitProcess.dwExitCode == 3) {
+                pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
+                dumpStack(hProcess, pThreadInfo->hThread, NULL);
+            }
+
             // Remove the process from the process list
-            HANDLE hProcess = g_Processes[DebugEvent.dwProcessId].hProcess;
             g_Processes.erase(DebugEvent.dwProcessId);
 
             if (!SymCleanup(hProcess)) {
