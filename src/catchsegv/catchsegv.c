@@ -170,7 +170,9 @@ main(int argc, char** argv)
             Usage();
             return 0;
         } else if (!strcmp(*argv, "-v")) {
-            debugOptions.debug_flag = debugOptions.verbose_flag = TRUE;
+            debugOptions.verbose_flag = TRUE;
+        } else if (!strcmp(*argv, "-d")) {
+            debugOptions.debug_flag = TRUE;
         } else if (!strcmp(*argv, "-t")) {
             if (argc < 2) {
                 fprintf(stderr, "error: -t missing argument\n\n");
