@@ -21,8 +21,6 @@
 #include <windows.h>
 #include <dbghelp.h>
 
-EXTERN_C BOOL bSymInitialized;
-
 EXTERN_C BOOL
 InitializeSym(HANDLE hProcess, BOOL fInvadeProcess);
 

@@ -66,16 +66,12 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
     HANDLE hProcess = GetCurrentProcess();
 
-
-    assert(!bSymInitialized);
-
     DWORD dwSymOptions = SymGetOptions();
     dwSymOptions |=
         SYMOPT_LOAD_LINES |
         SYMOPT_DEFERRED_LOADS;
     SymSetOptions(dwSymOptions);
     if (InitializeSym(hProcess, TRUE)) {
-        bSymInitialized = TRUE;
 
         dumpException(hProcess, pExceptionRecord);
 
@@ -83,10 +79,9 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
         dumpStack(hProcess, GetCurrentThread(), pContext);
 
-        if (!SymCleanup(hProcess))
+        if (!SymCleanup(hProcess)) {
             assert(0);
-
-        bSymInitialized = FALSE;
+        }
     }
 }
 

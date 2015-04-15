@@ -28,9 +28,6 @@
 #include "symbols.h"
 
 
-BOOL bSymInitialized = FALSE;
-
-
 EXTERN_C BOOL
 InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
 {
@@ -64,8 +61,6 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD 
     pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
     pSymbol->MaxNameLen = nSize;
 
-    assert(bSymInitialized);
-
     bRet = SymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol);
 
     if (bRet) {
@@ -87,8 +82,6 @@ BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileName, DWO
     // Do the source and line lookup.
     memset(&Line, 0, sizeof Line);
     Line.SizeOfStruct = sizeof Line;
-
-    assert(bSymInitialized);
 
     if(!SymGetLineFromAddr64(hProcess, dwAddress, &dwDisplacement, &Line))
         return FALSE;

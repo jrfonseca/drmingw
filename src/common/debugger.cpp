@@ -294,8 +294,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
             pThreadInfo->hThread = DebugEvent.u.CreateProcessInfo.hThread;
 
-            assert(!bSymInitialized);
-
             DWORD dwSymOptions = SymGetOptions();
             dwSymOptions |=
                 SYMOPT_LOAD_LINES |
@@ -314,12 +312,12 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             SymSetOptions(dwSymOptions);
             if (!InitializeSym(hProcess, FALSE)) {
-                OutputDebug("SymInitialize failed: 0x%08lx", GetLastError());
+                OutputDebug("error: SymInitialize failed: 0x%08lx\n", GetLastError());
+                exit(EXIT_FAILURE);
             }
 
             SymRegisterCallback64(hProcess, &symCallback, 0);
 
-            bSymInitialized = TRUE;
 
             break;
         }
@@ -351,11 +349,8 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             HANDLE hProcess = g_Processes[DebugEvent.dwProcessId].hProcess;
             g_Processes.erase(DebugEvent.dwProcessId);
 
-            if (bSymInitialized) {
-                if (!SymCleanup(hProcess))
-                    assert(0);
-
-                bSymInitialized = FALSE;
+            if (!SymCleanup(hProcess)) {
+                OutputDebug("SymCleanup failed with 0x%08lx\n", GetLastError());
             }
 
             if (g_Processes.empty()) {
