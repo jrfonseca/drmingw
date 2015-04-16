@@ -12,7 +12,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -ggdb -fno-omi
 
 
 add_executable (mgwhelp_test
-    mgwhelp_test.c
+    mgwhelp_test.cpp
 )
 add_dependencies (mgwhelp_test mgwhelp_implib)
 target_link_libraries (mgwhelp_test

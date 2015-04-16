@@ -27,12 +27,12 @@
 
 static void
 checkSym(HANDLE hProcess,
-         const void *symbol,
+         PVOID pvSymbol,
          const char *szSymbolName)
 {
     bool ok;
 
-    DWORD64 dwAddr = (DWORD64)(UINT_PTR)symbol;
+    DWORD64 dwAddr = (DWORD64)(UINT_PTR)pvSymbol;
 
     // Test SymFromAddr
     DWORD64 Displacement = 0;
@@ -60,16 +60,16 @@ checkSym(HANDLE hProcess,
 
 static void
 checkSymLine(HANDLE hProcess,
-             const void *symbol,
+             PVOID pvSymbol,
              const char *szSymbolName,
              const char *szFileName,
              DWORD dwLineNumber)
 {
     bool ok;
 
-    DWORD64 dwAddr = (DWORD64)(UINT_PTR)symbol;
+    DWORD64 dwAddr = (DWORD64)(UINT_PTR)pvSymbol;
 
-    checkSym(hProcess, symbol, szSymbolName);
+    checkSym(hProcess, pvSymbol, szSymbolName);
 
     // Test SymGetLineFromAddr64
     DWORD dwDisplacement;
@@ -114,7 +114,7 @@ checkExport(HANDLE hProcess,
             const char *szSymbolName)
 {
     HMODULE hModule = GetModuleHandleA(szModuleName);
-    const void *pvSymbol = GetProcAddress(hModule, szSymbolName);
+    const PVOID pvSymbol = (PVOID)GetProcAddress(hModule, szSymbolName);
     checkSym(hProcess, pvSymbol, szSymbolName);
 }
 
@@ -134,7 +134,7 @@ static void dummy(void)
 int
 main()
 {
-    HMODULE hProcess = GetCurrentProcess();
+    HANDLE hProcess = GetCurrentProcess();
     bool ok;
 
     ok = SymInitialize(hProcess, "", TRUE);
@@ -142,7 +142,7 @@ main()
     if (!ok) {
         test_diagnostic_last_error();
     } {
-        checkSymLine(hProcess, &foo, "foo", __FILE__, foo_line);
+        checkSymLine(hProcess, (PVOID)&foo, "foo", __FILE__, foo_line);
 
         checkCaller(hProcess, "main", __FILE__, __LINE__); dummy();
 
