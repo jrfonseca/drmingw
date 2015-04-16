@@ -27,6 +27,7 @@
 
 #include "getopt.h"
 #include "debugger.h"
+#include "symbols.h"
 #include "dialog.h"
 #include "errmsg.h"
 #include "log.h"
@@ -215,6 +216,8 @@ static void debugThread(void *arg)
     }
 
     setDumpCallback(appendText);
+
+    SetSymOptions(TRUE, debug_options.debug_flag);
 
     DebugMainLoop(&debug_options);
 }

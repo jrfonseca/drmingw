@@ -28,6 +28,31 @@
 #include "symbols.h"
 
 
+EXTERN_C DWORD
+SetSymOptions(BOOL fDeferredLoads, BOOL fDebug)
+{
+    DWORD dwSymOptions = SymGetOptions();
+    dwSymOptions |=
+        SYMOPT_UNDNAME |
+        SYMOPT_LOAD_LINES |
+        SYMOPT_OMAP_FIND_NEAREST;
+
+    if (fDeferredLoads) {
+        dwSymOptions |= SYMOPT_DEFERRED_LOADS;
+    }
+
+    if (fDebug) {
+        dwSymOptions |= SYMOPT_DEBUG;
+    }
+
+#ifdef _WIN64
+    dwSymOptions |= SYMOPT_INCLUDE_32BIT_MODULES;
+#endif
+
+    return SymSetOptions(dwSymOptions);
+}
+
+
 EXTERN_C BOOL
 InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
 {

@@ -308,31 +308,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
             pThreadInfo->hThread = DebugEvent.u.CreateProcessInfo.hThread;
 
-            DWORD dwSymOptions = SymGetOptions();
-            dwSymOptions |=
-                SYMOPT_UNDNAME |
-                SYMOPT_LOAD_LINES |
-                SYMOPT_OMAP_FIND_NEAREST;
-
-            // FIXME: This prevents catchsegv from resolving symbols upon
-            // EXIT_PROCESS_DEBUG_EVENT
-            if (0) {
-                dwSymOptions |= SYMOPT_DEFERRED_LOADS;
-            }
-
-            if (pOptions->debug_flag) {
-                dwSymOptions |= SYMOPT_DEBUG;
-            }
-
-#ifdef _WIN64
-            BOOL bWow64 = FALSE;
-            IsWow64Process(hProcess, &bWow64);
-            if (bWow64) {
-                dwSymOptions |= SYMOPT_INCLUDE_32BIT_MODULES;
-            }
-#endif
-
-            SymSetOptions(dwSymOptions);
             if (!InitializeSym(hProcess, FALSE)) {
                 OutputDebug("error: SymInitialize failed: 0x%08lx\n", GetLastError());
                 exit(EXIT_FAILURE);

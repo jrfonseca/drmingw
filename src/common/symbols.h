@@ -21,6 +21,9 @@
 #include <windows.h>
 #include <dbghelp.h>
 
+EXTERN_C DWORD
+SetSymOptions(BOOL fDeferredLoads, BOOL fDebug);
+
 EXTERN_C BOOL
 InitializeSym(HANDLE hProcess, BOOL fInvadeProcess);
 

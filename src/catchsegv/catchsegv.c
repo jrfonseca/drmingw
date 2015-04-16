@@ -32,6 +32,7 @@
 
 #include "log.h"
 #include "debugger.h"
+#include "symbols.h"
 
 
 static void
@@ -273,6 +274,13 @@ main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    /*
+     * Set DbgHelp options
+     */
+
+    // FIXME: This prevents catchsegv from resolving symbols upon
+    // EXIT_PROCESS_DEBUG_EVENT
+    SetSymOptions(FALSE, debugOptions.debug_flag);
 
     /*
      * Main event loop.
