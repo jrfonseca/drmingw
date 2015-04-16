@@ -257,14 +257,14 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             THREAD_INFO_LIST::const_iterator it;
             for (it = pProcessInfo->Threads.begin(); it != pProcessInfo->Threads.end(); ++it) {
                 DWORD dwThreadId = it->first;
+                HANDLE hThread = it->second.hThread;
                 if (dwThreadId != DebugEvent.dwThreadId &&
                     ExceptionCode != STATUS_BREAKPOINT &&
                     !pOptions->verbose_flag) {
                         continue;
                 }
 
-                dumpStack(pProcessInfo->hProcess,
-                          pThreadInfo->hThread, NULL);
+                dumpStack(pProcessInfo->hProcess, hThread, NULL);
             }
 
             if (!DebugEvent.u.Exception.dwFirstChance) {
