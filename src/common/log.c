@@ -305,6 +305,10 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
             break;
         }
 
+        if (StackFrame.AddrPC.Offset == 0xBAADF00D) {
+            break;
+        }
+
         /*
          * When we walk into the callers, StackFrame.AddrPC.Offset will not
          * contain the calling function's address, but rather the return
