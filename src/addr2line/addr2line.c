@@ -60,7 +60,10 @@ main(int argc, char **argv)
 
     // Load the module
     char *szModule = argv[1];
-    HMODULE hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
+    HMODULE hModule = NULL;
+#ifdef _WIN64
+    hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
+#endif
     if (!hModule) {
         LoadLibraryExA(szModule, NULL, DONT_RESOLVE_DLL_REFERENCES);
     }
@@ -95,7 +98,7 @@ main(int argc, char **argv)
     SymRegisterCallback64(hProcess, &callback, 0);
 
 
-    dwRet = SymLoadModule64(hProcess, NULL, szModule, NULL, (DWORD64)(UINT_PTR)hModule, 0);
+    dwRet = SymLoadModuleEx(hProcess, NULL, szModule, NULL, (DWORD64)(UINT_PTR)hModule, 0, NULL, 0);
     if (!dwRet) {
         fprintf(stderr, "error: failed to load module symbols\n");
     }
@@ -113,7 +116,7 @@ main(int argc, char **argv)
         } else {
             dwRelAddr = atol(arg);
         }
-        printf("dwRelAddr = 0x%08I64X\n", dwRelAddr);
+        printf("dwRelAddr = %08I64X\n", dwRelAddr);
 
         UINT_PTR dwAddr = (UINT_PTR)hModule + dwRelAddr;
 
