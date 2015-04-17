@@ -340,6 +340,7 @@ getExceptionString(DWORD ExceptionCode)
     case EXCEPTION_DATATYPE_MISALIGNMENT: // 0x80000002
         return _T("Alignment Fault");
     case EXCEPTION_BREAKPOINT: // 0x80000003
+    case STATUS_WX86_BREAKPOINT: // 0x4000001F
         return _T("Breakpoint");
     case EXCEPTION_SINGLE_STEP: // 0x80000004
         return _T("Single Step");
