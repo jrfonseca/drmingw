@@ -8,7 +8,8 @@ EXPORTS
 	SymFromAddrW = MgwSymFromAddrW
 	SymGetLineFromAddr64 = MgwSymGetLineFromAddr64
 	SymGetLineFromAddrW64 = MgwSymGetLineFromAddrW64
-	UnDecorateSymbolName = MgwUnDecorateSymbolName
+        SymLoadModuleEx = MgwSymLoadModuleEx
+        UnDecorateSymbolName = MgwUnDecorateSymbolName
 
 	EnumDirTree
 	EnumDirTreeW

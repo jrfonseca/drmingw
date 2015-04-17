@@ -127,7 +127,9 @@ no_file:
 
 
 static struct mgwhelp_module *
-mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
+mgwhelp_module_create(struct mgwhelp_process * process,
+                      PCSTR ImageName,
+                      DWORD64 Base)
 {
     struct mgwhelp_module *module;
     DWORD dwRet;
@@ -139,16 +141,20 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
 
     module->Base = Base;
 
-    /* SymGetModuleInfo64 is not reliable for this, as explained in
-     * https://msdn.microsoft.com/en-us/library/windows/desktop/ms681336.aspx
-     */
-    dwRet = GetModuleFileNameExA(process->hProcess,
-                                 (HMODULE)(UINT_PTR)Base,
-                                 module->LoadedImageName,
-                                 sizeof module->LoadedImageName);
-    if (dwRet == 0) {
-        OutputDebug("MGWHELP: could not determined module name\n");
-        goto no_module_name;
+    if (ImageName) {
+        strncpy(module->LoadedImageName, ImageName, sizeof module->LoadedImageName);
+    } else {
+        /* SymGetModuleInfo64 is not reliable for this, as explained in
+         * https://msdn.microsoft.com/en-us/library/windows/desktop/ms681336.aspx
+         */
+        dwRet = GetModuleFileNameExA(process->hProcess,
+                                     (HMODULE)(UINT_PTR)Base,
+                                     module->LoadedImageName,
+                                     sizeof module->LoadedImageName);
+        if (dwRet == 0) {
+            OutputDebug("MGWHELP: could not determined module name\n");
+            goto no_module_name;
+        }
     }
 
     module->image_base_vma = PEGetImageBase(module->LoadedImageName);
@@ -182,10 +188,21 @@ mgwhelp_module_destroy(struct mgwhelp_module * module)
 }
 
 
+static struct mgwhelp_process *
+mgwhelp_process_lookup(HANDLE hProcess);
+
 static struct mgwhelp_module *
-mgwhelp_module_lookup(struct mgwhelp_process * process, DWORD64 Base)
+mgwhelp_module_lookup(HANDLE hProcess,
+                      PCSTR ImageName,
+                      DWORD64 Base)
 {
+    struct mgwhelp_process *process;
     struct mgwhelp_module *module;
+
+    process = mgwhelp_process_lookup(hProcess);
+    if (!process) {
+        return NULL;
+    }
 
     module = process->modules;
     while (module) {
@@ -195,7 +212,7 @@ mgwhelp_module_lookup(struct mgwhelp_process * process, DWORD64 Base)
         module = module->next;
     }
 
-    return mgwhelp_module_create(process, Base);
+    return mgwhelp_module_create(process, ImageName, Base);
 }
 
 
@@ -220,22 +237,17 @@ static BOOL
 mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_dwarf_info *info)
 {
     DWORD64 Base;
-    struct mgwhelp_process *process;
     struct mgwhelp_module *module;
-
-    process = mgwhelp_process_lookup(hProcess);
-    if (!process) {
-        return FALSE;
-    }
 
     Base = MgwSymGetModuleBase64(hProcess, Address);
     if (!Base) {
         return FALSE;
     }
 
-    module = mgwhelp_module_lookup(process, Base);
-    if (!module)
+    module = mgwhelp_module_lookup(hProcess, NULL, Base);
+    if (!module) {
         return FALSE;
+    }
 
     DWORD64 Offset = module->image_base_vma + Address - (DWORD64)module->Base;
 
@@ -301,6 +313,28 @@ DWORD WINAPI
 MgwSymSetOptions(DWORD SymOptions)
 {
     return SymSetOptions(SymOptions);
+}
+
+
+DWORD64 WINAPI
+MgwSymLoadModuleEx(HANDLE hProcess,
+                   HANDLE hFile,
+                   PCSTR ImageName,
+                   PCSTR ModuleName,
+                   DWORD64 BaseOfDll,
+                   DWORD DllSize,
+                   PMODLOAD_DATA Data,
+                   DWORD Flags)
+{
+    DWORD dwRet;
+
+    dwRet = SymLoadModuleEx(hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags);
+
+    if (BaseOfDll) {
+        mgwhelp_module_lookup(hProcess, ImageName, BaseOfDll);
+    }
+
+    return dwRet;
 }
 
 

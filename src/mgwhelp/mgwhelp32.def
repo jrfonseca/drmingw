@@ -4,11 +4,12 @@ EXPORTS
 	SymCleanup@4 = MgwSymCleanup@4
 	SymSetOptions@4 = MgwSymSetOptions@4
 	SymGetModuleBase64@12 = MgwSymGetModuleBase64@12
-	SymFromAddr@20 = MgwSymFromAddr@20
+        SymFromAddr@20 = MgwSymFromAddr@20
 	SymFromAddrW@20 = MgwSymFromAddrW@20
 	SymGetLineFromAddr64@20 = MgwSymGetLineFromAddr64@20
 	SymGetLineFromAddrW64@20 = MgwSymGetLineFromAddrW64@20
-	UnDecorateSymbolName@16 = MgwUnDecorateSymbolName@16
+        SymLoadModuleEx@36 = MgwSymLoadModuleEx@36
+        UnDecorateSymbolName@16 = MgwUnDecorateSymbolName@16
 
 	EnumDirTree@24
 	EnumDirTreeW@24
@@ -82,7 +83,6 @@ EXPORTS
 	SymGetTypeInfo@24
 	SymLoadModule@24
 	SymLoadModule64@28
-	SymLoadModuleEx@36
 	SymLoadModuleExW@36
 	SymMatchFileName@16
 	SymMatchFileNameW@16
