@@ -1,7 +1,6 @@
 if (CMAKE_CROSSCOMPILING)
     find_program (WINE_PROGRAM wine)
-    math (EXPR ARCH_BITS "${CMAKE_SIZEOF_VOID_P} * 8")
-    set (WINE_COMMAND env "WINEDEBUG=+debugstr" "WINEARCH=win${ARCH_BITS}" "${WINE_PROGRAM}")
+    set (WINE_COMMAND env "WINEDEBUG=+debugstr" "${WINE_PROGRAM}")
 else ()
     set (WINE_COMMAND)
 endif ()
