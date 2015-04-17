@@ -233,8 +233,8 @@ mgwhelp_process_lookup(HANDLE hProcess)
 }
 
 
-static BOOL
-mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_dwarf_info *info)
+static struct mgwhelp_module *
+mgwhelp_find_module(HANDLE hProcess, DWORD64 Address, PDWORD64 pOffset)
 {
     DWORD64 Base;
     struct mgwhelp_module *module;
@@ -246,10 +246,25 @@ mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_dwarf_info *in
 
     module = mgwhelp_module_lookup(hProcess, NULL, Base);
     if (!module) {
-        return FALSE;
+        return NULL;
     }
 
-    DWORD64 Offset = module->image_base_vma + Address - (DWORD64)module->Base;
+    *pOffset = module->image_base_vma + Address - (DWORD64)module->Base;
+
+    return module;
+}
+
+
+static BOOL
+mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_dwarf_info *info)
+{
+    struct mgwhelp_module *module;
+
+    DWORD64 Offset;
+    module = mgwhelp_find_module(hProcess, Address, &Offset);
+    if (!module) {
+        return FALSE;
+    }
 
     memset(info, 0, sizeof *info);
 
@@ -380,6 +395,19 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
         }
 
         return TRUE;
+    }
+
+    struct mgwhelp_module *module;
+    DWORD64 Offset;
+    module = mgwhelp_find_module(hProcess, Address, &Offset);
+    if (module && module->dbg) {
+        if (dwarf_pe_find_symbol(module->dbg,
+                             Offset,
+                             Symbol->MaxNameLen,
+                             Symbol->Name,
+                             Displacement)) {
+            return TRUE;
+        }
     }
 
     return SymFromAddr(hProcess, Address, Displacement, Symbol);

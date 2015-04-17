@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <windows.h>
+
 #include <dwarf.h>
 #include <libdwarf.h>
 
@@ -33,6 +35,13 @@ dwarf_pe_init(const char *image,
               Dwarf_Handler errhand,
               Dwarf_Ptr errarg,
               Dwarf_Debug * ret_dbg, Dwarf_Error * error);
+
+BOOL
+dwarf_pe_find_symbol(Dwarf_Debug dbg,
+                     DWORD64 Addr,
+                     ULONG MaxSymbolNameLen,
+                     LPSTR pSymbolName,
+                     PDWORD64 pDisplacement);
 
 int
 dwarf_pe_finish(Dwarf_Debug dbg, Dwarf_Error * error);
