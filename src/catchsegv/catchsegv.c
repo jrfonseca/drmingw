@@ -147,6 +147,7 @@ main(int argc, char** argv)
      * Disable error message boxes.
      */
 
+#ifdef NDEBUG
     SetErrorMode(SEM_FAILCRITICALERRORS |
                  SEM_NOGPFAULTERRORBOX |
                  SEM_NOOPENFILEERRORBOX);
@@ -158,6 +159,7 @@ main(int argc, char** argv)
     // Disable abort message box
     // http://msdn.microsoft.com/en-us/library/e631wekh.aspx
     _set_abort_behavior(0, _WRITE_ABORT_MSG);
+#endif
 #endif
 
     /*
