@@ -226,6 +226,8 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         lprintf( _T("AddrPC           Params\r\n") );
     }
 
+    int nudge = 0;
+
     while (TRUE) {
         TCHAR szSymName[MAX_SYM_NAME_SIZE] = _T("");
         TCHAR szFileName[MAX_PATH] = _T("");
@@ -271,25 +273,26 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         BOOL bSymbol = TRUE;
         BOOL bLine = FALSE;
 
-        HMODULE hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, StackFrame.AddrPC.Offset);
+        DWORD64 AddrPC = StackFrame.AddrPC.Offset;
+        HMODULE hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, AddrPC);
         TCHAR szModule[MAX_PATH];
         if (hModule &&
             GetModuleFileNameEx(hProcess, hModule, szModule, MAX_PATH)) {
 
             lprintf( _T("  %s"), getBaseName(szModule));
 
-            bSymbol = GetSymFromAddr(hProcess, StackFrame.AddrPC.Offset, szSymName, MAX_SYM_NAME_SIZE);
+            bSymbol = GetSymFromAddr(hProcess, AddrPC + nudge, szSymName, MAX_SYM_NAME_SIZE);
             if (bSymbol) {
                 UnDecorateSymbolName(szSymName, szSymName, MAX_SYM_NAME_SIZE, UNDNAME_COMPLETE);
 
                 lprintf( _T("!%s"), szSymName);
 
-                bLine = GetLineFromAddr(hProcess, StackFrame.AddrPC.Offset, szFileName, MAX_PATH, &dwLineNumber);
+                bLine = GetLineFromAddr(hProcess, AddrPC + nudge, szFileName, MAX_PATH, &dwLineNumber);
                 if (bLine) {
                     lprintf( _T("  [%s @ %ld]"), szFileName, dwLineNumber);
                 }
             } else {
-                lprintf( _T("!0x%I64x"), StackFrame.AddrPC.Offset - (DWORD)(INT_PTR)hModule);
+                lprintf( _T("!0x%I64x"), AddrPC - (DWORD)(INT_PTR)hModule);
             }
         }
 
@@ -301,6 +304,16 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         if (StackFrame.AddrStack.Offset < PrevFrameStackOffset) {
             break;
         }
+
+        /*
+         * When we walk into the callers, StackFrame.AddrPC.Offset will not
+         * contain the calling function's address, but rather the return
+         * address.  This could be the next statement, or sometimes (for
+         * no-return functions) a completely different function, so nudge the
+         * address by one byte to ensure we get the information about the
+         * calling statment itself.
+         */
+        nudge = -1;
     }
 
     lprintf(_T("\r\n"));
