@@ -30,7 +30,7 @@
 int CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    RaiseException(100, EXCEPTION_NONCONTINUABLE, 0, NULL);
+    RaiseException(0xE0000001, EXCEPTION_NONCONTINUABLE, 0, NULL);
 
     return 0;
 }
