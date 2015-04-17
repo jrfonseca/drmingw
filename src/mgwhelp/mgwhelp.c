@@ -154,9 +154,7 @@ mgwhelp_module_create(struct mgwhelp_process * process, DWORD64 Base)
     module->image_base_vma = PEGetImageBase(module->LoadedImageName);
 
     Dwarf_Error error = 0;
-    if (dwarf_pe_init(module->LoadedImageName, 0, 0, &module->dbg, &error) == DW_DLV_OK) {
-        return module;
-    } else {
+    if (dwarf_pe_init(module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
         OutputDebug("MGWHELP: %s: %s\n", module->LoadedImageName, "no dwarf symbols");
     }
 
@@ -214,16 +212,7 @@ mgwhelp_process_lookup(HANDLE hProcess)
         process = process->next;
     }
 
-    process = (struct mgwhelp_process *)calloc(1, sizeof *process);
-    if (!process)
-        return process;
-
-    process->hProcess = hProcess;
-
-    process->next = processes;
-    processes = process;
-
-    return process;
+    return NULL;
 }
 
 
