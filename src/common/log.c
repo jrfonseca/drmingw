@@ -173,7 +173,10 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         MachineType = IMAGE_FILE_MACHINE_I386;
         ZeroMemory(&Wow64Context, sizeof Wow64Context);
         Wow64Context.ContextFlags = WOW64_CONTEXT_FULL;
-        Wow64GetThreadContext(hThread, &Wow64Context);
+        if (!Wow64GetThreadContext(hThread, &Wow64Context)) {
+            // XXX: This happens with WINE after EXIT_PROCESS_DEBUG_EVENT
+            return;
+        }
         assert(pTargetContext == NULL);
         pContext = (PCONTEXT)&Wow64Context;
         dumpContext(&Wow64Context);
@@ -190,7 +193,10 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         if (pTargetContext) {
             Context = *pTargetContext;
         } else {
-            GetThreadContext(hThread, &Context);
+            if (!GetThreadContext(hThread, &Context)) {
+                // XXX: This happens with WINE after EXIT_PROCESS_DEBUG_EVENT
+                return;
+            }
         }
         pContext = &Context;
 
