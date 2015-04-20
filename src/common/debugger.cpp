@@ -237,6 +237,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     if (!fWowBreakpointSignalled) {
                         fWowBreakpointSignalled = TRUE;
                         dwContinueStatus = DBG_CONTINUE;
+                        break;
                     }
                 }
 
