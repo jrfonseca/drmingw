@@ -29,7 +29,7 @@
 
 
 EXTERN_C DWORD
-SetSymOptions(BOOL fDeferredLoads, BOOL fDebug)
+SetSymOptions(BOOL fDebug)
 {
     DWORD dwSymOptions = SymGetOptions();
     dwSymOptions |=
@@ -37,7 +37,7 @@ SetSymOptions(BOOL fDeferredLoads, BOOL fDebug)
         SYMOPT_LOAD_LINES |
         SYMOPT_OMAP_FIND_NEAREST;
 
-    if (fDeferredLoads) {
+    if (TRUE) {
         dwSymOptions |= SYMOPT_DEFERRED_LOADS;
     }
 

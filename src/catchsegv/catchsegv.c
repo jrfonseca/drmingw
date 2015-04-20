@@ -280,9 +280,7 @@ main(int argc, char** argv)
      * Set DbgHelp options
      */
 
-    // FIXME: This prevents catchsegv from resolving symbols upon
-    // EXIT_PROCESS_DEBUG_EVENT
-    SetSymOptions(FALSE, debugOptions.debug_flag);
+    SetSymOptions(debugOptions.debug_flag);
 
     /*
      * Main event loop.

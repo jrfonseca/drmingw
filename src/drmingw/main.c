@@ -217,7 +217,7 @@ static void debugThread(void *arg)
 
     setDumpCallback(appendText);
 
-    SetSymOptions(TRUE, debug_options.debug_flag);
+    SetSymOptions(debug_options.debug_flag);
 
     DebugMainLoop(&debug_options);
 }

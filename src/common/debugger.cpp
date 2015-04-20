@@ -249,6 +249,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // Find the process in the process list
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
 
+            // XXX: Deferred symbols don't get loaded without this
             SymRefreshModuleList(pProcessInfo->hProcess);
 
             dumpException(pProcessInfo->hProcess,
@@ -350,6 +351,10 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // Dump the stack on abort()
             if (DebugEvent.u.ExitProcess.dwExitCode == 3) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
+
+                // XXX: Deferred symbols don't get loaded without this
+                SymRefreshModuleList(pProcessInfo->hProcess);
+
                 dumpStack(hProcess, pThreadInfo->hThread, NULL);
             }
 
