@@ -33,3 +33,5 @@ int main()
 
     return 0;
 }
+
+// TODO: the actual exit code depends on MinGW x86 vs x64, vs MSVC

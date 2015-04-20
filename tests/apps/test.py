@@ -31,22 +31,37 @@ import glob
 import sys
 import subprocess
 import os.path
-
-
-
-if sys.platform == 'win32':
-    nullDevName = 'NUL:'
-else:
-    nullDevName = '/dev/null'
+import re
+import optparse
 
 
 verbose = True
 
 
+def checkString(needle, haystack):
+    if needle.startswith('/'):
+        assert needle.endswith('/')
+        needle = needle[1:-1]
+    else:
+        needle = '^' + re.escape(needle) + '$'
+    needleRe = re.compile(needle, re.MULTILINE)
+    return needleRe.search(haystack) is not None
+
+
 def main():
-    args = sys.argv[1:]
+    optparser = optparse.OptionParser( usage="%prog [options] [path/to/catchsegv.exe] [path/to/test/apps]")
+    optparser.add_option(
+        '-R', '--regex', metavar='REGEX',
+        type="string", dest="regex",
+        default = '.*')
+    optparser.add_option(
+        '-v', '--verbose',
+        action="store_true",
+        dest="verbose", default=False)
+    
+    (options, args) = optparser.parse_args(sys.argv[1:])
     if len(args) > 2:
-        sys.stderr.write('usage: %s [path/to/catchsegv.exe] [path/to/test/apps]\n' % sys.argv[0])
+        optparser.error('incorrect number of arguments')
         sys.exit(1)
 
     if len(args) >= 1:
@@ -54,46 +69,132 @@ def main():
     else:
         catchsegvExe = os.path.join('bin', 'catchsegv.exe')
     if not os.path.isfile(catchsegvExe):
-        sys.stderr.write('error: %s does not exist\n' % catchsegvExe)
+        optparser.error('error: %s does not exist\n' % catchsegvExe)
         sys.exit(1)
 
     if len(args) >= 2:
-        testsDir = args[1]
+        testsExeDir = args[1]
     else:
-        testsDir = os.path.normpath(os.path.join(os.path.dirname(catchsegvExe), '..', 'tests', 'apps'))
-    if not os.path.isdir(testsDir):
-        sys.stderr.write('error: %s does not exist\n' % testsDir)
+        testsExeDir = os.path.normpath(os.path.join(os.path.dirname(catchsegvExe), '..', 'tests', 'apps'))
+    if not os.path.isdir(testsExeDir):
+        sys.stderr.write('error: %s does not exist\n' % testsExeDir)
         sys.exit(1)
 
-    for testName in os.listdir(testsDir):
-        if not testName.endswith('.exe'):
+    testsSrcDir = os.path.dirname(__file__)
+
+    testNameRe = re.compile(options.regex)
+
+    if sys.platform == 'win32':
+        import ctypes
+        SEM_FAILCRITICALERRORS     = 0x0001
+        SEM_NOALIGNMENTFAULTEXCEPT = 0x0004
+        SEM_NOGPFAULTERRORBOX      = 0x0002
+        SEM_NOOPENFILEERRORBOX     = 0x8000
+        uMode = ctypes.windll.kernel32.SetErrorMode(0)
+        uMode |= SEM_FAILCRITICALERRORS \
+              |  SEM_NOALIGNMENTFAULTEXCEPT \
+              |  SEM_NOGPFAULTERRORBOX \
+              |  SEM_NOOPENFILEERRORBOX
+        ctypes.windll.kernel32.SetErrorMode(uMode)
+
+    numTests = 0
+    numFailedTests = 0
+
+    testSrcFiles = os.listdir(testsSrcDir)
+    testSrcFiles.sort()
+    for testSrcFile in testSrcFiles:
+        testName, ext = os.path.splitext(testSrcFile)
+
+        if ext not in ('.c', '.cpp'):
             continue
 
-        testExe = os.path.join(testsDir, testName)
+        if not testNameRe.search(testName):
+            continue
 
-        sys.stdout.write("-"*78 + "\n")
-        sys.stdout.write("%s\n" % testName)
+        sys.stderr.write("# %s\n" % testSrcFile)
+        sys.stdout.flush()
 
-        cmd = [catchsegvExe, '-t', '5', testExe]
+        testSrc = os.path.join(testsSrcDir, testSrcFile)
+        testExe = os.path.join(testsExeDir, testName + '.exe')
+        assert os.path.isfile(testExe)
+
+        # Execute the test
+
+        cmd = [
+            catchsegvExe,
+            '-v',
+            '-t', '15', 
+            testExe
+        ]
 
         if sys.platform != 'win32':
             cmd = ['wine'] + cmd
             os.environ['WINEDEBUG'] = '+debugstr'
 
-        if verbose:
-            stdout = None
-            stderr = None
-        else:
-            stdout = open(nullDevName, 'w')
-            stderr = stdout
-
-        sys.stdout.write(' '.join(cmd) + '\n')
+        sys.stdout.write('# ' + ' '.join(cmd) + '\n')
         sys.stdout.flush()
 
-        retcode = subprocess.call(cmd, stdout=stdout, stderr=stderr)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        stdout, stderr = p.communicate()
 
-        sys.stdout.write('%i\n' % retcode)
+        stdout = stdout.replace('\r\n', '\n')
+        stderr = stderr.replace('\r\n', '\n')
+
+        if options.verbose:
+            sys.stderr.write(stderr)
+            sys.stdout.write(stdout)
+
+        # Adjust return code
+        exitCode = p.returncode
+        if exitCode < 0:
+            exitCode += (1 << 32)
+        if exitCode == 0x4000001f:
+            exitCode = 0x80000003
+
         sys.stdout.flush()
+
+        # Search the source file for '// CHECK_...' annotations and process
+        # them.
+
+        checkCommentRe = re.compile(r'^// CHECK_([_0-9A-Z]+): (.*)$')
+        for line in open(testSrc, 'rt'):
+            line = line.rstrip('\n')
+            mo = checkCommentRe.match(line)
+            if mo:
+                checkName = mo.group(1)
+                checkExpr = mo.group(2)
+                if checkName == 'EXIT_CODE':
+                    if checkExpr.startswith('0x'):
+                        checkExitCode = int(checkExpr, 16)
+                    else:
+                        checkExitCode = int(checkExpr)
+                    if sys.platform != 'win32':
+                        checkExitCode = checkExitCode % 256
+                    ok = exitCode == checkExitCode 
+                    if not ok:
+                        sys.stdout.write('# exit code was 0x%08x\n' % exitCode)
+                elif checkName == 'STDOUT':
+                    ok = checkString(checkExpr, stdout)
+                elif checkName == 'STDERR':
+                    ok = checkString(checkExpr, stderr)
+                else:
+                    assert False
+
+                ok_or_not = ['not ok', 'ok']
+                sys.stdout.write('%s - %s %s\n' % (ok_or_not[int(bool(ok))], 'CHECK_' + checkName, checkExpr))
+                if not ok:
+                    numFailedTests += 1
+        
+                numTests += 1
+
+        sys.stdout.flush()
+
+    sys.stdout.write('1..%u\n' % numTests)
+    if numFailedTests:
+        sys.stdout.write('# %u tests failed\n' % numFailedTests)
+        sys.exit(1)
+
+    sys.exit(0)
 
 
 if __name__ == '__main__':

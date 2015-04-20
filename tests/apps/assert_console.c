@@ -45,3 +45,6 @@ int main()
     assert(2 + 2 == 5);
     return 0;
 }
+
+// CHECK_STDERR: /2 \+ 2 == 5/
+// CHECK_EXIT_CODE: 3

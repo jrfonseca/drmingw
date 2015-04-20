@@ -26,13 +26,18 @@
  **************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <windows.h>
 
 int
 main(int argc, char *argv[])
 {
-    fprintf(stderr, "debugger is %s\n", IsDebuggerPresent() ? "present" : "absent");
+    BOOL bIsDebuggerPresent = IsDebuggerPresent();
 
-    return 0;
+    fprintf(stdout, "Debugger is %s\n", bIsDebuggerPresent ? "present" : "absent");
+
+    return bIsDebuggerPresent ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
+// CHECK_STDOUT: /^Debugger is present$/
+// CHECK_EXIT_CODE: 0

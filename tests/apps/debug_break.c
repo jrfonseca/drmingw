@@ -37,3 +37,5 @@ main(int argc, char *argv[])
 
     return 0;
 }
+
+// CHECK_EXIT_CODE: 0x80000003

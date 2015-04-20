@@ -32,3 +32,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 {
     abort();
 }
+
+// CHECK_STDERR: /^message dialog detected$/
+// CHECK_EXIT_CODE: 3

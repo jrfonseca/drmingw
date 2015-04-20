@@ -34,3 +34,6 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
 
     return 0;
 }
+
+// CHECK_STDERR: /^Debug message from the application\.$/
+// CHECK_EXIT_CODE: 0

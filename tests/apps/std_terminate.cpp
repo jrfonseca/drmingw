@@ -38,3 +38,5 @@ int main()
     test();
     return 0;
 }
+
+// CHECK_EXIT_CODE: 3

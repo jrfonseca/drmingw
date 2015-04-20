@@ -40,3 +40,5 @@ main(int argc, char *argv[])
     test();
     return 0;
 }
+
+// CHECK_EXIT_CODE: 0xc0000005

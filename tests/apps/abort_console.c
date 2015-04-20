@@ -39,3 +39,5 @@ int main()
 #endif
     abort();
 }
+
+// CHECK_EXIT_CODE: 3

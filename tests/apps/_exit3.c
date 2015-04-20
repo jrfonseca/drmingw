@@ -31,3 +31,5 @@ int main()
 {
     _exit(3);
 }
+
+// CHECK_EXIT_CODE: 3
