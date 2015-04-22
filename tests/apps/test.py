@@ -133,7 +133,7 @@ def test((testName, catchsegvExe, testExe, testSrc)):
             if not ok:
                 result = False
     
-    return result
+    return testName, result
 
 
 def main():
@@ -186,7 +186,7 @@ def main():
               |  SEM_NOOPENFILEERRORBOX
         ctypes.windll.kernel32.SetErrorMode(uMode)
 
-    numFailedTests = 0
+    failedTests = []
 
     numJobs = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(numJobs)
@@ -206,17 +206,21 @@ def main():
 
         testSrc = os.path.join(testsSrcDir, testSrcFile)
         testExe = os.path.join(testsExeDir, testName + '.exe')
-        assert os.path.isfile(testExe)
+        if not os.path.isfile(testExe):
+            sys.stderr.write('fatal: %s does not exist\n' % testExe)
+            sys.exit(1)
 
         testArgs.append((testName, catchsegvExe, testExe, testSrc))
 
-    for testResult in pool.imap_unordered(test, testArgs):
+    for testName, testResult in pool.imap_unordered(test, testArgs):
         if not testResult:
-            numFailedTests += 1
+            failedTests.append(testName)
 
     #sys.stdout.write('1..%u\n' % numTests)
-    if numFailedTests:
-        sys.stdout.write('# %u tests failed\n' % numFailedTests)
+    if failedTests:
+        sys.stdout.write('# %u tests failed\n' % len(failedTests))
+        for failedTest in failedTests:
+            sys.stdout.write('# - %s\n' % failedTest)
         sys.exit(1)
 
     sys.exit(0)
