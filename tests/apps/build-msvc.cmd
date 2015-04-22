@@ -7,10 +7,14 @@ if not "%VS100COMNTOOLS%"=="" set generator=Visual Studio 10
 if not "%VS110COMNTOOLS%"=="" set generator=Visual Studio 11
 if not "%VS120COMNTOOLS%"=="" set generator=Visual Studio 12
 
-cmake -G "%generator%" -H. -Bbuild\x86
-cmake --build build\x86 --config Debug -- /verbosity:minimal
+cmake -G "%generator%" -H%~dp0 -Bbuild\msvc32
+if errorlevel 1 exit /b %ERRORLEVEL%
+cmake --build build\msvc32 --config Debug -- /verbosity:minimal
+if errorlevel 1 exit /b %ERRORLEVEL%
 
-cmake -G "%generator% Win64" -H. -Bbuild\x64
-cmake --build build\x64 --config Debug -- /verbosity:minimal
+cmake -G "%generator% Win64" -H%~dp0 -Bbuild\msvc64
+if errorlevel 1 exit /b %ERRORLEVEL%
+cmake --build build\msvc64 --config Debug -- /verbosity:minimal
+if errorlevel 1 exit /b %ERRORLEVEL%
 
 endlocal
