@@ -25,23 +25,21 @@
  *
  **************************************************************************/
 
-#include <stdio.h>
-
-#ifdef _MSC_VER
 #include <intrin.h>
-#else
-#define __debugbreak() __asm("int3")
+
+#include "line_barrier.h"
+
+#ifdef __MINGW32__
+#define __debugbreak()  asm volatile ("int3")
 #endif
 
 int
 main(int argc, char *argv[])
 {
-    fprintf(stderr, "before...\n");
-    __debugbreak();
-    fprintf(stderr, "after...\n");
+    __debugbreak();  LINE_BARRIER
 
     return 0;
 }
 
-// CHECK_STDERR: /  int3\.exe\!main  \[.*\bint3\.c @ 4[01]\]/
+// CHECK_STDERR: /  int3\.exe\!main  \[.*\bint3\.c @ 39\]/
 // CHECK_EXIT_CODE: 0x80000003
