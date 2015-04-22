@@ -50,7 +50,7 @@ static HANDLE g_hTimer = NULL;
 static HANDLE g_hTimerQueue = NULL;
 static DWORD g_ElapsedTime = 0;
 static BOOL g_TimerIgnore = FALSE;
-static const DWORD g_Period = 1000;
+static DWORD g_Period = 1000;
 
 
 static void
@@ -267,6 +267,13 @@ main(int argc, char** argv)
     if (g_hTimerQueue == NULL) {
         fprintf(stderr, "error: failed to create a timer queue (0x%08lx)\n", GetLastError());
         return EXIT_FAILURE;
+    }
+
+    TIMECAPS tc;
+    MMRESULT mmRes = timeGetDevCaps(&tc, sizeof tc);
+    if (mmRes == MMSYSERR_NOERROR &&
+        tc.wPeriodMax < g_Period) {
+        g_Period = tc.wPeriodMax;
     }
 
     if (!CreateTimerQueueTimer(&g_hTimer, g_hTimerQueue,
