@@ -152,7 +152,7 @@ mgwhelp_module_create(struct mgwhelp_process * process,
                                      module->LoadedImageName,
                                      sizeof module->LoadedImageName);
         if (dwRet == 0) {
-            OutputDebug("MGWHELP: could not determined module name\n");
+            OutputDebug("MGWHELP: could not determine module name\n");
             goto no_module_name;
         }
     }
