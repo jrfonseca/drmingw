@@ -29,20 +29,19 @@
 
 #ifdef _MSC_VER
 #include <intrin.h>
+#else
+#define __debugbreak() __asm("int3")
 #endif
 
 int
 main(int argc, char *argv[])
 {
     fprintf(stderr, "before...\n");
-#ifdef _MSC_VER
     __debugbreak();
-#else
-    __asm("int3");
-#endif
     fprintf(stderr, "after...\n");
 
     return 0;
 }
 
+// CHECK_STDERR: /  int3\.exe\!main  \[.*\bint3\.c @ 4[01]\]/
 // CHECK_EXIT_CODE: 0x80000003
