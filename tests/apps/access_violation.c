@@ -35,4 +35,5 @@ main(int argc, char *argv[])
     return 0;
 }
 
+// CHECK_STDERR: /  access_violation\.exe\!main  \[.*\baccess_violation\.c @ 33\]/
 // CHECK_EXIT_CODE: 0xc0000005
