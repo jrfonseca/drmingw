@@ -27,12 +27,24 @@
 
 #include <windows.h>
 
+#include "line_barrier.h"
+
+static LONG WINAPI
+exceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
+{
+    (void)pExceptionInfo;
+    _exit(1);
+}
+
 int CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    RaiseException(0xE0000001, EXCEPTION_NONCONTINUABLE, 0, NULL);
+    SetUnhandledExceptionFilter(exceptionFilter);
+
+    RaiseException(0xE0000001, 0, 0, NULL);  LINE_BARRIER
 
     return 0;
 }
 
+// CHECK_STDERR: /  seh_unhandled\.exe\!WinMain  \[.*\bseh_unhandled\.c @ 44\]/
 // CHECK_EXIT_CODE: 0xE0000001
