@@ -57,7 +57,7 @@ def checkString(needle, haystack):
     return needleRe.search(haystack) is not None
 
 
-def test((testName, catchsegvExe, testExe, testSrc)):
+def test((catchsegvExe, testExe, testSrc)):
     result = True
 
     cmd = [
@@ -129,15 +129,15 @@ def test((testName, catchsegvExe, testExe, testSrc)):
                 assert False
 
             ok_or_not = ['not ok', 'ok']
-            writeStdout('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testName, 'CHECK_' + checkName, checkExpr))
+            writeStdout('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testExe, 'CHECK_' + checkName, checkExpr))
             if not ok:
                 result = False
     
-    return testName, result
+    return testExe, result
 
 
 def main():
-    optparser = optparse.OptionParser( usage="%prog [options] [path/to/catchsegv.exe] [path/to/test/apps]")
+    optparser = optparse.OptionParser( usage="%prog [options] [path/to/catchsegv.exe] [path/to/test/apps] ..")
     optparser.add_option(
         '-R', '--regex', metavar='REGEX',
         type="string", dest="regex",
@@ -149,9 +149,6 @@ def main():
     
     global options
     (options, args) = optparser.parse_args(sys.argv[1:])
-    if len(args) > 2:
-        optparser.error('incorrect number of arguments')
-        sys.exit(1)
 
     if len(args) >= 1:
         catchsegvExe = args[0]
@@ -162,12 +159,9 @@ def main():
         sys.exit(1)
 
     if len(args) >= 2:
-        testsExeDir = args[1]
+        testsExeDirs = args[1:]
     else:
-        testsExeDir = os.path.normpath(os.path.join(os.path.dirname(catchsegvExe), '..', 'tests', 'apps'))
-    if not os.path.isdir(testsExeDir):
-        sys.stderr.write('error: %s does not exist\n' % testsExeDir)
-        sys.exit(1)
+        testsExeDirs = [os.path.normpath(os.path.join(os.path.dirname(catchsegvExe), '..', 'tests', 'apps'))]
 
     testsSrcDir = os.path.dirname(__file__)
 
@@ -205,12 +199,14 @@ def main():
             continue
 
         testSrc = os.path.join(testsSrcDir, testSrcFile)
-        testExe = os.path.join(testsExeDir, testName + '.exe')
-        if not os.path.isfile(testExe):
-            sys.stderr.write('fatal: %s does not exist\n' % testExe)
-            sys.exit(1)
 
-        testArgs.append((testName, catchsegvExe, testExe, testSrc))
+        for testsExeDir in testsExeDirs:
+            testExe = os.path.join(testsExeDir, testName + '.exe')
+            if not os.path.isfile(testExe):
+                sys.stderr.write('fatal: %s does not exist\n' % testExe)
+                sys.exit(1)
+
+            testArgs.append((catchsegvExe, testExe, testSrc))
 
     for testName, testResult in pool.imap_unordered(test, testArgs):
         if not testResult:
