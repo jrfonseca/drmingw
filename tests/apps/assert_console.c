@@ -25,9 +25,7 @@
  *
  **************************************************************************/
 
-#ifdef NDEBUG
-#error "NDEBUG defined"
-#endif
+#undef NDEBUG
 
 #include <stdlib.h>
 #include <assert.h>

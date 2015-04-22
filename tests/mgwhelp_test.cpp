@@ -98,6 +98,7 @@ checkSymLine(HANDLE hProcess,
 
 
 static void
+    __attribute__ ((noinline))
 checkCaller(HANDLE hProcess,
             const char *szSymbolName,
             const char *szFileName,
@@ -125,10 +126,7 @@ static const DWORD foo_line = __LINE__; static int foo(int a, int b) {
 }
 
 
-static void dummy(void)
-{
-    getenv("USERPROFILE");
-}
+#define LINE_BARRIER rand();
 
 
 int
@@ -144,7 +142,7 @@ main()
     } {
         checkSymLine(hProcess, (PVOID)&foo, "foo", __FILE__, foo_line);
 
-        checkCaller(hProcess, "main", __FILE__, __LINE__); dummy();
+        checkCaller(hProcess, "main", __FILE__, __LINE__); LINE_BARRIER
 
         // Test DbgHelp fallback
         checkExport(hProcess, "kernel32", "Sleep");

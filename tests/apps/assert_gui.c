@@ -25,12 +25,10 @@
  *
  **************************************************************************/
 
-#ifdef NDEBUG
-#error "NDEBUG defined"
-#endif
+#undef NDEBUG
 
-#include <windows.h>
 #include <assert.h>
+#include <windows.h>
 
 int CALLBACK
 WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -39,5 +37,5 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
     return 0;
 }
 
-// CHECK_STDERR: /^message dialog detected$/
+// CHECK_STDERR: /message dialog detected$/
 // CHECK_EXIT_CODE: 3
