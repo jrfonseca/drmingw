@@ -33,6 +33,7 @@ import subprocess
 import os.path
 import re
 import optparse
+import tempfile
 
 
 verbose = True
@@ -111,9 +112,6 @@ def main():
         if not testNameRe.search(testName):
             continue
 
-        sys.stderr.write("# %s\n" % testSrcFile)
-        sys.stdout.flush()
-
         testSrc = os.path.join(testsSrcDir, testSrcFile)
         testExe = os.path.join(testsExeDir, testName + '.exe')
         assert os.path.isfile(testExe)
@@ -123,26 +121,37 @@ def main():
         cmd = [
             catchsegvExe,
             '-v',
-            '-t', '15', 
+            '-t', '5',
             testExe
         ]
 
         if sys.platform != 'win32':
             cmd = ['wine'] + cmd
-            os.environ['WINEDEBUG'] = '+debugstr'
+            if options.verbose:
+                os.environ['WINEDEBUG'] = '+debugstr'
 
         sys.stdout.write('# ' + ' '.join(cmd) + '\n')
         sys.stdout.flush()
 
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
-        stdout, stderr = p.communicate()
+        # XXX: Popen.communicate takes a lot of time with wine, so avoid it
+        stdout = tempfile.TemporaryFile()
+        stderr = tempfile.TemporaryFile()
+
+        p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
+        p.wait()
+
+        stdout.seek(0)
+        stderr.seek(0)
+
+        stdout = stdout.read()
+        stderr = stderr.read()
 
         stdout = stdout.replace('\r\n', '\n')
         stderr = stderr.replace('\r\n', '\n')
 
         if options.verbose:
             sys.stderr.write(stderr)
-            sys.stdout.write(stdout)
+            sys.stderr.write(stdout)
 
         # Adjust return code
         exitCode = p.returncode
@@ -181,7 +190,7 @@ def main():
                     assert False
 
                 ok_or_not = ['not ok', 'ok']
-                sys.stdout.write('%s - %s %s\n' % (ok_or_not[int(bool(ok))], 'CHECK_' + checkName, checkExpr))
+                sys.stdout.write('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testName, 'CHECK_' + checkName, checkExpr))
                 if not ok:
                     numFailedTests += 1
         
