@@ -34,9 +34,17 @@ import os.path
 import re
 import optparse
 import tempfile
+import threading
+import multiprocessing.dummy as multiprocessing
 
 
-verbose = True
+
+stdoutLock = threading.Lock()
+
+def writeStdout(s):
+    with stdoutLock:
+        sys.stdout.write(s)
+        sys.stdout.flush()
 
 
 def checkString(needle, haystack):
@@ -47,6 +55,85 @@ def checkString(needle, haystack):
         needle = '^' + re.escape(needle) + '$'
     needleRe = re.compile(needle, re.MULTILINE)
     return needleRe.search(haystack) is not None
+
+
+def test((testName, catchsegvExe, testExe, testSrc)):
+    result = True
+
+    cmd = [
+        catchsegvExe,
+        '-v',
+        '-t', '5',
+        testExe
+    ]
+
+    if sys.platform != 'win32':
+        cmd = ['wine'] + cmd
+        if options.verbose:
+            os.environ['WINEDEBUG'] = '+debugstr'
+
+    writeStdout('# ' + ' '.join(cmd) + '\n')
+
+    # XXX: Popen.communicate takes a lot of time with wine, so avoid it
+    stdout = tempfile.TemporaryFile()
+    stderr = tempfile.TemporaryFile()
+
+    p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
+    p.wait()
+
+    stdout.seek(0)
+    stderr.seek(0)
+
+    stdout = stdout.read()
+    stderr = stderr.read()
+
+    stdout = stdout.replace('\r\n', '\n')
+    stderr = stderr.replace('\r\n', '\n')
+
+    if options.verbose:
+        sys.stderr.write(stderr)
+        sys.stderr.write(stdout)
+
+    # Adjust return code
+    exitCode = p.returncode
+    if exitCode < 0:
+        exitCode += (1 << 32)
+    if exitCode == 0x4000001f:
+        exitCode = 0x80000003
+
+    # Search the source file for '// CHECK_...' annotations and process
+    # them.
+
+    checkCommentRe = re.compile(r'^// CHECK_([_0-9A-Z]+): (.*)$')
+    for line in open(testSrc, 'rt'):
+        line = line.rstrip('\n')
+        mo = checkCommentRe.match(line)
+        if mo:
+            checkName = mo.group(1)
+            checkExpr = mo.group(2)
+            if checkName == 'EXIT_CODE':
+                if checkExpr.startswith('0x'):
+                    checkExitCode = int(checkExpr, 16)
+                else:
+                    checkExitCode = int(checkExpr)
+                if sys.platform != 'win32':
+                    checkExitCode = checkExitCode % 256
+                ok = exitCode == checkExitCode 
+                if not ok:
+                    writeStdout('# exit code was 0x%08x\n' % exitCode)
+            elif checkName == 'STDOUT':
+                ok = checkString(checkExpr, stdout)
+            elif checkName == 'STDERR':
+                ok = checkString(checkExpr, stderr)
+            else:
+                assert False
+
+            ok_or_not = ['not ok', 'ok']
+            writeStdout('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testName, 'CHECK_' + checkName, checkExpr))
+            if not ok:
+                result = False
+    
+    return result
 
 
 def main():
@@ -60,6 +147,7 @@ def main():
         action="store_true",
         dest="verbose", default=False)
     
+    global options
     (options, args) = optparser.parse_args(sys.argv[1:])
     if len(args) > 2:
         optparser.error('incorrect number of arguments')
@@ -98,11 +186,15 @@ def main():
               |  SEM_NOOPENFILEERRORBOX
         ctypes.windll.kernel32.SetErrorMode(uMode)
 
-    numTests = 0
     numFailedTests = 0
+
+    numJobs = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(numJobs)
 
     testSrcFiles = os.listdir(testsSrcDir)
     testSrcFiles.sort()
+
+    testArgs = []
     for testSrcFile in testSrcFiles:
         testName, ext = os.path.splitext(testSrcFile)
 
@@ -116,89 +208,13 @@ def main():
         testExe = os.path.join(testsExeDir, testName + '.exe')
         assert os.path.isfile(testExe)
 
-        # Execute the test
+        testArgs.append((testName, catchsegvExe, testExe, testSrc))
 
-        cmd = [
-            catchsegvExe,
-            '-v',
-            '-t', '5',
-            testExe
-        ]
+    for testResult in pool.imap_unordered(test, testArgs):
+        if not testResult:
+            numFailedTests += 1
 
-        if sys.platform != 'win32':
-            cmd = ['wine'] + cmd
-            if options.verbose:
-                os.environ['WINEDEBUG'] = '+debugstr'
-
-        sys.stdout.write('# ' + ' '.join(cmd) + '\n')
-        sys.stdout.flush()
-
-        # XXX: Popen.communicate takes a lot of time with wine, so avoid it
-        stdout = tempfile.TemporaryFile()
-        stderr = tempfile.TemporaryFile()
-
-        p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
-        p.wait()
-
-        stdout.seek(0)
-        stderr.seek(0)
-
-        stdout = stdout.read()
-        stderr = stderr.read()
-
-        stdout = stdout.replace('\r\n', '\n')
-        stderr = stderr.replace('\r\n', '\n')
-
-        if options.verbose:
-            sys.stderr.write(stderr)
-            sys.stderr.write(stdout)
-
-        # Adjust return code
-        exitCode = p.returncode
-        if exitCode < 0:
-            exitCode += (1 << 32)
-        if exitCode == 0x4000001f:
-            exitCode = 0x80000003
-
-        sys.stdout.flush()
-
-        # Search the source file for '// CHECK_...' annotations and process
-        # them.
-
-        checkCommentRe = re.compile(r'^// CHECK_([_0-9A-Z]+): (.*)$')
-        for line in open(testSrc, 'rt'):
-            line = line.rstrip('\n')
-            mo = checkCommentRe.match(line)
-            if mo:
-                checkName = mo.group(1)
-                checkExpr = mo.group(2)
-                if checkName == 'EXIT_CODE':
-                    if checkExpr.startswith('0x'):
-                        checkExitCode = int(checkExpr, 16)
-                    else:
-                        checkExitCode = int(checkExpr)
-                    if sys.platform != 'win32':
-                        checkExitCode = checkExitCode % 256
-                    ok = exitCode == checkExitCode 
-                    if not ok:
-                        sys.stdout.write('# exit code was 0x%08x\n' % exitCode)
-                elif checkName == 'STDOUT':
-                    ok = checkString(checkExpr, stdout)
-                elif checkName == 'STDERR':
-                    ok = checkString(checkExpr, stderr)
-                else:
-                    assert False
-
-                ok_or_not = ['not ok', 'ok']
-                sys.stdout.write('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testName, 'CHECK_' + checkName, checkExpr))
-                if not ok:
-                    numFailedTests += 1
-        
-                numTests += 1
-
-        sys.stdout.flush()
-
-    sys.stdout.write('1..%u\n' % numTests)
+    #sys.stdout.write('1..%u\n' % numTests)
     if numFailedTests:
         sys.stdout.write('# %u tests failed\n' % numFailedTests)
         sys.exit(1)
