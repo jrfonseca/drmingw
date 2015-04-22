@@ -77,47 +77,47 @@ TerminateProcessById(DWORD dwProcessId)
 static BOOL CALLBACK
 EnumWindowCallback(HWND hWnd, LPARAM lParam)
 {
-   DWORD dwProcessId = 0;
+    DWORD dwProcessId = 0;
 
-   GetWindowThreadProcessId(hWnd, &dwProcessId);
-   if (GetWindowLong(hWnd, GWL_STYLE) & DS_MODALFRAME) {
-      if (dwProcessId == lParam) {
-         fprintf(stderr, "message dialog detected\n");
+    GetWindowThreadProcessId(hWnd, &dwProcessId);
+    if (dwProcessId == lParam) {
+        if (GetWindowLong(hWnd, GWL_STYLE) & DS_MODALFRAME) {
+            fprintf(stderr, "message dialog detected\n");
 
-         g_TimerIgnore = TRUE;
+            g_TimerIgnore = TRUE;
 
-         TerminateProcessById(dwProcessId);
+            TerminateProcessById(dwProcessId);
 
-         return FALSE;
-      }
-   }
+            return FALSE;
+        }
+    }
 
-   return TRUE;
+    return TRUE;
 }
 
 
 static VOID CALLBACK
 TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 {
-   DWORD dwProcessId = (DWORD)(UINT_PTR)lpParam;
+    DWORD dwProcessId = (DWORD)(UINT_PTR)lpParam;
 
-   if (g_TimerIgnore) {
-      return;
-   }
+    if (g_TimerIgnore) {
+        return;
+    }
 
-   EnumWindows(EnumWindowCallback, (LPARAM)dwProcessId);
+    EnumWindows(EnumWindowCallback, (LPARAM)dwProcessId);
 
-   g_ElapsedTime += g_Period;
+    g_ElapsedTime += g_Period;
 
-   if (!g_TimeOut || g_ElapsedTime < g_TimeOut*1000) {
-      return;
-   }
+    if (!g_TimeOut || g_ElapsedTime < g_TimeOut*1000) {
+        return;
+    }
 
-   fprintf(stderr, "time out (%lu sec) exceeded\n", g_TimeOut);
+    fprintf(stderr, "time out (%lu sec) exceeded\n", g_TimeOut);
 
-   g_TimerIgnore = TRUE;
+    g_TimerIgnore = TRUE;
 
-   TerminateProcessById(dwProcessId);
+    TerminateProcessById(dwProcessId);
 }
 
 
