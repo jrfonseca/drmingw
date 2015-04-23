@@ -77,6 +77,8 @@ add_definitions (
 ##############################################################################
 # Targets
 
+enable_testing ()
+
 add_subdirectory (src)
 add_subdirectory (sample)
 add_subdirectory (tests)

@@ -3,6 +3,7 @@ language: cpp
 env:
   global:
   - MAKEFLAGS=-j1
+  - CTEST_OUTPUT_ON_FAILURE=1
 
 matrix:
   fast_finish: true
@@ -40,7 +41,9 @@ script:
 - wget -q -O dbghelp.7z "$DBGHELP_URL"
 - 7zr x -othirdparty/dbghelp/ dbghelp.7z
 - cmake -H. -Bbuild -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake -DWINDBG_DIR=thirdparty/dbghelp -DWINE_PROGRAM=$WINE_PROGRAM
-- make -C build all test package
+- make -C build all
+- make -C build test
+- make -C build package
 
 deploy:
   provider: releases

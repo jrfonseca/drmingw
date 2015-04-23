@@ -10,6 +10,10 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_DEBUG} -ggdb -fno-omit-fram
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -ggdb -fno-omit-frame-pointer")
 
 
+#
+# test_mgwhelp
+#
+
 add_executable (mgwhelp_test
     mgwhelp_test.cpp
 )
@@ -17,12 +21,14 @@ add_dependencies (mgwhelp_test mgwhelp_implib)
 target_link_libraries (mgwhelp_test
     ${MGWHELP_IMPLIB}
 )
-add_custom_target (test_mgwhelp
+add_test (
+    NAME test_mgwhelp
     COMMAND ${WINE_COMMAND} $<TARGET_FILE:mgwhelp_test>
-    DEPENDS mgwhelp_test mgwhelp
-    VERBATIM
 )
 
+#
+# test_mgwhelp_stripped
+#
 
 # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
 add_custom_command (
@@ -43,34 +49,24 @@ add_custom_target (mgwhelp_stripped_test ALL
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test.debug
 )
-add_custom_target (test_mgwhelp_stripped
+add_test (
+    NAME test_mgwhelp_stripped
     COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
-    DEPENDS mgwhelp_stripped_test mgwhelp
-    VERBATIM
 )
 
+
+#
+# test_exchndl
+#
 
 add_executable (exchndl_test
     exchndl_test.c
 )
-add_custom_target (test_exchndl
+add_test (
+    NAME test_exchndl
     COMMAND ${WINE_COMMAND} $<TARGET_FILE:exchndl_test>
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    DEPENDS exchndl_test exchndl mgwhelp
-    VERBATIM
 )
 
 
 add_subdirectory (apps)
-
-
-if (POLICY CMP0037)
-    cmake_policy (SET CMP0037 OLD)
-endif ()
-
-add_custom_target (test
-    DEPENDS
-        test_mgwhelp
-        test_mgwhelp_stripped
-        test_exchndl
-)
