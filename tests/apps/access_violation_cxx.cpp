@@ -27,6 +27,11 @@
 
 #include <stdio.h>
 
+#if defined(__GNUC__)
+    __attribute__ ((noinline))
+#elif defined(_MSC_VER)
+    __declspec(noinline)
+#endif
 static void
 test(void)
 {
@@ -40,5 +45,5 @@ main(int argc, char *argv[])
     return 0;
 }
 
-// CHECK_STDERR: /  access_violation_cxx\.exe\!test  \[.*\baccess_violation_cxx\.cpp @ 33\]/
+// CHECK_STDERR: /  access_violation_cxx\.exe\!test  \[.*\baccess_violation_cxx\.cpp @ 38\]/
 // CHECK_EXIT_CODE: 0xc0000005
