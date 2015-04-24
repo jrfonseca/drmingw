@@ -30,3 +30,11 @@
 #include <stdlib.h>
 
 #define LINE_BARRIER rand();
+
+#if defined(__GNUC__)
+#  define NOINLINE __attribute__ ((noinline))
+#elif defined(_MSC_VER)
+#  define NOINLINE __declspec(noinline)
+#else
+#error Unsupported compiler
+#endif

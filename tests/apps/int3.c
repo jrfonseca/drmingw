@@ -27,7 +27,7 @@
 
 #include <intrin.h>
 
-#include "line_barrier.h"
+#include "macros.h"
 
 #ifdef __MINGW32__
 #define __debugbreak()  asm volatile ("int3")

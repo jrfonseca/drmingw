@@ -27,7 +27,7 @@
 
 #include <windows.h>
 
-#include "line_barrier.h"
+#include "macros.h"
 
 static LONG WINAPI
 exceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
