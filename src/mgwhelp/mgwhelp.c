@@ -119,11 +119,12 @@ no_file_mapping:
 
 static struct mgwhelp_module *
 mgwhelp_module_create(struct mgwhelp_process * process,
+                      HANDLE hFile,
                       PCSTR ImageName,
                       DWORD64 Base)
 {
     struct mgwhelp_module *module;
-    DWORD dwRet;
+    BOOL bOwnFile;
 
     module = (struct mgwhelp_module *)calloc(1, sizeof *module);
     if (!module) {
@@ -138,6 +139,7 @@ mgwhelp_module_create(struct mgwhelp_process * process,
         /* SymGetModuleInfo64 is not reliable for this, as explained in
          * https://msdn.microsoft.com/en-us/library/windows/desktop/ms681336.aspx
          */
+        DWORD dwRet;
         dwRet = GetModuleFileNameExA(process->hProcess,
                                      (HMODULE)(UINT_PTR)Base,
                                      module->LoadedImageName,
@@ -148,11 +150,15 @@ mgwhelp_module_create(struct mgwhelp_process * process,
         }
     }
 
-    HANDLE hFile = CreateFile(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
-                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-    if (hFile == INVALID_HANDLE_VALUE) {
-        OutputDebug("MGWHELP: %s - file not found\n", module->LoadedImageName);
-        goto no_module_name;
+    bOwnFile = FALSE;
+    if (!hFile) {
+        hFile = CreateFile(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
+                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+        if (hFile == INVALID_HANDLE_VALUE) {
+            OutputDebug("MGWHELP: %s - file not found\n", module->LoadedImageName);
+            goto no_module_name;
+        }
+        bOwnFile = TRUE;
     }
 
     module->image_base_vma = PEGetImageBase(hFile);
@@ -162,7 +168,9 @@ mgwhelp_module_create(struct mgwhelp_process * process,
         OutputDebug("MGWHELP: %s: %s\n", module->LoadedImageName, "no dwarf symbols");
     }
 
-    CloseHandle(hFile);
+    if (bOwnFile) {
+        CloseHandle(hFile);
+    }
 
     module->next = process->modules;
     process->modules = module;
@@ -193,6 +201,7 @@ mgwhelp_process_lookup(HANDLE hProcess);
 
 static struct mgwhelp_module *
 mgwhelp_module_lookup(HANDLE hProcess,
+                      HANDLE hFile,
                       PCSTR ImageName,
                       DWORD64 Base)
 {
@@ -212,7 +221,7 @@ mgwhelp_module_lookup(HANDLE hProcess,
         module = module->next;
     }
 
-    return mgwhelp_module_create(process, ImageName, Base);
+    return mgwhelp_module_create(process, hFile, ImageName, Base);
 }
 
 
@@ -244,7 +253,7 @@ mgwhelp_find_module(HANDLE hProcess, DWORD64 Address, PDWORD64 pOffset)
         return FALSE;
     }
 
-    module = mgwhelp_module_lookup(hProcess, NULL, Base);
+    module = mgwhelp_module_lookup(hProcess, 0, NULL, Base);
     if (!module) {
         return NULL;
     }
@@ -346,7 +355,7 @@ MgwSymLoadModuleEx(HANDLE hProcess,
     dwRet = SymLoadModuleEx(hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags);
 
     if (BaseOfDll) {
-        mgwhelp_module_lookup(hProcess, ImageName, BaseOfDll);
+        mgwhelp_module_lookup(hProcess, hFile, ImageName, BaseOfDll);
     }
 
     return dwRet;
