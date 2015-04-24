@@ -42,7 +42,8 @@ script:
 - 7zr x -othirdparty/dbghelp/ dbghelp.7z
 - cmake -H. -Bbuild -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake -DWINDBG_DIR=thirdparty/dbghelp -DWINE_PROGRAM=$WINE_PROGRAM
 - make -C build all
-- make -C build test
+- $WINE_PROGRAM wineboot
+- xvfb-run -a -s '-screen 0 1024x768x24' make -C build test
 - make -C build package
 
 deploy:
