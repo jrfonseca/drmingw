@@ -25,11 +25,13 @@
 #include <windows.h>
 #include <tchar.h>
 #include <ntstatus.h>
+#include <psapi.h>
 
 #include "debugger.h"
 #include "log.h"
 #include "outdbg.h"
 #include "symbols.h"
+#include "paths.h"
 
 
 typedef struct {
@@ -135,10 +137,54 @@ symCallback(HANDLE hProcess,
 }
 
 
-static void
-loadModule(HANDLE hProcess, HANDLE hFile, LPVOID lpBaseOfDll)
+// https://msdn.microsoft.com/en-us/library/aa366789.aspx
+static BOOL
+GetFileNameFromHandle(HANDLE hFile,
+                      LPTSTR lpszFilePath,
+                      DWORD cchFilePath)
 {
-    if (!SymLoadModuleEx(hProcess, hFile, NULL, NULL, (UINT_PTR)lpBaseOfDll, 0, NULL, 0)) {
+    static HMODULE hKernel32;
+    typedef DWORD (WINAPI *PFNGETFINALPATHNAMEBYHANDLE)(HANDLE, LPTSTR, DWORD, DWORD);
+    static PFNGETFINALPATHNAMEBYHANDLE pfnGetFinalPathNameByHandle = NULL;
+    if (!hKernel32) {
+        hKernel32 = GetModuleHandleA("kernel32.dll");
+        if (hKernel32) {
+            pfnGetFinalPathNameByHandle = (PFNGETFINALPATHNAMEBYHANDLE)GetProcAddress(hKernel32, "GetFinalPathNameByHandleA");
+        }
+    }
+    if (pfnGetFinalPathNameByHandle) {
+        return GetFinalPathNameByHandle(hFile, lpszFilePath, cchFilePath, 0) < cchFilePath;
+    }
+
+    DWORD dwFileSizeHi = 0;
+    DWORD dwFileSizeLo = GetFileSize(hFile, &dwFileSizeHi);
+    if (dwFileSizeLo == 0 && dwFileSizeHi == 0) {
+         // Cannot map a file with a length of zero.
+         return FALSE;
+    }
+
+    BOOL bSuccess = FALSE;
+    HANDLE hFileMap = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 1, NULL);
+    if (hFileMap) {
+        LPVOID pMem = MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 1);
+        if (pMem) {
+            if (GetMappedFileName(GetCurrentProcess(), pMem, lpszFilePath, cchFilePath)) {
+                // Unlike the example, we don't bother transliting the path with device name to drive letters.
+                bSuccess = TRUE;
+            }
+            UnmapViewOfFile(pMem);
+        }
+        CloseHandle(hFileMap);
+    }
+
+    return bSuccess;
+}
+
+
+static void
+loadModule(HANDLE hProcess, HANDLE hFile, PCTSTR pszImageName, LPVOID lpBaseOfDll)
+{
+    if (!SymLoadModuleEx(hProcess, hFile, pszImageName, NULL, (UINT_PTR)lpBaseOfDll, 0, NULL, 0)) {
         OutputDebug("warning: SymLoadModule64 failed: 0x%08lx\n", GetLastError());
     }
 
@@ -295,10 +341,21 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             break;
 
         case CREATE_PROCESS_DEBUG_EVENT: {
+            HANDLE hFile = DebugEvent.u.CreateProcessInfo.hFile;
+
+            char szImageName[MAX_PATH];
+            char *lpImageName = NULL;
+            if (hFile && GetFileNameFromHandle(hFile, szImageName, _countof(szImageName))) {
+                lpImageName = szImageName;
+            }
+
             if (pOptions->verbose_flag) {
-                lprintf("CREATE_PROCESS PID=%lu TID=%lu\r\n",
+                PCTSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
+
+                lprintf("CREATE_PROCESS PID=%lu TID=%lu %s\r\n",
                         DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId
+                        DebugEvent.dwThreadId,
+                        lpModuleName
                 );
             }
 
@@ -317,7 +374,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             SymRegisterCallback64(hProcess, &symCallback, 0);
 
-            loadModule(hProcess, DebugEvent.u.CreateProcessInfo.hFile, DebugEvent.u.CreateProcessInfo.lpBaseOfImage);
+            loadModule(hProcess, hFile, lpImageName, DebugEvent.u.CreateProcessInfo.lpBaseOfImage);
 
             break;
         }
@@ -372,21 +429,33 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             break;
         }
 
-        case LOAD_DLL_DEBUG_EVENT:
+        case LOAD_DLL_DEBUG_EVENT: {
+            HANDLE hFile = DebugEvent.u.LoadDll.hFile;
+
+            char szImageName[MAX_PATH];
+            char *lpImageName = NULL;
+            if (hFile && GetFileNameFromHandle(hFile, szImageName, _countof(szImageName))) {
+                lpImageName = szImageName;
+            }
+
             if (pOptions->verbose_flag) {
-                lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\r\n",
+                PCTSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
+
+                lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %s\r\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId,
-                        DebugEvent.u.LoadDll.lpBaseOfDll
+                        DebugEvent.u.LoadDll.lpBaseOfDll,
+                        lpModuleName
                 );
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
             hProcess = pProcessInfo->hProcess;
 
-            loadModule(hProcess, DebugEvent.u.LoadDll.hFile, DebugEvent.u.LoadDll.lpBaseOfDll);
+            loadModule(hProcess, hFile, lpImageName, DebugEvent.u.LoadDll.lpBaseOfDll);
 
             break;
+        }
 
         case UNLOAD_DLL_DEBUG_EVENT:
             if (pOptions->verbose_flag) {
