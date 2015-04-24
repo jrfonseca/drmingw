@@ -44,8 +44,6 @@ struct mgwhelp_module
 {
     struct mgwhelp_module *next;
 
-    HANDLE hFile;
-
     DWORD64 Base;
     char LoadedImageName[MAX_PATH];
 
@@ -150,19 +148,21 @@ mgwhelp_module_create(struct mgwhelp_process * process,
         }
     }
 
-    module->hFile = CreateFile(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
-                               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-    if (module->hFile == INVALID_HANDLE_VALUE) {
+    HANDLE hFile = CreateFile(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
+                              OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    if (hFile == INVALID_HANDLE_VALUE) {
         OutputDebug("MGWHELP: %s - file not found\n", module->LoadedImageName);
         goto no_module_name;
     }
 
-    module->image_base_vma = PEGetImageBase(module->hFile);
+    module->image_base_vma = PEGetImageBase(hFile);
 
     Dwarf_Error error = 0;
-    if (dwarf_pe_init(module->hFile, module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
+    if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
         OutputDebug("MGWHELP: %s: %s\n", module->LoadedImageName, "no dwarf symbols");
     }
+
+    CloseHandle(hFile);
 
     module->next = process->modules;
     process->modules = module;
@@ -183,8 +183,6 @@ mgwhelp_module_destroy(struct mgwhelp_module * module)
         Dwarf_Error error = 0;
         dwarf_pe_finish(module->dbg, &error);
     }
-
-    CloseHandle(module->hFile);
 
     free(module);
 }
