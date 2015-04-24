@@ -44,6 +44,8 @@ struct mgwhelp_module
 {
     struct mgwhelp_module *next;
 
+    HANDLE hFile;
+
     DWORD64 Base;
     char LoadedImageName[MAX_PATH];
 
@@ -70,9 +72,8 @@ struct mgwhelp_process *processes = NULL;
  * value of ImageBase in memory changes.
  */
 static DWORD64
-PEGetImageBase(const char *szImageName)
+PEGetImageBase(HANDLE hFile)
 {
-    HANDLE hFile;
     HANDLE hFileMapping;
     PBYTE lpFileBase;
     PIMAGE_DOS_HEADER pDosHeader;
@@ -81,12 +82,6 @@ PEGetImageBase(const char *szImageName)
     PIMAGE_OPTIONAL_HEADER32 pOptionalHeader32;
     PIMAGE_OPTIONAL_HEADER64 pOptionalHeader64;
     DWORD64 ImageBase = 0;
-
-    hFile = CreateFile(szImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
-                       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-    if (hFile == INVALID_HANDLE_VALUE) {
-        goto no_file;
-    }
 
     hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (!hFileMapping) {
@@ -120,8 +115,6 @@ PEGetImageBase(const char *szImageName)
 no_view_of_file:
     CloseHandle(hFileMapping);
 no_file_mapping:
-    CloseHandle(hFile);
-no_file:
     return ImageBase;
 }
 
@@ -157,10 +150,17 @@ mgwhelp_module_create(struct mgwhelp_process * process,
         }
     }
 
-    module->image_base_vma = PEGetImageBase(module->LoadedImageName);
+    module->hFile = CreateFile(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
+                               OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    if (module->hFile == INVALID_HANDLE_VALUE) {
+        OutputDebug("MGWHELP: %s - file not found\n", module->LoadedImageName);
+        goto no_module_name;
+    }
+
+    module->image_base_vma = PEGetImageBase(module->hFile);
 
     Dwarf_Error error = 0;
-    if (dwarf_pe_init(module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
+    if (dwarf_pe_init(module->hFile, module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
         OutputDebug("MGWHELP: %s: %s\n", module->LoadedImageName, "no dwarf symbols");
     }
 
@@ -183,6 +183,8 @@ mgwhelp_module_destroy(struct mgwhelp_module * module)
         Dwarf_Error error = 0;
         dwarf_pe_finish(module->dbg, &error);
     }
+
+    CloseHandle(module->hFile);
 
     free(module);
 }

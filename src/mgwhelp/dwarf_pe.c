@@ -32,7 +32,6 @@
 
 
 typedef struct {
-    HANDLE hFile;
     HANDLE hFileMapping;
     union {
         PBYTE lpFileBase;
@@ -140,7 +139,8 @@ pe_methods = {
 
 
 int
-dwarf_pe_init(const char *image,
+dwarf_pe_init(HANDLE hFile,
+              const char *image,
               Dwarf_Handler errhand,
               Dwarf_Ptr errarg,
               Dwarf_Debug *ret_dbg,
@@ -156,14 +156,7 @@ dwarf_pe_init(const char *image,
         goto no_internals;
     }
 
-    pe_obj->hFile = CreateFile(image, GENERIC_READ, FILE_SHARE_READ, NULL,
-                       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-    if (pe_obj->hFile == INVALID_HANDLE_VALUE) {
-        OutputDebug("MGWHELP: %s - file not found\n", image);
-        goto no_file;
-    }
-
-    pe_obj->hFileMapping = CreateFileMapping(pe_obj->hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    pe_obj->hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
     if (!pe_obj->hFileMapping) {
         goto no_file_mapping;
     }
@@ -232,7 +225,12 @@ dwarf_pe_init(const char *image,
                 debugImage = strdup(debuglink);
             }
 
-            res = dwarf_pe_init(debugImage, errhand, errarg, ret_dbg, error);
+            HANDLE hFile = CreateFile(debugImage, GENERIC_READ, FILE_SHARE_READ, NULL,
+                                       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+            if (hFile != INVALID_HANDLE_VALUE) {
+                res = dwarf_pe_init(hFile, debugImage, errhand, errarg, ret_dbg, error);
+                CloseHandle(hFile);
+            }
 
             free(debugImage);
 
@@ -247,8 +245,6 @@ no_intfc:
 no_view_of_file:
     CloseHandle(pe_obj->hFileMapping);
 no_file_mapping:
-    CloseHandle(pe_obj->hFile);
-no_file:
     free(pe_obj);
 no_internals:
     return res;
@@ -361,7 +357,6 @@ dwarf_pe_finish(Dwarf_Debug dbg,
 {
     pe_access_object_t *pe_obj = (pe_access_object_t *)dbg->de_obj_file->object;
     CloseHandle(pe_obj->hFileMapping);
-    CloseHandle(pe_obj->hFile);
     free(pe_obj);
     return dwarf_object_finish(dbg, error);
 }

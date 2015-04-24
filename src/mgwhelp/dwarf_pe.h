@@ -31,7 +31,8 @@ extern "C" {
 
 
 int
-dwarf_pe_init(const char *image,
+dwarf_pe_init(HANDLE hFile,
+              const char *image,
               Dwarf_Handler errhand,
               Dwarf_Ptr errarg,
               Dwarf_Debug * ret_dbg, Dwarf_Error * error);
