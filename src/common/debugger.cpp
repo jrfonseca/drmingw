@@ -153,7 +153,7 @@ GetFileNameFromHandle(HANDLE hFile,
         }
     }
     if (pfnGetFinalPathNameByHandle) {
-        return GetFinalPathNameByHandle(hFile, lpszFilePath, cchFilePath, 0) < cchFilePath;
+        return pfnGetFinalPathNameByHandle(hFile, lpszFilePath, cchFilePath, 0) < cchFilePath;
     }
 
     DWORD dwFileSizeHi = 0;
