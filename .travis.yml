@@ -2,6 +2,7 @@ language: cpp
 
 env:
   global:
+  - CMAKE_BUILD_TYPE=Release
   - MAKEFLAGS=-j1
   - CTEST_OUTPUT_ON_FAILURE=1
 
@@ -40,7 +41,7 @@ script:
     echo "set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> Toolchain.cmake
 - wget -q -O dbghelp.7z "$DBGHELP_URL"
 - 7zr x -othirdparty/dbghelp/ dbghelp.7z
-- cmake -H. -Bbuild -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake -DWINDBG_DIR=thirdparty/dbghelp -DWINE_PROGRAM=$WINE_PROGRAM
+- cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake -DWINDBG_DIR=thirdparty/dbghelp -DWINE_PROGRAM=$WINE_PROGRAM
 - make -C build all
 - $WINE_PROGRAM wineboot
 - xvfb-run -a -s '-screen 0 1024x768x24' make -C build test
