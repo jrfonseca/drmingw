@@ -17,11 +17,12 @@
  */
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include <windows.h>
 #include <tchar.h>
-#include <stdlib.h>
 #include <psapi.h>
+#include <shlobj.h>
 #include <dbghelp.h>
 
 #include "outdbg.h"
@@ -58,17 +59,23 @@ InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
 {
     // Provide default symbol search path
     // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
-    char szSymSearchPathBuf[512];
+    char szSymSearchPathBuf[MAX_PATH * 2];
     const char *szSymSearchPath = NULL;
     if (getenv("_NT_SYMBOL_PATH") == NULL &&
         getenv("_NT_ALTERNATE_SYMBOL_PATH") == NULL) {
-        const char *szLocalAppData = getenv("LOCALAPPDATA");
-        assert(szLocalAppData != NULL);
-        _snprintf(szSymSearchPathBuf,
-                  sizeof szSymSearchPathBuf,
-                  "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols",
-                  szLocalAppData);
-        szSymSearchPath = szSymSearchPathBuf;
+        char szLocalAppData[MAX_PATH];
+        HRESULT hr = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szLocalAppData);
+        assert(SUCCEEDED(hr));
+        if (SUCCEEDED(hr)) {
+            _snprintf(szSymSearchPathBuf,
+                      sizeof szSymSearchPathBuf,
+                      "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols",
+                      szLocalAppData);
+            szSymSearchPath = szSymSearchPathBuf;
+        } else {
+            // No cache
+            szSymSearchPath = "srv*http://msdl.microsoft.com/download/symbols";
+        }
     }
 
     return SymInitialize(hProcess, szSymSearchPath, fInvadeProcess);
