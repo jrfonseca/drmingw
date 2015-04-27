@@ -33,8 +33,10 @@
 
 #if defined(__GNUC__)
 #  define NO_INLINE __attribute__ ((noinline))
+#  define FORCE_INLINE inline __attribute__((always_inline))
 #elif defined(_MSC_VER)
 #  define NO_INLINE __declspec(noinline)
+#  define FORCE_INLINE __forceinline
 #else
 #error Unsupported compiler
 #endif

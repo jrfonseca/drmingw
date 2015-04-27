@@ -16,6 +16,12 @@ if (MSVC)
         endif ()
     endforeach ()
 
+    # Allows expansion only of functions marked inline, __inline, or
+    # __forceinline, or in a C++ member function defined in a class
+    # declaration.
+    string (REGEX REPLACE "/Ob0" "/Ob1" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+    string (REGEX REPLACE "/Ob0" "/Ob1" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+
     add_definitions (-D_CRT_SECURE_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
     add_definitions (-D_SCL_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
 endif ()
@@ -34,6 +40,7 @@ add_test_executable (assert_console assert_console.c)
 add_test_executable (assert_gui WIN32 assert_gui.c)
 add_test_executable (cxx_exception_unhandled cxx_exception_unhandled.cpp)
 add_test_executable (cxx_exception_handled cxx_exception_handled.cpp)
+add_test_executable (cxx_inline cxx_inline.cpp)
 add_test_executable (debug_break debug_break.c)
 add_test_executable (access_violation access_violation.c)
 add_test_executable (access_violation_cxx access_violation_cxx.cpp)
