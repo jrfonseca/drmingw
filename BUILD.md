@@ -14,6 +14,8 @@ Recommended:
  * [Debugging Tools for Windows](https://msdn.microsoft.com/en-us/library/windows/hardware/ff551063.aspx)
    for the latest version of `dbghelp.dll` and `symsrv.dll` DLLs.
 
+ * [Python 2.x](https://www.python.org/downloads/) for running some of the tests.
+
 
 # Cross-compilation toolchain #
 

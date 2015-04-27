@@ -74,8 +74,10 @@ add_test (
 #
 
 add_subdirectory (apps)
-find_package (PythonInterp 2.7 REQUIRED)
-add_test (
-    NAME test_catchsegv
-    COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/apps/test.py $<TARGET_FILE:catchsegv> ${CMAKE_CURRENT_BINARY_DIR}/apps
-)
+find_package (PythonInterp 2.7)
+if (PYTHONINTERP_FOUND)
+    add_test (
+        NAME test_catchsegv
+        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/apps/test.py $<TARGET_FILE:catchsegv> ${CMAKE_CURRENT_BINARY_DIR}/apps
+    )
+endif ()
