@@ -27,7 +27,7 @@
 
 #include "macros.h"
 
-NOINLINE
+NO_INLINE
 static void
 test(void)
 {
