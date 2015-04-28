@@ -9,7 +9,7 @@ endif
 CC = $(PREFIX)gcc
 CXX = $(PREFIX)g++
 
-CFLAGS = -ggdb3
+CFLAGS = -g
 CXXFLAGS = $(CFLAGS)
 
 LDFLAGS = -static-libgcc -static-libstdc++
