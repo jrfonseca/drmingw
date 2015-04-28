@@ -25,7 +25,7 @@ int main()
 {
     Test *a;
     a = NULL;
-    int l = a->length();
+    int l = a->length(); LINE_BARRIER
     return l != 0;
 }
 
