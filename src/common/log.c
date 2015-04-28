@@ -298,8 +298,9 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
 
         lprintf(_T("\r\n"));
 
-        if (bLine && dumpSourceCode(szFileName, dwLineNumber))
-            lprintf(_T("\r\n"));
+        if (bLine) {
+            dumpSourceCode(szFileName, dwLineNumber);
+        }
 
         if (StackFrame.AddrStack.Offset < PrevFrameStackOffset) {
             break;
@@ -508,8 +509,6 @@ dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber)
     if((fp = fopen(szFileName, "r")) == NULL)
         return FALSE;
 
-    lprintf("\t...\r\n");
-
     i = 0;
     while(!feof(fp) && ++i <= (int) dwLineNumber + dwContext)
     {
@@ -517,7 +516,7 @@ dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber)
 
         if(i >= (int) dwLineNumber - dwContext)
         {
-            lprintf(i == dwLineNumber ? ">\t" : "\t");
+            lprintf(i == dwLineNumber ? ">%5i: " : "%6i: ", i);
             while(!feof(fp) && (c = fgetc(fp)) != '\n')
                 if(isprint(c))
                     lprintf("%c", c);
@@ -527,8 +526,6 @@ dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber)
             while(!feof(fp) && (c = fgetc(fp)) != '\n')
                 ;
     }
-
-    lprintf("\t...\r\n");
 
     fclose(fp);
     return TRUE;
