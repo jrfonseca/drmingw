@@ -1,0 +1,5 @@
+#define VER_INTERNALNAME_STR        "MgwHelp"
+#define VER_FILEDESCRIPTION_STR     VER_INTERNALNAME_STR " library."
+#define VER_ORIGINALFILENAME_STR    "mgwhelp.dll"
+
+#include "version.h"

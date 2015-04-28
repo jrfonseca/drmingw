@@ -9,6 +9,7 @@ add_library (mgwhelp SHARED
     dwarf_find.c
     dwarf_pe.c
     mgwhelp.c
+    version.rc
 )
 
 target_link_libraries (mgwhelp LINK_PRIVATE

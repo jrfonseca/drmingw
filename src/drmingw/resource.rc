@@ -45,3 +45,9 @@ FONT 8, "MS Sans Serif"
    CONTROL "About This Program", -1, "button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE | WS_GROUP, 5, 5, 144, 73
    CONTROL "A JIT debugger that collects debugging information about unhandled exceptions.\r\n\r\nby Jose Fonseca", -1, "static", SS_CENTER | WS_CHILD | WS_VISIBLE, 27, 27, 100, 50
 }
+
+#define VER_INTERNALNAME_STR        "DrMingw"
+#define VER_FILEDESCRIPTION_STR     VER_INTERNALNAME_STR " application."
+#define VER_ORIGINALFILENAME_STR    "drmingw.exe"
+
+#include "version.h"

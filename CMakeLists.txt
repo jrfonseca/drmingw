@@ -71,6 +71,11 @@ add_definitions (
     -DWINVER=0x0601
     # https://msdn.microsoft.com/en-gb/library/windows/desktop/ms683198.aspx
     -DPSAPI_VERSION=1
+
+    # version
+    -DPACKAGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR}
+    -DPACKAGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR}
+    -DPACKAGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}
 )
 
 
