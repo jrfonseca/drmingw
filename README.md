@@ -183,6 +183,7 @@ Related tools
  * [cv2pdb - DWARF to PDB converter](https://github.com/rainers/cv2pdb)
  * [google-breakpad](https://code.google.com/p/google-breakpad)
  * [CrashRpt](https://code.google.com/p/crashrpt/)
+ * [dbg](https://bitbucket.org/edd/dbg/wiki/Home)
 
 Suggested Reading
 -----------------
