@@ -65,7 +65,7 @@ main(int argc, char **argv)
     hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
 #endif
     if (!hModule) {
-        LoadLibraryExA(szModule, NULL, DONT_RESOLVE_DLL_REFERENCES);
+        hModule = LoadLibraryExA(szModule, NULL, DONT_RESOLVE_DLL_REFERENCES);
     }
     if (!hModule) {
         fprintf(stderr, "error: failed to load %s\n", szModule);
