@@ -91,7 +91,7 @@ test_diagnostic(const char *format, ...)
 
 #ifdef _WIN32
 
-static void
+static inline void
 test_diagnostic_last_error(void)
 {
     DWORD dwLastError = GetLastError();

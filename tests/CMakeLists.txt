@@ -61,9 +61,25 @@ add_test (
 add_executable (exchndl_test
     exchndl_test.c
 )
+add_dependencies (exchndl_test exchndl)
 add_test (
     NAME test_exchndl
     COMMAND ${WINE_COMMAND} $<TARGET_FILE:exchndl_test>
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+)
+
+
+#
+# test_addr2line
+#
+
+add_executable (addr2line_test
+    addr2line_test.c
+)
+add_dependencies (addr2line_test addr2line)
+add_test (
+    NAME test_addr2line
+    COMMAND ${WINE_COMMAND} $<TARGET_FILE:addr2line_test>
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
