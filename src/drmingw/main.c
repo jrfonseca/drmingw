@@ -258,9 +258,11 @@ main(int argc, char **argv)
             case '?':
                 if (optopt != '?') {
                     /* Invalid option.  */
+                    TCHAR szErrMsg[512];
+                    wsprintf(szErrMsg, "Invalid option '%c'", optopt);
                     MessageBox(
                         NULL,
-                        _T("Invalid option"),
+                        szErrMsg,
                         _T(PACKAGE),
                         MB_OK | MB_ICONSTOP
                     );
@@ -389,10 +391,8 @@ main(int argc, char **argv)
 
             default:    /* bug: option not considered.  */
             {
-                TCHAR szErrMsg[1024];
-
-                wsprintf(szErrMsg, "'-%c' option unknown", c);
-
+                TCHAR szErrMsg[512];
+                wsprintf(szErrMsg, "Unexpected option '-%c'", c);
                 MessageBox(
                     NULL,
                     szErrMsg,
