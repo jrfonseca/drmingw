@@ -31,24 +31,21 @@ static HWND g_hEdit = NULL;
 static INT_PTR CALLBACK
 AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-   switch(Message)
-   {
-      case WM_INITDIALOG:
-
-      return TRUE;
-      case WM_COMMAND:
-         switch(LOWORD(wParam))
-         {
-            case IDOK:
-               EndDialog(hwnd, IDOK);
+    switch(Message) {
+    case WM_INITDIALOG:
+        return TRUE;
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case IDOK:
+            EndDialog(hwnd, IDOK);
             return TRUE;
-            case IDCANCEL:
-               EndDialog(hwnd, IDCANCEL);
+        case IDCANCEL:
+            EndDialog(hwnd, IDCANCEL);
             return TRUE;
-         }
-      break;
-   }
-   return FALSE;
+        }
+        break;
+    }
+    return FALSE;
 }
 
 
