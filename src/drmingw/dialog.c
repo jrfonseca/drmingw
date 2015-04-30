@@ -111,6 +111,8 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
             hFont = CreateFontIndirect(&lf);
 
             SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_SETFONT, (WPARAM) hFont, MAKELPARAM(TRUE, 0));
+
+            SendDlgItemMessage(hwnd, IDC_MESSAGE, EM_LIMITTEXT, ~(WPARAM)0, 0);
             break;
         }
         case WM_USER_APPEND_TEXT: {
