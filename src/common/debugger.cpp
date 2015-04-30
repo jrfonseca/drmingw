@@ -265,6 +265,20 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                             CloseHandle(pOptions->hEvent);
                         }
 
+                        if (pOptions->dwThreadId) {
+                            DWORD dwThreadId = pOptions->dwThreadId;
+                            const DWORD dwFailed = (DWORD)-1;
+                            DWORD dwRet = dwFailed;
+                            pThreadInfo = &pProcessInfo->Threads[dwThreadId];
+                            HANDLE hThread = pThreadInfo->hThread;
+                            if (hThread != NULL) {
+                                dwRet = ResumeThread(hThread);
+                            }
+                            if (dwRet == dwFailed) {
+                                lprintf("error: failed to resume thread %lu\n", dwThreadId);
+                            }
+                        }
+
                         /*
                          * We ignore first-chance breakpoints by default.
                          *

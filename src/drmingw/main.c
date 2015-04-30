@@ -243,13 +243,14 @@ main(int argc, char **argv)
             { "uninstall", 0, NULL, 'u'},
             { "process-id", 1, NULL, 'p'},
             { "event", 1, NULL, 'e'},
+            { "tid", 1, NULL, 't'},
             { "breakpoint", 0, NULL, 'b'},
             { "verbose", 0, NULL, 'v'},
             { "debug", 0, NULL, 'd'},
             { NULL, 0, NULL, 0}
         };
 
-        c = getopt_long (argc, argv, "?hViaup:e:vbd", long_options, &option_index);
+        c = getopt_long_only(argc, argv, "?hViaup:e:t:vbd", long_options, &option_index);
 
         if (c == -1)
             break;    /* Exit from `while (1)' loop.  */
@@ -376,6 +377,12 @@ main(int argc, char **argv)
                 }
                 debug_options.hEvent = (HANDLE) (INT_PTR) atol (optarg);
                 break;
+
+            case 't': {
+                /* Thread id.  Used when debugging WinRT apps. */
+                debug_options.dwThreadId = strtoul(optarg, NULL, 0);
+                break;
+            }
 
             case 'b':    /* Treat debug breakpoints as exceptions */
                 debug_options.breakpoint_flag = 1;
