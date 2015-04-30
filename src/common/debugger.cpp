@@ -503,7 +503,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                                                         DebugEvent.u.DebugString.lpDebugStringData,
                                                         DebugEvent.u.DebugString.nDebugStringLength);
 
-            fputs(lpDebugStringData, stderr);
+            lprintf("%s", lpDebugStringData);
 
             free(lpDebugStringData);
             break;
