@@ -25,8 +25,10 @@
 
 static HINSTANCE g_hInstance = NULL;
 
-static HWND g_hEdit = NULL;
+static HWND g_hWnd = NULL;
 
+
+#define WM_USER_APPEND_TEXT (WM_USER + 1)
 
 static INT_PTR CALLBACK
 AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
@@ -52,15 +54,8 @@ AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 void
 appendText(LPCTSTR szText)
 {
-    if (!g_hEdit) {
-        return;
-    }
-
-    // http://support.microsoft.com/kb/109550
-    int ndx = GetWindowTextLength(g_hEdit);
-    SetFocus(g_hEdit);
-    SendMessage(g_hEdit, EM_SETSEL, (WPARAM) ndx, (LPARAM) ndx);
-    SendMessage(g_hEdit, EM_REPLACESEL, (WPARAM) 0, (LPARAM) szText);
+    char *szBuf = strdup(szText);
+    PostMessage(g_hWnd, WM_USER_APPEND_TEXT, (WPARAM) 0, (LPARAM) szBuf);
 }
 
 
@@ -71,7 +66,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
     {
         case WM_CREATE:
         {
-            g_hEdit = CreateWindow(
+            CreateWindow(
                 "EDIT",
                 "",
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY,
@@ -118,6 +113,16 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
             SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_SETFONT, (WPARAM) hFont, MAKELPARAM(TRUE, 0));
             break;
         }
+        case WM_USER_APPEND_TEXT: {
+            // http://support.microsoft.com/kb/109550
+            HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
+            int ndx = GetWindowTextLength(hEdit);
+            SetFocus(hEdit);
+            SendMessage(hEdit, EM_SETSEL, (WPARAM) ndx, (LPARAM) ndx);
+            SendMessage(hEdit, EM_REPLACESEL, (WPARAM) 0, lParam);
+            free((void *)lParam);
+            break;
+        }
         case WM_SIZE:
             if(wParam != SIZE_MINIMIZED)
                 MoveWindow(GetDlgItem(hwnd, IDC_MESSAGE), 0, 0, LOWORD(lParam), HIWORD(lParam), TRUE);
@@ -153,15 +158,15 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
                         if((hFile = CreateFile(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE)
                         {
-                            DWORD dwTextLength;
-                            dwTextLength = GetWindowTextLength(g_hEdit);
+                            HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
+                            DWORD dwTextLength = GetWindowTextLength(hEdit);
                             if(dwTextLength > 0) // No need to bother if there's no text.
                             {
                                 LPSTR pszText;
 
                                 if((pszText = GlobalAlloc(GPTR, dwTextLength + 1)) != NULL)
                                 {
-                                    if(GetWindowText(g_hEdit, pszText, dwTextLength + 1))
+                                    if(GetWindowText(hEdit, pszText, dwTextLength + 1))
                                     {
                                         DWORD dwWritten;
                                         if(WriteFile(hFile, pszText, dwTextLength, &dwWritten, NULL))
@@ -204,7 +209,6 @@ createDialog(void)
 {
     STARTUPINFO startinfo;
     WNDCLASSEX WndClass;
-    HWND hwnd;
 
     g_hInstance = GetModuleHandle(NULL);
     GetStartupInfoA(&startinfo);
@@ -227,7 +231,7 @@ createDialog(void)
         exit(EXIT_FAILURE);
     }
 
-    hwnd = CreateWindowEx(
+    g_hWnd = CreateWindowEx(
         WS_EX_CLIENTEDGE,
         WndClass.lpszClassName,
         "Dr. Mingw",
@@ -239,13 +243,13 @@ createDialog(void)
         NULL
     );
 
-    if (hwnd == NULL) {
+    if (g_hWnd == NULL) {
         ErrorMessageBox(_T("CreateWindowEx: %s"), LastErrorMessage());
         exit(EXIT_FAILURE);
     }
 
-    ShowWindow(hwnd, (startinfo.dwFlags & STARTF_USESHOWWINDOW) ? startinfo.wShowWindow : SW_SHOWDEFAULT);
-    UpdateWindow(hwnd);
+    ShowWindow(g_hWnd, (startinfo.dwFlags & STARTF_USESHOWWINDOW) ? startinfo.wShowWindow : SW_SHOWDEFAULT);
+    UpdateWindow(g_hWnd);
 }
 
 
