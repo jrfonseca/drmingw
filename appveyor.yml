@@ -1,0 +1,33 @@
+# See http://www.appveyor.com/docs/appveyor-yml
+
+version: '{build}'
+
+branches:
+  except:
+  - /^travis.*$/
+
+init:
+- git config --global core.autocrlf input
+
+shallow_clone: true
+
+environment:
+  MINGW: C:\Qt\Tools\mingw491_32
+  CTEST_OUTPUT_ON_FAILURE: 1
+  _NT_SYMBOL_PATH: srv*C:\symbols*http://msdl.microsoft.com/download/symbols
+  DBGHELP_URL: https://www.googledrive.com/host/0B1mEXoWzDm1McE81WFBKTzd5Z3M
+
+before_build:
+# CMake refuses to generate MinGW Makefiles if sh.exe is in the Path
+- del "%ProgramFiles(x86)%\Git\bin\sh.exe"
+- set Path=%MINGW%\bin;%Path%
+- mingw32-make --version
+- appveyor DownloadFile %DBGHELP_URL% -FileName dbghelp.7z
+- 7z x -othirdparty/dbghelp/ dbghelp.7z > nul:
+- cmake -H. -Bbuild -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR=thirdparty/dbghelp
+
+build_script:
+- cmake --build build --use-stderr --target all
+
+after_build:
+- cmake --build build --use-stderr --target test
