@@ -1,6 +1,7 @@
 add_library (exchndl MODULE
     exchndl.c
     exchndl.def
+    version.rc
 )
 
 add_dependencies (exchndl mgwhelp_implib)
