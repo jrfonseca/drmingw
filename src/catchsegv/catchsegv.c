@@ -237,6 +237,10 @@ main(int argc, char** argv)
 
     setDumpCallback(&outputCallback);
 
+    // Disable debug heap
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366705.aspx
+    SetEnvironmentVariableA("_NO_DEBUG_HEAP", "1");
+
     STARTUPINFO StartupInfo;
     ZeroMemory(&StartupInfo, sizeof StartupInfo);
     StartupInfo.cb = sizeof StartupInfo;
