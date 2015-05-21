@@ -252,6 +252,9 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 );
             }
 
+            // Find the process in the process list
+            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
+
             dwContinueStatus = DBG_EXCEPTION_NOT_HANDLED;
 
             if (DebugEvent.u.Exception.dwFirstChance) {
@@ -305,9 +308,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     break;
                 }
             }
-
-            // Find the process in the process list
-            pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
 
             // XXX: Deferred symbols don't get loaded without this
             SymRefreshModuleList(pProcessInfo->hProcess);
