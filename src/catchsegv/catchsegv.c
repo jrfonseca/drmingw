@@ -63,7 +63,7 @@ TerminateProcessById(DWORD dwProcessId)
         CloseHandle(hProcess);
     }
     if (!bTerminated) {
-       fprintf(stderr, "error: failed to interrupt target (0x%08lx)\n", GetLastError());
+       fprintf(stderr, "catchsegv: error: failed to interrupt target (0x%08lx)\n", GetLastError());
        exit(EXIT_FAILURE);
     }
 }
@@ -82,7 +82,12 @@ EnumWindowCallback(HWND hWnd, LPARAM lParam)
     GetWindowThreadProcessId(hWnd, &dwProcessId);
     if (dwProcessId == lParam) {
         if (GetWindowLong(hWnd, GWL_STYLE) & DS_MODALFRAME) {
-            fprintf(stderr, "message dialog detected\n");
+            char szWindowText[256];
+            if (GetWindowTextA(hWnd, szWindowText, _countof(szWindowText)) <= 0) {
+                szWindowText[0] = 0;
+            }
+
+            fprintf(stderr, "catchsegv: error: message dialog detected (%s)\n", szWindowText);
 
             g_TimerIgnore = TRUE;
 
