@@ -26,11 +26,9 @@ if (MSVC)
     add_definitions (-D_SCL_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
 endif ()
 
-add_custom_target (test_apps)
-
 macro (add_test_executable)
     add_executable (${ARGV})
-    add_dependencies (test_apps ${ARGV0})
+    add_dependencies (check ${ARGV0})
 endmacro ()
 
 add_test_executable (_exit3 _exit3.c)

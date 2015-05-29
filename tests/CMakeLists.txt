@@ -20,6 +20,7 @@ add_dependencies (mgwhelp_test mgwhelp_implib)
 target_link_libraries (mgwhelp_test
     ${MGWHELP_IMPLIB}
 )
+add_dependencies (check mgwhelp_test)
 add_test (
     NAME test_mgwhelp
     COMMAND ${WINE_COMMAND} $<TARGET_FILE:mgwhelp_test>
@@ -48,6 +49,7 @@ add_custom_target (mgwhelp_stripped_test ALL
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test.debug
 )
+add_dependencies (check mgwhelp_stripped_test)
 add_test (
     NAME test_mgwhelp_stripped
     COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
@@ -62,6 +64,7 @@ add_executable (exchndl_test
     exchndl_test.c
 )
 add_dependencies (exchndl_test exchndl)
+add_dependencies (check exchndl_test)
 add_test (
     NAME test_exchndl
     COMMAND ${WINE_COMMAND} $<TARGET_FILE:exchndl_test>
@@ -77,6 +80,7 @@ add_executable (addr2line_test
     addr2line_test.c
 )
 add_dependencies (addr2line_test addr2line)
+add_dependencies (check addr2line_test)
 add_test (
     NAME test_addr2line
     COMMAND ${WINE_COMMAND} $<TARGET_FILE:addr2line_test>
@@ -91,6 +95,7 @@ add_test (
 add_subdirectory (apps)
 find_package (PythonInterp 2.7)
 if (PYTHONINTERP_FOUND)
+    add_dependencies (check catchsegv)
     add_test (
         NAME test_catchsegv
         COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/apps/test.py $<TARGET_FILE:catchsegv> ${CMAKE_CURRENT_BINARY_DIR}/apps

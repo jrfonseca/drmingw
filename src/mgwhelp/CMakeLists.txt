@@ -46,7 +46,7 @@ else ()
 endif ()
 set (MGWHELP_IMPLIB ${MGWHELP_IMPLIB} PARENT_SCOPE)
 
-add_custom_target (mgwhelp_implib DEPENDS ${MGWHELP_IMPLIB})
+add_custom_target (mgwhelp_implib DEPENDS mgwhelp ${MGWHELP_IMPLIB})
 
 
 # Bundle DbgHelp and SymSrv DLLs
