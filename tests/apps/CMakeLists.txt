@@ -28,7 +28,9 @@ endif ()
 
 macro (add_test_executable)
     add_executable (${ARGV})
-    add_dependencies (check ${ARGV0})
+    if (NOT ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+        add_dependencies (check ${ARGV0})
+    endif ()
 endmacro ()
 
 add_test_executable (_exit3 _exit3.c)
