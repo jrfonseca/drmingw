@@ -148,7 +148,6 @@ dwarf_pe_init(HANDLE hFile,
 {
     int res = DW_DLV_ERROR;
     pe_access_object_t *pe_obj = 0;
-    Dwarf_Obj_Access_Interface *intfc = 0;
 
     /* Initialize the internal struct */
     pe_obj = (pe_access_object_t *)calloc(1, sizeof *pe_obj);
@@ -182,19 +181,6 @@ dwarf_pe_init(HANDLE hFile,
     );
     pe_obj->pStringTable = (PSTR)
         &pe_obj->pSymbolTable[pe_obj->pNtHeaders->FileHeader.NumberOfSymbols];
-
-    /* Initialize the interface struct */
-    intfc = (Dwarf_Obj_Access_Interface *)calloc(1, sizeof *intfc);
-    if (!intfc) {
-        goto no_intfc;
-    }
-    intfc->object = pe_obj;
-    intfc->methods = &pe_methods;
-
-    res = dwarf_object_init(intfc, errhand, errarg, ret_dbg, error);
-    if (res == DW_DLV_OK) {
-        return res;
-    }
 
     // https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
     Dwarf_Unsigned section_count = pe_get_section_count(pe_obj);
@@ -238,8 +224,26 @@ dwarf_pe_init(HANDLE hFile,
         }
     }
 
+    if (res != DW_DLV_OK) {
+        Dwarf_Obj_Access_Interface *intfc;
 
-    free(intfc);
+        /* Initialize the interface struct */
+        intfc = (Dwarf_Obj_Access_Interface *)calloc(1, sizeof *intfc);
+        if (!intfc) {
+            goto no_intfc;
+        }
+        intfc->object = pe_obj;
+        intfc->methods = &pe_methods;
+
+        res = dwarf_object_init(intfc, errhand, errarg, ret_dbg, error);
+        if (res == DW_DLV_OK) {
+            OutputDebug("MGWHELP: %s is OK!!\n", image);
+            return res;
+        }
+
+        free(intfc);
+    }
+
 no_intfc:
     ;
 no_view_of_file:
