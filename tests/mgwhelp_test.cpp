@@ -25,6 +25,28 @@
 #include <dbghelp.h>
 
 
+static bool
+comparePath(const char *s1, const char *s2)
+{
+    while (true) {
+        char c1 = *s1++;
+        char c2 = *s2++;
+        if (c1 == '/') {
+            c1 = '\\';
+        }
+        if (c2 == '/') {
+            c2 = '\\';
+        }
+        if (c2 != c1) {
+            return false;
+        }
+        if (c1 == 0) {
+            return true;
+        }
+    }
+}
+
+
 static void
 checkSym(HANDLE hProcess,
          PVOID pvSymbol,
@@ -81,7 +103,7 @@ checkSymLine(HANDLE hProcess,
     if (!ok) {
         test_diagnostic_last_error();
     } else {
-        ok = strcmp(Line.FileName, szFileName) == 0;
+        ok = comparePath(Line.FileName, szFileName);
         test_line(ok, "SymGetLineFromAddr64(&%s).FileName", szSymbolName);
         if (!ok) {
             test_diagnostic("FileName = \"%s\" != \"%s\"",

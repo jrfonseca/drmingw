@@ -55,6 +55,19 @@ g_szPatterns[] = {
 };
 
 
+static void
+normalizePath(char *s)
+{
+    char c;
+    while ((c = *s) != '\0') {
+        if (c == '/') {
+            *s = '\\';
+        }
+        ++s;
+    }
+}
+
+
 int
 main(int argc, char **argv)
 {
@@ -77,6 +90,8 @@ main(int argc, char **argv)
             test_line(true, "longjmp");
         }
 
+        normalizePath(g_szExceptionPattern);
+
         FILE *fp = fopen(szReport, "rt");
         ok = fp != NULL;
         test_line(ok, "fopen(\"%s\")", szReport);
@@ -88,6 +103,8 @@ main(int argc, char **argv)
             char szLine[512];
 
             while (fgets(szLine, sizeof szLine, fp)) {
+                normalizePath(szLine);
+
                 for (unsigned i = 0; i < nPatterns; ++i) {
                     if (strstr(szLine, g_szPatterns[i])) {
                         found[i] = true;
