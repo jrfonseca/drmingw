@@ -203,7 +203,7 @@ dwarf_pe_init(HANDLE hFile,
             char *debugImage;
             if (pSeparator) {
                 size_t cbDir = pSeparator - image;
-                size_t cbFile = strlen(debuglink);
+                size_t cbFile = strnlen(debuglink, doas.size);
                 debugImage = malloc(cbDir + cbFile + 1);
                 memcpy(debugImage, image, cbDir);
                 memcpy(debugImage + cbDir, debuglink, cbFile + 1);
