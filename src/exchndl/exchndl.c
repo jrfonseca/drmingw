@@ -32,16 +32,16 @@
 
 
 // Declare the static variables
-static LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter = NULL;
-static TCHAR szLogFileName[MAX_PATH] = _T("");
-static HANDLE hReportFile;
+static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
+static TCHAR g_szLogFileName[MAX_PATH] = _T("");
+static HANDLE g_hReportFile;
 
 static void
 writeReport(const char *szText)
 {
     if (REPORT_FILE) {
         DWORD cbWritten;
-        WriteFile(hReportFile, szText, strlen(szText), &cbWritten, 0);
+        WriteFile(g_hReportFile, szText, strlen(szText), &cbWritten, 0);
     } else {
         OutputDebugStringA(szText);
     }
@@ -105,8 +105,8 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
         fuOldErrorMode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
         if (REPORT_FILE) {
-            hReportFile = CreateFile(
-                szLogFileName,
+            g_hReportFile = CreateFile(
+                g_szLogFileName,
                 GENERIC_WRITE,
                 0,
                 0,
@@ -115,13 +115,13 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
                 0
             );
 
-            if (hReportFile) {
-                SetFilePointer(hReportFile, 0, 0, FILE_END);
+            if (g_hReportFile) {
+                SetFilePointer(g_hReportFile, 0, 0, FILE_END);
 
                 GenerateExceptionReport(pExceptionInfo);
 
-                CloseHandle(hReportFile);
-                hReportFile = 0;
+                CloseHandle(g_hReportFile);
+                g_hReportFile = 0;
             }
         } else {
             GenerateExceptionReport(pExceptionInfo);
@@ -130,8 +130,8 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
         SetErrorMode(fuOldErrorMode);
     }
 
-    if (prevExceptionFilter)
-        return prevExceptionFilter(pExceptionInfo);
+    if (g_prevExceptionFilter)
+        return g_prevExceptionFilter(pExceptionInfo);
     else
         return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -139,36 +139,36 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 static void OnStartup(void)
 {
     // Install the unhandled exception filter function
-    prevExceptionFilter = SetUnhandledExceptionFilter(TopLevelExceptionFilter);
+    g_prevExceptionFilter = SetUnhandledExceptionFilter(TopLevelExceptionFilter);
 
     setDumpCallback(writeReport);
 
     if (REPORT_FILE) {
         // Figure out what the report file will be named, and store it away
-        if(GetModuleFileName(NULL, szLogFileName, MAX_PATH))
+        if(GetModuleFileName(NULL, g_szLogFileName, MAX_PATH))
         {
             LPTSTR lpszDot;
 
             // Look for the '.' before the "EXE" extension.  Replace the extension
             // with "RPT"
-            if((lpszDot = _tcsrchr(szLogFileName, _T('.'))))
+            if((lpszDot = _tcsrchr(g_szLogFileName, _T('.'))))
             {
                 lpszDot++;    // Advance past the '.'
                 _tcscpy(lpszDot, _T("RPT"));    // "RPT" -> "Report"
             }
             else
-                _tcscat(szLogFileName, _T(".RPT"));
+                _tcscat(g_szLogFileName, _T(".RPT"));
         }
-        else if(GetWindowsDirectory(szLogFileName, MAX_PATH))
+        else if(GetWindowsDirectory(g_szLogFileName, MAX_PATH))
         {
-            _tcscat(szLogFileName, _T("EXCHNDL.RPT"));
+            _tcscat(g_szLogFileName, _T("EXCHNDL.RPT"));
         }
     }
 }
 
 static void OnExit(void)
 {
-    SetUnhandledExceptionFilter(prevExceptionFilter);
+    SetUnhandledExceptionFilter(g_prevExceptionFilter);
 }
 
 BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
