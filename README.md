@@ -10,6 +10,9 @@ The functionality to resolve symbols and dump stack backtraces is provided as DL
 Recent changes
 ==============
 
+[![Build Status](https://travis-ci.org/jrfonseca/drmingw.svg?branch=master)](https://travis-ci.org/jrfonseca/drmingw)
+[![Build status](https://ci.appveyor.com/api/projects/status/9q3o5w85s5o5yup5?svg=true)](https://ci.appveyor.com/project/jrfonseca/drmingw)
+
 * [Summary of changes between releases](https://github.com/jrfonseca/drmingw/releases)
 
 * [Detailed changelog](https://github.com/jrfonseca/drmingw/commits/master)
