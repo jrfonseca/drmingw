@@ -133,6 +133,10 @@ def test((catchsegvExe, testExe, testSrc)):
             if not ok:
                 result = False
     
+    if not result and not options.verbose:
+        sys.stderr.write(stderr)
+        sys.stderr.write(stdout)
+
     return testExe, result
 
 
