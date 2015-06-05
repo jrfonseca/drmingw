@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include "exchndl.h"
+
 #include <assert.h>
 #include <windows.h>
 #include <tchar.h>
@@ -26,6 +28,7 @@
 
 #include "symbols.h"
 #include "log.h"
+#include "outdbg.h"
 
 
 #define REPORT_FILE 1
@@ -171,9 +174,25 @@ static void OnExit(void)
     SetUnhandledExceptionFilter(g_prevExceptionFilter);
 }
 
-BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
 
-BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
+BOOL APIENTRY
+SetLogFileNameA(const char *szLogFileName)
+{
+    size_t size = _countof(g_szLogFileName);
+    if (!szLogFileName ||
+        _tcslen(szLogFileName) > size - 1) {
+        OutputDebug("EXCHNDL: specified log name is too long or invalid (%s)\n",
+                    szLogFileName);
+        return FALSE;
+    }
+    _tcsncpy(g_szLogFileName, szLogFileName, size - 1);
+    g_szLogFileName[size - 1] = _T('\0');
+    return TRUE;
+}
+
+
+BOOL APIENTRY
+DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 {
     switch (dwReason)
     {

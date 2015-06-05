@@ -101,7 +101,9 @@ You can use ExcHndl by:
 
     * compiling and linking `exchndl2.cpp` source file
 
-    * or by explicitly calling `LoadLibrary("exchndl.dll")`
+    * or by explicitly calling `LoadLibraryA("exchndl.dll")`
+
+  * you can also override the report location by invoking the exported `SetLogFileNameA` entry-point.
 
 Example
 -------

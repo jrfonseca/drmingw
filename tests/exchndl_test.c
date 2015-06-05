@@ -79,11 +79,24 @@ main(int argc, char **argv)
 
     SetUnhandledExceptionFilter(topLevelExceptionHandler);
 
-    ok = LoadLibraryA("exchndl.dll");
+    HMODULE hModule = LoadLibraryA("exchndl.dll");
+    ok = hModule != NULL;
     test_line(ok, "LoadLibraryA(\"exchndl.dll\")");
     if (!ok) {
         test_diagnostic_last_error();
+        test_exit();
+    }
+
+    typedef BOOL (APIENTRY * PFN_SETLOGFILENAMEA)(const char *szLogFileName);
+    PFN_SETLOGFILENAMEA pfnSetLogFileNameA = (PFN_SETLOGFILENAMEA)GetProcAddress(hModule, "SetLogFileNameA");
+    ok = pfnSetLogFileNameA != NULL;
+    test_line(ok, "GetProcAddress(\"SetLogFileNameA\")");
+    if (!ok) {
+        test_diagnostic_last_error();
     } else {
+        ok = pfnSetLogFileNameA(szReport);
+        test_line(ok, "SetLogFileNameA(\"%s\")", szReport);
+
         if (!setjmp(g_JmpBuf) ) {
             _snprintf(g_szExceptionPattern, sizeof g_szExceptionPattern, "  %s!%s  [%s @ %u]", PROG_NAME ".exe", __FUNCTION__, __FILE__, __LINE__); *((int *)0) = 0; test_line(false, "longjmp"); exit(1);
         } else {
@@ -118,6 +131,12 @@ main(int argc, char **argv)
 
             fclose(fp);
         }
+    }
+
+    ok = FreeLibrary(hModule);
+    test_line(ok, "FreeLibrary()");
+    if (!ok) {
+        test_diagnostic_last_error();
     }
 
     test_exit();
