@@ -86,6 +86,9 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
             assert(0);
         }
     }
+
+    lprintf(_T("DrMingw %u.%u.%u\r\n\r\n"),
+            PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR, PACKAGE_VERSION_PATCH);
 }
 
 #include <stdio.h>
