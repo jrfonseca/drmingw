@@ -39,7 +39,7 @@ BOOL WINAPI IsProcessorFeaturePresent(DWORD ProcessorFeature);
 
 #define FAST_FAIL_FATAL_APP_EXIT 7
 
-NO_RETURN FORCE_INLINE
+static NO_RETURN FORCE_INLINE
 void __fastfail(unsigned int code) {
     asm volatile (
         "int $0x29"
@@ -62,5 +62,3 @@ main(int argc, char *argv[])
 
     return 0;
 }
-
-// CHECK_EXIT_CODE: 3
