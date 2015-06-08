@@ -1,6 +1,6 @@
 /**************************************************************************
  *
- * Copyright 2009 Jose Fonseca
+ * Copyright 2015 Jose Fonseca
  * All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,20 +25,42 @@
  *
  **************************************************************************/
 
-#pragma once
+// http://www.alex-ionescu.com/?p=69
 
-#include <stdlib.h>
+#include <windows.h>
 
-#define LINE_BARRIER rand();
+#include "macros.h"
 
-#if defined(__GNUC__)
-#  define NO_INLINE __attribute__ ((noinline))
-#  define FORCE_INLINE inline __attribute__((always_inline))
-#  define NO_RETURN __attribute__((__noreturn__))
-#elif defined(_MSC_VER)
-#  define NO_INLINE __declspec(noinline)
-#  define FORCE_INLINE __forceinline
-#  define NO_RETURN __declspec(noreturn)
-#else
-#error Unsupported compiler
+#ifdef __MINGW32__
+
+#define PF_FASTFAIL_AVAILABLE 23
+
+BOOL WINAPI IsProcessorFeaturePresent(DWORD ProcessorFeature);
+
+#define FAST_FAIL_FATAL_APP_EXIT 7
+
+NO_RETURN FORCE_INLINE
+void __fastfail(unsigned int code) {
+    asm volatile (
+        "int $0x29"
+         :
+         : "c" (code)
+     );
+    __builtin_unreachable();
+}
+
 #endif
+
+int
+main(int argc, char *argv[])
+{
+    if (!IsProcessorFeaturePresent(PF_FASTFAIL_AVAILABLE)) {
+        return 3;
+    }
+
+    __fastfail(FAST_FAIL_FATAL_APP_EXIT);  LINE_BARRIER
+
+    return 0;
+}
+
+// CHECK_EXIT_CODE: 3
