@@ -127,4 +127,6 @@ else ()
     set (CPACK_GENERATOR "7Z")
 endif ()
 
+set (CPACK_STRIP_FILES ON)
+
 include(CPack)
