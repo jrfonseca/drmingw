@@ -29,6 +29,22 @@
 
 #include "macros.h"
 
+#ifdef __MINGW32__
+
+#undef DbgRaiseAssertionFailure
+
+static NO_RETURN FORCE_INLINE
+void DbgRaiseAssertionFailure(void) {
+    asm volatile (
+        "int $0x2c"
+    );
+    __builtin_unreachable();
+}
+
+#endif
+
+#include "macros.h"
+
 int
 main(int argc, char *argv[])
 {
