@@ -63,7 +63,7 @@ def test((catchsegvExe, testExe, testSrc)):
     cmd = [
         catchsegvExe,
         '-v',
-        '-t', '5',
+        '-t', '10',
         testExe
     ]
 
