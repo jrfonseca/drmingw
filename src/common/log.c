@@ -34,6 +34,14 @@
 #include "log.h"
 
 
+#ifndef STATUS_CPP_EH_EXCEPTION
+#define STATUS_CPP_EH_EXCEPTION 0xE06D7363
+#endif
+#ifndef STATUS_CLR_EXCEPTION
+#define STATUS_CLR_EXCEPTION 0xE0434f4D
+#endif
+
+
 static void
 defaultCallback(const char *s)
 {
@@ -334,38 +342,27 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
  * - http://www.microsoft.com/msj/0497/hood/hood0497.aspx
  * - http://stackoverflow.com/questions/321898/how-to-get-the-name-description-of-an-exception
  * - http://www.tech-archive.net/Archive/Development/microsoft.public.win32.programmer.kernel/2006-05/msg00683.html
+ *
+ * See also:
+ * - https://msdn.microsoft.com/en-us/library/windows/hardware/ff558784.aspx
  */
 static LPCTSTR
 getExceptionString(DWORD ExceptionCode)
 {
     switch (ExceptionCode) {
 
-    case EXCEPTION_GUARD_PAGE: // 0x80000001
-        return _T("Guard Page Exception");
-    case EXCEPTION_DATATYPE_MISALIGNMENT: // 0x80000002
-        return _T("Alignment Fault");
-    case EXCEPTION_BREAKPOINT: // 0x80000003
-    case STATUS_WX86_BREAKPOINT: // 0x4000001F
-        return _T("Breakpoint");
-    case EXCEPTION_SINGLE_STEP: // 0x80000004
-        return _T("Single Step");
-
     case EXCEPTION_ACCESS_VIOLATION: // 0xC0000005
         return _T("Access Violation");
     case EXCEPTION_IN_PAGE_ERROR: // 0xC0000006
         return _T("In Page Error");
-
     case EXCEPTION_INVALID_HANDLE: // 0xC0000008
         return _T("Invalid Handle");
-
     case EXCEPTION_ILLEGAL_INSTRUCTION: // 0xC000001D
         return _T("Illegal Instruction");
-
     case EXCEPTION_NONCONTINUABLE_EXCEPTION: // 0xC0000025
         return _T("Cannot Continue");
     case EXCEPTION_INVALID_DISPOSITION: // 0xC0000026
         return _T("Invalid Disposition");
-
     case EXCEPTION_ARRAY_BOUNDS_EXCEEDED: // 0xC000008C
         return _T("Array bounds exceeded");
     case EXCEPTION_FLT_DENORMAL_OPERAND: // 0xC000008D
@@ -388,13 +385,29 @@ getExceptionString(DWORD ExceptionCode)
         return _T("Integer overflow");
     case EXCEPTION_PRIV_INSTRUCTION: // 0xC0000096
         return _T("Privileged instruction");
-
     case EXCEPTION_STACK_OVERFLOW: // 0xC00000FD
         return _T("Stack Overflow");
-
     case EXCEPTION_POSSIBLE_DEADLOCK: // 0xC0000194
         return _T("Possible deadlock condition");
+    case STATUS_ASSERTION_FAILURE: // 0xC0000420
+        return _T("Assertion failure");
 
+    case STATUS_CLR_EXCEPTION: // 0xE0434f4D
+        return _T("CLR exception");
+    case STATUS_CPP_EH_EXCEPTION: // 0xE06D7363
+        return _T("C++ exception handling exception");
+
+    case EXCEPTION_GUARD_PAGE: // 0x80000001
+        return _T("Guard Page Exception");
+    case EXCEPTION_DATATYPE_MISALIGNMENT: // 0x80000002
+        return _T("Alignment Fault");
+    case EXCEPTION_BREAKPOINT: // 0x80000003
+        return _T("Breakpoint");
+    case EXCEPTION_SINGLE_STEP: // 0x80000004
+        return _T("Single Step");
+
+    case STATUS_WX86_BREAKPOINT: // 0x4000001F
+        return _T("Breakpoint");
     case DBG_TERMINATE_THREAD: // 0x40010003
         return _T("Terminate Thread");
     case DBG_TERMINATE_PROCESS: // 0x40010004
