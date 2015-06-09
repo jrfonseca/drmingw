@@ -87,8 +87,20 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
         }
     }
 
-    lprintf(_T("DrMingw %u.%u.%u\r\n\r\n"),
+    // TODO: Use GetFileVersionInfo on kernel32.dll as recommended on
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724429.aspx
+    // for Windows 10 detection?
+    OSVERSIONINFO osvi;
+    ZeroMemory(&osvi, sizeof osvi);
+    osvi.dwOSVersionInfoSize = sizeof osvi;
+    GetVersionEx(&osvi);
+    lprintf(_T("Windows %lu.%lu.%lu\r\n"),
+            osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
+
+    lprintf(_T("DrMingw %u.%u.%u\r\n"),
             PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR, PACKAGE_VERSION_PATCH);
+
+    lprintf(_T("\r\n"));
 }
 
 #include <stdio.h>
