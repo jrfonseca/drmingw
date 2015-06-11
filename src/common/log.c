@@ -81,6 +81,8 @@ int lprintf(const char * format, ...)
 static BOOL
 dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber);
 
+static BOOL
+getModuleVersionInfo(LPCTSTR szModule, DWORD *dwVInfo);
 
 #define MAX_SYM_NAME_SIZE 512
 
@@ -287,7 +289,19 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         if (hModule &&
             GetModuleFileNameEx(hProcess, hModule, szModule, MAX_PATH)) {
 
-            lprintf( _T("  %s"), getBaseName(szModule));
+            DWORD dwVInfo[4];
+            if (getModuleVersionInfo(szModule, dwVInfo)) {
+                lprintf(
+                    _T("  %s [%lu.%lu.%lu.%lu]"),
+                    getBaseName(szModule),
+                    dwVInfo[0],
+                    dwVInfo[1],
+                    dwVInfo[2],
+                    dwVInfo[3]
+                );
+            } else {
+                lprintf( _T("  %s"), getBaseName(szModule));
+            }
 
             bSymbol = GetSymFromAddr(hProcess, AddrPC + nudge, szSymName, MAX_SYM_NAME_SIZE);
             if (bSymbol) {
@@ -542,4 +556,29 @@ dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber)
 
     fclose(fp);
     return TRUE;
+}
+
+static BOOL
+getModuleVersionInfo(LPCTSTR szModule, DWORD *dwVInfo)
+{
+    DWORD dummy, size;
+    BOOL success = FALSE;
+
+    size = GetFileVersionInfoSize(szModule, &dummy);
+    if (size > 0) {
+        LPVOID pVer = malloc(size);
+        ZeroMemory(pVer, size);
+        if (GetFileVersionInfo(szModule, 0, size, pVer)) {
+            VS_FIXEDFILEINFO *ffi;
+            if (VerQueryValue(pVer, "\\", (LPVOID *) &ffi,  (UINT *) &dummy)) {
+                dwVInfo[0] = ffi->dwFileVersionMS >> 16;
+                dwVInfo[1] = ffi->dwFileVersionMS & 0xFFFF;
+                dwVInfo[2] = ffi->dwFileVersionLS >> 16;
+                dwVInfo[3] = ffi->dwFileVersionLS & 0xFFFF;
+                success = TRUE;
+            }
+        }
+        free(pVer);
+    }
+    return success;
 }
