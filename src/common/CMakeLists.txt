@@ -6,4 +6,5 @@ add_library (common STATIC
 
 target_link_libraries (common LINK_PRIVATE
     psapi
+    version
 )
