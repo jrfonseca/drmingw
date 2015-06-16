@@ -61,6 +61,7 @@ if (HAVE_STATIC_LIBSTDCXX_FLAG)
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    add_linker_flags (-Wl,--enable-stdcall-fixup)
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--kill-at")
 endif ()
 

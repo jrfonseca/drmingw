@@ -60,10 +60,12 @@ add_test (
 # test_exchndl
 #
 
+include_directories (${CMAKE_SOURCE_DIR}/src/exchndl)
 add_executable (exchndl_test
     exchndl_test.c
 )
 add_dependencies (exchndl_test exchndl)
+target_link_libraries (exchndl_test $<TARGET_FILE:exchndl>)
 add_dependencies (check exchndl_test)
 add_test (
     NAME test_exchndl

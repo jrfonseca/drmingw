@@ -26,6 +26,8 @@
 
 #include <windows.h>
 
+#include "exchndl.h"
+
 
 #define PROG_NAME "exchndl_test"
 
@@ -79,64 +81,42 @@ main(int argc, char **argv)
 
     SetUnhandledExceptionFilter(topLevelExceptionHandler);
 
-    HMODULE hModule = LoadLibraryA("exchndl.dll");
-    ok = hModule != NULL;
-    test_line(ok, "LoadLibraryA(\"exchndl.dll\")");
-    if (!ok) {
-        test_diagnostic_last_error();
-        test_exit();
+    ok = SetLogFileNameA(szReport);
+    test_line(ok, "SetLogFileNameA(\"%s\")", szReport);
+
+    if (!setjmp(g_JmpBuf) ) {
+        _snprintf(g_szExceptionPattern, sizeof g_szExceptionPattern, "  %s!%s  [%s @ %u]", PROG_NAME ".exe", __FUNCTION__, __FILE__, __LINE__); *((int *)0) = 0; test_line(false, "longjmp"); exit(1);
+    } else {
+        test_line(true, "longjmp");
     }
 
-    typedef BOOL (APIENTRY * PFN_SETLOGFILENAMEA)(const char *szLogFileName);
-    PFN_SETLOGFILENAMEA pfnSetLogFileNameA = (PFN_SETLOGFILENAMEA)GetProcAddress(hModule, "SetLogFileNameA");
-    ok = pfnSetLogFileNameA != NULL;
-    test_line(ok, "GetProcAddress(\"SetLogFileNameA\")");
-    if (!ok) {
-        test_diagnostic_last_error();
-    } else {
-        ok = pfnSetLogFileNameA(szReport);
-        test_line(ok, "SetLogFileNameA(\"%s\")", szReport);
+    normalizePath(g_szExceptionPattern);
 
-        if (!setjmp(g_JmpBuf) ) {
-            _snprintf(g_szExceptionPattern, sizeof g_szExceptionPattern, "  %s!%s  [%s @ %u]", PROG_NAME ".exe", __FUNCTION__, __FILE__, __LINE__); *((int *)0) = 0; test_line(false, "longjmp"); exit(1);
-        } else {
-            test_line(true, "longjmp");
-        }
+    FILE *fp = fopen(szReport, "rt");
+    ok = fp != NULL;
+    test_line(ok, "fopen(\"%s\")", szReport);
+    if (ok) {
+        const unsigned nPatterns = _countof(g_szPatterns);
+        bool found[nPatterns];
+        ZeroMemory(found, sizeof found);
 
-        normalizePath(g_szExceptionPattern);
+        char szLine[512];
 
-        FILE *fp = fopen(szReport, "rt");
-        ok = fp != NULL;
-        test_line(ok, "fopen(\"%s\")", szReport);
-        if (ok) {
-            const unsigned nPatterns = _countof(g_szPatterns);
-            bool found[nPatterns];
-            ZeroMemory(found, sizeof found);
-
-            char szLine[512];
-
-            while (fgets(szLine, sizeof szLine, fp)) {
-                normalizePath(szLine);
-
-                for (unsigned i = 0; i < nPatterns; ++i) {
-                    if (strstr(szLine, g_szPatterns[i])) {
-                        found[i] = true;
-                    }
-                }
-            }
+        while (fgets(szLine, sizeof szLine, fp)) {
+            normalizePath(szLine);
 
             for (unsigned i = 0; i < nPatterns; ++i) {
-                test_line(found[i], "strstr(\"%s\")", g_szPatterns[i]);
+                if (strstr(szLine, g_szPatterns[i])) {
+                    found[i] = true;
+                }
             }
-
-            fclose(fp);
         }
-    }
 
-    ok = FreeLibrary(hModule);
-    test_line(ok, "FreeLibrary()");
-    if (!ok) {
-        test_diagnostic_last_error();
+        for (unsigned i = 0; i < nPatterns; ++i) {
+            test_line(found[i], "strstr(\"%s\")", g_szPatterns[i]);
+        }
+
+        fclose(fp);
     }
 
     test_exit();
