@@ -87,6 +87,8 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
         }
     }
 
+    dumpModules(hProcess);
+
     // TODO: Use GetFileVersionInfo on kernel32.dll as recommended on
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724429.aspx
     // for Windows 10 detection?

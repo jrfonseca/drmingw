@@ -23,6 +23,7 @@
 #include <psapi.h>
 #include <dbghelp.h>
 #include <ntstatus.h>
+#include <tlhelp32.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -81,8 +82,6 @@ int lprintf(const char * format, ...)
 static BOOL
 dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber);
 
-static BOOL
-getModuleVersionInfo(LPCTSTR szModule, DWORD *dwVInfo);
 
 #define MAX_SYM_NAME_SIZE 512
 
@@ -289,19 +288,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         if (hModule &&
             GetModuleFileNameEx(hProcess, hModule, szModule, MAX_PATH)) {
 
-            DWORD dwVInfo[4];
-            if (getModuleVersionInfo(szModule, dwVInfo)) {
-                lprintf(
-                    _T("  %s [%lu.%lu.%lu.%lu]"),
-                    getBaseName(szModule),
-                    dwVInfo[0],
-                    dwVInfo[1],
-                    dwVInfo[2],
-                    dwVInfo[3]
-                );
-            } else {
-                lprintf( _T("  %s"), getBaseName(szModule));
-            }
+            lprintf( _T("  %s"), getBaseName(szModule));
 
             bSymbol = GetSymFromAddr(hProcess, AddrPC + nudge, szSymName, MAX_SYM_NAME_SIZE);
             if (bSymbol) {
@@ -558,6 +545,7 @@ dumpSourceCode(LPCTSTR lpFileName, DWORD dwLineNumber)
     return TRUE;
 }
 
+
 static BOOL
 getModuleVersionInfo(LPCTSTR szModule, DWORD *dwVInfo)
 {
@@ -581,4 +569,39 @@ getModuleVersionInfo(LPCTSTR szModule, DWORD *dwVInfo)
         free(pVer);
     }
     return success;
+}
+
+
+void
+dumpModules(HANDLE hProcess)
+{
+
+    HANDLE hModuleSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetProcessId(hProcess));
+    if (hModuleSnap == INVALID_HANDLE_VALUE) {
+        return;
+    }
+
+    MODULEENTRY32 me32;
+    me32.dwSize = sizeof me32;
+    if (Module32First(hModuleSnap, &me32)) {
+        do  {
+            const char *szBaseName = getBaseName(me32.szExePath);
+            DWORD dwVInfo[4];
+            if (getModuleVersionInfo(me32.szExePath, dwVInfo)) {
+                lprintf(
+                    _T("%-12s\t%lu.%lu.%lu.%lu\n"),
+                    szBaseName,
+                    dwVInfo[0],
+                    dwVInfo[1],
+                    dwVInfo[2],
+                    dwVInfo[3]
+                );
+            } else {
+                lprintf( _T("%s\n"), szBaseName);
+            }
+        } while (Module32Next(hModuleSnap, &me32));
+        lprintf("\n");
+    }
+
+    CloseHandle(hModuleSnap);
 }
