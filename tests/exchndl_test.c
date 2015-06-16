@@ -32,12 +32,15 @@
 #define PROG_NAME "exchndl_test"
 
 
+static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
 static jmp_buf g_JmpBuf;
 
 
 static LONG WINAPI
 topLevelExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 {
+    g_prevExceptionFilter(pExceptionInfo);
+
     (void)pExceptionInfo;
     longjmp(g_JmpBuf, 1);
 }
@@ -79,7 +82,7 @@ main(int argc, char **argv)
 
     DeleteFileA(szReport);
 
-    SetUnhandledExceptionFilter(topLevelExceptionHandler);
+    g_prevExceptionFilter = SetUnhandledExceptionFilter(topLevelExceptionHandler);
 
     ok = SetLogFileNameA(szReport);
     test_line(ok, "SetLogFileNameA(\"%s\")", szReport);
