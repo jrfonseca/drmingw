@@ -39,6 +39,13 @@ add_subdirectory (thirdparty/dwarf)
 
 include (CheckCXXCompilerFlag)
 
+macro (add_linker_flags)
+    string (REPLACE ";" " " _FLAGS "${ARGV}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${_FLAGS}")
+    set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${_FLAGS}")
+    set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${_FLAGS}")
+endmacro ()
+
 # Adjust warnings
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror=implicit-function-declaration -Werror=missing-prototypes -std=gnu99")
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror=missing-prototypes")
@@ -46,15 +53,11 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror=missing-prototypes")
 # Avoid depending on MinGW runtime DLLs
 check_cxx_compiler_flag (-static-libgcc HAVE_STATIC_LIBGCC_FLAG)
 if (HAVE_STATIC_LIBGCC_FLAG)
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc")
-    set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc")
-    set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libgcc")
+    add_linker_flags (-static-libgcc)
 endif ()
 check_cxx_compiler_flag (-static-libstdc++ HAVE_STATIC_LIBSTDCXX_FLAG)
 if (HAVE_STATIC_LIBSTDCXX_FLAG)
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++")
-    set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libstdc++")
-    set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -static-libstdc++")
+    add_linker_flags (-static-libstdc++)
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 4)
