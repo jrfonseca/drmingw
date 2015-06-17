@@ -60,7 +60,10 @@ add_test (
 # test_exchndl
 #
 
-include_directories (${CMAKE_SOURCE_DIR}/src/exchndl)
+include_directories (
+    ${CMAKE_SOURCE_DIR}/src/exchndl
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+)
 add_executable (exchndl_test
     exchndl_test.c
 )

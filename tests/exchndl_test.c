@@ -17,7 +17,7 @@
  */
 
 
-#include "tap.h"
+#include "exchndl.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -26,7 +26,8 @@
 
 #include <windows.h>
 
-#include "exchndl.h"
+#include "macros.h"
+#include "tap.h"
 
 
 #define PROG_NAME "exchndl_test"
@@ -46,7 +47,8 @@ topLevelExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 }
 
 
-static char g_szExceptionPattern[512] = {0};
+static char g_szExceptionFunctionPattern[512] = {0};
+static char g_szExceptionLinePattern[512] = {0};
 
 static const char *
 g_szPatterns[] = {
@@ -56,7 +58,8 @@ g_szPatterns[] = {
 #else
     " Writing to location 00000000",
 #endif
-    g_szExceptionPattern
+    g_szExceptionFunctionPattern,
+    g_szExceptionLinePattern
 };
 
 
@@ -87,13 +90,17 @@ main(int argc, char **argv)
     ok = SetLogFileNameA(szReport);
     test_line(ok, "SetLogFileNameA(\"%s\")", szReport);
 
+    _snprintf(g_szExceptionFunctionPattern, sizeof g_szExceptionFunctionPattern, " %s!%s ", PROG_NAME ".exe", __FUNCTION__);
+
     if (!setjmp(g_JmpBuf) ) {
-        _snprintf(g_szExceptionPattern, sizeof g_szExceptionPattern, "  %s!%s  [%s @ %u]", PROG_NAME ".exe", __FUNCTION__, __FILE__, __LINE__); *((int *)0) = 0; test_line(false, "longjmp"); exit(1);
+        _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "[%s @ %u]",  __FILE__, __LINE__); *((int *)0) = 0; LINE_BARRIER
+        test_line(false, "longjmp"); exit(1);
     } else {
         test_line(true, "longjmp");
     }
 
-    normalizePath(g_szExceptionPattern);
+    normalizePath(g_szExceptionFunctionPattern);
+    normalizePath(g_szExceptionLinePattern);
 
     FILE *fp = fopen(szReport, "rt");
     ok = fp != NULL;
