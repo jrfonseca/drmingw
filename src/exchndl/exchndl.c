@@ -80,6 +80,17 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
         PCONTEXT pContext = pExceptionInfo->ContextRecord;
 
+        // XXX: In 64-bits WINE we can get context record that don't match the
+        // exception record somehow
+#ifdef _WIN64
+        PVOID ip = (PVOID)pContext->Rip;
+#else
+        PVOID ip = (PVOID)pContext->Eip;
+#endif
+        if (pExceptionRecord->ExceptionAddress != ip) {
+            lprintf("warning: inconsistent exception context record\n");
+        }
+
         dumpStack(hProcess, GetCurrentThread(), pContext);
 
         if (!SymCleanup(hProcess)) {
