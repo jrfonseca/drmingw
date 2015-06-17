@@ -117,6 +117,14 @@ main(int argc, char **argv)
 
         for (unsigned i = 0; i < nPatterns; ++i) {
             test_line(found[i], "strstr(\"%s\")", g_szPatterns[i]);
+            ok = ok && found[i];
+        }
+
+        if (!ok) {
+            fseek(fp, 0, SEEK_SET);
+            while (fgets(szLine, sizeof szLine, fp)) {
+                fprintf(stderr, "%s", szLine);
+            }
         }
 
         fclose(fp);
