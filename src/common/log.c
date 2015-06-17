@@ -172,6 +172,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
 
     if (pTargetContext) {
         assert(hProcess == GetCurrentProcess());
+        assert((pTargetContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
     }
 
 #ifdef _WIN64
@@ -249,10 +250,10 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
                 hThread,
                 &StackFrame,
                 pContext,
-                NULL,
+                NULL, // ReadMemoryRoutine
                 SymFunctionTableAccess64,
                 SymGetModuleBase64,
-                NULL
+                NULL // TranslateAddress
             )
         )
             break;
