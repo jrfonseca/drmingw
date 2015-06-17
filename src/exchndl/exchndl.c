@@ -114,13 +114,10 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 static
 LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 {
-    static BOOL bBeenHere = FALSE;
+    static LONG cBeenHere = 0;
 
-    if(!bBeenHere)
-    {
+    if (InterlockedIncrement(&cBeenHere) == 1) {
         UINT fuOldErrorMode;
-
-        bBeenHere = TRUE;
 
         fuOldErrorMode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
@@ -149,6 +146,7 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 
         SetErrorMode(fuOldErrorMode);
     }
+    InterlockedDecrement(&cBeenHere);
 
     if (g_prevExceptionFilter)
         return g_prevExceptionFilter(pExceptionInfo);
