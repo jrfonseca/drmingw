@@ -211,7 +211,7 @@ dwarf_pe_init(HANDLE hFile,
                 debugImage = strdup(debuglink);
             }
 
-            HANDLE hFile = CreateFile(debugImage, GENERIC_READ, FILE_SHARE_READ, NULL,
+            HANDLE hFile = CreateFileA(debugImage, GENERIC_READ, FILE_SHARE_READ, NULL,
                                        OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
             if (hFile != INVALID_HANDLE_VALUE) {
                 res = dwarf_pe_init(hFile, debugImage, errhand, errarg, ret_dbg, error);

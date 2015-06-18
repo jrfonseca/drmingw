@@ -23,7 +23,6 @@
 #include <stdlib.h>
 
 #include <windows.h>
-#include <tchar.h>
 #include <ntstatus.h>
 #include <psapi.h>
 
@@ -140,11 +139,11 @@ symCallback(HANDLE hProcess,
 // https://msdn.microsoft.com/en-us/library/aa366789.aspx
 static BOOL
 GetFileNameFromHandle(HANDLE hFile,
-                      LPTSTR lpszFilePath,
+                      LPSTR lpszFilePath,
                       DWORD cchFilePath)
 {
     static HMODULE hKernel32;
-    typedef DWORD (WINAPI *PFNGETFINALPATHNAMEBYHANDLE)(HANDLE, LPTSTR, DWORD, DWORD);
+    typedef DWORD (WINAPI *PFNGETFINALPATHNAMEBYHANDLE)(HANDLE, LPSTR, DWORD, DWORD);
     static PFNGETFINALPATHNAMEBYHANDLE pfnGetFinalPathNameByHandle = NULL;
     if (!hKernel32) {
         hKernel32 = GetModuleHandleA("kernel32.dll");
@@ -168,7 +167,7 @@ GetFileNameFromHandle(HANDLE hFile,
     if (hFileMap) {
         LPVOID pMem = MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 1);
         if (pMem) {
-            if (GetMappedFileName(GetCurrentProcess(), pMem, lpszFilePath, cchFilePath)) {
+            if (GetMappedFileNameA(GetCurrentProcess(), pMem, lpszFilePath, cchFilePath)) {
                 // Unlike the example, we don't bother transliting the path with device name to drive letters.
                 bSuccess = TRUE;
             }
@@ -182,7 +181,7 @@ GetFileNameFromHandle(HANDLE hFile,
 
 
 static void
-loadModule(HANDLE hProcess, HANDLE hFile, PCTSTR pszImageName, LPVOID lpBaseOfDll)
+loadModule(HANDLE hProcess, HANDLE hFile, PCSTR pszImageName, LPVOID lpBaseOfDll)
 {
     if (!SymLoadModuleEx(hProcess, hFile, pszImageName, NULL, (UINT_PTR)lpBaseOfDll, 0, NULL, 0)) {
         OutputDebug("warning: SymLoadModule64 failed: 0x%08lx\n", GetLastError());
@@ -364,7 +363,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
 
             if (pOptions->verbose_flag) {
-                PCTSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
+                PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
 
                 lprintf("CREATE_PROCESS PID=%lu TID=%lu %s\r\n",
                         DebugEvent.dwProcessId,
@@ -453,7 +452,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
 
             if (pOptions->verbose_flag) {
-                PCTSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
+                PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
 
                 lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %s\r\n",
                         DebugEvent.dwProcessId,

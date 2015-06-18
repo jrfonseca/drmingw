@@ -17,7 +17,6 @@
  */
 
 #include <windows.h>
-#include <tchar.h>
 
 #include "errmsg.h"
 #include "resource.h"
@@ -52,7 +51,7 @@ AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
 
 void
-appendText(LPCTSTR szText)
+appendText(LPCSTR szText)
 {
     char *szBuf = strdup(szText);
     PostMessage(g_hWnd, WM_USER_APPEND_TEXT, (WPARAM) 0, (LPARAM) szBuf);
@@ -66,7 +65,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
     {
         case WM_CREATE:
         {
-            CreateWindow(
+            CreateWindowA(
                 "EDIT",
                 "",
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY,
@@ -80,7 +79,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
             // We used to use GetStockObject(ANSI_FIXED_FONT), but it's known
             // to lead to unreliable results, particularly on Russion locales
             // or high-DPI displays, so now we match Notepad's default font.
-            LOGFONT lf = {
+            LOGFONTA lf = {
                 10,                      // lfHeight
                 0,                       // lfWidth
                 0,                       // lfEscapement
@@ -94,7 +93,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                 0,                       // lfClipPrecision
                 DEFAULT_QUALITY,         // lfQuality
                 FIXED_PITCH | FF_MODERN, // lfPitchAndFamily
-                _T("Lucida Console")     // lfFaceName
+                "Lucida Console"     // lfFaceName
             };
 
             // Apply the DPI scale factor
@@ -108,7 +107,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
             }
 
             HFONT hFont;
-            hFont = CreateFontIndirect(&lf);
+            hFont = CreateFontIndirectA(&lf);
 
             SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_SETFONT, (WPARAM) hFont, MAKELPARAM(TRUE, 0));
 
@@ -137,7 +136,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
             {
                 case CM_FILE_SAVEAS:
                 {
-                    OPENFILENAME ofn;
+                    OPENFILENAMEA ofn;
                     char szFileName[MAX_PATH];
 
                     ZeroMemory(&ofn, sizeof(ofn));
@@ -153,12 +152,12 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                     ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY |
                     OFN_OVERWRITEPROMPT;
 
-                    if(GetSaveFileName(&ofn))
+                    if(GetSaveFileNameA(&ofn))
                     {
                         HANDLE hFile;
                         BOOL bSuccess = FALSE;
 
-                        if((hFile = CreateFile(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE)
+                        if((hFile = CreateFileA(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE)
                         {
                             HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
                             DWORD dwTextLength = GetWindowTextLength(hEdit);
@@ -168,7 +167,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
                                 if((pszText = GlobalAlloc(GPTR, dwTextLength + 1)) != NULL)
                                 {
-                                    if(GetWindowText(hEdit, pszText, dwTextLength + 1))
+                                    if(GetWindowTextA(hEdit, pszText, dwTextLength + 1))
                                     {
                                         DWORD dwWritten;
                                         if(WriteFile(hFile, pszText, dwTextLength, &dwWritten, NULL))
@@ -181,7 +180,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                         }
 
                         if(!bSuccess)
-                            MessageBox(hwnd, "Save file failed.", "Error", MB_OK | MB_ICONEXCLAMATION);
+                            MessageBoxA(hwnd, "Save file failed.", "Error", MB_OK | MB_ICONEXCLAMATION);
                     }
                     break;
                 }
@@ -209,13 +208,13 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 void
 createDialog(void)
 {
-    STARTUPINFO startinfo;
-    WNDCLASSEX WndClass;
+    STARTUPINFOA startinfo;
+    WNDCLASSEXA WndClass;
 
     g_hInstance = GetModuleHandle(NULL);
     GetStartupInfoA(&startinfo);
 
-    WndClass.cbSize        = sizeof(WNDCLASSEX);
+    WndClass.cbSize        = sizeof WndClass;
     WndClass.style         = 0;
     WndClass.lpfnWndProc   = WndProc;
     WndClass.cbClsExtra    = 0;
@@ -224,16 +223,16 @@ createDialog(void)
     WndClass.hIcon         = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
     WndClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
     WndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
-    WndClass.lpszMenuName  = MAKEINTRESOURCE(IDM_MAINMENU);
+    WndClass.lpszMenuName  = MAKEINTRESOURCEA(IDM_MAINMENU);
     WndClass.lpszClassName = "DrMingw";
-    WndClass.hIconSm       = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON)) /*LoadIcon(NULL, IDI_APPLICATION)*/;
+    WndClass.hIconSm       = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
 
-    if (!RegisterClassEx(&WndClass)) {
-        ErrorMessageBox(_T("RegisterClassEx: %s"), LastErrorMessage());
+    if (!RegisterClassExA(&WndClass)) {
+        ErrorMessageBox("RegisterClassEx: %s", LastErrorMessage());
         exit(EXIT_FAILURE);
     }
 
-    g_hWnd = CreateWindowEx(
+    g_hWnd = CreateWindowExA(
         WS_EX_CLIENTEDGE,
         WndClass.lpszClassName,
         "Dr. Mingw",
@@ -246,7 +245,7 @@ createDialog(void)
     );
 
     if (g_hWnd == NULL) {
-        ErrorMessageBox(_T("CreateWindowEx: %s"), LastErrorMessage());
+        ErrorMessageBox("CreateWindowEx: %s", LastErrorMessage());
         exit(EXIT_FAILURE);
     }
 

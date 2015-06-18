@@ -246,7 +246,7 @@ main(int argc, char** argv)
     // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366705.aspx
     SetEnvironmentVariableA("_NO_DEBUG_HEAP", "1");
 
-    STARTUPINFO StartupInfo;
+    STARTUPINFOA StartupInfo;
     ZeroMemory(&StartupInfo, sizeof StartupInfo);
     StartupInfo.cb = sizeof StartupInfo;
     StartupInfo.dwFlags = STARTF_USESHOWWINDOW;

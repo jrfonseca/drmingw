@@ -20,7 +20,6 @@
 #include <stdlib.h>
 
 #include <windows.h>
-#include <tchar.h>
 #include <psapi.h>
 #include <shlobj.h>
 #include <dbghelp.h>
@@ -83,9 +82,9 @@ InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
 
 
 
-BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD nSize)
+BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD nSize)
 {
-    PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + nSize * sizeof(TCHAR));
+    PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + nSize * sizeof(char));
 
     DWORD64 dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
     BOOL bRet;
@@ -97,7 +96,7 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD 
 
     if (bRet) {
         if (UnDecorateSymbolName(pSymbol->Name, lpSymName, nSize, UNDNAME_COMPLETE) == 0) {
-            lstrcpyn(lpSymName, pSymbol->Name, nSize);
+            strncpy(lpSymName, pSymbol->Name, nSize);
         }
     }
 
@@ -106,7 +105,7 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPTSTR lpSymName, DWORD 
     return bRet;
 }
 
-BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
+BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
 {
     IMAGEHLP_LINE64 Line;
     DWORD dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
@@ -120,7 +119,7 @@ BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPTSTR lpFileName, DWO
 
     assert(lpFileName && lpLineNumber);
 
-    lstrcpyn(lpFileName, Line.FileName, nSize);
+    strncpy(lpFileName, Line.FileName, nSize);
     *lpLineNumber = Line.LineNumber;
 
     return TRUE;

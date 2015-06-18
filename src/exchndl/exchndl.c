@@ -20,7 +20,6 @@
 
 #include <assert.h>
 #include <windows.h>
-#include <tchar.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <malloc.h>
@@ -36,7 +35,7 @@
 
 // Declare the static variables
 static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
-static TCHAR g_szLogFileName[MAX_PATH] = _T("");
+static char g_szLogFileName[MAX_PATH] = "";
 static HANDLE g_hReportFile;
 
 static void
@@ -57,16 +56,16 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
 
     // Start out with a banner
-    lprintf(_T("-------------------\r\n\r\n"));
+    lprintf("-------------------\r\n\r\n");
 
     SYSTEMTIME SystemTime;
     GetLocalTime(&SystemTime);
-    TCHAR szDateStr[128];
+    char szDateStr[128];
     LCID Locale = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);
-    GetDateFormat(Locale, 0, &SystemTime, _T("dddd',' MMMM d',' yyyy"), szDateStr, _countof(szDateStr));
-    TCHAR szTimeStr[128];
-    GetTimeFormat(Locale, 0, &SystemTime, _T("HH':'mm':'ss"), szTimeStr, _countof(szTimeStr));
-    lprintf(_T("Error occured on %s at %s.\r\n\r\n"), szDateStr, szTimeStr);
+    GetDateFormatA(Locale, 0, &SystemTime, "dddd',' MMMM d',' yyyy", szDateStr, _countof(szDateStr));
+    char szTimeStr[128];
+    GetTimeFormatA(Locale, 0, &SystemTime, "HH':'mm':'ss", szTimeStr, _countof(szTimeStr));
+    lprintf("Error occured on %s at %s.\r\n\r\n", szDateStr, szTimeStr);
 
     HANDLE hProcess = GetCurrentProcess();
 
@@ -108,13 +107,13 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     ZeroMemory(&osvi, sizeof osvi);
     osvi.dwOSVersionInfoSize = sizeof osvi;
     GetVersionEx(&osvi);
-    lprintf(_T("Windows %lu.%lu.%lu\r\n"),
+    lprintf("Windows %lu.%lu.%lu\r\n",
             osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
 
-    lprintf(_T("DrMingw %u.%u.%u\r\n"),
+    lprintf("DrMingw %u.%u.%u\r\n",
             PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR, PACKAGE_VERSION_PATCH);
 
-    lprintf(_T("\r\n"));
+    lprintf("\r\n");
 }
 
 #include <stdio.h>
@@ -134,7 +133,7 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
         fuOldErrorMode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
         if (REPORT_FILE) {
-            g_hReportFile = CreateFile(
+            g_hReportFile = CreateFileA(
                 g_szLogFileName,
                 GENERIC_WRITE,
                 0,
@@ -175,23 +174,23 @@ static void OnStartup(void)
 
     if (REPORT_FILE) {
         // Figure out what the report file will be named, and store it away
-        if(GetModuleFileName(NULL, g_szLogFileName, MAX_PATH))
+        if(GetModuleFileNameA(NULL, g_szLogFileName, MAX_PATH))
         {
-            LPTSTR lpszDot;
+            LPSTR lpszDot;
 
             // Look for the '.' before the "EXE" extension.  Replace the extension
             // with "RPT"
-            if((lpszDot = _tcsrchr(g_szLogFileName, _T('.'))))
+            if((lpszDot = strrchr(g_szLogFileName, '.')))
             {
                 lpszDot++;    // Advance past the '.'
-                _tcscpy(lpszDot, _T("RPT"));    // "RPT" -> "Report"
+                strcpy(lpszDot, "RPT");    // "RPT" -> "Report"
             }
             else
-                _tcscat(g_szLogFileName, _T(".RPT"));
+                strcat(g_szLogFileName, ".RPT");
         }
-        else if(GetWindowsDirectory(g_szLogFileName, MAX_PATH))
+        else if(GetWindowsDirectoryA(g_szLogFileName, MAX_PATH))
         {
-            _tcscat(g_szLogFileName, _T("EXCHNDL.RPT"));
+            strcat(g_szLogFileName, "EXCHNDL.RPT");
         }
     }
 }
@@ -207,13 +206,13 @@ SetLogFileNameA(const char *szLogFileName)
 {
     size_t size = _countof(g_szLogFileName);
     if (!szLogFileName ||
-        _tcslen(szLogFileName) > size - 1) {
+        strlen(szLogFileName) > size - 1) {
         OutputDebug("EXCHNDL: specified log name is too long or invalid (%s)\n",
                     szLogFileName);
         return FALSE;
     }
-    _tcsncpy(g_szLogFileName, szLogFileName, size - 1);
-    g_szLogFileName[size - 1] = _T('\0');
+    strncpy(g_szLogFileName, szLogFileName, size - 1);
+    g_szLogFileName[size - 1] = '\0';
     return TRUE;
 }
 

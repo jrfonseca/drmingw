@@ -20,7 +20,6 @@
 
 
 #include <windows.h>
-#include <tchar.h>
 
 
 // XXX: This leaks the error message
@@ -28,14 +27,14 @@
 ({ \
     LPVOID lpMsgBuf; \
  \
-    FormatMessage( \
+    FormatMessageA( \
         FORMAT_MESSAGE_ALLOCATE_BUFFER | \
         FORMAT_MESSAGE_FROM_SYSTEM | \
         FORMAT_MESSAGE_IGNORE_INSERTS, \
         NULL, \
         n, \
         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
-        (LPTSTR) &lpMsgBuf, \
+        (LPSTR) &lpMsgBuf, \
         0, \
         NULL \
     ); \
@@ -45,5 +44,5 @@
 
 #define LastErrorMessage() FormatErrorMessage(GetLastError())
 
-void _ErrorMessageBox (LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ... );
+void _ErrorMessageBox (LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ... );
 #define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ## args)

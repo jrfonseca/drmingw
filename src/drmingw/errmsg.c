@@ -18,32 +18,33 @@
 
 #include "errmsg.h"
 
+#include <stdio.h>
+#include <stdarg.h>
 
-void _ErrorMessageBox(LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ...)
+
+void _ErrorMessageBox(LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ...)
 {
-    TCHAR szErrorMsg[1024], szModule[MAX_PATH], szMsg[4096];
+    char szErrorMsg[1024], szModule[MAX_PATH], szMsg[4096];
     va_list ap;
 
-    if(!GetModuleFileName(NULL, szModule, MAX_PATH))
-        lstrcpy(szModule, _T(""));
+    if(!GetModuleFileNameA(NULL, szModule, MAX_PATH))
+        strcpy(szModule, "");
 
     va_start(ap, lpszFormat);
-    wvsprintf(szErrorMsg, lpszFormat, ap);
+    vsprintf(szErrorMsg, lpszFormat, ap);
     va_end(ap);
 
-    wsprintf(
+    sprintf(
         szMsg,
-        _T(
-            "Error!\r\n"
-            "\r\n"
-            "Program: %s\r\n"
-            "File: %s\r\n"
-            "Line: %i\r\n"
-            "\r\n"
-            "%s\r\n"
-            "\r\n"
-            "(Press Retry to debug the application - JIT must be enabled)\r\n"
-        ),
+        "Error!\r\n"
+        "\r\n"
+        "Program: %s\r\n"
+        "File: %s\r\n"
+        "Line: %lu\r\n"
+        "\r\n"
+        "%s\r\n"
+        "\r\n"
+        "(Press Retry to debug the application - JIT must be enabled)\r\n",
         szModule,
         lpszFile,
         dwLine,
@@ -51,7 +52,7 @@ void _ErrorMessageBox(LPCTSTR lpszFile, DWORD dwLine, LPCTSTR lpszFormat, ...)
     );
 
     // Display the string.
-    switch (MessageBox(NULL, szMsg, _T("DrMingw"), MB_ICONERROR | MB_ABORTRETRYIGNORE))
+    switch (MessageBoxA(NULL, szMsg, "DrMingw", MB_ICONERROR | MB_ABORTRETRYIGNORE))
     {
         case IDABORT:
             _exit(3);

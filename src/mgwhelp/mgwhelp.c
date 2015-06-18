@@ -24,7 +24,6 @@
 #include <malloc.h>
 
 #include <windows.h>
-#include <tchar.h>
 #include <psapi.h>
 
 #include "outdbg.h"
@@ -152,8 +151,8 @@ mgwhelp_module_create(struct mgwhelp_process * process,
 
     bOwnFile = FALSE;
     if (!hFile) {
-        hFile = CreateFile(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
-                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+        hFile = CreateFileA(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
+                            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
         if (hFile == INVALID_HANDLE_VALUE) {
             OutputDebug("MGWHELP: %s - file not found\n", module->LoadedImageName);
             goto no_module_name;
@@ -405,9 +404,9 @@ MgwSymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
 {
     if (hProcess == GetCurrentProcess()) {
         HMODULE hModule = NULL;
-        BOOL bRet = GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
-                                      (LPCTSTR)(UINT_PTR)dwAddress,
-                                      &hModule);
+        BOOL bRet = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                                       (LPCSTR)(UINT_PTR)dwAddress,
+                                       &hModule);
         if (bRet) {
             return (DWORD64)(UINT_PTR)hModule;
         }

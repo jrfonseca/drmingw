@@ -99,14 +99,14 @@ test_diagnostic_last_error(void)
     // http://msdn.microsoft.com/en-gb/library/windows/desktop/ms680582.aspx
     LPSTR lpErrorMsg = NULL;
     DWORD cbWritten;
-    cbWritten = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-                              FORMAT_MESSAGE_FROM_SYSTEM |
-                              FORMAT_MESSAGE_IGNORE_INSERTS,
-                              NULL,
-                              dwLastError,
-                              MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-                              (LPSTR) &lpErrorMsg,
-                              0, NULL);
+    cbWritten = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+                               FORMAT_MESSAGE_FROM_SYSTEM |
+                               FORMAT_MESSAGE_IGNORE_INSERTS,
+                               NULL,
+                               dwLastError,
+                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                               (LPSTR) &lpErrorMsg,
+                               0, NULL);
 
     if (cbWritten) {
         test_diagnostic("%s", lpErrorMsg);

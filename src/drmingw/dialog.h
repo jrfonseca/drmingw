@@ -22,7 +22,7 @@
 
 
 void
-appendText(LPCTSTR szText);
+appendText(LPCSTR szText);
 
 void
 createDialog(void);
