@@ -17,9 +17,19 @@
  */
 
 
+#pragma once
+
+
 #include <windows.h>
 
 
-EXTERN_C BOOL APIENTRY SetLogFileNameA(const char *szLogFileName);
+// Set the unhandled exception handler.
+// Must be called when exchndll.dll is statically loaded (as opposed to loaded
+// dynamically via LoadLibrary)
+EXTERN_C VOID APIENTRY
+ExcHndlInit(void);
 
-EXTERN_C BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
+
+// Override the report file name
+EXTERN_C BOOL APIENTRY
+ExcHndlSetLogFileNameA(const char *szLogFileName);

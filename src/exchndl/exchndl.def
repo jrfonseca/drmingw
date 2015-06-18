@@ -1,2 +1,3 @@
 EXPORTS
-    SetLogFileNameA
+    ExcHndlInit
+    ExcHndlSetLogFileNameA

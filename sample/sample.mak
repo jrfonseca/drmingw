@@ -12,18 +12,18 @@ CXX = $(PREFIX)g++
 CFLAGS = -g
 CXXFLAGS = $(CFLAGS)
 
-LDFLAGS = -static-libgcc -static-libstdc++
+INCLUDES = -I$(CURDIR)/../include
+
+LDFLAGS = -static-libgcc -static-libstdc++ -Wl,--enable-stdcall-fixup
+LIBS = $(CURDIR)/../bin/exchndl.dll
 
 
 all: sample.exe
 
-sample.exe: sample.cpp exchndl2.cpp
-
-%.exe: %.c
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+sample.exe: sample.cpp
 
 %.exe: %.cpp
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 clean:
 	-$(RM) sample.exe

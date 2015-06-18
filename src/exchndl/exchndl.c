@@ -34,6 +34,7 @@
 
 
 // Declare the static variables
+static BOOL g_bHandlerSet = FALSE;
 static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
 static char g_szLogFileName[MAX_PATH] = "";
 static HANDLE g_hReportFile;
@@ -165,11 +166,10 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
         return EXCEPTION_CONTINUE_SEARCH;
 }
 
-static void OnStartup(void)
-{
-    // Install the unhandled exception filter function
-    g_prevExceptionFilter = SetUnhandledExceptionFilter(TopLevelExceptionFilter);
 
+static void
+Setup(void)
+{
     setDumpCallback(writeReport);
 
     if (REPORT_FILE) {
@@ -195,14 +195,40 @@ static void OnStartup(void)
     }
 }
 
-static void OnExit(void)
+
+static void
+SetupHandler(void)
 {
-    SetUnhandledExceptionFilter(g_prevExceptionFilter);
+    // Install the unhandled exception filter function
+    if (!g_bHandlerSet) {
+        assert(g_prevExceptionFilter == NULL);
+        g_prevExceptionFilter = SetUnhandledExceptionFilter(TopLevelExceptionFilter);
+        assert(g_prevExceptionFilter != TopLevelExceptionFilter);
+        g_bHandlerSet = TRUE;
+    }
+}
+
+
+static void
+CleanupHandler(void)
+{
+    if (g_bHandlerSet) {
+        SetUnhandledExceptionFilter(g_prevExceptionFilter);
+        g_prevExceptionFilter = NULL;
+        g_bHandlerSet = FALSE;
+    }
+}
+
+
+VOID APIENTRY
+ExcHndlInit(void)
+{
+    SetupHandler();
 }
 
 
 BOOL APIENTRY
-SetLogFileNameA(const char *szLogFileName)
+ExcHndlSetLogFileNameA(const char *szLogFileName)
 {
     size_t size = _countof(g_szLogFileName);
     if (!szLogFileName ||
@@ -217,17 +243,23 @@ SetLogFileNameA(const char *szLogFileName)
 }
 
 
+EXTERN_C BOOL APIENTRY
+DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved);
+
 BOOL APIENTRY
-DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
+DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved)
 {
     switch (dwReason)
     {
         case DLL_PROCESS_ATTACH:
-            OnStartup();
+            Setup();
+            if (lpvReserved == NULL) {
+                SetupHandler();
+            }
             break;
 
         case DLL_PROCESS_DETACH:
-            OnExit();
+            CleanupHandler();
             break;
     }
 

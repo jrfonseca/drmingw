@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "exchndl.h"
+
 static void Function(int i, double j, const char * pszString) {
     sscanf("12345", "%i", (int *)1);
 }
@@ -21,6 +23,7 @@ struct Class {
 };
 
 int main() {
+    ExcHndlInit();
     Class instance;
     instance.Method();
     return 0;

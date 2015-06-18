@@ -76,6 +76,9 @@ normalizePath(char *s)
 }
 
 
+#undef DYNAMIC
+
+
 int
 main(int argc, char **argv)
 {
@@ -87,8 +90,36 @@ main(int argc, char **argv)
 
     g_prevExceptionFilter = SetUnhandledExceptionFilter(topLevelExceptionHandler);
 
-    ok = SetLogFileNameA(szReport);
-    test_line(ok, "SetLogFileNameA(\"%s\")", szReport);
+#ifndef DYNAMIC
+
+    ExcHndlInit();
+
+    ok = ExcHndlSetLogFileNameA(szReport);
+    test_line(ok, "ExcHndlSetLogFileNameA(\"%s\")", szReport);
+
+#else
+
+    HMODULE hModule = LoadLibraryA("exchndl.dll");
+    ok = hModule != NULL;
+    test_line(ok, "LoadLibraryA(\"exchndl.dll\")");
+    if (!ok) {
+        test_diagnostic_last_error();
+        test_exit();
+    }
+
+    typedef BOOL (APIENTRY * PFN_SETLOGFILENAMEA)(const char *szLogFileName);
+    PFN_SETLOGFILENAMEA pfnSetLogFileNameA = (PFN_SETLOGFILENAMEA)GetProcAddress(hModule, "ExcHndlSetLogFileNameA");
+    ok = pfnSetLogFileNameA != NULL;
+    test_line(ok, "GetProcAddress(\"ExcHndlSetLogFileNameA\")");
+    if (!ok) {
+        test_diagnostic_last_error();
+        test_exit();
+    }
+
+    ok = pfnSetLogFileNameA(szReport);
+    test_line(ok, "ExcHndlSetLogFileNameA(\"%s\")", szReport);
+
+#endif
 
     _snprintf(g_szExceptionFunctionPattern, sizeof g_szExceptionFunctionPattern, " %s!%s ", PROG_NAME ".exe", __FUNCTION__);
 

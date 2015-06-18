@@ -90,13 +90,13 @@ You can use ExcHndl by:
 
   * including `exchndl.dll`, `mgwhelp.dll`, `dbghelp.dll`, `symsrv.dll`, and `symsrv.yes` with your application binaries
 
-  * and loading `exchndl.dll` when your application starts, either by
+  * pass `exchndl.dll` to GNU LD when linking your program
 
-    * compiling and linking `exchndl2.cpp` source file
+  * call `ExcHndlInit()` from your main program
 
-    * or by explicitly calling `LoadLibraryA("exchndl.dll")`
+  * you can also override the report location by invoking the exported `ExcHndlSetLogFileNameA` entry-point.
 
-  * you can also override the report location by invoking the exported `SetLogFileNameA` entry-point.
+You can also use ExcHndl by merely calling `LoadLibraryA("exchndl.dll")` for historical reasons, but that's no longer recommended.
 
 Example
 -------
