@@ -62,9 +62,10 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     SYSTEMTIME SystemTime;
     GetLocalTime(&SystemTime);
     TCHAR szDateStr[128];
-    GetDateFormat(LOCALE_SYSTEM_DEFAULT, 0, &SystemTime, _T("dddd',' MMMM d',' yyyy"), szDateStr, _countof(szDateStr));
+    LCID Locale = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);
+    GetDateFormat(Locale, 0, &SystemTime, _T("dddd',' MMMM d',' yyyy"), szDateStr, _countof(szDateStr));
     TCHAR szTimeStr[128];
-    GetTimeFormat(LOCALE_SYSTEM_DEFAULT, 0, &SystemTime, _T("HH':'mm':'ss"), szTimeStr, _countof(szTimeStr));
+    GetTimeFormat(Locale, 0, &SystemTime, _T("HH':'mm':'ss"), szTimeStr, _countof(szTimeStr));
     lprintf(_T("Error occured on %s at %s.\r\n\r\n"), szDateStr, szTimeStr);
 
     HANDLE hProcess = GetCurrentProcess();
