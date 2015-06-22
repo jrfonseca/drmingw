@@ -30,9 +30,6 @@
 #include "tap.h"
 
 
-#define PROG_NAME "exchndl_test"
-
-
 static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
 static jmp_buf g_JmpBuf;
 
@@ -76,9 +73,6 @@ normalizePath(char *s)
 }
 
 
-#undef DYNAMIC
-
-
 int
 main(int argc, char **argv)
 {
@@ -90,7 +84,7 @@ main(int argc, char **argv)
 
     g_prevExceptionFilter = SetUnhandledExceptionFilter(topLevelExceptionHandler);
 
-#ifndef DYNAMIC
+#if !DYNAMIC
 
     ExcHndlInit();
 
