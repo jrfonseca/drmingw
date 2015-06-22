@@ -417,6 +417,8 @@ getExceptionString(DWORD ExceptionCode)
         return "Control+C";
     case DBG_CONTROL_BREAK: // 0x40010008
         return "Control+Break";
+    case 0x406D1388:
+        return "Thread Name Exception";
 
     case RPC_S_UNKNOWN_IF:
         return "Unknown Interface";

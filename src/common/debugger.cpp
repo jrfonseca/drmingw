@@ -303,6 +303,18 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     }
                 }
 
+               /*
+                 * Ignore thread naming exception.
+                 *
+                 * http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
+                 *
+                 * TODO: Note down the thread name
+                 */
+                if (ExceptionCode == 0x406d1388) {
+                    dwContinueStatus = DBG_CONTINUE;
+                    break;
+                }
+
                 if (!pOptions->first_chance) {
                     break;
                 }
