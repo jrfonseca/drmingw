@@ -19,6 +19,7 @@
 
 #include "tap.h"
 
+#include <assert.h>
 #include <stdlib.h>
 
 #include <windows.h>
@@ -156,6 +157,14 @@ main()
 {
     HANDLE hProcess = GetCurrentProcess();
     bool ok;
+
+    HMODULE hMgwHelpDll = GetModuleHandleA("mgwhelp.dll");
+    if (!hMgwHelpDll) {
+        test_line(false, "GetModuleHandleA(\"mgwhelp.dll\")");
+    } else {
+        test_line(GetProcAddress(hMgwHelpDll, "SymGetOptions") != NULL, "GetProcAddress(\"SymGetOptions\")");
+        test_line(GetProcAddress(hMgwHelpDll, "SymGetOptions@0") == NULL, "!GetProcAddress(\"SymGetOptions\")");
+    }
 
     ok = SymInitialize(hProcess, "", TRUE);
     test_line(ok, "SymInitialize()");
