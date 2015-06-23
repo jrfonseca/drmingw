@@ -90,7 +90,7 @@ You can use ExcHndl by:
 
   * including `exchndl.dll`, `mgwhelp.dll`, `dbghelp.dll`, `symsrv.dll`, and `symsrv.yes` with your application binaries
 
-  * pass `exchndl.dll` to GNU LD when linking your program
+  * pass `-lexchndl` to GNU LD when linking your program
 
   * call `ExcHndlInit()` from your main program
 

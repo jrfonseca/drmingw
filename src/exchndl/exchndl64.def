@@ -1,3 +1,5 @@
+LIBRARY exchndl.dll
+
 EXPORTS
     ExcHndlInit
     ExcHndlSetLogFileNameA

@@ -14,8 +14,8 @@ CXXFLAGS = $(CFLAGS)
 
 INCLUDES = -I$(CURDIR)/../include
 
-LDFLAGS = -static-libgcc -static-libstdc++ -Wl,--enable-stdcall-fixup
-LIBS = $(CURDIR)/../bin/exchndl.dll
+LDFLAGS = -static-libgcc -static-libstdc++ -L$(CURDIR)/../lib
+LIBS = -lexchndl
 
 
 all: sample.exe

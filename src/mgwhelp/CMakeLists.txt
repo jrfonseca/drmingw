@@ -24,14 +24,6 @@ install (TARGETS mgwhelp RUNTIME DESTINATION bin)
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 4)
     # XXX: We need to use a custom import lib to avoid link failures
-    get_filename_component (GCC_NAME ${CMAKE_C_COMPILER} NAME)
-    string (REPLACE gcc dlltool DLLTOOL_NAME ${GCC_NAME})
-    find_program (DLLTOOL NAMES ${DLLTOOL_NAME})
-    if (DLLTOOL)
-        message (STATUS "Found dlltool: ${DLLTOOL}")
-    else ()
-        message (FATAL_ERROR "dlltool not found")
-    endif ()
     set (MGWHELP_IMPLIB ${CMAKE_CURRENT_BINARY_DIR}/libmgwhelp.a)
     add_custom_command (
         OUTPUT ${MGWHELP_IMPLIB}

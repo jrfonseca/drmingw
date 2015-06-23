@@ -33,6 +33,16 @@ include_directories (
 
 add_subdirectory (thirdparty/dwarf)
 
+# Find dlltool
+get_filename_component (GCC_NAME ${CMAKE_C_COMPILER} NAME)
+string (REPLACE gcc dlltool DLLTOOL_NAME ${GCC_NAME})
+find_program (DLLTOOL NAMES ${DLLTOOL_NAME})
+if (DLLTOOL)
+    message (STATUS "Found dlltool: ${DLLTOOL}")
+else ()
+    message (FATAL_ERROR "dlltool not found")
+endif ()
+
 
 ##############################################################################
 # Set global build options
@@ -67,6 +77,7 @@ endif ()
 # Put all executables into top-level bin subdirectory
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 add_definitions (
     # minimum required OS version
