@@ -1,8 +1,5 @@
-if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-    set (MGWHELP_DEF mgwhelp32.def)
-else ()
-    set (MGWHELP_DEF mgwhelp64.def)
-endif ()
+math (EXPR ARCH_BITS "${CMAKE_SIZEOF_VOID_P} * 8")
+set (MGWHELP_DEF "mgwhelp${ARCH_BITS}.def")
 
 add_library (mgwhelp SHARED
     ${MGWHELP_DEF}
