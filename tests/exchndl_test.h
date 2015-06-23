@@ -101,6 +101,8 @@ main(int argc, char **argv)
         test_exit();
     }
 
+    test_line(!GetProcAddress(hModule, "ExcHndlSetLogFileNameA@4"), "!GetProcAddress(\"ExcHndlSetLogFileNameA@4\")");
+
     typedef BOOL (APIENTRY * PFN_SETLOGFILENAMEA)(const char *szLogFileName);
     PFN_SETLOGFILENAMEA pfnSetLogFileNameA = (PFN_SETLOGFILENAMEA)GetProcAddress(hModule, "ExcHndlSetLogFileNameA");
     ok = pfnSetLogFileNameA != NULL;
