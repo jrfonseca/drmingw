@@ -118,6 +118,8 @@ add_custom_target (check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 install (FILES include/exchndl.h DESTINATION include)
 
+set (EXCHNDL_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libexchndl.a)
+
 add_subdirectory (src)
 add_subdirectory (sample)
 add_subdirectory (tests)

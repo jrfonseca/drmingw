@@ -26,7 +26,6 @@ set_target_properties (exchndl PROPERTIES
 install (TARGETS exchndl LIBRARY DESTINATION bin)
 
 
-set (EXCHNDL_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libexchndl.a)
 add_custom_command (
     OUTPUT ${EXCHNDL_IMPLIB}
     COMMAND ${DLLTOOL} --output-lib ${EXCHNDL_IMPLIB} --kill-at --input-def=${CMAKE_CURRENT_SOURCE_DIR}/${EXCHNDL_IMP_DEF}

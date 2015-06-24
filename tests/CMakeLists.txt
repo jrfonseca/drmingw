@@ -66,8 +66,8 @@ include_directories (
 add_executable (exchndl_static_test
     exchndl_static_test.c
 )
-add_dependencies (exchndl_static_test exchndl)
-target_link_libraries (exchndl_static_test $<TARGET_FILE:exchndl>)
+add_dependencies (exchndl_static_test exchndl_implib)
+target_link_libraries (exchndl_static_test ${EXCHNDL_IMPLIB})
 add_dependencies (check exchndl_static_test)
 add_test (
     NAME test_exchndl_static
@@ -87,7 +87,6 @@ add_executable (exchndl_dynamic_test
     exchndl_dynamic_test.c
 )
 add_dependencies (exchndl_dynamic_test exchndl)
-target_link_libraries (exchndl_dynamic_test $<TARGET_FILE:exchndl>)
 add_dependencies (check exchndl_dynamic_test)
 add_test (
     NAME test_exchndl_dynamic
