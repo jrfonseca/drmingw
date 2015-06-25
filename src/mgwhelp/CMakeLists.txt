@@ -1,8 +1,13 @@
-math (EXPR ARCH_BITS "${CMAKE_SIZEOF_VOID_P} * 8")
-set (MGWHELP_DEF "mgwhelp${ARCH_BITS}.def")
+if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set (MGWHELP_EXP_DEF mgwhelp32exp.def)
+    set (MGWHELP_IMP_DEF mgwhelp32imp.def)
+else ()
+    set (MGWHELP_EXP_DEF mgwhelp64.def)
+    set (MGWHELP_IMP_DEF mgwhelp64.def)
+endif ()
 
-add_library (mgwhelp SHARED
-    ${MGWHELP_DEF}
+add_library (mgwhelp MODULE
+    ${MGWHELP_EXP_DEF}
     dwarf_find.c
     dwarf_pe.c
     mgwhelp.c
@@ -20,22 +25,15 @@ set_target_properties (mgwhelp PROPERTIES
     LINKER_LANGUAGE CXX # for __cxa_demangle
 )
 
-install (TARGETS mgwhelp RUNTIME DESTINATION bin)
+install (TARGETS mgwhelp LIBRARY DESTINATION bin)
 
-if (CMAKE_SIZEOF_VOID_P EQUAL 4)
-    # XXX: We need to use a custom import lib to avoid link failures
-    set (MGWHELP_IMPLIB ${CMAKE_CURRENT_BINARY_DIR}/libmgwhelp.a)
-    add_custom_command (
-        OUTPUT ${MGWHELP_IMPLIB}
-	COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def=${CMAKE_CURRENT_SOURCE_DIR}/dbghelp.def
-	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/dbghelp.def
-    )
-else ()
-    set (MGWHELP_IMPLIB mgwhelp)
-endif ()
-set (MGWHELP_IMPLIB ${MGWHELP_IMPLIB} PARENT_SCOPE)
-
+add_custom_command (
+    OUTPUT ${MGWHELP_IMPLIB}
+    COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def=${CMAKE_CURRENT_SOURCE_DIR}/${MGWHELP_IMP_DEF}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${MGWHELP_IMP_DEF}
+)
 add_custom_target (mgwhelp_implib DEPENDS mgwhelp ${MGWHELP_IMPLIB})
+install (FILES ${MGWHELP_IMPLIB} DESTINATION lib)
 
 
 # Bundle DbgHelp and SymSrv DLLs

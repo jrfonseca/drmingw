@@ -1,4 +1,4 @@
-LIBRARY dbghelp.dll
+LIBRARY mgwhelp.dll
 
 EXPORTS
 	EnumDirTree@24

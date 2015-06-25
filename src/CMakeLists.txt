@@ -3,14 +3,8 @@ include_directories (
 )
 
 add_subdirectory (common)
-
 add_subdirectory (mgwhelp)
-set (MGWHELP_IMPLIB ${MGWHELP_IMPLIB} PARENT_SCOPE)
-
 add_subdirectory (drmingw)
-
 add_subdirectory (exchndl)
-
 add_subdirectory (addr2line)
-
 add_subdirectory (catchsegv)
