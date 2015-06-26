@@ -30,6 +30,10 @@ EXTERN_C VOID APIENTRY
 ExcHndlInit(void);
 
 
-// Override the report file name
+// Override the report file name.
+//
+// Default is prog_name.RPT, in the same directory as the main executable.
+//
+// You can also pass "-" for stderr.
 EXTERN_C BOOL APIENTRY
 ExcHndlSetLogFileNameA(const char *szLogFileName);

@@ -64,7 +64,7 @@ The following table describes the Dr. Mingw command-line options.  All comand-li
 | **-v**         | **--verbose**          | Verbose output |
 
 MgwHelp
-========
+=======
 
 The MgwHelp library aims to be a drop-in replacement for the DbgHelp library, that understand MinGW symbols.  It provides the same interface as DbgHelp library, but it is able to read the debug information produced by MinGW compilers/linkers.
 
@@ -76,8 +76,8 @@ MgwHelp relies on [libdwarf](http://reality.sgiweb.org/davea/dwarf.html) to read
 
 **NOTE: It's still work in progress, and only exports a limited number of symbols. So it's not a complete solution yet**
 
-ExcHndl DLL
-===========
+ExcHndl
+=======
 
 The `exchndl.dll` is a embeddable exception handler.  It produces the similar output to Dr. Mingw, but it can be bundled into your applications.  The exception handling routine runs in the same process context of the faulting application.
 

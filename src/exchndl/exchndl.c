@@ -38,6 +38,7 @@ static BOOL g_bHandlerSet = FALSE;
 static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
 static char g_szLogFileName[MAX_PATH] = "";
 static HANDLE g_hReportFile;
+static BOOL g_bOwnReportFile;
 
 static void
 writeReport(const char *szText)
@@ -134,23 +135,30 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
         fuOldErrorMode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
         if (REPORT_FILE) {
-            g_hReportFile = CreateFileA(
-                g_szLogFileName,
-                GENERIC_WRITE,
-                0,
-                0,
-                OPEN_ALWAYS,
-                FILE_FLAG_WRITE_THROUGH,
-                0
-            );
+            if (!g_hReportFile) {
+                if (strcmp(g_szLogFileName, "-") == 0) {
+                    g_hReportFile = GetStdHandle(STD_ERROR_HANDLE);
+                    g_bOwnReportFile = FALSE;
+                } else {
+                    g_hReportFile = CreateFileA(
+                        g_szLogFileName,
+                        GENERIC_WRITE,
+                        FILE_SHARE_READ | FILE_SHARE_WRITE,
+                        0,
+                        OPEN_ALWAYS,
+                        0,
+                        0
+                    );
+                    g_bOwnReportFile = TRUE;
+                }
+            }
 
             if (g_hReportFile) {
                 SetFilePointer(g_hReportFile, 0, 0, FILE_END);
 
                 GenerateExceptionReport(pExceptionInfo);
 
-                CloseHandle(g_hReportFile);
-                g_hReportFile = 0;
+                FlushFileBuffers(g_hReportFile);
             }
         } else {
             GenerateExceptionReport(pExceptionInfo);
@@ -192,6 +200,18 @@ Setup(void)
         {
             strcat(g_szLogFileName, "EXCHNDL.RPT");
         }
+    }
+}
+
+
+static void
+Cleanup(void)
+{
+    if (g_hReportFile) {
+        if (g_bOwnReportFile) {
+            CloseHandle(g_hReportFile);
+        }
+        g_hReportFile = 0;
     }
 }
 
@@ -260,6 +280,7 @@ DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved)
 
         case DLL_PROCESS_DETACH:
             CleanupHandler();
+            Cleanup();
             break;
     }
 
