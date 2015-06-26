@@ -1,3 +1,10 @@
+# Continous integration #
+
+[![Build Status](https://travis-ci.org/jrfonseca/drmingw.svg?branch=master)](https://travis-ci.org/jrfonseca/drmingw)
+
+[![Build status](https://ci.appveyor.com/api/projects/status/9q3o5w85s5o5yup5?svg=true)](https://ci.appveyor.com/project/jrfonseca/drmingw)
+
+
 # Dependencies #
 
 Required:
@@ -41,10 +48,3 @@ but in theory it should work with any flavour of MinGW-w64 native toolchain,
 provided that it includes a native `mingw32-make.exe`.
 
 Note that building with MSYS or Cygwin is not necessary nor *supported*.
-
-
-# Continous integration #
-
-[![Build Status](https://travis-ci.org/jrfonseca/drmingw.svg?branch=master)](https://travis-ci.org/jrfonseca/drmingw)
-
-[![Build status](https://ci.appveyor.com/api/projects/status/9q3o5w85s5o5yup5?svg=true)](https://ci.appveyor.com/project/jrfonseca/drmingw)
