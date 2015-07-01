@@ -112,6 +112,10 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 
     EnumWindows(EnumWindowCallback, (LPARAM)dwProcessId);
 
+    if (g_TimerIgnore) {
+        return;
+    }
+
     g_ElapsedTime += g_Period;
 
     if (!g_TimeOut || g_ElapsedTime < g_TimeOut*1000) {
