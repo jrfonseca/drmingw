@@ -164,7 +164,7 @@ mgwhelp_module_create(struct mgwhelp_process * process,
 
     Dwarf_Error error = 0;
     if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
-        OutputDebug("MGWHELP: %s: %s\n", module->LoadedImageName, "no dwarf symbols");
+        /* do nothing */
     }
 
     if (bOwnFile) {
