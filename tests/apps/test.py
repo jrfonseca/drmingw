@@ -101,37 +101,41 @@ def test((catchsegvExe, testExe, testSrc)):
     if exitCode == 0x4000001f:
         exitCode = 0x80000003
 
-    # Search the source file for '// CHECK_...' annotations and process
-    # them.
+    if exitCode == 125:
+        # skip
+        writeStdout('ok - %s # skip\n' % (testExe,))
+    else:
+        # Search the source file for '// CHECK_...' annotations and process
+        # them.
 
-    checkCommentRe = re.compile(r'^// CHECK_([_0-9A-Z]+): (.*)$')
-    for line in open(testSrc, 'rt'):
-        line = line.rstrip('\n')
-        mo = checkCommentRe.match(line)
-        if mo:
-            checkName = mo.group(1)
-            checkExpr = mo.group(2)
-            if checkName == 'EXIT_CODE':
-                if checkExpr.startswith('0x'):
-                    checkExitCode = int(checkExpr, 16)
+        checkCommentRe = re.compile(r'^// CHECK_([_0-9A-Z]+): (.*)$')
+        for line in open(testSrc, 'rt'):
+            line = line.rstrip('\n')
+            mo = checkCommentRe.match(line)
+            if mo:
+                checkName = mo.group(1)
+                checkExpr = mo.group(2)
+                if checkName == 'EXIT_CODE':
+                    if checkExpr.startswith('0x'):
+                        checkExitCode = int(checkExpr, 16)
+                    else:
+                        checkExitCode = int(checkExpr)
+                    if sys.platform != 'win32':
+                        checkExitCode = checkExitCode % 256
+                    ok = exitCode == checkExitCode 
+                    if not ok:
+                        writeStdout('# exit code was 0x%08x\n' % exitCode)
+                elif checkName == 'STDOUT':
+                    ok = checkString(checkExpr, stdout)
+                elif checkName == 'STDERR':
+                    ok = checkString(checkExpr, stderr)
                 else:
-                    checkExitCode = int(checkExpr)
-                if sys.platform != 'win32':
-                    checkExitCode = checkExitCode % 256
-                ok = exitCode == checkExitCode 
-                if not ok:
-                    writeStdout('# exit code was 0x%08x\n' % exitCode)
-            elif checkName == 'STDOUT':
-                ok = checkString(checkExpr, stdout)
-            elif checkName == 'STDERR':
-                ok = checkString(checkExpr, stderr)
-            else:
-                assert False
+                    assert False
 
-            ok_or_not = ['not ok', 'ok']
-            writeStdout('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testExe, 'CHECK_' + checkName, checkExpr))
-            if not ok:
-                result = False
+                ok_or_not = ['not ok', 'ok']
+                writeStdout('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testExe, 'CHECK_' + checkName, checkExpr))
+                if not ok:
+                    result = False
     
     if not result and not options.verbose:
         sys.stderr.write(stderr)

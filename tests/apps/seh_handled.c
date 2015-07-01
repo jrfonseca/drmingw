@@ -42,7 +42,7 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
     }
     return 1;
 #else
-   return 0;
+    return 125;
 #endif
 }
 

@@ -26,6 +26,8 @@ if (MSVC)
     add_definitions (-D_SCL_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
 endif ()
 
+add_definitions (-DEXIT_SKIP=125)
+
 macro (add_test_executable)
     add_executable (${ARGV})
     if (NOT ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
