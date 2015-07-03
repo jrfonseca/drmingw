@@ -25,25 +25,138 @@
  *
  **************************************************************************/
 
+//
+// See also:
+// - https://www.microsoft.com/msj/0197/exception/exception.aspx
+// - https://msdn.microsoft.com/en-us/library/1eyas8tf.aspx
+// - https://msdn.microsoft.com/en-us/library/swezty51.aspx
+// - http://www.programmingunlimited.net/siteexec/content.cgi?page=mingw-seh
+// - https://gist.github.com/rossy/7faf0ab90a54d6b5a46f
+//
+
+
+#include <stdio.h>
+
 #include <windows.h>
+
 
 #define EXCEPTION_CODE 0xE0000001
 
-int CALLBACK
-WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
-{
+
 #ifdef _MSC_VER
-    __try {
-        RaiseException(EXCEPTION_CODE, 0, 0, NULL);
-        return 1;
-    }
-    __except (GetExceptionCode() == EXCEPTION_CODE ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH) {
-        return 0;
-    }
-    return 1;
-#else
-    return 125;
-#endif
+
+
+static LONG WINAPI
+exceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
+{
+    PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
+    DWORD ExceptionCode = pExceptionRecord->ExceptionCode;
+    fprintf(stderr, "exception 0x%lx\n", ExceptionCode);
+    fflush(stderr);
+    return ExceptionCode == EXCEPTION_CODE ? EXCEPTION_EXECUTE_HANDLER : EXCEPTION_CONTINUE_SEARCH;
 }
 
+
+#else /* __MINGW32__ */
+
+
+struct _EXCEPTION_REGISTRATION_RECORD
+{
+    struct _EXCEPTION_REGISTRATION_RECORD *Next;
+    EXCEPTION_DISPOSITION (NTAPI *Handler)(struct _EXCEPTION_RECORD *, PVOID, struct _CONTEXT *, PVOID);
+};
+
+
+#ifdef _WIN64
+
+
+static EXCEPTION_DISPOSITION NTAPI
+__attribute__((used))
+exceptionHandler(struct _EXCEPTION_RECORD *ExceptionRecord,
+                 PVOID EstablisherFrame,
+                 struct _CONTEXT *ContextRecord,
+                 PVOID DispatcherContext)
+{
+    DWORD ExceptionCode = ExceptionRecord->ExceptionCode;
+    fprintf(stderr, "exception 0x%lx\n", ExceptionCode);
+    fflush(stderr);
+    return ExceptionCode == EXCEPTION_CODE ? ExceptionExecuteHandler : ExceptionContinueSearch;
+}
+
+
+#else
+
+
+static EXCEPTION_DISPOSITION NTAPI
+ignore_handler(struct _EXCEPTION_RECORD *ExceptionRecord,
+               void *EstablisherFrame,
+               struct _CONTEXT *ContextRecord,
+               void *DispatcherContext)
+{
+    DWORD ExceptionCode = ExceptionRecord->ExceptionCode;
+    fprintf(stderr, "exception 0x%lx\n", ExceptionCode);
+    fflush(stderr);
+    return ExceptionCode == EXCEPTION_CODE ? ExceptionContinueExecution : ExceptionContinueSearch;
+}
+
+#endif
+
+
+#endif /* __MINGW32__ */
+
+
+int
+main()
+{
+    setvbuf(stderr, NULL, _IONBF, 0);
+
+    fprintf(stderr, "before\n");
+    fflush(stderr);
+
+#ifdef _MSC_VER
+
+    __try {
+        RaiseException(EXCEPTION_CODE, 0, 0, NULL);
+        fprintf(stderr, "unreachable\n");
+        fflush(stderr);
+        _exit(1);
+    }
+    __except (exceptionFilter(GetExceptionInformation())) {
+    }
+
+#elif defined(_WIN64)
+
+    __try1(exceptionHandler);
+
+    RaiseException(EXCEPTION_CODE, 0, 0, NULL);
+    fprintf(stderr, "unreachable\n");
+    fflush(stderr);
+    TerminateProcess(GetCurrentProcess(), 1);
+
+    __except1;
+
+#else
+
+    NT_TIB *tib = (NT_TIB *)NtCurrentTeb();
+    struct _EXCEPTION_REGISTRATION_RECORD Record;
+    Record.Next = tib->ExceptionList;
+    Record.Handler = ignore_handler;
+    tib->ExceptionList = &Record;
+
+    RaiseException(EXCEPTION_CODE, 0, 0, NULL);
+
+    tib->ExceptionList = tib->ExceptionList->Next;
+
+#endif
+
+    fprintf(stderr, "after\n");
+    fflush(stderr);
+
+    return 0;
+}
+
+
+// CHECK_STDERR: /^before$/
+// CHECK_STDERR: /^exception 0xe0000001$/
+// CHECK_STDERR: /^after$/
 // CHECK_EXIT_CODE: 0
