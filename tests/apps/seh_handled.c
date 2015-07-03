@@ -60,6 +60,8 @@ exceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 #else /* __MINGW32__ */
 
 
+#ifndef _WIN64
+
 #ifndef HAVE_EXCEPTION_REGISTRATION_RECORD
 
 struct _EXCEPTION_REGISTRATION_RECORD
@@ -69,26 +71,6 @@ struct _EXCEPTION_REGISTRATION_RECORD
 };
 
 #endif
-
-
-#ifdef _WIN64
-
-
-static EXCEPTION_DISPOSITION NTAPI
-__attribute__((used))
-exceptionHandler(struct _EXCEPTION_RECORD *ExceptionRecord,
-                 PVOID EstablisherFrame,
-                 struct _CONTEXT *ContextRecord,
-                 PVOID DispatcherContext)
-{
-    DWORD ExceptionCode = ExceptionRecord->ExceptionCode;
-    fprintf(stderr, "exception 0x%lx\n", ExceptionCode);
-    fflush(stderr);
-    return ExceptionCode == EXCEPTION_CODE ? ExceptionExecuteHandler : ExceptionContinueSearch;
-}
-
-
-#else
 
 
 // XXX: always_inline attribute is missing from some headers
@@ -132,18 +114,7 @@ main()
     __except (exceptionFilter(GetExceptionInformation())) {
     }
 
-#elif defined(_WIN64)
-
-    __try1(exceptionHandler);
-
-    RaiseException(EXCEPTION_CODE, 0, 0, NULL);
-    fprintf(stderr, "unreachable\n");
-    fflush(stderr);
-    TerminateProcess(GetCurrentProcess(), 1);
-
-    __except1;
-
-#else
+#elif !defined(_WIN64)
 
     NT_TIB *tib = (NT_TIB *)NtCurrentTeb();
     struct _EXCEPTION_REGISTRATION_RECORD Record;
@@ -154,6 +125,10 @@ main()
     RaiseException(EXCEPTION_CODE, 0, 0, NULL);
 
     tib->ExceptionList = tib->ExceptionList->Next;
+
+#else
+
+    fprintf(stderr, "exception 0x%lx\n", EXCEPTION_CODE);
 
 #endif
 
