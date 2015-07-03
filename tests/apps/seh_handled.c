@@ -60,11 +60,15 @@ exceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 #else /* __MINGW32__ */
 
 
+#ifndef HAVE_EXCEPTION_REGISTRATION_RECORD
+
 struct _EXCEPTION_REGISTRATION_RECORD
 {
     struct _EXCEPTION_REGISTRATION_RECORD *Next;
     EXCEPTION_DISPOSITION (NTAPI *Handler)(struct _EXCEPTION_RECORD *, PVOID, struct _CONTEXT *, PVOID);
 };
+
+#endif
 
 
 #ifdef _WIN64

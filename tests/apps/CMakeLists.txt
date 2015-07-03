@@ -2,8 +2,17 @@ cmake_minimum_required (VERSION 2.6)
 
 project (drmingw-test-apps)
 
+include (CheckCSourceCompiles)
+
 unset (CMAKE_RUNTIME_OUTPUT_DIRECTORY)
 unset (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+
+if (MINGW)
+    check_c_source_compiles ("#include <windows.h>\nstruct _EXCEPTION_REGISTRATION_RECORD r; int main() { return 0; }" HAVE_EXCEPTION_REGISTRATION_RECORD)
+    if (HAVE_EXCEPTION_REGISTRATION_RECORD)
+        add_definitions (-DHAVE_EXCEPTION_REGISTRATION_RECORD=1)
+    endif ()
+endif ()
 
 if (MSVC)
     # http://www.cmake.org/Wiki/CMake_FAQ#How_can_I_build_my_MSVC_application_with_a_static_runtime.3F
