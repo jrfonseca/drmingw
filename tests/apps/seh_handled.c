@@ -91,6 +91,10 @@ exceptionHandler(struct _EXCEPTION_RECORD *ExceptionRecord,
 #else
 
 
+// XXX: always_inline attribute is missing from some headers
+FORCEINLINE struct _TEB *NtCurrentTeb(void);
+
+
 static EXCEPTION_DISPOSITION NTAPI
 ignore_handler(struct _EXCEPTION_RECORD *ExceptionRecord,
                void *EstablisherFrame,
