@@ -209,6 +209,20 @@ readProcessString(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T nSize)
 }
 
 
+static void
+refreshSymbolsAndDumpStack(HANDLE hProcess, HANDLE hThread)
+{
+    assert(hProcess);
+    assert(hThread);
+
+    // XXX: Deferred symbols don't get loaded without this
+    SymRefreshModuleList(hProcess);
+
+    dumpStack(hProcess, hThread, NULL);
+}
+
+
+
 // Trap a particular thread
 BOOL
 TrapThread(DWORD dwProcessId, DWORD dwThreadId)
@@ -230,10 +244,7 @@ TrapThread(DWORD dwProcessId, DWORD dwThreadId)
 
     DWORD dwRet = SuspendThread(hThread);
     if (dwRet != (DWORD)-1) {
-        // XXX: Deferred symbols don't get loaded without this
-        SymRefreshModuleList(pProcessInfo->hProcess);
-
-        dumpStack(hProcess, hThread, NULL);
+        refreshSymbolsAndDumpStack(hProcess, hThread);
 
         exit(3);
     }
@@ -241,6 +252,21 @@ TrapThread(DWORD dwProcessId, DWORD dwThreadId)
     TerminateProcess(hProcess, 3);
 
     return TRUE;
+}
+
+
+static BOOL
+isAbortExitCode(DWORD dwExitCode)
+{
+    switch (dwExitCode) {
+    case 3:
+    case STATUS_INVALID_CRUNTIME_PARAMETER:
+    case STATUS_STACK_BUFFER_OVERRUN: // STATUS_SECURITY_CHECK_FAILURE
+    case STATUS_FATAL_APP_EXIT:
+        return TRUE;
+    default:
+        return FALSE;
+    }
 }
 
 
@@ -450,6 +476,14 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             // Remove the thread from the thread list
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
+            hProcess = pProcessInfo->hProcess;
+
+            // Dump the stack on abort()
+            if (isAbortExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
+                pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
+                refreshSymbolsAndDumpStack(hProcess, pThreadInfo->hThread);
+            }
+
             pProcessInfo->Threads.erase(DebugEvent.dwThreadId);
             break;
 
@@ -466,13 +500,9 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             hProcess = pProcessInfo->hProcess;
 
             // Dump the stack on abort()
-            if (DebugEvent.u.ExitProcess.dwExitCode == 3) {
+            if (isAbortExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
-
-                // XXX: Deferred symbols don't get loaded without this
-                SymRefreshModuleList(pProcessInfo->hProcess);
-
-                dumpStack(hProcess, pThreadInfo->hThread, NULL);
+                refreshSymbolsAndDumpStack(hProcess, pThreadInfo->hThread);
             }
 
             // Remove the process from the process list
