@@ -34,3 +34,4 @@ typedef struct {
 
 EXTERN_C BOOL ObtainSeDebugPrivilege(void);
 EXTERN_C BOOL DebugMainLoop(const DebugOptions *pOptions);
+EXTERN_C BOOL TrapThread(DWORD dwProcessId, DWORD dwThreadId);

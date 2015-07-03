@@ -209,6 +209,41 @@ readProcessString(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T nSize)
 }
 
 
+// Trap a particular thread
+BOOL
+TrapThread(DWORD dwProcessId, DWORD dwThreadId)
+{
+    PPROCESS_INFO pProcessInfo;
+    PTHREAD_INFO pThreadInfo;
+    HANDLE hProcess;
+    HANDLE hThread;
+
+    /* FIXME: synchronize access to globals */
+
+    pProcessInfo = &g_Processes[dwProcessId];
+    hProcess = pProcessInfo->hProcess;
+    assert(hProcess);
+
+    pThreadInfo = &pProcessInfo->Threads[dwThreadId];
+    hThread = pThreadInfo->hThread;
+    assert(hThread);
+
+    DWORD dwRet = SuspendThread(hThread);
+    if (dwRet != (DWORD)-1) {
+        // XXX: Deferred symbols don't get loaded without this
+        SymRefreshModuleList(pProcessInfo->hProcess);
+
+        dumpStack(hProcess, hThread, NULL);
+
+        exit(3);
+    }
+
+    TerminateProcess(hProcess, 3);
+
+    return TRUE;
+}
+
+
 BOOL DebugMainLoop(const DebugOptions *pOptions)
 {
     BOOL fFinished = FALSE;

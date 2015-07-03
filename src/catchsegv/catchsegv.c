@@ -78,8 +78,9 @@ static BOOL CALLBACK
 EnumWindowCallback(HWND hWnd, LPARAM lParam)
 {
     DWORD dwProcessId = 0;
+    DWORD dwThreadId;
 
-    GetWindowThreadProcessId(hWnd, &dwProcessId);
+    dwThreadId = GetWindowThreadProcessId(hWnd, &dwProcessId);
     if (dwProcessId == lParam) {
         if (GetWindowLong(hWnd, GWL_STYLE) & DS_MODALFRAME) {
             char szWindowText[256];
@@ -91,7 +92,9 @@ EnumWindowCallback(HWND hWnd, LPARAM lParam)
 
             g_TimerIgnore = TRUE;
 
-            TerminateProcessById(dwProcessId);
+            assert(dwThreadId != 0);
+
+            TrapThread(dwProcessId, dwThreadId);
 
             return FALSE;
         }
