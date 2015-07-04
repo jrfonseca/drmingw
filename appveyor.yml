@@ -24,10 +24,13 @@ before_build:
 - mingw32-make --version
 - appveyor DownloadFile %DBGHELP_URL% -FileName dbghelp.7z
 - 7z x -othirdparty/dbghelp/ dbghelp.7z > nul:
-- cmake -H. -Bbuild -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR=thirdparty/dbghelp
+- cmake -H. -Bbuild\mingw32 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR=thirdparty/dbghelp
 
 build_script:
-- cmake --build build --use-stderr --target all
+- cmake --build build\mingw32 --use-stderr --target all
 
 after_build:
-- cmake --build build --use-stderr --target test
+- cmake --build build\mingw32 --use-stderr --target test
+- cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 12"
+- cmake --build build\msvc32 --config Debug -- /verbosity:minimal
+- python tests\apps\test.py build\mingw32\bin\catchsegv.exe build\msvc32\Debug
