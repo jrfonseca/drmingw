@@ -108,7 +108,7 @@ def test((catchsegvExe, testExe, testSrc)):
         # Search the source file for '// CHECK_...' annotations and process
         # them.
 
-        checkCommentRe = re.compile(r'^// CHECK_([_0-9A-Z]+): (.*)$')
+        checkCommentRe = re.compile(r'^// CHECK_([_0-9A-Z]+):\s+(.*)$')
         for line in open(testSrc, 'rt'):
             line = line.rstrip('\n')
             mo = checkCommentRe.match(line)
@@ -116,6 +116,10 @@ def test((catchsegvExe, testExe, testSrc)):
                 checkName = mo.group(1)
                 checkExpr = mo.group(2)
                 if checkName == 'EXIT_CODE':
+                    inverse = False
+                    if checkExpr.startswith('!'):
+                        inverse = True
+                        checkExpr = checkExpr[1:]
                     if checkExpr.startswith('0x'):
                         checkExitCode = int(checkExpr, 16)
                     else:
@@ -123,6 +127,8 @@ def test((catchsegvExe, testExe, testSrc)):
                     if sys.platform != 'win32':
                         checkExitCode = checkExitCode % 256
                     ok = exitCode == checkExitCode 
+                    if inverse:
+                        ok = not ok
                     if not ok:
                         writeStdout('# exit code was 0x%08x\n' % exitCode)
                 elif checkName == 'STDOUT':
@@ -133,6 +139,7 @@ def test((catchsegvExe, testExe, testSrc)):
                     assert False
 
                 ok_or_not = ['not ok', 'ok']
+                checkExpr = mo.group(2)
                 writeStdout('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testExe, 'CHECK_' + checkName, checkExpr))
                 if not ok:
                     result = False
@@ -216,7 +223,12 @@ def main():
 
             testArgs.append((catchsegvExe, testExe, testSrc))
 
-    for testName, testResult in pool.imap_unordered(test, testArgs):
+    if numJobs <= 1 or len(testArgs) <= 1:
+        imap = map
+    else:
+        imap = pool.imap_unordered
+
+    for testName, testResult in imap(test, testArgs):
         if not testResult:
             failedTests.append(testName)
 

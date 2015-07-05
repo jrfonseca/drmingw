@@ -41,4 +41,5 @@ int main()
     return 125;
 }
 
-// CHECK_EXIT_CODE: 0xC0000417
+// CHECK_STDERR: /!_invoke_watson  /
+// CHECK_EXIT_CODE: !0
