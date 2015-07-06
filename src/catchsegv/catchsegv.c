@@ -125,7 +125,7 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
         return;
     }
 
-    fprintf(stderr, "time out (%lu sec) exceeded\n", g_TimeOut);
+    fprintf(stderr, "catchsegv: time out (%lu sec) exceeded\n", g_TimeOut);
 
     g_TimerIgnore = TRUE;
 
@@ -190,7 +190,7 @@ main(int argc, char** argv)
             debugOptions.debug_flag = TRUE;
         } else if (!strcmp(*argv, "-t")) {
             if (argc < 2) {
-                fprintf(stderr, "error: -t missing argument\n\n");
+                fprintf(stderr, "catchsegv: error: -t missing argument\n\n");
                 Usage();
                 return 1;
             }
@@ -216,7 +216,7 @@ main(int argc, char** argv)
 
         length = (ULONG)strlen(*argv);
         if (length + 3 + (pCommandLine - g_CommandLine) >= sizeof g_CommandLine) {
-            fprintf(stderr, "error: command line length exceeds %Iu characters\n", sizeof g_CommandLine);
+            fprintf(stderr, "catchsegv: error: command line length exceeds %Iu characters\n", sizeof g_CommandLine);
             return 1;
         }
 
@@ -242,7 +242,7 @@ main(int argc, char** argv)
     *pCommandLine = 0;
 
     if (strlen(g_CommandLine) == 0) {
-        fprintf(stderr, "error: no command line given\n\n");
+        fprintf(stderr, "catchsegv: error: no command line given\n\n");
         Usage();
         return EXIT_FAILURE;
     }
@@ -272,7 +272,7 @@ main(int argc, char** argv)
                         NULL, // lpCurrentDirectory
                         &StartupInfo,
                         &ProcessInformation)) {
-         fprintf(stderr, "error: failed to create the process (0x%08lx)\n", GetLastError());
+         fprintf(stderr, "catchsegv: error: failed to create the process (0x%08lx)\n", GetLastError());
          exit(EXIT_FAILURE);
     }
 
@@ -281,7 +281,7 @@ main(int argc, char** argv)
 
     g_hTimerQueue = CreateTimerQueue();
     if (g_hTimerQueue == NULL) {
-        fprintf(stderr, "error: failed to create a timer queue (0x%08lx)\n", GetLastError());
+        fprintf(stderr, "catchsegv: error: failed to create a timer queue (0x%08lx)\n", GetLastError());
         return EXIT_FAILURE;
     }
 
@@ -295,7 +295,7 @@ main(int argc, char** argv)
     if (!CreateTimerQueueTimer(&g_hTimer, g_hTimerQueue,
                                (WAITORTIMERCALLBACK)TimeOutCallback,
                                (PVOID)(UINT_PTR)dwProcessId, g_Period, g_Period, 0)) {
-        fprintf(stderr, "error: failed to CreateTimerQueueTimer failed (0x%08lx)\n", GetLastError());
+        fprintf(stderr, "catchsegv: error: failed to CreateTimerQueueTimer failed (0x%08lx)\n", GetLastError());
         return EXIT_FAILURE;
     }
 
