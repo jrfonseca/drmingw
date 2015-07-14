@@ -246,6 +246,8 @@ TrapThread(DWORD dwProcessId, DWORD dwThreadId)
     if (dwRet != (DWORD)-1) {
         refreshSymbolsAndDumpStack(hProcess, hThread);
 
+        // TODO: Flag fTerminating
+
         exit(3);
     }
 
@@ -254,19 +256,18 @@ TrapThread(DWORD dwProcessId, DWORD dwThreadId)
     return TRUE;
 }
 
-
+// Abnormal termination can yield all sort of exit codes:
+// - abort exits with 3
+// - MS C/C++ Runtime might also exit with
+//   - STATUS_INVALID_CRUNTIME_PARAMETER:
+//   - STATUS_STACK_BUFFER_OVERRUN: // STATUS_SECURITY_CHECK_FAILURE
+//   - STATUS_FATAL_APP_EXIT
+// - EnterCriticalSection with unitalize CS will terminate with the calling HMODULE
+//
 static BOOL
-isAbortExitCode(DWORD dwExitCode)
+isAbnormalExitCode(DWORD dwExitCode)
 {
-    switch (dwExitCode) {
-    case 3:
-    case STATUS_INVALID_CRUNTIME_PARAMETER:
-    case STATUS_STACK_BUFFER_OVERRUN: // STATUS_SECURITY_CHECK_FAILURE
-    case STATUS_FATAL_APP_EXIT:
-        return TRUE;
-    default:
-        return FALSE;
-    }
+    return dwExitCode > 255 || dwExitCode == 3;
 }
 
 
@@ -275,6 +276,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
     BOOL fFinished = FALSE;
     BOOL fBreakpointSignalled = FALSE;
     BOOL fWowBreakpointSignalled = FALSE;
+    BOOL fTerminating = FALSE;
 
     while(!fFinished)
     {
@@ -406,6 +408,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                  * Terminate the process. As continuing would cause the JIT debugger
                  * to be invoked again.
                  */
+                fTerminating = TRUE;
                 TerminateProcess(pProcessInfo->hProcess, (UINT)ExceptionCode);
             }
 
@@ -479,7 +482,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             hProcess = pProcessInfo->hProcess;
 
             // Dump the stack on abort()
-            if (isAbortExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
+            if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
                 refreshSymbolsAndDumpStack(hProcess, pThreadInfo->hThread);
             }
@@ -500,7 +503,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             hProcess = pProcessInfo->hProcess;
 
             // Dump the stack on abort()
-            if (isAbortExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
+            if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
                 refreshSymbolsAndDumpStack(hProcess, pThreadInfo->hThread);
             }
