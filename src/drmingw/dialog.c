@@ -17,6 +17,7 @@
  */
 
 #include <windows.h>
+#include <richedit.h>
 
 #include "errmsg.h"
 #include "resource.h"
@@ -65,8 +66,12 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
     {
         case WM_CREATE:
         {
+            // Newer rich edit controls are much faster
+            // http://blogs.msdn.com/b/murrays/archive/2006/10/14/richedit-versions.aspx
+            // https://msdn.microsoft.com/en-us/library/windows/desktop/hh298375.aspx
+            LoadLibraryA("riched20.dll");
             CreateWindowA(
-                "EDIT",
+                RICHEDIT_CLASS,
                 "",
                 WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY,
                 CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -75,6 +80,10 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                 g_hInstance,
                 NULL
             );
+
+            // Set the background color to match the disabled edit control
+            DWORD dwColor = GetSysColor(COLOR_3DFACE);
+            SendDlgItemMessage(hwnd, IDC_MESSAGE, EM_SETBKGNDCOLOR, FALSE, dwColor);
 
             // We used to use GetStockObject(ANSI_FIXED_FONT), but it's known
             // to lead to unreliable results, particularly on Russion locales
