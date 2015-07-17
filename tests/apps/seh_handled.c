@@ -40,7 +40,7 @@
 #include <windows.h>
 
 
-#define EXCEPTION_CODE 0xE0000001
+#define EXCEPTION_CODE 0xE0000001UL
 
 
 #ifdef _MSC_VER
