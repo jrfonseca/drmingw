@@ -173,31 +173,62 @@ find_dwarf_symbol(Dwarf_Debug dbg,
         plineno = lineno = 0;
         pfile = file = unknown;
         Dwarf_Signed i;
-        for (i = 0; i < linecount; i++) {
+
+        i = 0;
+        while (i < linecount) {
             if (dwarf_lineaddr(linebuf[i], &lineaddr, &error) != DW_DLV_OK) {
                 OutputDebug("MGWHELP: dwarf_lineaddr failed - %s\n", dwarf_errmsg(error));
                 break;
             }
+
+            if (lineaddr == 0) {
+                /* Per dwarfdump/print_lines.c, The SN Systems Linker generates
+                 * line records with addr=0, when dealing with linkonce symbols
+                 * and no stripping.  We need to skip records that do not have
+                 * ís_addr_set.
+                 */
+                ++i;
+                while (i < linecount) {
+                    Dwarf_Bool has_is_addr_set = FALSE;
+                    if (dwarf_line_is_addr_set(linebuf[i], &has_is_addr_set, &error) != DW_DLV_OK) {
+                        OutputDebug("MGWHELP: dwarf_line_is_addr_set failed - %s\n", dwarf_errmsg(error));
+                        has_is_addr_set = FALSE;
+                    }
+                    if (has_is_addr_set) {
+                        break;
+                    }
+                    ++i;
+                }
+                continue;
+            }
+
             if (addr > plineaddr && addr < lineaddr) {
+                // Lines are past the address
                 lineno = plineno;
                 file = pfile;
                 break;
             }
+
             if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
                 OutputDebug("MGWHELP: dwarf_lineno failed - %s\n", dwarf_errmsg(error));
                 break;
             }
+
             if (dwarf_linesrc(linebuf[i], &file0, &error) != DW_DLV_OK) {
                 OutputDebug("MGWHELP: dwarf_linesrc failed - %s\n", dwarf_errmsg(error));
             } else {
                 file = file0;
             }
+
             if (addr == lineaddr) {
+                // Exact match
                 break;
             }
+
             plineaddr = lineaddr;
             plineno = lineno;
             pfile = file;
+            ++i;
         }
 
         info->filename = file;
