@@ -23,15 +23,6 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
 
 
@@ -199,7 +190,7 @@ int _dwarf_internal_srclines(Dwarf_Die die,
 #define LOP_SPECIAL  4
 
 #define WHAT_IS_OPCODE(type,opcode,base,opcode_length,line_ptr,highest_std) \
-    if ((opcode) < (base)) {                            \
+    if ((opcode) < (base)) {                             \
         /*  we know we must treat as a standard op       \
             or a special case. */                        \
         if ((opcode) == DW_EXTENDED_OPCODE) {            \

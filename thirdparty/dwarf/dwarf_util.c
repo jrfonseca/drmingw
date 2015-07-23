@@ -23,25 +23,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
-
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -53,6 +35,45 @@
 
 
 #define MINBUFLEN 1000
+#define TRUE  1
+#define FALSE 0
+
+Dwarf_Bool
+_dwarf_file_has_debug_fission_cu_index(Dwarf_Debug dbg)
+{
+    if(!dbg) {
+        return FALSE;
+    }
+    if (dbg->de_cu_hashindex_data) {
+        return TRUE;
+    }
+    return FALSE;
+}
+Dwarf_Bool
+_dwarf_file_has_debug_fission_tu_index(Dwarf_Debug dbg)
+{
+    if(!dbg) {
+        return FALSE;
+    }
+    if (dbg->de_tu_hashindex_data ) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
+Dwarf_Bool
+_dwarf_file_has_debug_fission_index(Dwarf_Debug dbg)
+{
+    if(!dbg) {
+        return FALSE;
+    }
+    if (dbg->de_cu_hashindex_data ||
+        dbg->de_tu_hashindex_data) {
+        return 1;
+    }
+    return FALSE;
+}
 
 /*  Given a form, and a pointer to the bytes encoding
     a value of that form, val_ptr, this function returns
@@ -399,11 +420,29 @@ _dwarf_get_abbrev_for_code(Dwarf_CU_Context cu_context, Dwarf_Unsigned code)
         return (hash_abbrev_entry);
     }
 
-    abbrev_ptr = cu_context->cc_last_abbrev_ptr != NULL ?
-        cu_context->cc_last_abbrev_ptr :
-        dbg->de_debug_abbrev.dss_data + cu_context->cc_abbrev_offset;
-    end_abbrev_ptr = dbg->de_debug_abbrev.dss_data +
-        dbg->de_debug_abbrev.dss_size;
+    if (cu_context->cc_last_abbrev_ptr) {
+        abbrev_ptr = cu_context->cc_last_abbrev_ptr;
+        end_abbrev_ptr = cu_context->cc_last_abbrev_endptr;
+    } else {
+        /*  This is ok because cc_abbrev_offset includes DWP
+            offset if appropriate. */
+        abbrev_ptr = dbg->de_debug_abbrev.dss_data +
+            cu_context->cc_abbrev_offset;
+
+        if (cu_context->cc_dwp_offsets.pcu_type)  {
+            /*  In a DWP the abbrevs
+                for this context are known quite precisely. */
+            Dwarf_Unsigned size = 0;
+            /* Ignore the offset returned. Already in cc_abbrev_offset. */
+            _dwarf_get_dwp_extra_offset(&cu_context->cc_dwp_offsets,
+                DW_SECT_ABBREV,&size);
+            /*  ASSERT: size != 0 */
+            end_abbrev_ptr = abbrev_ptr + size;
+        } else {
+            end_abbrev_ptr = abbrev_ptr +
+                dbg->de_debug_abbrev.dss_size;
+        }
+    }
 
     /*  End of abbrev's as we are past the end entirely.
         THis can happen */
@@ -455,6 +494,7 @@ _dwarf_get_abbrev_for_code(Dwarf_CU_Context cu_context, Dwarf_Unsigned code)
         *abbrev_ptr != 0 && abbrev_code != code);
 
     cu_context->cc_last_abbrev_ptr = abbrev_ptr;
+    cu_context->cc_last_abbrev_endptr = end_abbrev_ptr;
     return (abbrev_code == code ? inner_list_entry : NULL);
 }
 
@@ -479,6 +519,36 @@ _dwarf_string_valid(void *startptr, void *endptr)
     }
     return 0;                   /* FAIL! bad string! */
 }
+
+
+/*  Return non-zero if the start/end are not valid for the
+    die's section.
+    Return 0 if valid*/
+int
+_dwarf_reference_outside_section(Dwarf_Die die,
+    Dwarf_Small * startaddr,
+    Dwarf_Small * pastend)
+{
+    Dwarf_Debug dbg = 0;
+    Dwarf_CU_Context contxt = 0;
+    struct Dwarf_Section_s *sec = 0;
+
+    contxt = die->di_cu_context;
+    dbg = contxt->cc_dbg;
+    if (die->di_is_info) {
+        sec = &dbg->de_debug_info;
+    } else {
+        sec = &dbg->de_debug_types;
+    }
+    if (startaddr < sec->dss_data) {
+        return 1;
+    }
+    if (pastend > (sec->dss_data + sec->dss_size)) {
+        return 1;
+    }
+    return 0;
+}
+
 
 /*
   A byte-swapping version of memcpy
@@ -764,10 +834,17 @@ dwarf_printf(Dwarf_Debug dbg,
         the buffer when necessary, but not excessively
         (but only if we control the buffer size).  */
     while (1) {
+        int olen = 0;
         tries++;
         va_start(ap,format);
-        int olen = vsnprintf(bufdata->dp_buffer,
+        olen = vsnprintf(bufdata->dp_buffer,
             bufdata->dp_buffer_len, format,ap);
+        /*  "The object ap may be passed as an argument to another
+            function; if that function invokes the va_arg()
+            macro with parameter ap, the value of ap in the calling
+            function is unspecified and shall be passed to the va_end()
+            macro prior to any further reference to ap."
+            Single Unix Specification. */
         va_end(ap);
         if (olen > -1 && (long)olen < (long)bufdata->dp_buffer_len) {
             /*  The caller had better copy or dispose

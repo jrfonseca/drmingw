@@ -23,29 +23,32 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the above address.
-*/
-
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
 #include <stdio.h>
 #include "dwarf_abbrev.h"
+
+/*  This is used to print a .debug_abbrev section without
+    knowing about the DIEs that use the abbrevs.
+
+    When we have a simple .o
+    there is at least a hope of iterating through
+    the abbrevs meaningfully without knowing
+    a CU context.
+
+    This often fails or gets incorrect info
+    because there is no guarantee the .debug_abbrev
+    section is free of garbage bytes.
+
+    In an object with multiple CU/TUs the
+    output is difficult/impossible to usefully interpret.
+
+    In a dwp (Package File)  it is really impossible
+    to associate abbrevs with a CU.
+
+*/
 
 int
 dwarf_get_abbrev(Dwarf_Debug dbg,
@@ -61,6 +64,7 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
     Dwarf_Abbrev ret_abbrev = 0;
     Dwarf_Unsigned labbr_count = 0;
     Dwarf_Unsigned utmp = 0;
+    Dwarf_Unsigned dwp_abbrev_offset = 0;
 
 
     if (dbg == NULL) {
@@ -81,7 +85,6 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
         return (DW_DLV_NO_ENTRY);
     }
 
-
     ret_abbrev = (Dwarf_Abbrev) _dwarf_get_alloc(dbg, DW_DLA_ABBREV, 1);
     if (ret_abbrev == NULL) {
         _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
@@ -98,6 +101,7 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
     *abbr_count = 0;
     if (length != NULL)
         *length = 1;
+
 
     abbrev_ptr = dbg->de_debug_abbrev.dss_data + offset;
     abbrev_section_end =

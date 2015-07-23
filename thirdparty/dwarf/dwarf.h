@@ -1,7 +1,7 @@
 /*
   Copyright (C) 2000,2001,2003,2004,2005,2006 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright 2002-2010 Sun Microsystems, Inc. All rights reserved.
-  Portions Copyright 2007-2012 David Anderson. All rights reserved.
+  Portions Copyright 2007-2015 David Anderson. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -22,15 +22,6 @@
   License along with this program; if not, write the Free Software
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
-
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
 
 */
 
@@ -132,6 +123,12 @@ extern "C" {
 #define DW_TAG_type_unit                0x41  /* DWARF4 */
 #define DW_TAG_rvalue_reference_type    0x42  /* DWARF4 */
 #define DW_TAG_template_alias           0x43  /* DWARF4 */
+#define DW_TAG_coarray_type             0x44  /* DWARF5 */
+#define DW_TAG_generic_subrange         0x45  /* DWARF5 */
+#define DW_TAG_dynamic_type             0x46  /* DWARF5 */
+#define DW_TAG_atomic_type              0x47  /* DWARF5 */
+#define DW_TAG_call_site                0x48  /* DWARF5 */
+#define DW_TAG_call_site_parameter      0x49  /* DWARF5 */
 #define DW_TAG_lo_user                  0x4080
 
 #define DW_TAG_MIPS_loop                0x4081
@@ -189,13 +186,10 @@ extern "C" {
 #define DW_TAG_SUN_fortran_vax_structure 0x420d /* SUN */
 #define DW_TAG_SUN_hi                   0x42ff /* SUN */
 
-
 #define DW_TAG_hi_user                  0xffff
 
 #define DW_children_no                  0
 #define DW_children_yes                 1
-
-
 
 #define DW_FORM_addr                    0x01
 #define DW_FORM_block2                  0x03
@@ -223,7 +217,10 @@ extern "C" {
 #define DW_FORM_flag_present            0x19 /* DWARF4 */
 #define DW_FORM_strx                    0x1a /* DWARF5 */
 #define DW_FORM_addrx                   0x1b /* DWARF5 */
-/* 0x1c thru 0x1f were left unused accidentally. Reserved for future use. */
+#define DW_FORM_ref_sup                 0x1c /* DWARF5 */
+#define DW_FORM_strp_sup                0x1d /* DWARF5 */
+#define DW_FORM_data16                  0x1e /* DWARF5 */
+/* 0x1f was left unused accidentally. Reserved for future use. */
 #define DW_FORM_ref_sig8                0x20 /* DWARF4 */
 #define DW_FORM_GNU_addr_index          0x1f01 /* GNU extension in debug_info.dwo.*/
 #define DW_FORM_GNU_str_index           0x1f02 /* GNU extension, somewhat like DW_FORM_strp */
@@ -282,7 +279,7 @@ extern "C" {
 #define DW_AT_frame_base                        0x40
 #define DW_AT_friend                            0x41
 #define DW_AT_identifier_case                   0x42
-#define DW_AT_macro_info                        0x43
+#define DW_AT_macro_info                        0x43 /* DWARF2-DWARF4, not DWARF5 */
 #define DW_AT_namelist_item                     0x44
 #define DW_AT_priority                          0x45
 #define DW_AT_segment                           0x46
@@ -338,6 +335,22 @@ extern "C" {
 #define DW_AT_reference                         0x77 /* DWARF5 */
 #define DW_AT_rvalue_reference                  0x78 /* DWARF5 */
 #define DW_AT_macros                            0x79 /* DWARF5 */
+#define DW_AT_call_all_calls                    0x7a /* DWARF5 */
+#define DW_AT_call_all_source_calls             0x7b /* DWARF5 */
+#define DW_AT_call_all_tail_calls               0x7c /* DWARF5 */
+#define DW_AT_call_return_pc                    0x7d /* DWARF5 */
+#define DW_AT_call_value                        0x7e /* DWARF5 */
+#define DW_AT_call_origin                       0x7f /* DWARF5 */
+#define DW_AT_call_parameter                    0x80 /* DWARF5 */
+#define DW_AT_call_pc                      0x81 /* DWARF5 */
+#define DW_AT_call_tail_call               0x82 /* DWARF5 */
+#define DW_AT_call_target                       0x83 /* DWARF5 */
+#define DW_AT_call_target_clobbered             0x84 /* DWARF5 */
+#define DW_AT_call_data_location                0x85 /* DWARF5 */
+#define DW_AT_call_data_value                   0x86 /* DWARF5 */
+#define DW_AT_noreturn                          0x87 /* DWARF5 */
+#define DW_AT_alignment                         0x88 /* DWARF5 */
+#define DW_AT_export_symbols                    0x89 /* DWARF5 */
 
 /* In extensions, we attempt to include the vendor extension
    in the name even when the vendor leaves it out. */
@@ -678,6 +691,13 @@ extern "C" {
 #define DW_OP_implicit_pointer          0xa0 /* DWARF5 */
 #define DW_OP_addrx                     0xa1 /* DWARF5 */
 #define DW_OP_constx                    0xa2 /* DWARF5 */
+#define DW_OP_entry_value               0xa3 /* DWARF5 */
+#define DW_OP_const_type                0xa4 /* DWARF5 */
+#define DW_OP_regval_type               0xa5 /* DWARF5 */
+#define DW_OP_deref_type                0xa6 /* DWARF5 */
+#define DW_OP_xderef_type               0xa7 /* DWARF5 */
+#define DW_OP_convert                   0xa8 /* DWARF5 */
+#define DW_OP_reinterpret               0xa9 /* DWARF5 */
 
 
     /* GNU extensions. */
@@ -717,21 +737,24 @@ extern "C" {
 
 #define DW_OP_hi_user                   0xff
 
-#define DW_ATE_address                  0x1
-#define DW_ATE_boolean                  0x2
-#define DW_ATE_complex_float            0x3
-#define DW_ATE_float                    0x4
-#define DW_ATE_signed                   0x5
-#define DW_ATE_signed_char              0x6
-#define DW_ATE_unsigned                 0x7
-#define DW_ATE_unsigned_char            0x8
-#define DW_ATE_imaginary_float          0x9  /* DWARF3 */
-#define DW_ATE_packed_decimal           0xa  /* DWARF3f */
-#define DW_ATE_numeric_string           0xb  /* DWARF3f */
-#define DW_ATE_edited                   0xc  /* DWARF3f */
-#define DW_ATE_signed_fixed             0xd  /* DWARF3f */
-#define DW_ATE_unsigned_fixed           0xe  /* DWARF3f */
-#define DW_ATE_decimal_float            0xf  /* DWARF3f */
+#define DW_ATE_address                  0x01
+#define DW_ATE_boolean                  0x02
+#define DW_ATE_complex_float            0x03
+#define DW_ATE_float                    0x04
+#define DW_ATE_signed                   0x05
+#define DW_ATE_signed_char              0x06
+#define DW_ATE_unsigned                 0x07
+#define DW_ATE_unsigned_char            0x08
+#define DW_ATE_imaginary_float          0x09  /* DWARF3 */
+#define DW_ATE_packed_decimal           0x0a  /* DWARF3f */
+#define DW_ATE_numeric_string           0x0b  /* DWARF3f */
+#define DW_ATE_edited                   0x0c  /* DWARF3f */
+#define DW_ATE_signed_fixed             0x0d  /* DWARF3f */
+#define DW_ATE_unsigned_fixed           0x0e  /* DWARF3f */
+#define DW_ATE_decimal_float            0x0f  /* DWARF3f */
+#define DW_ATE_UTF                      0x10  /* DWARF4 */
+#define DW_ATE_UCS                      0x11  /* DWARF5 */
+#define DW_ATE_ASCII                    0x12  /* DWARF5 */
 
 
 /* ALTIUM extensions. x80, x81 */
@@ -760,12 +783,42 @@ extern "C" {
 
 #define DW_ATE_hi_user                  0xff
 
+
+#define DW_DEFAULTED_no                 0x0      /* DWARF5 */
+#define DW_DEFAULTED_in_class           0x1      /* DWARF5 */
+#define DW_DEFAULTED_out_of_class       0x2      /* DWARF5 */
+
+
+#define DW_IDX_compile_unit             0x1      /* DWARF5 */
+#define DW_IDX_type_unit                0x2      /* DWARF4 only */
+#define DW_IDX_die_offset               0x3      /* DWARF5 */
+#define DW_IDX_parent                   0x4      /* DWARF5 */
+#define DW_IDX_type_hash                0x5      /* DWARF5 */
+#define DW_IDX_lo_user                  0x2000   /* DWARF5 */
+#define DW_IDX_hi_user                  0x0fff   /* DWARF5 */
+
+
+/* DWARF5 Location List Entries in Split Objects */
+#define DW_LLE_end_of_list_entry        0x0      /* DWARF5 */
+#define DW_LLE_base_address_selection_entry 0x01 /* DWARF5 */
+#define DW_LLE_start_end_entry          0x02     /* DWARF5 */
+#define DW_LLE_start_length_entry       0x03     /* DWARF5 */
+#define DW_LLE_offset_pair_entry        0x04     /* DWARF5 */
+
+/* DWARF5 Unit header unit type encodings */
+#define DW_UT_compile                   0x01  /* DWARF5 */
+#define DW_UT_type                      0x02  /* DWARF5 */
+#define DW_UT_partial                   0x03  /* DWARF5 */
+
+
 /*  DWARF5 DebugFission object section id values
     for  .dwp object section offsets hash table.
     0 is reserved, not used.
+    2 is actually reserved, not used in DWARF5.
+    But 2 may be seen in some DWARF4 objects.
 */
 #define DW_SECT_INFO        1  /* .debug_info.dwo        DWARF5 */
-#define DW_SECT_TYPES       2  /* .debug_types.dwo       DWARF5 */
+#define DW_SECT_TYPES       2  /* .debug_types.dwo   pre-DWARF5 */
 #define DW_SECT_ABBREV      3  /* .debug_abbrev.dwo      DWARF5 */
 #define DW_SECT_LINE        4  /* .debug_line.dwo        DWARF5 */
 #define DW_SECT_LOC         5  /* .debug_loc.dwo         DWARF5 */
@@ -851,6 +904,13 @@ extern "C" {
 #define DW_LANG_C_plus_plus_11          0x001a /* DWARF5 */
 #define DW_LANG_OCaml                   0x001b /* DWARF5 */
 #define DW_LANG_Rust                    0x001c /* DWARF5 */
+#define DW_LANG_C11                     0x001d /* DWARF5 */
+#define DW_LANG_Swift                   0x001e /* DWARF5 */
+#define DW_LANG_Julia                   0x001f /* DWARF5 */
+#define DW_LANG_Dylan                   0x0020 /* DWARF5 */
+#define DW_LANG_C_plus_plus_14          0x0021 /* DWARF5 */
+#define DW_LANG_Fortran03               0x0022 /* DWARF5 */
+#define DW_LANG_Fortran08               0x0023 /* DWARF5 */
 #define DW_LANG_lo_user                 0x8000
 #define DW_LANG_Mips_Assembler          0x8001 /* MIPS   */
 #define DW_LANG_Upc                     0x8765 /* UPC, use
@@ -862,6 +922,13 @@ extern "C" {
 #define DW_LANG_SUN_Assembler           0x9001 /* SUN */
 
 #define DW_LANG_hi_user                 0xffff
+
+/*  DWARF5  Line number header entry format name */
+#define DW_LNCT_path            0x1  /* DWARF5 */
+#define DW_LNCT_directory_index 0x2  /* DWARF5 */
+#define DW_LNCT_timestamp       0x3  /* DWARF5 */
+#define DW_LNCT_size            0x4  /* DWARF5 */
+#define DW_LNCT_MD5             0x5  /* DWARF5 */
 
 /* Identifier case name. */
 #define DW_ID_case_sensitive            0x00
@@ -953,24 +1020,29 @@ extern "C" {
 #define DW_ISA_ARM_thumb 1 /* ARM ISA */
 #define DW_ISA_ARM_arm   2 /* ARM ISA */
 
-/* Macro information. */
+
+/* Macro information, DWARF5 */
+#define DW_MACRO_define                  0x01 /* DWARF5 */
+#define DW_MACRO_undef                   0x02 /* DWARF5 */
+#define DW_MACRO_start_file              0x03 /* DWARF5 */
+#define DW_MACRO_end_file                0x04 /* DWARF5 */
+#define DW_MACRO_define_indirect         0x05 /* DWARF5 */
+#define DW_MACRO_undef_indirect          0x06 /* DWARF5 */
+#define DW_MACRO_transparent_include     0x07 /* DWARF5 */
+#define DW_MACRO_define_indirect_sup     0x08 /* DWARF5 */
+#define DW_MACRO_undef_indirect_sup      0x09 /* DWARF5 */
+#define DW_MACRO_transparent_include_sup 0x0a /* DWARF5 */
+#define DW_MACRO_define_indirectx        0x0b /* DWARF5 */
+#define DW_MACRO_undef_indirectx         0x0c /* DWARF5 */
+#define DW_MACRO_lo_user                 0xe0
+#define DW_MACRO_hi_user                 0xff
+
+/* Macro information, DWARF2-DWARF4. */
 #define DW_MACINFO_define               0x01
 #define DW_MACINFO_undef                0x02
 #define DW_MACINFO_start_file           0x03
 #define DW_MACINFO_end_file             0x04
 #define DW_MACINFO_vendor_ext           0xff
-
-#define DW_MACRO_define                 0x01
-#define DW_MACRO_undef                  0x02
-#define DW_MACRO_start_file             0x03
-#define DW_MACRO_end_file               0x04
-#define DW_MACRO_define_indirect        0x05
-#define DW_MACRO_undef_indirect         0x06
-#define DW_MACRO_transparent_include    0x07
-#define DW_MACRO_define_indirectx       0x0b
-#define DW_MACRO_undef_indirectx        0x0c
-#define DW_MACRO_lo_user                0xe0
-#define DW_MACRO_hi_user                0xff
 
 /* CFA operator compaction (a space saving measure, see
    the DWARF standard) means DW_CFA_extended and DW_CFA_nop
@@ -1003,7 +1075,6 @@ extern "C" {
 #define DW_CFA_val_offset        0x14      /* DWARF3f */
 #define DW_CFA_val_offset_sf     0x15      /* DWARF3f */
 #define DW_CFA_val_expression    0x16      /* DWARF3f */
-
 #define DW_CFA_lo_user           0x1c
 #define DW_CFA_low_user          0x1c  /* Incorrect spelling, do not use. */
 

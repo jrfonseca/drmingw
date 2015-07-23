@@ -1,3 +1,27 @@
+May 01, 2015
+  dwarf_next_cu_header_d() is the latest extension for CU reading.
+  Earlier versions still supported.
+  dwarf_die_from_hash_signature() added so readers can
+  use a hash to access a dwp package file DIE.
+  New support for some of DWARF5 and for dwp debug-fission
+  package file reading.
+February 25, 2015
+  Now gennames uses dwgetopt() instead of getopt.
+  So it will more easily build where no getopt() available.
+  We copied dwgetopt.h, .c here (rather than reaching around
+  to dwarfdump) to keep the libdwarf build more easily
+  buildable separate from dwarfdump.
+
+January 8, 2015
+  When malloc fails (out of space) dwarfdump will now
+  use a statically-allocated Dwarf_Error_s struct so it can get
+  the original malloc failure (or other error) reported back to
+  the calling client.  
+
+  Some checks for invalid Elf files were changed to actually 
+  report errors properly.  Thanks to Edward Williamson for 
+  providing test cases with odd errors in the Elf and DWARF. 
+
 May 19, 2014
   REASON FOR RELEASE
   Now handles DebugFission (part of the unreleased standard

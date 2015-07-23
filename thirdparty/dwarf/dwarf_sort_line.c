@@ -22,22 +22,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
 
 /*  This file was designed for SGI IRIX compiler use.
     The static linker can rearrange the order of functions
@@ -46,8 +31,6 @@
     this will (when called by the SGI IRIX
     static linker) rearrange the table so the line table
     is arranged in the same order as the memory layout. */
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"

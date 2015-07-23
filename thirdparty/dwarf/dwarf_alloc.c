@@ -23,22 +23,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
 
 #undef  DEBUG
 
@@ -95,6 +80,16 @@ struct ial_s {
     int (*specialconstructor) (Dwarf_Debug, void *);
     void (*specialdestructor) (void *);
 };
+
+/*  Used as a way to return meaningful errors when
+    the malloc arena is exhausted (when malloc returns NULL).
+    Not normally used.
+    New in December 2014.*/
+struct Dwarf_Error_s _dwarf_failsafe_error = {
+    DW_DLE_FAILSAFE_ERRVAL,
+    1
+};
+
 
 /*  To do destructors we need some extra data in every
     _dwarf_get_alloc situation. */
@@ -201,7 +196,7 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
     /* 37 DW_DLA_LOC_CHAIN */
     {sizeof(struct Dwarf_Loc_Chain_s),MULTIPLY_NO,  0, 0},
 
-    /* 38 DW_DLA_HASH_TABLE */
+    /* 38 0x26 DW_DLA_HASH_TABLE */
     {sizeof(struct Dwarf_Hash_Table_s),MULTIPLY_NO, 0, 0},
 
     /*  The following really use Global struct: used to be unique struct
@@ -210,25 +205,31 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
     DW_DLA_FUNC, DW_DLA_TYPENAME, DW_DLA_VAR, DW_DLA_WEAK also use
     the global types.  */
 
-    /* 39 DW_DLA_FUNC_CONTEXT */
+    /* 39 0x27 DW_DLA_FUNC_CONTEXT */
     {sizeof(struct Dwarf_Global_Context_s),MULTIPLY_NO,  0, 0},
 
-    /* 40 DW_DLA_TYPENAME_CONTEXT */
+    /* 40 0x28 DW_DLA_TYPENAME_CONTEXT */
     {sizeof(struct Dwarf_Global_Context_s),MULTIPLY_NO,  0, 0},
 
-    /* 41 DW_DLA_VAR_CONTEXT */
+    /* 41 0x29 DW_DLA_VAR_CONTEXT */
     {sizeof(struct Dwarf_Global_Context_s),MULTIPLY_NO,  0, 0},
 
-    /* 42 DW_DLA_WEAK_CONTEXT */
+    /* 42 0x2a DW_DLA_WEAK_CONTEXT */
     {sizeof(struct Dwarf_Global_Context_s),MULTIPLY_NO,  0, 0},
 
-    /* 43 DW_DLA_PUBTYPES_CONTEXT DWARF3 */
+    /* 43 0x2b DW_DLA_PUBTYPES_CONTEXT DWARF3 */
     {sizeof(struct Dwarf_Global_Context_s),MULTIPLY_NO,  0, 0},
 
-    {sizeof(struct Dwarf_Hash_Table_Entry_s),MULTIPLY_CT,0,0 }, /* 44 DW_DLA_HASH_TABLE_ENTRY */
+    /* 44 0x2c DW_DLA_HASH_TABLE_ENTRY */
+    {sizeof(struct Dwarf_Hash_Table_Entry_s),MULTIPLY_CT,0,0 },
+    /* 0x2d - 0x2f, reserved for future internal use. */
+
+    /* 45 0x2d  DW_DLA_FISSION_PERCU  */
+    {sizeof(struct Dwarf_Fission_Per_CU_s),MULTIPLY_CT,  0, 0},
+
     {sizeof(int),MULTIPLY_NO,  0, 0}, /* reserved for future internal  types*/
     {sizeof(int),MULTIPLY_NO,  0, 0}, /* reserved for future internal  types*/
-    {sizeof(int),MULTIPLY_NO,  0, 0}, /* reserved for future internal  types*/
+    /* 0x30-0x36 reserved for future internal use. */
     {sizeof(int),MULTIPLY_NO,  0, 0}, /* reserved for future internal  types*/
     {sizeof(int),MULTIPLY_NO,  0, 0}, /* reserved for future internal  types*/
     {sizeof(int),MULTIPLY_NO,  0, 0}, /* reserved for future internal  types*/
@@ -238,10 +239,10 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
     {sizeof(int),MULTIPLY_NO,  0, 0}, /* reserved for future internal  types*/
 
     /*  now,  we have types that are public. */
-    /*  55.  New in June 2014. Gdb. */
+    /* 0x37 55.  New in June 2014. Gdb. */
     {sizeof(struct Dwarf_Gdbindex_s),MULTIPLY_NO,  0, 0},
 
-    /*  56.  New in July 2014. DWARF5 DebugFission dwp file sections
+    /* 0x38 56.  New in July 2014. DWARF5 DebugFission dwp file sections
         .debug_cu_index and .debug_tu_index . */
     {sizeof(struct Dwarf_Xu_Index_Header_s),MULTIPLY_NO,  0, 0},
 };
@@ -437,11 +438,23 @@ void
 dwarf_dealloc(Dwarf_Debug dbg,
     Dwarf_Ptr space, Dwarf_Unsigned alloc_type)
 {
-    unsigned int type = alloc_type;
-    char * malloc_addr = (char *)space - DW_RESERVE;
+    unsigned int type = 0;
+    char * malloc_addr = 0;
 
     if (space == NULL) {
         return;
+    }
+    type = alloc_type;
+    malloc_addr = (char *)space - DW_RESERVE;
+    if (alloc_type == DW_DLA_ERROR) {
+        Dwarf_Error ep = (Dwarf_Error)space;
+        if (ep->er_static_alloc) {
+            /*  This is special, malloc arena
+                was exhausted and there is nothing to delete, really.
+                Set er_errval to signal that the space was dealloc'd. */
+            ep->er_errval = DW_DLE_FAILSAFE_ERRVAL;
+            return;
+        }
     }
     if (dbg == NULL) {
         /*  App error, or an app that failed to succeed in a
@@ -564,6 +577,15 @@ _dwarf_free_all_of_one_debug(Dwarf_Debug dbg)
         erroneous deallocs it is advisable to do the dwarf_deallocs here
         that are not things the user can otherwise request.
         Housecleaning.  */
+    if (dbg->de_cu_hashindex_data) {
+        dwarf_xu_header_free(dbg->de_cu_hashindex_data);
+        dbg->de_cu_hashindex_data = 0;
+    }
+    if (dbg->de_tu_hashindex_data) {
+        dwarf_xu_header_free(dbg->de_tu_hashindex_data);
+        dbg->de_tu_hashindex_data = 0;
+    }
+
     freecontextlist(dbg,&dbg->de_info_reading);
     freecontextlist(dbg,&dbg->de_types_reading);
 

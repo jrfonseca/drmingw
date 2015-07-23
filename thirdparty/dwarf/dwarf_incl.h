@@ -23,15 +23,6 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
 
 
@@ -63,6 +54,7 @@
 
 #include "dwarf_base_types.h"
 #include "dwarf_alloc.h"
+#include "dwarf_xu_index.h"
 #include "dwarf_opaque.h"
 #include "dwarf_error.h"
 #include "dwarf_util.h"

@@ -1,5 +1,4 @@
 /*
-
   Copyright (C) 2000-2004 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright (C) 2007-2012 David Anderson. All Rights Reserved.
   Portions Copyright (C) 2010-2012 SN Systems Ltd. All Rights Reserved.
@@ -24,24 +23,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -558,7 +540,7 @@ _dwarf_get_locdesc(Dwarf_Debug dbg,
                 (address size).
                 http://www.dwarfstd.org/ShowIssue.php?issue=100831.1 */
             Dwarf_Small iplen = offset_size;
-            if (version_stamp == CURRENT_VERSION_STAMP /* 2 */ ) {
+            if (version_stamp == DW_CU_VERSION2 /* 2 */ ) {
                 iplen = address_size;
             }
             READ_UNALIGNED(dbg, operand1, Dwarf_Unsigned, loc_ptr,
@@ -878,6 +860,17 @@ _dwarf_get_loclist_header_start(Dwarf_Debug dbg,
             return (DW_DLV_NO_ENTRY);
         }
     }
+    {
+        int fisres = 0;
+        Dwarf_Unsigned fissoff = 0;
+        Dwarf_Unsigned size = 0;
+        fisres = _dwarf_get_fission_addition_die(attr->ar_die, DW_SECT_LOC,
+            &fissoff, &size,error);
+        if(fisres != DW_DLV_OK) {
+            return fisres;
+        }
+        *loclist_offset += fissoff;
+    }
     return DW_DLV_OK;
 }
 
@@ -922,6 +915,7 @@ dwarf_loclist_n(Dwarf_Attribute attr,
     Dwarf_Locdesc **llbuf = 0;
     Dwarf_CU_Context cucontext = 0;
     unsigned address_size = 0;
+    int cuvstamp = 0;
 
     int blkres = DW_DLV_ERROR;
     int setup_res = DW_DLV_ERROR;
@@ -931,14 +925,16 @@ dwarf_loclist_n(Dwarf_Attribute attr,
     if (setup_res != DW_DLV_OK) {
         return setup_res;
     }
+    cuvstamp = cucontext->cc_version_stamp;
     address_size = cucontext->cc_address_size;
     /*  If this is a form_block then it's a location expression. If it's
         DW_FORM_data4 or DW_FORM_data8 it's a loclist offset */
-    if (((cucontext->cc_version_stamp == CURRENT_VERSION_STAMP ||
-        cucontext->cc_version_stamp == CURRENT_VERSION_STAMP3) &&
-        (form == DW_FORM_data4 || form == DW_FORM_data8)) ||
-        (cucontext->cc_version_stamp == CURRENT_VERSION_STAMP4 &&
-        form == DW_FORM_sec_offset)) {
+    if (((cuvstamp == DW_CU_VERSION2 ||
+        cuvstamp == DW_CU_VERSION3) &&
+            (form == DW_FORM_data4 || form == DW_FORM_data8)) ||
+        ((cuvstamp == DW_CU_VERSION4 ||
+            cuvstamp == DW_CU_VERSION5) &&
+            form == DW_FORM_sec_offset)) {
 
 
         /*  A reference to .debug_loc, with an offset in .debug_loc of a
@@ -1093,20 +1089,23 @@ dwarf_loclist(Dwarf_Attribute attr,
 
     int blkres = DW_DLV_ERROR;
     int setup_res = DW_DLV_ERROR;
+    int cuvstamp = 0;
 
     /* ***** BEGIN CODE ***** */
     setup_res = _dwarf_setup_loc(attr, &dbg, &cucontext, &form, error);
     if (setup_res != DW_DLV_OK) {
         return setup_res;
     }
+    cuvstamp = cuvstamp = cucontext->cc_version_stamp;
     address_size = cucontext->cc_address_size;
     /*  If this is a form_block then it's a location expression. If it's
         DW_FORM_data4 or DW_FORM_data8 it's a loclist offset */
-    if (((cucontext->cc_version_stamp == CURRENT_VERSION_STAMP ||
-        cucontext->cc_version_stamp == CURRENT_VERSION_STAMP3) &&
-        (form == DW_FORM_data4 || form == DW_FORM_data8)) ||
-        (cucontext->cc_version_stamp == CURRENT_VERSION_STAMP4 &&
-        form == DW_FORM_sec_offset))
+    if (((cuvstamp == DW_CU_VERSION2 ||
+        cuvstamp == DW_CU_VERSION3) &&
+            (form == DW_FORM_data4 || form == DW_FORM_data8)) ||
+        ((cuvstamp == DW_CU_VERSION4 ||
+            cuvstamp == DW_CU_VERSION5) &&
+            form == DW_FORM_sec_offset))
         {
 
         /*  A reference to .debug_loc, with an offset in .debug_loc of a
@@ -1234,7 +1233,7 @@ dwarf_loclist_from_expr_a(Dwarf_Debug dbg,
     Dwarf_Debug_InfoTypes info_reading = &dbg->de_info_reading;
     Dwarf_CU_Context current_cu_context =
         info_reading->de_cu_context;
-    Dwarf_Small version_stamp = CURRENT_VERSION_STAMP;
+    Dwarf_Small version_stamp =  DW_CU_VERSION2;
     Dwarf_Half offset_size = dbg->de_length_size;
 
     if (current_cu_context) {
@@ -1247,7 +1246,7 @@ dwarf_loclist_from_expr_a(Dwarf_Debug dbg,
         offset_size = current_cu_context->cc_length_size;
         if (version_stamp < 2) {
             /* This is probably totally silly.  */
-            version_stamp = CURRENT_VERSION_STAMP;
+            version_stamp = DW_CU_VERSION2;
         }
     }
     res = dwarf_loclist_from_expr_b(dbg,

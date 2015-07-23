@@ -24,24 +24,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -139,7 +122,7 @@ _dwarf_macro_stack_push_index(Dwarf_Debug dbg, Dwarf_Signed indx,
         }
         new_size = ms->max * 2;
         newbase =
-            _dwarf_get_alloc(dbg, DW_DLA_STRING,
+            (Dwarf_Signed *)_dwarf_get_alloc(dbg, DW_DLA_STRING,
                 new_size * sizeof(Dwarf_Signed));
         if (newbase == 0) {
             /* just leave the old array in place */
@@ -178,7 +161,11 @@ _dwarf_macro_stack_pop_index(struct macro_stack_s *ms)
     if maximum_count is 0, treat as if it is infinite.
     get macro data up thru
     maximum_count entries or the end of a compilation
-    unit's entries (whichever comes first).  */
+    unit's entries (whichever comes first).
+
+    .debug_macinfo never appears in a .dwp Package File.
+    So offset adjustment for such is not needed.
+*/
 
 int
 dwarf_get_macro_details(Dwarf_Debug dbg,
@@ -244,6 +231,7 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
         free_macro_stack(dbg,&msdata);
         return (DW_DLV_NO_ENTRY);
     }
+    /*   FIXME debugfission is NOT handled here.  */
 
     pnext = macro_base + macro_offset;
     if (maximum_count == 0) {

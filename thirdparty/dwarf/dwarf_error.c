@@ -315,7 +315,7 @@ const char *_dwarf_errmsgs[] = {
     "DW_DLE_LINE_NUMBER_HEADER_ERROR (235), a line number program header seems incomplete (perhaps the header_length is wrong?).",
     "DW_DLE_DEBUG_TYPES_NULL (236)",
     "DW_DLE_DEBUG_TYPES_DUPLICATE (237)",
-    "DW_DLE_DEBUG_TYPES_ONLY_DWARF4 (238)",
+    "DW_DLE_DEBUG_TYPES_ONLY_DWARF4 (238) DW4 and DW5 have types CUs",
     "DW_DLE_DEBUG_TYPEOFFSET_BAD (239)",
     "DW_DLE_GNU_OPCODE_ERROR (240)",
     "DW_DLE_DEBUGPUBTYPES_ERROR (241), could not create pubtypes section",
@@ -351,6 +351,33 @@ const char *_dwarf_errmsgs[] = {
     "DW_DLE_XU_NAME_COL_ERROR(270)",
     "DW_DLE_XU_HASH_ROW_ERROR(271)",
     "DW_DLE_XU_HASH_INDEX_ERROR(272)",
+    "DW_DLE_FAILSAFE_ERRVAL(273)",
+    "DW_DLE_ARANGE_ERROR(274) producer problem in object generation",
+    "DW_DLE_PUBNAMES_ERROR(275) producer problem in object generation",
+    "DW_DLE_FUNCNAMES_ERROR(276) producer problem in object generation",
+    "DW_DLE_TYPENAMES_ERROR(277) producer problem in object generation",
+    "DW_DLE_VARNAMES_ERROR(278) producer problem in object generation",
+    "DW_DLE_WEAKNAMES_ERROR(279) producer problem in object generation",
+    "DW_DLE_RELOCS_ERROR(280) producer problem in object generation",
+    "DW_DLE_DW_DLE_ATTR_OUTSIDE_SECTION(281)",
+    "DW_DLE_FISSION_INDEX_WRONG(282)",
+    "DW_DLE_FISSION_VERSION_ERROR(283)",
+    "DW_DLE_NEXT_DIE_LOW_ERROR(284) corrupted DIE tree",
+    "DW_DLE_CU_UT_TYPE_ERROR(285) not a valid DW_UT_* value",
+    "DW_DLE_NO_SUCH_SIGNATURE_FOUND(286) CU signature not in the index",
+    "DW_DLE_SIGNATURE_SECTION_NUMBER_WRONG(287) libdwarf software error",
+    "DW_DLE_ATTR_FORM_NOT_DATA8(288) wanted an 8 byte signature",
+    "DW_DLE_SIG_TYPE_WRONG_STRING (289) expected tu or cu",
+    "DW_DLE_MISSING_REQUIRED_TU_OFFSET_HASH(290) is a broken dwp package file",
+    "DW_DLE_MISSING_REQUIRED_CU_OFFSET_HASH(291) is a broken dwp package file",
+    "DW_DLE_DWP_MISSING_DWO_ID(292)",
+    "DW_DLE_DWP_SIBLING_ERROR(293)",
+    "DW_DLE_DEBUG_FISSION_INCOMPLETE(294)",
+    "DW_DLE_FISSION_SECNUM_ERR(295) internal libdwarf error",
+    "DW_DLE_DEBUG_MACRO_DUPLICATE(296)",
+    "DW_DLE_DEBUG_NAMES_DUPLICATE(297)",
+    "DW_DLE_DEBUG_LINE_STR_DUPLICATE(298)",
+    "DW_DLE_DEBUG_SUP_DUPLICATE(299)",
 };
 
 
@@ -360,7 +387,20 @@ const char *_dwarf_errmsgs[] = {
     libdwarf consumer document section 3.  Dbg is the Dwarf_debug
     structure being processed.  Error is a pointer to the pointer
     to the error descriptor that will be returned.  Errval is an
-    error code listed in dwarf_error.h.  */
+    error code listed in dwarf_error.h.
+
+    If the malloc arena is exhausted we return a pointer to
+    a special static error record.  This special singleton
+    is mostly ignored by dwarf_dealloc().
+    Users should not be storing Dwarf_Error pointers
+    for long so this singleton is only going to cause
+    confusion when callers try to save an out-of-memory
+    Dwarf_Error pointer.
+    The _dwarf_failsafe_error is intended to
+    be an improvement over an abort() call.
+    The failsafe means we will not abort due to
+    a Dwarf_Error struct creation.
+*/
 void
 _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
 {
@@ -375,20 +415,16 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
             errptr =
                 (Dwarf_Error) _dwarf_get_alloc(dbg, DW_DLA_ERROR, 1);
             if (errptr == NULL) {
-                fprintf(stderr,
-                    "Could not allocate Dwarf_Error structure, "
-                    "abort() in libdwarf.\n");
-                abort();
+                errptr = &_dwarf_failsafe_error;
+                errptr->er_static_alloc = 1;
             }
         } else {
             /*  We have no dbg to work with. dwarf_init failed. We hack
                 up a special area. */
             errptr = _dwarf_special_no_dbg_error_malloc();
             if (errptr == NULL) {
-                fprintf(stderr,
-                    "Could not allocate Dwarf_Error structure, "
-                    "abort() in libdwarf..\n");
-                abort();
+                errptr = &_dwarf_failsafe_error;
+                errptr->er_static_alloc = 1;
             }
         }
 
@@ -400,9 +436,8 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Sword errval)
     if (dbg != NULL && dbg->de_errhand != NULL) {
         errptr = (Dwarf_Error) _dwarf_get_alloc(dbg, DW_DLA_ERROR, 1);
         if (errptr == NULL) {
-            fprintf(stderr, "Could not allocate Dwarf_Error structure,"
-                " abort() in libdwarf.\n");
-            abort();
+            errptr = &_dwarf_failsafe_error;
+            errptr->er_static_alloc = 1;
         }
         errptr->er_errval = errval;
         dbg->de_errhand(errptr, dbg->de_errarg);

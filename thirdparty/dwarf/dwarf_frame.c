@@ -24,25 +24,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
-
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -79,7 +61,7 @@ static void dwarf_init_reg_rules_dw3(struct Dwarf_Regtable_Entry3_s *base,
     unsigned first, unsigned last,int initial_value);
 
 
-#if 0
+#if 0  /* FOR DEBUGGING */
 /* Only used for debugging libdwarf. */
 static void dump_frame_rule(char *msg,
     struct Dwarf_Reg_Rule_s *reg_rule);
@@ -1454,7 +1436,7 @@ _dwarf_get_fde_info_for_a_pc_row(Dwarf_Fde fde,
 
     cie = fde->fd_cie;
     if (cie->ci_initial_table == NULL) {
-        cie->ci_initial_table = _dwarf_get_alloc(dbg, DW_DLA_FRAME, 1);
+        cie->ci_initial_table = (Dwarf_Frame)_dwarf_get_alloc(dbg, DW_DLA_FRAME, 1);
 
         if (cie->ci_initial_table == NULL) {
             _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
@@ -2210,7 +2192,7 @@ dwarf_get_fde_augmentation_data(Dwarf_Fde fde,
 }
 
 
-#if 0
+#if 0  /* FOR DEBUGGING */
 /* Used solely for debugging libdwarf. */
 static void
 dump_frame_rule(char *msg, struct Dwarf_Reg_Rule_s *reg_rule)

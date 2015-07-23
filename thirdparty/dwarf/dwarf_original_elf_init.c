@@ -26,17 +26,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -152,7 +142,7 @@ dwarf_elf_init_file_ownership(dwarf_elf_handle elf_file_pointer,
     /* ELF is no longer tied to libdwarf. */
     Dwarf_Obj_Access_Interface *binary_interface = 0;
     int res = DW_DLV_OK;
-    int err = 0;
+    int localerrnum = 0;
 
     if (access != DW_DLC_READ) {
         DWARF_DBG_ERROR(NULL, DW_DLE_INIT_ACCESS_WRONG, DW_DLV_ERROR);
@@ -163,9 +153,12 @@ dwarf_elf_init_file_ownership(dwarf_elf_handle elf_file_pointer,
         elf_file_pointer,
         libdwarf_owns_elf,
         &binary_interface,
-        &err);
-    if (res != DW_DLV_OK){
-        DWARF_DBG_ERROR(NULL, err, DW_DLV_ERROR);
+        &localerrnum);
+    if (res != DW_DLV_OK) {
+        if (res == DW_DLV_NO_ENTRY) {
+            return res;
+        }
+        DWARF_DBG_ERROR(NULL, localerrnum, DW_DLV_ERROR);
     }
 
     /*  This mallocs space and returns pointer thru ret_dbg,
@@ -190,6 +183,9 @@ dwarf_elf_init_file_ownership(dwarf_elf_handle elf_file_pointer,
 int
 dwarf_finish(Dwarf_Debug dbg, Dwarf_Error * error)
 {
+    if(!dbg) {
+        DWARF_DBG_ERROR(NULL, DW_DLE_DBG_NULL, DW_DLV_ERROR);
+    }
     dwarf_elf_object_access_finish(dbg->de_obj_file);
 
     return dwarf_object_finish(dbg, error);

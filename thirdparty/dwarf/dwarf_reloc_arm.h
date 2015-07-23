@@ -21,10 +21,6 @@
   with this program; if not, write the Free Software Foundation, Inc., 51
   Franklin Street - Fifth Floor, Boston MA 02110-1301, USA.
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-*/
 
 #ifndef DWARF_RELOC_ARM_H
 #define DWARF_RELOC_ARM_H

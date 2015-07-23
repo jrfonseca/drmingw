@@ -117,13 +117,18 @@ typedef unsigned long long  Dwarf_Addr;     /* target memory address */
 
 typedef void*        Dwarf_Ptr;          /* host machine pointer */
 
-/* Used for DW_FORM_ref_sig8. It is not a string, it
+/* Used for DW_FORM_ref_sig8 and DW_AT_dwo_id.
+   It is not a string, it
    is 8 bytes of a signature one would use to find
    a type unit. See dwarf_formsig8()
+
+   Sometimes it is used in calculations as
+   Dwarf_Unsigned, but that is hidden in libdwarf.
 */
-typedef struct  {
+struct Dwarf_Sig8_s  {
     char signature[8];
-} Dwarf_Sig8;
+};
+typedef struct Dwarf_Sig8_s Dwarf_Sig8;
 
 /* Contains info on an uninterpreted block of data
 */
@@ -504,6 +509,7 @@ typedef struct Dwarf_Fde_s*        Dwarf_Fde;
 typedef struct Dwarf_Cie_s*        Dwarf_Cie;
 typedef struct Dwarf_Arange_s*     Dwarf_Arange;
 typedef struct Dwarf_Gdbindex_s*   Dwarf_Gdbindex;
+struct Dwarf_Xu_Index_Header_s;
 typedef struct Dwarf_Xu_Index_Header_s* Dwarf_Xu_Index_Header;
 
 
@@ -1121,9 +1127,37 @@ struct Dwarf_Obj_Access_Interface_s {
 #define DW_DLE_XU_HASH_ROW_ERROR               271
 #define DW_DLE_XU_HASH_INDEX_ERROR             272
 
+/* DW_DLE_FAILSAFE_ERRVAL is an aid when out of memory. */
+#define DW_DLE_FAILSAFE_ERRVAL                 273
+#define DW_DLE_ARANGE_ERROR                    274
+#define DW_DLE_PUBNAMES_ERROR                  275
+#define DW_DLE_FUNCNAMES_ERROR                 276
+#define DW_DLE_TYPENAMES_ERROR                 277
+#define DW_DLE_VARNAMES_ERROR                  278
+#define DW_DLE_WEAKNAMES_ERROR                 279
+#define DW_DLE_RELOCS_ERROR                    280
+#define DW_DLE_ATTR_OUTSIDE_SECTION            281
+#define DW_DLE_FISSION_INDEX_WRONG             282
+#define DW_DLE_FISSION_VERSION_ERROR           283
+#define DW_DLE_NEXT_DIE_LOW_ERROR              284
+#define DW_DLE_CU_UT_TYPE_ERROR                285
+#define DW_DLE_NO_SUCH_SIGNATURE_FOUND         286
+#define DW_DLE_SIGNATURE_SECTION_NUMBER_WRONG  287
+#define DW_DLE_ATTR_FORM_NOT_DATA8             288
+#define DW_DLE_SIG_TYPE_WRONG_STRING           289
+#define DW_DLE_MISSING_REQUIRED_TU_OFFSET_HASH 290
+#define DW_DLE_MISSING_REQUIRED_CU_OFFSET_HASH 291
+#define DW_DLE_DWP_MISSING_DWO_ID              292
+#define DW_DLE_DWP_SIBLING_ERROR               293
+#define DW_DLE_DEBUG_FISSION_INCOMPLETE        294
+#define DW_DLE_FISSION_SECNUM_ERR              295
+#define DW_DLE_DEBUG_MACRO_DUPLICATE           296
+#define DW_DLE_DEBUG_NAMES_DUPLICATE           297
+#define DW_DLE_DEBUG_LINE_STR_DUPLICATE        298
+#define DW_DLE_DEBUG_SUP_DUPLICATE             299
 
     /* DW_DLE_LAST MUST EQUAL LAST ERROR NUMBER */
-#define DW_DLE_LAST        272
+#define DW_DLE_LAST        299
 #define DW_DLE_LO_USER     0x10000
 
     /*  Taken as meaning 'undefined value', this is not
@@ -1238,8 +1272,26 @@ dwarf_get_die_section_name(Dwarf_Debug /*dbg*/,
     Dwarf_Error * /*error*/);
 
 
+/*  dwarf_next_cu_header_d() traverses debug_types CU headers.
+    New in May, 2015.
+    */
+int dwarf_next_cu_header_d(Dwarf_Debug /*dbg*/,
+    Dwarf_Bool      /*is_info*/,
+    Dwarf_Unsigned* /*cu_header_length*/,
+    Dwarf_Half*     /*version_stamp*/,
+    Dwarf_Off*      /*abbrev_offset*/,
+    Dwarf_Half*     /*address_size*/,
+    Dwarf_Half*     /*length_size*/,
+    Dwarf_Half*     /*extension_size*/,
+    Dwarf_Sig8*     /*type signature*/,
+    Dwarf_Unsigned* /*typeoffset*/,
+    Dwarf_Unsigned* /*next_cu_header_offset*/,
+    Dwarf_Half    * /*header_cu_type*/,
+    Dwarf_Error*    /*error*/);
+
 /*  Die traversal operations.
     dwarf_next_cu_header_b() traverses debug_info CU headers.
+    Obsolete but supported.
     */
 int dwarf_next_cu_header_b(Dwarf_Debug /*dbg*/,
     Dwarf_Unsigned* /*cu_header_length*/,
@@ -1252,7 +1304,7 @@ int dwarf_next_cu_header_b(Dwarf_Debug /*dbg*/,
     Dwarf_Error*    /*error*/);
 
 /*  dwarf_next_cu_header_types() traverses debug_types CU headers.
-    New in October, 2011
+    New in October, 2011. Obsolete but supported May 2015.
     */
 int dwarf_next_cu_header_c(Dwarf_Debug /*dbg*/,
     Dwarf_Bool      /*is_info*/,
@@ -1284,6 +1336,13 @@ int dwarf_siblingof_b(Dwarf_Debug /*dbg*/,
     Dwarf_Die        /*die*/,
     Dwarf_Bool       /*is_info*/,
     Dwarf_Die*       /*return_siblingdie*/,
+    Dwarf_Error*     /*error*/);
+
+/* New 27 April 2015. */
+int dwarf_die_from_hash_signature(Dwarf_Debug dbg,
+    Dwarf_Sig8 *     /*hash_sig*/,
+    const char *     /*sig_type: "tu" or "cu"*/,
+    Dwarf_Die*       /*returned_CU_die */,
     Dwarf_Error*     /*error*/);
 
 int dwarf_child(Dwarf_Die /*die*/,
@@ -1559,6 +1618,11 @@ int dwarf_global_formref(Dwarf_Attribute /*attr*/,
 /*  dwarf_formsig8 returns in the caller-provided 8 byte area
     the 8 bytes of a DW_FORM_ref_sig8.  Not a string.  */
 int dwarf_formsig8(Dwarf_Attribute /*attr*/,
+    Dwarf_Sig8 * /*returned sig bytes*/,
+    Dwarf_Error*     /*error*/);
+/*  dwarf_formsig8_b returns in the caller-provided 8 byte area
+    the 8 bytes of a form const (DW_FORM_data8).  Not a string.  */
+int dwarf_formsig8_const(Dwarf_Attribute /*attr*/,
     Dwarf_Sig8 * /*returned sig bytes*/,
     Dwarf_Error*     /*error*/);
 
@@ -2418,8 +2482,9 @@ int dwarf_gdbindex_string_by_offset(Dwarf_Gdbindex /*gdbindexptr*/,
 
 void dwarf_gdbindex_free(Dwarf_Gdbindex /*gdbindexptr*/);
 
-/*  END gdbindex operations. */
-/*  START .debug_cu_index and .debug_tu_index operations. */
+/*  END gdbindex/debugfission operations. */
+
+/*  START debugfission dwp .debug_cu_index and .debug_tu_index operations. */
 
 int dwarf_get_xu_index_header(Dwarf_Debug /*dbg*/,
     const char *  section_type, /* "tu" or "cu" */
@@ -2443,9 +2508,10 @@ int dwarf_get_xu_index_section_type(Dwarf_Xu_Index_Header /*xuhdr*/,
 
 /*  Index values 0 to M-1 are valid. */
 int dwarf_get_xu_hash_entry(Dwarf_Xu_Index_Header /*xuhdr*/,
-    Dwarf_Unsigned    /*index*/,
-    /* returns the hash integer. 64 bits. */
-    Dwarf_Unsigned *  /*hash_value*/,
+    Dwarf_Unsigned     /*index*/,
+
+    /*  Returns the hash value. 64  bits.  */
+    Dwarf_Sig8 *      /*hash_value*/,
 
     /* returns the index into rows of offset/size tables. */
     Dwarf_Unsigned *  /*index_to_sections*/,
@@ -2469,8 +2535,58 @@ int dwarf_get_xu_section_offset(Dwarf_Xu_Index_Header /*xuhdr*/,
 
 void dwarf_xu_header_free(Dwarf_Xu_Index_Header /*xuhdr*/);
 
+/*  Defined larger than necessary. This struct, being visible,
+    will be difficult to change: binary compatibility. */
+#define DW_FISSION_SECT_COUNT 12
 
-/*  END .debug_cu_index and .debug_tu_index operations. */
+/*  User must allocate this struct, zero it,
+    and pass a pointer to it
+    into dwarf_get_debugfission_for_cu .  */
+struct Dwarf_Debug_Fission_Per_CU_s  {
+    /*  Do not free the string. It contains "cu" or "tu". */
+    /*  If this is not set (ie, not a CU/TU in  DWP Package File)
+        then pcu_type will be NULL.  */
+    const char   * pcu_type;
+    /*  pcu_index is the index (range 1 to N )
+        into the tu/cu table of offsets and the table
+        of sizes.  1 to N as the zero index is reserved
+        for special purposes.  Not a value one
+        actually needs. */
+    Dwarf_Unsigned pcu_index;
+    Dwarf_Sig8     pcu_hash;  /* 8 byte  */
+    /*  [0] has offset and size 0.
+        [1]-[8] are DW_SECT_* indexes and the
+        values are  the offset and size
+        of the respective section contribution
+        of a single .dwo object. When pcu_size[n] is
+        zero the corresponding section is not present. */
+    Dwarf_Unsigned pcu_offset[DW_FISSION_SECT_COUNT];
+    Dwarf_Unsigned pcu_size[DW_FISSION_SECT_COUNT];
+    Dwarf_Unsigned unused1;
+    Dwarf_Unsigned unused2;
+};
+typedef struct Dwarf_Debug_Fission_Per_CU_s  Dwarf_Debug_Fission_Per_CU ;
+/*  For any Dwarf_Die in a compilation unit, return
+    the debug fission table data through
+    percu_out.   Usually applications
+    will pass in the CU die.
+    Calling code should zero all of the
+    struct Dwarf_Debug_Fission_Per_CU_s before calling this.
+    If there is no debugfission data this returns
+    DW_DLV_NO_ENTRY (only .dwp objects have debugfission data).  */
+int dwarf_get_debugfission_for_die(Dwarf_Die /* die */,
+    Dwarf_Debug_Fission_Per_CU * /* percu_out */,
+    Dwarf_Error * /* err */);
+
+/* Given a key (hash signature)  from a .o, find the per-cu information
+    for the CU with that key. */
+int dwarf_get_debugfission_for_key(Dwarf_Debug /* dbg */,
+    Dwarf_Sig8 *                 /* key, hash signature */,
+    const char * key_type        /* "cu" or "tu" */,
+    Dwarf_Debug_Fission_Per_CU * /* percu_out */,
+    Dwarf_Error *                /* err */);
+
+/*  END debugfission dwp .debug_cu_index and .debug_tu_index operations. */
 
 
 /*  Utility operations */
@@ -3251,6 +3367,8 @@ extern int dwarf_get_CHILDREN_name(unsigned int /*val_in*/, const char ** /*s_ou
 extern int dwarf_get_ADDR_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_SECT_name (unsigned int /*val_in*/,const char ** /*s_out*/);
 extern int dwarf_get_MACRO_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_DEFAULT_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_IDX_name (unsigned int /*val_in*/,const char ** /*s_out*/);
 
 /* END FILE */
 

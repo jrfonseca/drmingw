@@ -24,30 +24,44 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The versions applicable by section are:
-    .                  DWARF2 DWARF3 DWARF4
-    .debug_abbrev           -      -      -
-    .debug_aranges          2      2      2
-    .debug_frame            1      3      4
-    .debug_info             2      3      4
-    .debug_line             2      3      4
-    .debug_loc              -      -      -
-    .debug_macinfo          -      -      -
-    .debug_pubtypes         x      2      2
-    .debug_pubnames         2      2      2
-    .debug_ranges           x      -      -
-    .debug_str              -      -      -
-    .debug_types            x      x      4
+/*  Following the nomenclature of the DWARF standard
+    Section Version Numbers (DWARF 5):
+    * means not applicable.
+    - means not defined in that version.
+    The version numbers for .debug_info is the same as .debug_info.dwo
+    (etc for the other dwo sections).
+    The versions applicable by section are:
+    .                  DWARF2 DWARF3 DWARF4 DWARF5
+    .debug_abbrev           *      *      *      *
+    .debug_addr             -      -      -      5
+    .debug_aranges          2      2      2      2
+    .debug_frame            1      3      4      4
+    .debug_info             2      3      4      5
+    .debug_line             2      3      4      5
+    .debug_line_str         -      -      -      5
+    .debug_loc              *      *      *      5
+    .debug_macinfo          *      *      *      -
+    .debug_macro            -      -      -      5
+    .debug_pubnames         2      2      2      -
+    .debug_pubtypes         -      2      2      -
+    .debug_ranges           -      *      *      5
+    .debug_str              *      *      *      *
+    .debug_str_offsets      -      -      -      5
+    .debug_sup              -      -      -      5
+    .debug_types            -      -      4      -
+
+    .debug_abbrev.dwo       -      -      -      *
+    .debug_info.dwo         -      -      -      5
+    .debug_line.dwo         -      -      -      5
+    .debug_loc.dwo          -      -      -      5
+    .debug_macro.dwo        -      -      -      5
+    .debug_str.dwo          -      -      -      *
+    .debug_str_offsets.dwo  -      -      -      5
+
+    .debug_cu_index         -      -      -      5
+    .debug_tu_index         -      -      -      5
+
 */
 
 #include <stddef.h>
@@ -135,56 +149,112 @@ struct Dwarf_CU_Context_s {
         to the  DWARF in this compilation unit. 2,3,4,... */
     Dwarf_Half cc_version_stamp;
     /*  cc_abbrev_offset is the section-global offset
-        of the .debug_abbrev section this CU uses. */
+        of the .debug_abbrev section this CU uses.
+        Data from CU header. Includes DWP adjustment made
+        as soon as we create a cu_context. */
     Dwarf_Unsigned cc_abbrev_offset;
 
     /*  cc_address_size is the size of an address in this
         compilation unit. */
     Dwarf_Small cc_address_size;
-    /*  cc_debug_offset is the offset in the section
+    /*  cc_debug_offset is the global offset in the section
         of the CU header of this CU.
         That is, it is a section global offset.
         May be debug_info or debug_types
         but those are distinct.
+        Even in DWP this is set to true global offset
+        right away when cu_context created.
         See cc_is_info flag. */
     Dwarf_Unsigned cc_debug_offset;
 
-    /*  cc_signature and cc_typeoffset are in the CU header
-        of a type unit and contain the signature content
-        and the section-global DIE offset of the type
-        the signature applies to. */
-    Dwarf_Sig8  cc_signature;
-    Dwarf_Unsigned cc_typeoffset;
+    /*  cc_signature is in the TU header
+        of a type unit of a TU DIE.
+        Ignore this field if cc_signature_present is zero.
+
+        If cc_unit_type == DW_UT_compile or DW_UT_partial
+            the signature is a CU signature.
+        If cc_unit_type == DW_UT_type
+            the signature is a type signature. */
+    Dwarf_Sig8  cc_type_signature;
+
+    /*  cc_typeoffsets contains the
+        section-local DIE offset of the type
+        the signature applies to if the cc_unit_type
+        is DW_UT_type.  */
+    Dwarf_Unsigned cc_type_signature_offset;
+
+    /*  For each CU and each TU
+        in a dwp package file there is
+        is a hash and
+        a set of offsets indexed by DW_SECT_* id.
+        Only one such set per CU or TU.
+        The data on all that is in cc_dwp_offsets
+
+        If it is a TU the signature in cc_dwp_offsets
+        must match the signature in cc_type_signature.
+        */
+    struct Dwarf_Debug_Fission_Per_CU_s  cc_dwp_offsets;
+
 
     /*  If the attribute DW_AT_[GNU_]addr_base is present in the
         CU die, its value is in cc_addr_base.
         cc_addr_base_present TRUE means cc_addr_base is meaningful, which
         is a check on the correctness of the DWARF.
-        DW_AT_str_offsets_base exists for DW_FORM_strx,
+        This base field created in DWARF5 to reduce the
+        number of address relocations a linker must do.
+
+
+        DW_AT_str_offsets_base exists for a DW_FORM_strx,
         for GNU a base of zero is apparently fine.
-        Fields listed in this order for a tiny space saving.
-        Support for these is incomplete.
+        This base field created in DWARF5 to reduce the
+        number of string offset relocations a linker must do.
+
+        DW_AT_ranges_base similarly.
+        Within the CU, this base means that DW_FORM_sec_offset
+        values need not be realocated by the linker.
+
+        Fields listed in this order for a tiny space saving
+        as opposed to greatest clarity.
     */
-    Dwarf_Bool cc_addr_base_present;
-    Dwarf_Bool cc_string_base_present;
+    Dwarf_Bool cc_type_signature_present; /* Meaning type signature
+        in TU header or, for CU header, signature in CU DIE. */
+    Dwarf_Bool cc_addr_base_present;       /* Not TRUE in .dwo */
+    Dwarf_Bool cc_str_ranges_base_present; /* Not TRUE in .dwo */
+    Dwarf_Bool cc_str_offsets_base_present;
+
     /*  cc_cu_die_offset_present is non-zero if
         cc_cu_die_global_sec_offset is meaningful.  */
     Dwarf_Bool cc_cu_die_offset_present;
 
-    /*  Support for these two fields is incomplete. */
-    Dwarf_Unsigned cc_addr_base;
-    Dwarf_Unsigned cc_string_base;
+    /*  FIXME from DW_AT_addr_base in CU DIE */
+    Dwarf_Unsigned cc_addr_base;     /* Zero in .dwo */
+    /*  FIXME from DW_AT_ranges_base in CU DIE */
+    Dwarf_Unsigned cc_ranges_base;   /* Zero in .dwo */
+    /*  FIXME from DW_AT_str_offsets_base in CU DIE */
+    Dwarf_Unsigned cc_str_offsets_base;
 
-    /*  Pointer to the bytes of the CU die for this CU.
+    /*  Global section offset to the bytes of the CU die for this CU.
         Set when the CU die is accessed by dwarf_siblingof(). */
     Dwarf_Unsigned cc_cu_die_global_sec_offset;
 
     Dwarf_Byte_Ptr cc_last_abbrev_ptr;
+    Dwarf_Byte_Ptr cc_last_abbrev_endptr;
     Dwarf_Hash_Table cc_abbrev_hash_table;
     Dwarf_CU_Context cc_next;
+
     /*unsigned char cc_offset_length; */
     Dwarf_Bool cc_is_info; /* TRUE means context is
-        in debug_info, FALSE means is in debug_types. */
+        in debug_info, FALSE means is in debug_types.
+        FALSE only possible for DWARF4 .debug_types
+        section CUs.
+        For DWARF5 all DIEs are in .debug_info[.dwo]  */
+
+    Dwarf_Half cc_unit_type; /* DW_UT_type or DW_UT_compile
+        or DW_UT_partial (from the CU header in DWARF5).
+        Zero until the value is known.
+        For DWARF 2,3,4 this is filled in initially
+        from the CU header and refined by inspecting the TAG
+        of the CU DIE to detect DW_UT_partial is applicable.  */
 };
 
 /*  Consolidates section-specific data in one place.
@@ -314,6 +384,84 @@ struct Dwarf_dbg_sect_s {
 
 
 
+/*  These offsets and sizes (Dwarf_Fission*) are
+    for the  DebugFission DWP sections
+    .debug_cu_index and .debug_tu_index.
+    Because the sections in the .dwp contain
+    unrelocated .dwo sections. The offsets
+    taken from the .dwo sections
+    need the dfs_offset applied to
+    find the applicable data correctly.
+
+    When a .dwp is not involved (ie, when
+    there is no .debug_cu_index or .debug_tu_index
+    section) then the dfo_version field
+    in  Dwarf_Fission_Offsets_s will be zero.
+*/
+struct Dwarf_Fission_Section_Offset_s {
+    Dwarf_Unsigned dfs_offset;
+    Dwarf_Unsigned dfs_size;
+};
+
+struct Dwarf_Fission_Per_CU_s {
+    /*  dfp_index is the number of the compilation unit
+        in the .debug_info.dwo or
+        .debug_types.dwo(DWARF4 only) sections.
+        Index starts at 0.
+        May not match the location in
+        dfo_per_cu array of Dwarf_Fission_Per_CU_s.  */
+    unsigned       dfp_index;
+
+    /* Called a signature in most places. */
+    Dwarf_Sig8     dfp_hash;
+
+    /* 0 unused, 1-8 are indexed by DW_SECT* */
+    struct Dwarf_Fission_Section_Offset_s dfp_offsets[DW_FISSION_SECT_COUNT];
+};
+
+
+/*  If dfo_version is 0 the struct is empty/unused.
+    and then all the other fields are 0.
+    If dfo_version is zero this is not a
+    DWP (.dwp) object file. */
+struct Dwarf_Fission_Offsets_s {
+    unsigned dfo_version; /* 2 is the only supported value.
+        defaults to zero meaning 'none'. */
+
+    /*  pointer to "cu" or "tu", never free
+        the string.
+        type refers to the index type
+            'cu'referring to lookups of DW_AT_dwo_id
+                .debug_cu_index
+                which is an 8 byte hash.
+                We use Dwarf_Sig8.
+            'tu' referring to lookups of DW_FORM_ref_sig8 (type unit hash)
+                .debug_tu_index
+                We use Dwarf_Sig8 here too.
+        tu does NOT refer to .debug_types in a DWARF5 object.
+    */
+    const char *   dfo_type;
+    Dwarf_Bool     dfo_is_info; /* TRUE if the section is
+        DWARF4 .debug_types for a "tu" . Else False. */
+    Dwarf_Bool     dfo_is_type_unit; /* TRUE if this is
+        a type unit. DW_TAG_type_unit. */
+
+    Dwarf_Unsigned dfo_columns;
+    Dwarf_Unsigned dfo_entries;
+    Dwarf_Unsigned dfo_slots;
+
+    /* Pointer to array of dfo_entries structs. */
+    struct Dwarf_Fission_Per_CU_s *dfo_per_cu;
+
+    /*  Hash table enables finding the index of
+        into dfo_per_cu given a signature.
+        Data for tsearch functions.
+        Initially, just using sequential search.
+        is tsearch needed here?
+    void * dfo_hash_to_index; */
+};
+
+
 struct Dwarf_Debug_s {
     /*  All file access methods and support data
         are hidden in this structure.
@@ -366,11 +514,15 @@ struct Dwarf_Debug_s {
     struct Dwarf_Section_s de_debug_types;
     struct Dwarf_Section_s de_debug_abbrev;
     struct Dwarf_Section_s de_debug_line;
+    struct Dwarf_Section_s de_debug_line_str; /* New in DWARF5 */
     struct Dwarf_Section_s de_debug_loc;
     struct Dwarf_Section_s de_debug_aranges;
     struct Dwarf_Section_s de_debug_macinfo;
+    struct Dwarf_Section_s de_debug_macro; /* New in DWARF5 */
+    struct Dwarf_Section_s de_debug_names; /* New in DWARF5 */
     struct Dwarf_Section_s de_debug_pubnames;
     struct Dwarf_Section_s de_debug_str;
+    struct Dwarf_Section_s de_debug_sup;  /* New in DWARF5 */
     struct Dwarf_Section_s de_debug_frame;
 
     /* gnu: the g++ eh_frame section */
@@ -391,9 +543,16 @@ struct Dwarf_Debug_s {
     struct Dwarf_Section_s de_debug_str_offsets;
     struct Dwarf_Section_s de_debug_addr;
 
+
     /* Following for the .gdb_index section.  */
     struct Dwarf_Section_s de_debug_gdbindex;
 
+    /*  Types in DWARF5 are in .debug_info
+        and in DWARF4 are in .debug_types.
+        These indexes first standardized in DWARF5,
+        DWARF4 can have them as an extension.
+        The next to refer to the DWP index sections and the
+        tu and cu indexes sections are distinct in DWARF4 & 5. */
     struct Dwarf_Section_s de_debug_cu_index;
     struct Dwarf_Section_s de_debug_tu_index;
 
@@ -402,6 +561,13 @@ struct Dwarf_Debug_s {
     struct Dwarf_Section_s de_elf_symtab;
     struct Dwarf_Section_s de_elf_strtab;
 
+    /*  For a .dwp object file .
+        For DWARF4, type units are in .debug_types
+            (DWP is a GNU extension in DW4)..
+        For DWARF5, type units are in .debug_info.
+    */
+    Dwarf_Xu_Index_Header  de_cu_hashindex_data;
+    Dwarf_Xu_Index_Header  de_tu_hashindex_data;
 
     void *(*de_copy_word) (void *, const void *, size_t);
     unsigned char de_same_endian;
@@ -442,11 +608,6 @@ struct Dwarf_Chain_s {
     void *ch_item;
     Dwarf_Chain ch_next;
 };
-
-
-#define CURRENT_VERSION_STAMP   2 /* DWARF2 */
-#define CURRENT_VERSION_STAMP3  3 /* DWARF3 */
-#define CURRENT_VERSION_STAMP4  4 /* DWARF4 */
 
     /* Size of cu header version stamp field. */
 #define CU_VERSION_STAMP_SIZE   sizeof(Dwarf_Half)
@@ -495,4 +656,33 @@ int _dwarf_extract_string_offset_via_str_offsets(Dwarf_Debug dbg,
     Dwarf_Unsigned *str_sect_offset_out,
     Dwarf_Error *error);
 
+int _dwarf_get_base_and_size_given_signature(Dwarf_CU_Context *context,
+    Dwarf_Sig8 *signature_in,
+    /* xu_sect_index means DW_SECT_info etc. */
+    Dwarf_Unsigned xu_sect_index,
+    Dwarf_Unsigned *base_out,
+    Dwarf_Unsigned *size_out,
+    Dwarf_Error *err);
+
+Dwarf_Bool _dwarf_file_has_debug_fission_cu_index(Dwarf_Debug dbg);
+Dwarf_Bool _dwarf_file_has_debug_fission_tu_index(Dwarf_Debug dbg);
+Dwarf_Bool _dwarf_file_has_debug_fission_index(Dwarf_Debug dbg);
+
+/* This should only be called on a CU. Never a TU. */
+int _dwarf_get_debugfission_for_offset(Dwarf_Debug dbg,
+    Dwarf_Off   offset_wanted,
+    Dwarf_Debug_Fission_Per_CU *  percu_out,
+    Dwarf_Error *error);
+
+/* whichone: must be a valid DW_SECT* macro value. */
+Dwarf_Unsigned _dwarf_get_dwp_extra_offset(
+    struct Dwarf_Debug_Fission_Per_CU_s* dwp,
+    unsigned whichone, Dwarf_Unsigned * size);
+
+
+int _dwarf_get_fission_addition_die(Dwarf_Die die, int dw_sect_index,
+   Dwarf_Unsigned* offset, Dwarf_Unsigned*size,
+   Dwarf_Error *error);
+
+Dwarf_Byte_Ptr _dwarf_calculate_section_end_ptr(Dwarf_CU_Context context);
 

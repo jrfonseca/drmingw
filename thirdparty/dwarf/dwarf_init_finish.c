@@ -180,7 +180,9 @@ add_debug_section_info(Dwarf_Debug dbg,
 /*  If running this long set of tests is slow
     enough to matter one could set up a local
     tsearch tree with all this content and search
-    it instead of this set of sequential tests. */
+    it instead of this set of sequential tests.
+    Or use a switch(){} here with a search tree
+    to to turn name into index for the switch(). */
 static int
 enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
     const char *scn_name,
@@ -261,16 +263,7 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         }
         return DW_DLV_OK;
     }
-    if(!strcmp(scn_name,".debug_aranges.dwo")) {
-        sectionerr = add_debug_section_info(dbg,".debug_aranges.dwo",
-            &dbg->de_debug_aranges,
-            DW_DLE_DEBUG_ARANGES_DUPLICATE,0,
-            FALSE,err);
-        if (sectionerr != DW_DLV_OK) {
-            return sectionerr;
-        }
-        return DW_DLV_OK;
-    }
+
     if(!strcmp(scn_name,".debug_line")) {
         sectionerr = add_debug_section_info(dbg,".debug_line",
             &dbg->de_debug_line,
@@ -291,6 +284,18 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         }
         return DW_DLV_OK;
     }
+    if(!strcmp(scn_name,".debug_line_str")) {
+        sectionerr = add_debug_section_info(dbg,".debug_line_str",
+            &dbg->de_debug_line_str,
+            DW_DLE_DEBUG_LINE_STR_DUPLICATE,0,
+            FALSE,err);
+        if (sectionerr != DW_DLV_OK) {
+            return sectionerr;
+        }
+        return DW_DLV_OK;
+    }
+
+
     if(!strcmp(scn_name,".debug_frame")) {
         sectionerr = add_debug_section_info(dbg,".debug_frame",
             &dbg->de_debug_frame,
@@ -431,10 +436,23 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         }
         return DW_DLV_OK;
     }
-    if(!strcmp(scn_name,".debug_macinfo.dwo")) {
-        sectionerr = add_debug_section_info(dbg,".debug_macinfo.dwo",
-            &dbg->de_debug_macinfo,
-            DW_DLE_DEBUG_MACINFO_DUPLICATE,0,
+    /*  ".debug_macinfo.dwo" is not allowed.  */
+
+
+    if(!strcmp(scn_name,".debug_macro")) { /* DWARF5 */
+        sectionerr = add_debug_section_info(dbg,".debug_macro",
+            &dbg->de_debug_macro,
+            DW_DLE_DEBUG_MACRO_DUPLICATE,0,
+            FALSE,err);
+        if (sectionerr != DW_DLV_OK) {
+            return sectionerr;
+        }
+        return DW_DLV_OK;
+    }
+    if(!strcmp(scn_name,".debug_macro.dwo")) { /* DWARF5 */
+        sectionerr = add_debug_section_info(dbg,".debug_macro.dwo",
+            &dbg->de_debug_macro,
+            DW_DLE_DEBUG_MACRO_DUPLICATE,0,
             FALSE,err);
         if (sectionerr != DW_DLV_OK) {
             return sectionerr;
@@ -451,16 +469,8 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         }
         return DW_DLV_OK;
     }
-    if(!strcmp(scn_name,".debug_ranges.dwo")) {
-        sectionerr = add_debug_section_info(dbg,".debug_ranges.dwo",
-            &dbg->de_debug_ranges,
-            DW_DLE_DEBUG_RANGES_DUPLICATE,0,
-            TRUE,err);
-        if (sectionerr != DW_DLV_OK) {
-            return sectionerr;
-        }
-        return DW_DLV_OK;
-    }
+    /*  No .debug_ranges.dwo allowed. */
+
     if(!strcmp(scn_name,".debug_str_offsets")) {
         /* New DWARF5 */
         sectionerr = add_debug_section_info(dbg,".debug_str_offsets",
@@ -483,6 +493,19 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         }
         return DW_DLV_OK;
     }
+    if(!strcmp(scn_name,".debug_sup")) { /* DWARF5 */
+        /* New DWARF5 */
+        sectionerr = add_debug_section_info(dbg,".debug_sup",
+            &dbg->de_debug_sup,
+            DW_DLE_DEBUG_SUP_DUPLICATE,0,
+            TRUE,err);
+        if (sectionerr != DW_DLV_OK) {
+            return sectionerr;
+        }
+        return DW_DLV_OK;
+    }
+    /* No .debug_sup.dwo allowed. */
+
     if(!strcmp(scn_name,".symtab")) {
         sectionerr = add_debug_section_info(dbg,".symtab",
             &dbg->de_elf_symtab,
@@ -514,17 +537,8 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         }
         return DW_DLV_OK;
     }
-    if(!strcmp(scn_name,".debug_addr.dwo")) {
-        /* New DWARF5 */
-        sectionerr = add_debug_section_info(dbg,".debug_addr.dwo",
-            &dbg->de_debug_addr,
-            DW_DLE_DEBUG_ADDR_DUPLICATE,0,
-            TRUE,err);
-        if (sectionerr != DW_DLV_OK) {
-            return sectionerr;
-        }
-        return DW_DLV_OK;
-    }
+    /*  No .debug_addr.dwo allowed.  */
+
     if(!strcmp(scn_name,".gdb_index")) {
         /* gdb added this. */
         sectionerr = add_debug_section_info(dbg,".gdb_index",
@@ -536,8 +550,19 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         }
         return DW_DLV_OK;
     }
+    if(!strcmp(scn_name,".debug_names")) { /* NEW DWARF5 */
+        sectionerr = add_debug_section_info(dbg,".debug_names",
+            &dbg->de_debug_names,
+            DW_DLE_DEBUG_NAMES_DUPLICATE,0,
+            FALSE,err);
+        if (sectionerr != DW_DLV_OK) {
+            return sectionerr;
+        }
+        return DW_DLV_OK;
+    }
+    /* No .debug_names.dwo is allowed. */
     if(!strcmp(scn_name,".debug_cu_index")) {
-        /* gdb added this. */
+        /* gdb added this in DW4. It is in  standard DWARF5  */
         sectionerr = add_debug_section_info(dbg,".debug_cu_index",
             &dbg->de_debug_cu_index,
             DW_DLE_DUPLICATE_CU_INDEX,0,
@@ -548,7 +573,7 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         return DW_DLV_OK;
     }
     if(!strcmp(scn_name,".debug_tu_index")) {
-        /* gdb added this. */
+        /* gdb added this in DW4. It is in standard DWARF5 */
         sectionerr = add_debug_section_info(dbg,".debug_tu_index",
             &dbg->de_debug_tu_index,
             DW_DLE_DUPLICATE_TU_INDEX,0,
@@ -597,6 +622,13 @@ is_section_known_already(Dwarf_Debug dbg,
 
     This does not allow for section-groups in object files,
     for which many .debug_info (and other DWARF) sections may exist.
+
+    We process. .rela (SHT_RELA) but not .rel (SHT_REL)
+    sections because with .rela the referencing section
+    offset value is zero whereas with .rel the
+    referencing section value is already correct for
+    the object itself.  In other words, we do it because
+    of the definition of .rela relocations in Elf.
 */
 
 static int
@@ -669,7 +701,7 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
     dbg->de_length_size = obj->methods->get_length_size(obj->object);
     dbg->de_pointer_size = obj->methods->get_pointer_size(obj->object);
 
-  /*  For windows always is 4 ? */
+    /*  For windows always is 4 ? */
 #ifdef WIN32
     dbg->de_pointer_size = 4;
 #endif /* WIN32 */
@@ -682,6 +714,7 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
         sizeof(struct Dwarf_Section_s *));
     if (!sections) {
         /* Impossible case, we hope. Give up. */
+        _dwarf_error(dbg, error, DW_DLE_SECTION_ERROR);
         return DW_DLV_ERROR;
     }
 
@@ -708,7 +741,11 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
         res = obj->methods->get_section_info(obj->object,
             obj_section_index,
             &doas, &err);
-        if (res == DW_DLV_ERROR){
+        if (res == DW_DLV_NO_ENTRY){
+            free(sections);
+            return res;
+        } else if (res == DW_DLV_ERROR){
+            free(sections);
             DWARF_DBG_ERROR(dbg, err, DW_DLV_ERROR);
         }
 
@@ -730,9 +767,11 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
                 &err);
             if (res == DW_DLV_OK) {
                 /* DUPLICATE */
+                free(sections);
                 DWARF_DBG_ERROR(dbg, DW_DLE_SECTION_DUPLICATION,
                     DW_DLV_ERROR);
             } else if (res == DW_DLV_ERROR) {
+                free(sections);
                 DWARF_DBG_ERROR(dbg, err, DW_DLV_ERROR);
             }
             /* No entry: new-to-us section, the normal case. */
@@ -754,6 +793,7 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
                         section->ds_duperr,
                         section->ds_emptyerr);
                     if (res != DW_DLV_OK) {
+                        free(sections);
                         return res;
                     }
                     sections[obj_section_index] = section->ds_secdata;
@@ -764,14 +804,17 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
                 }else if (res == DW_DLV_NO_ENTRY) {
                     /*  Some sort of bug in the code here.
                         Should be impossible to get here. */
+                    free(sections);
                     DWARF_DBG_ERROR(dbg, DW_DLE_SECTION_ERROR, DW_DLV_ERROR);
                 } else {
+                    free(sections);
                     DWARF_DBG_ERROR(dbg, err, DW_DLV_ERROR);
                 }
             } else if (res == DW_DLV_NO_ENTRY) {
                 /*  We get here for relocation sections.
                     Fall through. */
             } else {
+                free(sections);
                 DWARF_DBG_ERROR(dbg, err, DW_DLV_ERROR);
             }
 
@@ -782,9 +825,17 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
                     of the section name. If the current section
                     is a RELA one and the 'sh_info'
                     refers to a debug section, add the relocation data. */
-                if (doas.type == SHT_RELA && sections[doas.info]) {
-                    add_rela_data(sections[doas.info],&doas,
-                        obj_section_index);
+                if (doas.type == SHT_RELA) {
+                    if ( doas.info < section_count) {
+                        if (sections[doas.info]) {
+                            add_rela_data(sections[doas.info],&doas,
+                                obj_section_index);
+                        }
+                    } else {
+                        /* Something is wrong with the ELF file. */
+                        free(sections);
+                        DWARF_DBG_ERROR(dbg, DW_DLE_ELF_SECT_ERR, DW_DLV_ERROR);
+                    }
                 }
             }
             /* Fetch next section */
@@ -792,16 +843,85 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
     }
 
     /* Free table with section information. */
-    if (sections){
-        free(sections);
-    }
-
+    free(sections);
     if (foundDwarf) {
         return DW_DLV_OK;
     }
     return DW_DLV_NO_ENTRY;
 }
 
+static int
+all_sig8_bits_zero(Dwarf_Sig8 *val)
+{
+    unsigned u = 0;
+    for(  ; u < sizeof(*val); ++u) {
+        if (val->signature[u] != 0) {
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
+/*  There is one table per CU and one per TU, and each
+    table refers to the associated other DWARF data
+    for that CU or TU.
+    See DW_SECT_*
+
+    In DWARF4 the type units are in .debug_types
+    In DWARF5 the type units are in .debug_info.
+*/
+
+static int
+load_debugfission_tables(Dwarf_Debug dbg,Dwarf_Error *error)
+{
+    int i = 0;
+    if (dbg->de_debug_cu_index.dss_size ==0 &&
+        dbg->de_debug_tu_index.dss_size ==0) {
+        /*  This is the normal case.
+            No debug fission. Not a .dwp object. */
+        return DW_DLV_NO_ENTRY;
+    }
+
+    for (i = 0; i < 2; ++i) {
+        Dwarf_Xu_Index_Header xuptr = 0;
+        struct Dwarf_Section_s* dwsect = 0;
+        Dwarf_Unsigned version = 0;
+        Dwarf_Unsigned number_of_cols /* L */ = 0;
+        Dwarf_Unsigned number_of_CUs /* N */ = 0;
+        Dwarf_Unsigned number_of_slots /* M */ = 0;
+        Dwarf_Unsigned hashindex = 0;
+        const char *secname = 0;
+        int res = 0;
+        const char *type = 0;
+
+        if (i == 0) {
+            dwsect = &dbg->de_debug_cu_index;
+            type = "cu";
+        } else {
+            dwsect = &dbg->de_debug_tu_index;
+            type = "tu";
+        }
+        if ( !dwsect->dss_size ) {
+            continue;
+        }
+        res = dwarf_get_xu_index_header(dbg,type,
+            &xuptr,&version,&number_of_cols,
+            &number_of_CUs,&number_of_slots,
+            &secname,error);
+        if (res == DW_DLV_NO_ENTRY) {
+            continue;
+        }
+        if (res != DW_DLV_OK) {
+            return res;
+        }
+        if (i == 0) {
+            dbg->de_cu_hashindex_data = xuptr;
+        } else {
+            dbg->de_tu_hashindex_data = xuptr;
+        }
+    }
+    return DW_DLV_OK;
+}
 
 /*
     Use a Dwarf_Obj_Access_Interface to kick things off. All other
@@ -844,20 +964,63 @@ dwarf_object_init(Dwarf_Obj_Access_Interface* obj, Dwarf_Handler errhand,
     dbg->de_obj_file = obj;
 
     setup_result = _dwarf_setup(dbg, error);
+    if (setup_result == DW_DLV_OK) {
+        int fission_result = load_debugfission_tables(dbg,error);
+        /*  In most cases we get
+            setup_result == DW_DLV_NO_ENTRY here
+            as having debugfission (.dwp objects)
+            is fairly rare. */
+        if (fission_result == DW_DLV_ERROR) {
+            /*  Something is very wrong. */
+            setup_result = fission_result;
+        }
+    }
     if (setup_result != DW_DLV_OK) {
+        int freeresult = 0;
+        /* We cannot use any _dwarf_setup()
+            error here as
+            we are freeing dbg, making that error (setup
+            as part of dbg) stale.
+            Hence we have to make a new error without a dbg.
+            But error might be NULL and the init call
+            error-handler function might be set.
+        */
+        int myerr = 0;
+        if ( (setup_result == DW_DLV_ERROR) && error ) {
+            /*  Preserve our _dwarf_setup error number, but
+                this does not apply if error NULL. */
+            myerr = dwarf_errno(*error);
+            /*  deallocate the soon-stale error pointer. */
+            dwarf_dealloc(dbg,*error,DW_DLA_ERROR);
+            *error = 0;
+        }
         /*  The status we want to return  here is of _dwarf_setup,
             not of the  _dwarf_free_all_of_one_debug(dbg) call.
             So use a local status variable for the free.  */
-        int freeresult = _dwarf_free_all_of_one_debug(dbg);
+        freeresult = _dwarf_free_all_of_one_debug(dbg);
+        dbg = 0;
+        /* DW_DLV_NO_ENTRY not possible in freeresult */
         if (freeresult == DW_DLV_ERROR) {
-            DWARF_DBG_ERROR(dbg, DW_DLE_DBG_ALLOC, DW_DLV_ERROR);
+            /*  Use the _dwarf_setup error number.
+                If error is NULL the following will issue
+                a message on stderr and abort(), as without
+                dbg there is no error-handler function.
+                */
+            _dwarf_error(NULL,error,DW_DLE_DBG_ALLOC);
+            return DW_DLV_ERROR;
+        }
+        if (setup_result == DW_DLV_ERROR) {
+            /*  Use the _dwarf_setup error number.
+                If error is NULL the following will issue
+                a message on stderr and abort(), as without
+                dbg there is no error-handler function.
+                */
+            _dwarf_error(NULL,error,myerr);
         }
         return setup_result;
     }
-
     dwarf_harmless_init(&dbg->de_harmless_errors,
         DW_HARMLESS_ERROR_CIRCULAR_LIST_DEFAULT_SIZE);
-
     *ret_dbg = dbg;
     return DW_DLV_OK;
 }

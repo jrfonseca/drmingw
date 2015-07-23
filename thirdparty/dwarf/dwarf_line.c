@@ -23,24 +23,7 @@
    Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
    USA.
 
-   Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-   Mountain View, CA 94043, or:
-
-   http://www.sgi.com
-
-   For further information regarding this notice, see:
-
-   http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/*  The address of the Free Software Foundation is
-    Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-    Boston, MA 02110-1301, USA.
-    SGI has moved from the Crittenden Lane address.
-*/
-
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -184,6 +167,16 @@ dwarf_srcfiles(Dwarf_Die die,
         return (DW_DLV_ERROR);
     }
     line_ptr = dbg->de_debug_line.dss_data + line_offset;
+    {
+        Dwarf_Unsigned fission_offset = 0;
+        Dwarf_Unsigned fission_size = 0;
+        int res = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
+            &fission_offset,&fission_size,error);
+        if(res != DW_DLV_OK) {
+            return res;
+        }
+        line_ptr += fission_offset;
+    }
     dwarf_dealloc(dbg, stmt_list_attr, DW_DLA_ATTR);
 
     /*  If die has DW_AT_comp_dir attribute, get the string that names
@@ -1757,9 +1750,10 @@ dwarf_read_line_table_prefix(Dwarf_Debug dbg,
         line_ptr, sizeof(Dwarf_Half));
     prefix_out->pf_version = version;
     line_ptr += sizeof(Dwarf_Half);
-    if (version != CURRENT_VERSION_STAMP &&
-        version != CURRENT_VERSION_STAMP3 &&
-        version != CURRENT_VERSION_STAMP4) {
+    if (version != DW_LINE_VERSION2 &&
+        version != DW_LINE_VERSION3 &&
+        version != DW_LINE_VERSION4 &&
+        version != DW_LINE_VERSION5) {
         _dwarf_error(dbg, err, DW_DLE_VERSION_STAMP_ERROR);
         return (DW_DLV_ERROR);
     }
@@ -1777,7 +1771,7 @@ dwarf_read_line_table_prefix(Dwarf_Debug dbg,
     prefix_out->pf_default_is_stmt = *(unsigned char *) line_ptr;
     line_ptr = line_ptr + sizeof(Dwarf_Small);
 
-    if (version == CURRENT_VERSION_STAMP4) {
+    if (version == DW_LINE_VERSION4) {
         prefix_out->pf_maximum_ops_per_instruction =
             *(unsigned char *) line_ptr;
         line_ptr = line_ptr + sizeof(Dwarf_Small);

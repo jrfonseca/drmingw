@@ -24,18 +24,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-
-
 
 #include "config.h"
 #include "libdwarfdefs.h"
@@ -948,25 +937,6 @@ dwarf_add_AT_flag(Dwarf_P_Debug dbg,
         _dwarf_p_error(dbg, error, DW_DLE_DIE_NULL);
         return ((Dwarf_P_Attribute) DW_DLV_BADADDR);
     }
-
-#if 0
-    switch (attr) {
-    case DW_AT_is_optional:
-    case DW_AT_artificial:
-    case DW_AT_declaration:
-    case DW_AT_external:
-    case DW_AT_prototyped:
-    case DW_AT_variable_parameter:
-        break;
-
-        default:
-            if (attr < DW_AT_lo_user || attr > DW_AT_hi_user ) {
-                _dwarf_p_error(dbg, error, DW_DLE_INPUT_ATTR_BAD);
-                return ((Dwarf_P_Attribute) DW_DLV_BADADDR);
-            }
-            break;
-    }
-#endif
 
     new_attr = (Dwarf_P_Attribute)
         _dwarf_p_get_alloc(dbg, sizeof(struct Dwarf_P_Attribute_s));

@@ -23,22 +23,20 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
 #include <stdio.h>
+
+/*  10 bytes of leb, 7 bits each part of the number, gives
+    room for a 64bit number.
+    While any number of leading zeroes would be legal, so
+    no max is really truly required here, why would a
+    compiler generate leading zeros?  That would
+    be strange.
+*/
+#define BYTESLEBMAX 10
 
 
 /* Decode ULEB */
@@ -49,7 +47,8 @@ _dwarf_decode_u_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
     Dwarf_Word word_number;
     Dwarf_Unsigned number;
     Dwarf_Sword shift;
-    Dwarf_Sword byte_length;
+    /*  The byte_length value will be a small non-negative integer. */
+    unsigned byte_length = 0;
 
     /*  The following unrolls-the-loop for the first few bytes and
         unpacks into 32 bits to make this as fast as possible.
@@ -103,6 +102,12 @@ _dwarf_decode_u_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
         shift += 7;
 
         byte_length++;
+        if (byte_length > BYTESLEBMAX) {
+            /*  Erroneous input. What to do?
+                Abort? Return error? Just stop here?*/
+            *leb128_length = BYTESLEBMAX;
+            return number;
+        }
         ++leb128;
         byte = *leb128;
     }
@@ -118,7 +123,9 @@ _dwarf_decode_s_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
     Dwarf_Bool sign = 0;
     Dwarf_Word shift = 0;
     unsigned char byte = *leb128;
-    Dwarf_Sword byte_length = 1;
+    /*  The byte_length value will be a small non-negative integer. */
+    unsigned byte_length = 1;
+
 
     /*  byte_length being the number of bytes of data absorbed so far in
         turning the leb into a Dwarf_Signed. */
@@ -134,6 +141,12 @@ _dwarf_decode_s_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
         ++leb128;
         byte = *leb128;
         byte_length++;
+        if (byte_length > BYTESLEBMAX) {
+            /*  Erroneous input. What to do?
+                Abort? Return error? Just stop here?*/
+            *leb128_length = BYTESLEBMAX;
+            return number;
+        }
     }
 
     if ((shift < sizeof(Dwarf_Signed) * BITSINBYTE) && sign) {

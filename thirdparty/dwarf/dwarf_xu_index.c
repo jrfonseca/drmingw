@@ -1,6 +1,5 @@
 /*
-
-  Copyright (C) 2014-2014 David Anderson. All Rights Reserved.
+  Copyright (C) 2014-2015 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -22,14 +21,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
 
 /*  The file and functions have  'xu' because
     the .debug_cu_index and .debug_tu_index
@@ -136,7 +128,7 @@ dwarf_get_xu_index_header(Dwarf_Debug dbg,
     }
 
 
-    indexptr = _dwarf_get_alloc(dbg,DW_DLA_XU_INDEX,1);
+    indexptr = (Dwarf_Xu_Index_Header)_dwarf_get_alloc(dbg,DW_DLA_XU_INDEX,1);
     if (indexptr == NULL) {
         _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
         return (DW_DLV_ERROR);
@@ -184,8 +176,8 @@ int dwarf_get_xu_index_section_type(Dwarf_Xu_Index_Header xuhdr,
 /*  Index values 0 to M-1 are valid. */
 int dwarf_get_xu_hash_entry(Dwarf_Xu_Index_Header xuhdr,
     Dwarf_Unsigned    index,
-    /* returns the hash integer. 64 bits. */
-    Dwarf_Unsigned *  hash_value,
+    /* returns the hash value. 64 bits. */
+    Dwarf_Sig8     *  hash_value,
 
     /* returns the index into rows of offset/size tables. */
     Dwarf_Unsigned *  index_to_sections,
@@ -198,24 +190,32 @@ int dwarf_get_xu_hash_entry(Dwarf_Xu_Index_Header xuhdr,
         xuhdr->gx_index_table_offset;
     Dwarf_Small *indexentry = 0;
     Dwarf_Small *hashentry = 0;
-    Dwarf_Unsigned hashval = 0;
+    Dwarf_Sig8 hashval;
     Dwarf_Unsigned indexval = 0;
 
-    if (index >= xuhdr->gx_slots_in_hash) {
+    memset(&hashval,0,sizeof(hashval));
+    if (xuhdr->gx_slots_in_hash > 0) {
+        if (index >= xuhdr->gx_slots_in_hash) {
+            _dwarf_error(dbg, err,  DW_DLE_XU_HASH_ROW_ERROR);
+            return DW_DLV_ERROR;
+        }
+        hashentry = hashtab + (index * HASHSIGNATURELEN);
+        memcpy(&hashval,hashentry,sizeof(hashval));
+    } else {
         _dwarf_error(dbg, err,  DW_DLE_XU_HASH_ROW_ERROR);
         return DW_DLV_ERROR;
     }
-    hashentry = hashtab + (index * HASHSIGNATURELEN);
+
     indexentry = indextab + (index * LEN32BIT);
-    READ_UNALIGNED(dbg,hashval,Dwarf_Unsigned,hashentry,
-        HASHSIGNATURELEN);
+    memcpy(hash_value,&hashval,sizeof(hashval));
+
     READ_UNALIGNED(dbg,indexval,Dwarf_Unsigned, indexentry,
         LEN32BIT);
     if (indexval > xuhdr->gx_units_in_index) {
         _dwarf_error(dbg, err,  DW_DLE_XU_HASH_INDEX_ERROR);
         return DW_DLV_ERROR;
     }
-    *hash_value = hashval;
+
     *index_to_sections = indexval;
     return DW_DLV_OK;
 }
@@ -223,14 +223,14 @@ int dwarf_get_xu_hash_entry(Dwarf_Xu_Index_Header xuhdr,
 
 static const char * dwp_secnames[] = {
 "No name for zero",
-"DW_SECT_INFO"        /*        1 */ /*".debug_info.dwo"*/,
-"DW_SECT_TYPES"       /*     2 */ /*".debug_types.dwo"*/,
-"DW_SECT_ABBREV"      /*      3 */ /*".debug_abbrev.dwo"*/,
-"DW_SECT_LINE"        /*        4 */ /*".debug_line.dwo"*/,
-"DW_SECT_LOC"         /*         5 */ /*".debug_loc.dwo"*/,
+"DW_SECT_INFO"        /* 1 */ /*".debug_info.dwo"*/,
+"DW_SECT_TYPES"       /* 2 */ /*".debug_types.dwo"*/,
+"DW_SECT_ABBREV"      /* 3 */ /*".debug_abbrev.dwo"*/,
+"DW_SECT_LINE"        /* 4 */ /*".debug_line.dwo"*/,
+"DW_SECT_LOC"         /* 5 */ /*".debug_loc.dwo"*/,
 "DW_SECT_STR_OFFSETS" /* 6 */ /*".debug_str_offsets.dwo"*/,
-"DW_SECT_MACINFO"     /*     7 */ /*".debug_macinfo.dwo"*/,
-"DW_SECT_MACRO"       /*       8 */ /*".debug_macro.dwo"*/,
+"DW_SECT_MACINFO"     /* 7 */ /*".debug_macinfo.dwo"*/,
+"DW_SECT_MACRO"       /* 8 */ /*".debug_macro.dwo"*/,
 "No name > 8",
 };
 
@@ -321,8 +321,257 @@ dwarf_get_xu_section_offset(Dwarf_Xu_Index_Header xuhdr,
     return DW_DLV_OK;
 }
 
+/* zerohashkey used as all-zero-bits for comparison. */
+static Dwarf_Sig8 zerohashkey;
 
+static int
+_dwarf_search_fission_for_key(Dwarf_Debug dbg,
+    Dwarf_Xu_Index_Header xuhdr,
+    Dwarf_Sig8 *key_in,
+    Dwarf_Unsigned * percu_index_out,
+    Dwarf_Error *error)
+{
+    struct Dwarf_Fission_Per_CU_s *dfpcu = 0;
+    Dwarf_Unsigned key = 0;
+    Dwarf_Unsigned primary_hash = 0;
+    Dwarf_Unsigned hashprime = 0;
+    Dwarf_Unsigned slots =  xuhdr->gx_slots_in_hash;
+    Dwarf_Unsigned mask = slots -1;
+    Dwarf_Unsigned counter = 0;
+    Dwarf_Sig8 hashentry_key;
+    Dwarf_Unsigned percu_index = 0;
 
+    key = *(Dwarf_Unsigned *)(key_in);
+    primary_hash = key & mask;
+    hashprime =  (((key >>32) &mask) |1);
+    while (1) {
+        int res = dwarf_get_xu_hash_entry(xuhdr,
+            primary_hash,&hashentry_key,
+            &percu_index,error);
+        if (res != DW_DLV_OK) {
+            return res;
+        }
+        if (percu_index == 0 &&
+            !memcmp(&hashentry_key,&zerohashkey,sizeof(Dwarf_Sig8))) {
+            return DW_DLV_NO_ENTRY;
+        }
+        if (!memcmp(key_in,&hashentry_key,sizeof(Dwarf_Sig8))) {
+            /* FOUND */
+            *percu_index_out = percu_index;
+            return  DW_DLV_OK;
+        }
+        primary_hash = (primary_hash + hashprime) % slots;
+    }
+    /* ASSERT: Cannot get here. */
+    return DW_DLV_NO_ENTRY;
+}
+
+/* Slow. Consider tsearch. */
+/* For type units and for CUs. */
+static int
+_dwarf_search_fission_for_offset(Dwarf_Debug dbg,
+    Dwarf_Xu_Index_Header xuhdr,
+    Dwarf_Unsigned offset,
+    Dwarf_Unsigned dfp_sect_num, /* DW_SECT_INFO or TYPES */
+    Dwarf_Unsigned * percu_index_out,
+    Dwarf_Sig8 * key_out,
+    Dwarf_Error *error)
+{
+    struct Dwarf_Fission_Per_CU_s *dfpcu = 0;
+    Dwarf_Unsigned i = 0;
+    Dwarf_Unsigned m = 0;
+    Dwarf_Unsigned row = 0;
+    Dwarf_Unsigned col = 0;
+    int secnum_index = -1;  /* L index */
+    int res = 0;
+    int foundcol = FALSE;
+    for ( i = 0; i< xuhdr->gx_column_count_sections; i++) {
+        /*  We could put the secnums array into xuhdr
+            if looping here is too slow. */
+        const char *name = 0;
+        Dwarf_Unsigned num = 0;
+        res = dwarf_get_xu_section_names(xuhdr,i,&num,&name,error);
+        if (res != DW_DLV_OK) {
+            return res;
+        }
+        if (num == dfp_sect_num) {
+            secnum_index = i;
+            break;
+        }
+    }
+    if (secnum_index == -1) {
+        _dwarf_error(dbg,error,DW_DLE_FISSION_SECNUM_ERR);
+        return DW_DLV_ERROR;
+    }
+    for ( m = 0; m < xuhdr->gx_slots_in_hash; ++m) {
+        Dwarf_Sig8 hash;
+        Dwarf_Unsigned indexn = 0;
+        res = dwarf_get_xu_hash_entry(xuhdr,m,&hash,&indexn,error);
+        if (res != DW_DLV_OK) {
+            return res;
+        }
+        if (indexn == 0 &&
+            !memcmp(&hash,&zerohashkey,sizeof(Dwarf_Sig8))) {
+            /* Empty slot. */
+            continue;
+        }
+
+        Dwarf_Unsigned sec_offset = 0;
+        Dwarf_Unsigned sec_size = 0;
+        res = dwarf_get_xu_section_offset(xuhdr,
+            indexn,secnum_index,&sec_offset,&sec_size,error);
+        if (res != DW_DLV_OK) {
+            return res;
+        }
+        if (sec_offset != offset) {
+            continue;
+        }
+        *percu_index_out = indexn;
+        *key_out = hash;
+        return DW_DLV_OK;
+    }
+    return DW_DLV_NO_ENTRY;
+}
+
+static int
+_dwarf_get_xuhdr(Dwarf_Debug dbg,
+   const char *sigtype,
+   Dwarf_Xu_Index_Header *xuout,
+   Dwarf_Error *error)
+{
+   if (!strcmp(sigtype,"tu")) {
+        if (!dbg->de_tu_hashindex_data) {
+            return DW_DLV_NO_ENTRY;
+        }
+        *xuout = dbg->de_tu_hashindex_data;
+    } else if (!strcmp(sigtype,"cu")) {
+        if (!dbg->de_cu_hashindex_data) {
+            return DW_DLV_NO_ENTRY;
+        }
+        *xuout = dbg->de_cu_hashindex_data;
+    } else {
+        _dwarf_error(dbg,error,DW_DLE_SIG_TYPE_WRONG_STRING);
+        return DW_DLV_ERROR;
+    }
+    return DW_DLV_OK;
+
+}
+
+static int
+transform_xu_to_dfp(Dwarf_Xu_Index_Header xuhdr,
+    Dwarf_Unsigned percu_index,
+    Dwarf_Sig8 *key,
+    const char *sig_type,
+    Dwarf_Debug_Fission_Per_CU *  percu_out,
+    Dwarf_Error *error)
+{
+    unsigned i = 0;
+    unsigned l = 0;
+    unsigned n = 1;
+    unsigned max_cols = xuhdr->gx_column_count_sections;  /* L */
+    unsigned secnums[DW_FISSION_SECT_COUNT];
+    int res;
+    for ( i = 0; i< max_cols; i++) {
+        /*  We could put the secnums array into xuhdr
+            if recreating it is too slow. */
+        const char *name = 0;
+        Dwarf_Unsigned num = 0;
+        res = dwarf_get_xu_section_names(xuhdr,i,&num,&name,error);
+        if (res != DW_DLV_OK) {
+            return res;
+        }
+        secnums[i] = num;
+    }
+    n = percu_index;
+    for(l = 0; l < max_cols; ++l) {  /* L */
+        Dwarf_Unsigned sec_off = 0;
+        Dwarf_Unsigned sec_size = 0;
+        unsigned l_as_sect = secnums[l];
+        res = dwarf_get_xu_section_offset(xuhdr,n,l,
+            &sec_off,&sec_size,error);
+        if (res != DW_DLV_OK) {
+            return res;
+        }
+        percu_out->pcu_offset[l_as_sect] = sec_off;
+        percu_out->pcu_size[l_as_sect] = sec_size;
+    }
+    percu_out->pcu_type = sig_type;
+    percu_out->pcu_index = percu_index;
+    percu_out->pcu_hash = *key;
+    return DW_DLV_OK;
+}
+
+/*  This should only be called for a CU, never a TU.
+    For a TU the type hash is known while reading
+    the TU Header.  Not so for a CU. */
+int
+_dwarf_get_debugfission_for_offset(Dwarf_Debug dbg,
+    Dwarf_Off    offset_wanted,
+    struct Dwarf_Debug_Fission_Per_CU_s *  percu_out,
+    Dwarf_Error *error)
+{
+    Dwarf_Xu_Index_Header xuhdr = 0;
+    int sres = 0;
+    int sect_index = 0;
+    Dwarf_Unsigned percu_index = 0;
+    Dwarf_Unsigned sect_index_base = 0;
+    const char * key_type = "cu";
+    Dwarf_Sig8 key;
+
+    sect_index_base = DW_SECT_INFO;
+
+    sres = _dwarf_get_xuhdr(dbg,key_type, &xuhdr,error);
+    if (sres != DW_DLV_OK) {
+        return sres;
+    }
+    sres = _dwarf_search_fission_for_offset(dbg,
+        xuhdr,offset_wanted, sect_index_base, &percu_index,
+        &key,
+        error);
+    if (sres != DW_DLV_OK) {
+        return sres;
+    }
+
+    sres = transform_xu_to_dfp(xuhdr,percu_index,&key,
+        key_type,percu_out, error);
+    return sres;
+
+}
+int
+dwarf_get_debugfission_for_key(Dwarf_Debug dbg,
+    Dwarf_Sig8 *  key  /* pointer to hash signature */,
+    const char * key_type  /*  "cu" or "tu" */,
+    Dwarf_Debug_Fission_Per_CU *  percu_out,
+    Dwarf_Error *  error )
+{
+    Dwarf_Xu_Index_Header xuhdr = 0;
+    int sres = 0;
+    int sect_index = 0;
+    Dwarf_Unsigned percu_index = 0;
+
+    sres = _dwarf_load_debug_info(dbg,error);
+    if (sres == DW_DLV_ERROR) {
+        return sres;
+    }
+    sres = _dwarf_load_debug_types(dbg,error);
+    if (sres == DW_DLV_ERROR) {
+        return sres;
+    }
+
+    sres = _dwarf_get_xuhdr(dbg,key_type, &xuhdr,error);
+    if (sres != DW_DLV_OK) {
+        return sres;
+    }
+
+    sres = _dwarf_search_fission_for_key(dbg,
+        xuhdr,key,&percu_index,error);
+    if (sres != DW_DLV_OK) {
+        return sres;
+    }
+
+    sres = transform_xu_to_dfp(xuhdr,percu_index,key,key_type,percu_out,error);
+    return sres;
+}
 
 void
 dwarf_xu_header_free(Dwarf_Xu_Index_Header indexptr)
@@ -332,3 +581,5 @@ dwarf_xu_header_free(Dwarf_Xu_Index_Header indexptr)
         dwarf_dealloc(dbg,indexptr,DW_DLA_XU_INDEX);
     }
 }
+
+

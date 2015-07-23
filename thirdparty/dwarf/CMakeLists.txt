@@ -32,6 +32,7 @@ add_library (dwarf STATIC
     dwarf_util.c
     dwarf_vars.c
     dwarf_weaks.c
+    dwarf_xu_index.c
     malloc_check.c
     pro_encode_nm.c
 )

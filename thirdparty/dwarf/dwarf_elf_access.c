@@ -26,15 +26,6 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
 
 #include "config.h"
@@ -156,7 +147,9 @@ static int dwarf_elf_object_access_load_section(void* obj_in,
     Dwarf_Small** section_data,
     int* error);
 
-/* dwarf_elf_object_access_internals_init() */
+/*  dwarf_elf_object_access_internals_init()
+    On error, set *error with libdwarf error code.
+*/
 static int
 dwarf_elf_object_access_internals_init(void* obj_in,
     dwarf_elf_handle elf,
@@ -1167,7 +1160,10 @@ static const struct Dwarf_Obj_Access_Methods_s dwarf_elf_object_access_methods =
 };
 
 
-/* Interface for the ELF object file implementation.  */
+/*  Interface for the ELF object file implementation.
+    On error this should set *err with the
+    libdwarf error code.
+*/
 int
 dwarf_elf_object_access_init(dwarf_elf_handle elf,
     int libdwarf_owns_elf,
@@ -1180,12 +1176,14 @@ dwarf_elf_object_access_init(dwarf_elf_handle elf,
 
     internals = malloc(sizeof(dwarf_elf_object_access_internals_t));
     if (!internals) {
+        *err = DW_DLE_ALLOC_FAIL;
         /* Impossible case, we hope. Give up. */
         return DW_DLV_ERROR;
     }
     memset(internals,0,sizeof(*internals));
     res = dwarf_elf_object_access_internals_init(internals, elf, err);
     if (res != DW_DLV_OK){
+        /* *err is already set. */
         free(internals);
         return DW_DLV_ERROR;
     }
@@ -1194,6 +1192,7 @@ dwarf_elf_object_access_init(dwarf_elf_handle elf,
     intfc = malloc(sizeof(Dwarf_Obj_Access_Interface));
     if (!intfc) {
         /* Impossible case, we hope. Give up. */
+        *err = DW_DLE_ALLOC_FAIL;
         free(internals);
         return DW_DLV_ERROR;
     }

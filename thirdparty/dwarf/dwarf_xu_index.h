@@ -1,3 +1,5 @@
+#ifndef DWARF_XU_INDEX_H
+#define DWARF_XU_INDEX_H
 /*
 
   Copyright (C) 2014-2014 David Anderson. All Rights Reserved.
@@ -30,6 +32,7 @@
 /*  The following is based on
     The gdb online documentation at
     https://gcc.gnu.org/wiki/DebugFissionDWP
+    and the draft DWARF5 standard.
 */
 
 
@@ -53,6 +56,8 @@ struct Dwarf_Xu_Index_Header_s {
     /* Do not free gx_section_name. */
     const char     * gx_section_name;
 };
+
+#endif  /* DWARF_XU_INDEX_H */
 
 
 

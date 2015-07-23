@@ -23,24 +23,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -249,7 +232,8 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
         READ_UNALIGNED(dbg, version, Dwarf_Half,
             pubnames_like_ptr, sizeof(Dwarf_Half));
         pubnames_like_ptr += sizeof(Dwarf_Half);
-        if (version != CURRENT_VERSION_STAMP) {
+        /* ASSERT: DW_PUBNAMES_VERSION2 == DW_PUBTYPES_VERSION2 */
+        if (version != DW_PUBNAMES_VERSION2) {
             _dwarf_error(dbg, error, version_err_num);
             return (DW_DLV_ERROR);
         }
@@ -572,6 +556,12 @@ dwarf_get_cu_die_offset_given_cu_header_offset(Dwarf_Debug dbg,
 
 /*  The following version new in October 2011, does allow finding
     the offset if one knows whether debug_info or debug_types.
+
+    However, it is not accurate in DWARF5 because
+    there are two different header lengths (CU and TU)
+    in DWARF5 .debug_info.  In that case, pretend
+    that it's .debug_types (here) and pass is_info zero for
+    a TU (as if it was in .debug_types).
     */
 int
 dwarf_get_cu_die_offset_given_cu_header_offset_b(Dwarf_Debug dbg,

@@ -24,24 +24,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -183,7 +166,10 @@ dwarf_tag(Dwarf_Die die, Dwarf_Half * tag, Dwarf_Error * error)
     return DW_DLV_OK;
 }
 
-
+/*  If the input is improper (see DW_DLV_ERROR)
+    this may leak memory. Such badly formed input
+    should be very very rare.
+*/
 int
 dwarf_attrlist(Dwarf_Die die,
     Dwarf_Attribute ** attrbuf,
@@ -208,7 +194,7 @@ dwarf_attrlist(Dwarf_Die die,
     abbrev_list = _dwarf_get_abbrev_for_code(die->di_cu_context,
         die->di_abbrev_list->ab_code);
     if (abbrev_list == NULL) {
-        _dwarf_error(dbg, error, DW_DLE_DIE_ABBREV_BAD);
+        _dwarf_error(dbg,error,DW_DLE_CU_DIE_NO_ABBREV_LIST);
         return (DW_DLV_ERROR);
     }
     abbrev_ptr = abbrev_list->ab_abbrev_ptr;
@@ -242,6 +228,12 @@ dwarf_attrlist(Dwarf_Die die,
                 DECODE_LEB128_UWORD(info_ptr, utmp6);
                 attr_form = (Dwarf_Half) utmp6;
                 new_attr->ar_attribute_form = attr_form;
+            }
+            if (_dwarf_reference_outside_section(die,
+                (Dwarf_Small*) info_ptr,
+                (Dwarf_Small*) info_ptr)) {
+                _dwarf_error(dbg, error,DW_DLE_ATTR_OUTSIDE_SECTION);
+                return DW_DLV_ERROR;
             }
             new_attr->ar_cu_context = die->di_cu_context;
             new_attr->ar_debug_ptr = info_ptr;
@@ -319,17 +311,19 @@ _dwarf_get_value_ptr(Dwarf_Die die,
     Dwarf_Half curr_attr = 0;
     Dwarf_Half curr_attr_form = 0;
     Dwarf_Byte_Ptr info_ptr = 0;
+    Dwarf_CU_Context context = die->di_cu_context;
+    Dwarf_Byte_Ptr die_info_end = 0;
+    Dwarf_Debug dbg = 0;
 
-    abbrev_list = _dwarf_get_abbrev_for_code(die->di_cu_context,
+    if (!context) {
+        _dwarf_error(NULL,error,DW_DLE_DIE_NO_CU_CONTEXT);
+        return DW_DLV_ERROR;
+    }
+    dbg = context->cc_dbg;
+    die_info_end = _dwarf_calculate_section_end_ptr(context);
+    abbrev_list = _dwarf_get_abbrev_for_code(context,
         die->di_abbrev_list->ab_code);
     if (abbrev_list == NULL) {
-        Dwarf_Debug dbg = 0;
-        Dwarf_CU_Context context = die->di_cu_context;
-        if (!context) {
-            _dwarf_error(dbg,error,DW_DLE_DIE_NO_CU_CONTEXT);
-            return DW_DLV_ERROR;
-        }
-        dbg = context->cc_dbg;
         /*  Should this be DW_DLV_NO_ENTRY? */
         _dwarf_error(dbg,error,DW_DLE_CU_DIE_NO_ABBREV_LIST);
         return DW_DLV_ERROR;
@@ -362,7 +356,7 @@ _dwarf_get_value_ptr(Dwarf_Die die,
             return DW_DLV_OK;
         }
 
-        res = _dwarf_get_size_of_val(die->di_cu_context->cc_dbg,
+        res = _dwarf_get_size_of_val(dbg,
             curr_attr_form,
             die->di_cu_context->cc_version_stamp,
             die->di_cu_context->cc_address_size,
@@ -372,6 +366,12 @@ _dwarf_get_value_ptr(Dwarf_Die die,
             error);
         if (res != DW_DLV_OK) {
             return res;
+        }
+        if ( (die_info_end  - info_ptr) < value_size) {
+            /*  Something badly wrong. We point past end
+                of debug_info or debug_types . */
+            _dwarf_error(dbg,error,DW_DLE_DIE_ABBREV_BAD);
+            return DW_DLV_ERROR;
         }
         info_ptr+= value_size;
     } while (curr_attr != 0 || curr_attr_form != 0);
@@ -474,7 +474,6 @@ dwarf_hasattr(Dwarf_Die die,
     return DW_DLV_OK;
 }
 
-
 int
 dwarf_attr(Dwarf_Die die,
     Dwarf_Half attr,
@@ -514,6 +513,8 @@ dwarf_attr(Dwarf_Die die,
     return DW_DLV_OK;
 }
 
+/*  A DWP (.dwp) package object never contains .debug_addr,
+    only a normal .o or executable object. */
 int
 _dwarf_extract_address_from_debug_addr(Dwarf_Debug dbg,
     Dwarf_CU_Context context,
@@ -664,8 +665,8 @@ _dwarf_get_string_base_attr_value(Dwarf_Debug dbg,
     Dwarf_Unsigned cu_die_offset = 0;
     Dwarf_Attribute myattr = 0;
 
-    if(context->cc_string_base_present) {
-        *sbase_out = context->cc_string_base;
+    if(context->cc_str_offsets_base_present) {
+        *sbase_out = context->cc_str_offsets_base;
         return DW_DLV_OK;
     }
     cu_die_offset = context->cc_cu_die_global_sec_offset;
@@ -698,9 +699,12 @@ _dwarf_get_string_base_attr_value(Dwarf_Debug dbg,
             return res;
         }
         *sbase_out  = val;
+        context->cc_str_offsets_base = val;
+        context->cc_str_offsets_base_present = TRUE;
         return DW_DLV_OK;
     }
-    /* NO ENTRY, No other attr.Not even GNU */
+    /*  NO ENTRY, No other attr.Not even GNU, this one is standard
+        DWARF5 only. */
     dwarf_dealloc(dbg,myattr,DW_DLA_ATTR);
     dwarf_dealloc(dbg,cudie,DW_DLA_DIE);
     /*  We do not need a base for a .dwo. We might for .dwp
@@ -839,6 +843,7 @@ dwarf_highpc_b(Dwarf_Die die,
         offset_size,attr_form);
 
     if (class == DW_FORM_CLASS_ADDRESS) {
+        Dwarf_Addr addr = 0;
         if (attr_form == DW_FORM_GNU_addr_index ||
             attr_form == DW_FORM_addrx) {
             Dwarf_Unsigned addr_out = 0;
@@ -858,7 +863,6 @@ dwarf_highpc_b(Dwarf_Die die,
             return (DW_DLV_OK);
         }
 
-        Dwarf_Addr addr = 0;
         READ_UNALIGNED(dbg, addr, Dwarf_Addr,
             info_ptr, address_size);
         *return_value = addr;
@@ -1232,6 +1236,26 @@ dwarf_get_version_of_die(Dwarf_Die die,
     *version = cucontext->cc_version_stamp;
     *offset_size = cucontext->cc_length_size;
     return DW_DLV_OK;
+}
+
+Dwarf_Byte_Ptr
+_dwarf_calculate_section_end_ptr(Dwarf_CU_Context context)
+{
+    Dwarf_Debug dbg = 0;
+    Dwarf_Byte_Ptr info_end = 0;
+    Dwarf_Byte_Ptr info_start = 0;
+    Dwarf_Off off2 = 0;
+    Dwarf_Small *dataptr = 0;
+
+    dbg = context->cc_dbg;
+    dataptr = context->cc_is_info? dbg->de_debug_info.dss_data:
+        dbg->de_debug_types.dss_data;
+    off2 = context->cc_debug_offset;
+    info_start = dataptr + off2;
+    info_end = info_start + context->cc_length +
+        context->cc_length_size +
+        context->cc_extension_size;
+    return info_end;
 }
 
 

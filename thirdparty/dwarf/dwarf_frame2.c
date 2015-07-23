@@ -24,27 +24,10 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
 
 /*  This  implements _dwarf_get_fde_list_internal()
     and related helper functions for reading cie/fde data.  */
-
-
 
 #include "config.h"
 #include "dwarf_incl.h"
@@ -83,7 +66,8 @@ static int get_gcc_eh_augmentation(Dwarf_Debug dbg,
     enum Dwarf_augmentation_type augtype,
     Dwarf_Small * section_pointer,
     Dwarf_Small * fde_eh_encoding_out,
-    char *augmentation);
+    char *augmentation,
+    Dwarf_Error *error);
 
 static int
 gnu_aug_encodings(Dwarf_Debug dbg, char *augmentation,
@@ -92,7 +76,8 @@ gnu_aug_encodings(Dwarf_Debug dbg, char *augmentation,
     unsigned char *pers_hand_enc_out,
     unsigned char *lsda_enc_out,
     unsigned char *fde_begin_enc_out,
-    Dwarf_Addr * gnu_pers_addr_out);
+    Dwarf_Addr * gnu_pers_addr_out,
+    Dwarf_Error *error);
 
 
 static int read_encoded_ptr(Dwarf_Debug dbg,
@@ -101,7 +86,8 @@ static int read_encoded_ptr(Dwarf_Debug dbg,
     int gnu_encoding,
     Dwarf_Half address_size,
     Dwarf_Unsigned * addr,
-    Dwarf_Small ** input_field_out);
+    Dwarf_Small ** input_field_out,
+    Dwarf_Error *error);
 
 
 
@@ -187,7 +173,7 @@ validate_length(Dwarf_Debug dbg,
 }
 
 
-#if 0
+#if 0 /* FOR DEBUGGING */
 /* For debugging only. */
 static void
 print_prefix(struct cie_fde_prefix_s *prefix, int line)
@@ -294,7 +280,6 @@ _dwarf_get_fde_list_internal(Dwarf_Debug dbg, Dwarf_Cie ** cie_data,
             dealloc_fde_cie_list_internal(head_fde_ptr, head_cie_ptr);
             _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
             return DW_DLV_ERROR;
-
         }
 
         if (prefix.cf_cie_id == cie_id_value) {
@@ -616,8 +601,7 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
 
         if (!use_gnu_cie_calc) {
             /* This should be impossible. */
-            _dwarf_error(dbg, error,
-                DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
+            _dwarf_error(dbg, error,DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
             return DW_DLV_ERROR;
         }
 
@@ -625,10 +609,9 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
             augt,
             prefix->cf_section_ptr,
             &eh_fde_encoding,
-            (char *) augmentation);
+            (char *) augmentation,error);
         if (err == DW_DLV_ERROR) {
-            _dwarf_error(dbg, error,
-                DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
+            _dwarf_error(dbg, error,DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
             return DW_DLV_ERROR;
         }
         frame_ptr += increment;
@@ -651,7 +634,8 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
             &gnu_personality_handler_encoding,
             &gnu_lsda_encoding,
             &gnu_fde_begin_encoding,
-            &gnu_personality_handler_addr);
+            &gnu_personality_handler_addr,
+            error);
         if (res != DW_DLV_OK) {
             _dwarf_error(dbg, error,
                 DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
@@ -770,11 +754,9 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
                 cieptr-> ci_gnu_fde_begin_encoding,
                 address_size,
                 &initial_location,
-                &fp_updated);
+                &fp_updated,error);
             if (res != DW_DLV_OK) {
-                _dwarf_error(dbg, error,
-                    DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
-                return DW_DLV_ERROR;
+                return res;
             }
             frame_ptr = fp_updated;
             /*  For the address-range it makes no sense to be
@@ -786,11 +768,9 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
                 frame_ptr,
                 cieptr->ci_gnu_fde_begin_encoding,
                 address_size,
-                &address_range, &fp_updated);
+                &address_range, &fp_updated,error);
             if (res != DW_DLV_OK) {
-                _dwarf_error(dbg, error,
-                    DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
-                return DW_DLV_ERROR;
+                return res;
             }
             frame_ptr = fp_updated;
         }
@@ -837,8 +817,7 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
 
         if (!use_gnu_cie_calc) {
             /* This should be impossible. */
-            _dwarf_error(dbg, error,
-                DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
+            _dwarf_error(dbg, error,DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
             return DW_DLV_ERROR;
         }
 
@@ -1101,7 +1080,7 @@ dwarf_create_cie_from_start(Dwarf_Debug dbg,
    aug_data_len - length of areas aug_data points to.
 
 */
-#if 0
+#if 0  /* FOR DEBUGGING */
 /* For debugging only. */
 void
 dump_bytes(Dwarf_Small * start, long len)
@@ -1122,7 +1101,8 @@ gnu_aug_encodings(Dwarf_Debug dbg, char *augmentation,
     unsigned char *pers_hand_enc_out,
     unsigned char *lsda_enc_out,
     unsigned char *fde_begin_enc_out,
-    Dwarf_Addr * gnu_pers_addr_out)
+    Dwarf_Addr * gnu_pers_addr_out,
+    Dwarf_Error * error)
 {
     char *nc = 0;
     Dwarf_Small *cur_aug_p = aug_data;
@@ -1162,6 +1142,7 @@ gnu_aug_encodings(Dwarf_Debug dbg, char *augmentation,
 
         case 'L':
             if (cur_aug_p > end_aug_p) {
+                _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
                 return DW_DLV_ERROR;
             }
             *lsda_enc_out = *(unsigned char *) cur_aug_p;
@@ -1171,6 +1152,7 @@ gnu_aug_encodings(Dwarf_Debug dbg, char *augmentation,
             /*  Followed by a one byte argument giving the
                 pointer encoding for the address pointers in the fde. */
             if (cur_aug_p >= end_aug_p) {
+                _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
                 return DW_DLV_ERROR;
             }
             *fde_begin_enc_out = *(unsigned char *) cur_aug_p;
@@ -1182,12 +1164,14 @@ gnu_aug_encodings(Dwarf_Debug dbg, char *augmentation,
             unsigned char encoding = 0;
 
             if (cur_aug_p >= end_aug_p) {
+                _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
                 return DW_DLV_ERROR;
             }
             encoding = *(unsigned char *) cur_aug_p;
             *pers_hand_enc_out = encoding;
             ++cur_aug_p;
             if (cur_aug_p > end_aug_p) {
+                _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
                 return DW_DLV_ERROR;
             }
             /*  DW_EH_PE_pcrel makes no sense here, so we turn it
@@ -1198,22 +1182,24 @@ gnu_aug_encodings(Dwarf_Debug dbg, char *augmentation,
                 encoding,
                 address_size,
                 gnu_pers_addr_out,
-                &updated_aug_p);
+                &updated_aug_p,
+                error);
             if (res != DW_DLV_OK) {
                 return res;
             }
             cur_aug_p = updated_aug_p;
             if (cur_aug_p > end_aug_p) {
+                _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
                 return DW_DLV_ERROR;
             }
             }
             break;
         default:
+            _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
             return DW_DLV_ERROR;
 
         }
     }
-
     return DW_DLV_OK;
 }
 
@@ -1230,7 +1216,8 @@ read_encoded_ptr(Dwarf_Debug dbg,
     int gnu_encoding,
     Dwarf_Half address_size,
     Dwarf_Unsigned * addr,
-    Dwarf_Small ** input_field_updated)
+    Dwarf_Small ** input_field_updated,
+    Dwarf_Error *error)
 {
     Dwarf_Word length = 0;
     int value_type = gnu_encoding & 0xf;
@@ -1338,6 +1325,7 @@ read_encoded_ptr(Dwarf_Debug dbg,
         }
         break;
     default:
+        _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
         return DW_DLV_ERROR;
 
     };
@@ -1442,7 +1430,8 @@ get_gcc_eh_augmentation(Dwarf_Debug dbg, Dwarf_Small * frame_ptr,
     enum Dwarf_augmentation_type augtype,
     Dwarf_Small * section_pointer,
     Dwarf_Small * fde_eh_encoding_out,
-    char *augmentation)
+    char *augmentation,
+    Dwarf_Error *error)
 {
     char *suffix = 0;
     unsigned long augdata_size = 0;
@@ -1464,6 +1453,7 @@ get_gcc_eh_augmentation(Dwarf_Debug dbg, Dwarf_Small * frame_ptr,
     for (; *suffix; ++suffix) {
         /*  We have no idea what this is as yet. Some extensions beyond
             dwarf exist which we do not yet handle. */
+        _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
         return DW_DLV_ERROR;
 
     }

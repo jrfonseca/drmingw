@@ -23,15 +23,6 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
 
 
@@ -41,44 +32,90 @@
 #define true                    1
 #define false                   0
 
-/* To identify a cie */
+/* .debug_addr new in DWARF5 */
+#define DW_ADDR_VERSION5   5
+
+/* To identify a cie. That is, for .debug_frame */
 #define DW_CIE_ID 		~(0x0)
 #define DW_CIE_VERSION		1 /* DWARF2 */
 #define DW_CIE_VERSION3		3 /* DWARF3 */
 #define DW_CIE_VERSION4		4 /* DWARF4 */
+#define DW_CIE_VERSION5		5 /* DWARF5 */
 
+/*  For .debug_info DWARF2,3,4,5.
+    .debug_types in DWARF4 only,  and gets DW_CU_VERSION4.  */
 #define DW_CU_VERSION2 2
 #define DW_CU_VERSION3 3
 #define DW_CU_VERSION4 4
+#define DW_CU_VERSION5 5
 
-/* DWARF2,3 and 4 */
+/* DWARF2,3, 4  and 5.*/
 #define DW_ARANGES_VERSION2 2
 
 #define DW_LINE_VERSION2   2
 #define DW_LINE_VERSION3   3
 #define DW_LINE_VERSION4   4
+#define DW_LINE_VERSION5   5
+
+/* .debug_line_str (and .dwo) new in DWARF5. */
+#define DW_LINE_STR_VERSION5   5
+/* .debug_loc (and .dwo) First header version number is  DWARF5. */
+#define DW_LOC_VERSION5   5
+
+
+
+/* .debug_macro (and .dwo) new in DWARF5. */
+#define DW_MACRO_VERSION5   5
+/* .debug_names new in DWARF5. */
+#define DW_NAMES_VERSION5   5
+
+/* .debug_pubnames in DWARF2,3,4. */
+#define DW_PUBNAMES_VERSION2 2
+/* .debug_pubnames in DWARF3,4. */
+#define DW_PUBTYPES_VERSION2 2
+
+/* .debug_ranges gets a version number in header in DWARF5. */
+#define DW_RANGES_VERSION5 5
+
+
+/* .debug_str_offsets (and .dwo) new in DWARF5. */
+#define DW_STR_OFFSETS_VERSION5   5
+
+/* .debug_sup new in DWARF5. */
+#define DW_SUP_VERSION5 5
+
+/* .debug_cu_index new in DWARF5. */
+#define DW_CU_INDEX_VERSION5 5
+/* .debug_tu_index new in DWARF5. */
+#define DW_TU_INDEX_VERSION5 5
+
+
+
 
 
 /*  These are allocation type codes for structs that
     are internal to the Libdwarf Consumer library.  */
-#define DW_DLA_ABBREV_LIST	DW_DLA_RANGES + 1
-#define DW_DLA_CHAIN		DW_DLA_RANGES + 2
-#define DW_DLA_CU_CONTEXT	DW_DLA_RANGES + 3
-#define DW_DLA_FRAME		DW_DLA_RANGES + 4
-#define DW_DLA_GLOBAL_CONTEXT	DW_DLA_RANGES + 5
-#define DW_DLA_FILE_ENTRY	DW_DLA_RANGES + 6
-#define DW_DLA_LINE_CONTEXT	DW_DLA_RANGES + 7
-#define DW_DLA_LOC_CHAIN	DW_DLA_RANGES + 8
-#define DW_DLA_HASH_TABLE	DW_DLA_RANGES + 9
-#define DW_DLA_FUNC_CONTEXT	DW_DLA_RANGES + 10
-#define DW_DLA_TYPENAME_CONTEXT	DW_DLA_RANGES + 11
-#define DW_DLA_VAR_CONTEXT	DW_DLA_RANGES + 12
-#define DW_DLA_WEAK_CONTEXT	DW_DLA_RANGES + 13
-#define DW_DLA_PUBTYPES_CONTEXT	DW_DLA_RANGES + 14 /* DWARF3 */
-#define DW_DLA_HASH_TABLE_ENTRY	DW_DLA_RANGES + 15
+#define DW_DLA_ABBREV_LIST      0x1e
+#define DW_DLA_CHAIN            0x1f
+#define DW_DLA_CU_CONTEXT       0x20
+#define DW_DLA_FRAME            0x21
+#define DW_DLA_GLOBAL_CONTEXT   0x22
+#define DW_DLA_FILE_ENTRY       0x23
+#define DW_DLA_LINE_CONTEXT     0x24
+#define DW_DLA_LOC_CHAIN        0x25
+#define DW_DLA_HASH_TABLE       0x26
+#define DW_DLA_FUNC_CONTEXT     0x27
+#define DW_DLA_TYPENAME_CONTEXT 0x28
+#define DW_DLA_VAR_CONTEXT      0x29
+#define DW_DLA_WEAK_CONTEXT     0x2a
+#define DW_DLA_PUBTYPES_CONTEXT 0x2b  /* DWARF3 */
+#define DW_DLA_HASH_TABLE_ENTRY 0x2c
+#define DW_DLA_FISSION_PERCU    0x2d
+/* Thru 0x36 reserved for internal future use. */
 
-/* Maximum number of allocation types for allocation routines. */
-#define MAX_DW_DLA		DW_DLA_HASH_TABLE_ENTRY
+/*  Maximum number of allocation types for allocation routines.
+    Only used with malloc_check.c and that is basically obsolete. */
+#define MAX_DW_DLA		0x38
 
 /*Dwarf_Word  is unsigned word usable for index, count in memory */
 /*Dwarf_Sword is   signed word usable for index, count in memory */

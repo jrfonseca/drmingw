@@ -26,24 +26,7 @@
   Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
   USA.
 
-  Contact information:  Silicon Graphics, Inc., 1500 Crittenden Lane,
-  Mountain View, CA 94043, or:
-
-  http://www.sgi.com
-
-  For further information regarding this notice, see:
-
-  http://oss.sgi.com/projects/GenInfo/NoticeExplan
-
 */
-/* The address of the Free Software Foundation is
-   Free Software Foundation, Inc., 51 Franklin St, Fifth Floor,
-   Boston, MA 02110-1301, USA.
-   SGI has moved from the Crittenden Lane address.
-*/
-
-
-
 
 /*
     Decodes unsigned leb128 encoded numbers.
@@ -189,7 +172,8 @@ typedef Dwarf_Unsigned BIGGEST_UINT;
     and updates the rw_src_data_p to point past what was just read.
 
     It updates w_length_size (to the size of an offset, either 4 or 8)
-    and w_exten_size (set 0 unless this frame has the DWARF3,4 64bit
+    and w_exten_size (set 0 unless this frame has the DWARF3
+    and later  64bit
     extension, in which case w_exten_size is set to 4).
 
     r_dbg is just the current dbg pointer.
@@ -328,5 +312,9 @@ int  _dwarf_load_debug_types(Dwarf_Debug dbg, Dwarf_Error *error);
 void _dwarf_free_abbrev_hash_table_contents(Dwarf_Debug dbg,
     struct Dwarf_Hash_Table_s* hash_table);
 int _dwarf_get_address_size(Dwarf_Debug dbg, Dwarf_Die die);
+int _dwarf_reference_outside_section(Dwarf_Die die,
+    Dwarf_Small * startaddr,
+    Dwarf_Small * pastend);
+
 
 #endif /* DWARF_UTIL_H */

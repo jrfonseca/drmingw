@@ -1,3 +1,5 @@
+#ifndef DWARF_TSEARCH
+#define DWARF_TSEARCH
 /* Copyright (c) 2013, David Anderson
 All rights reserved.
 
@@ -29,6 +31,7 @@ OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
+
 
 /*  The following interfaces follow tsearch (See the Single
     Unix Specification) but the implementation is
@@ -119,3 +122,4 @@ void * dwarf_initialize_search_hash( void **treeptr,
 
 
 
+#endif /* DWARF_TSEARCH */
