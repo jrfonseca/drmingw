@@ -6,7 +6,7 @@ project (drmingw)
 
 set (CPACK_PACKAGE_VERSION_MAJOR "0")
 set (CPACK_PACKAGE_VERSION_MINOR "7")
-set (CPACK_PACKAGE_VERSION_PATCH "4")
+set (CPACK_PACKAGE_VERSION_PATCH "5")
 
 
 ##############################################################################
