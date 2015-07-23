@@ -441,9 +441,10 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             if (pOptions->verbose_flag) {
                 PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
 
-                lprintf("CREATE_PROCESS PID=%lu TID=%lu %s\r\n",
+                lprintf("CREATE_PROCESS PID=%lu TID=%lu lpBaseOfImage=%p %s\r\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId,
+                        DebugEvent.u.CreateProcessInfo.lpBaseOfImage,
                         lpModuleName
                 );
             }
