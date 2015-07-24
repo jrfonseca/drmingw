@@ -118,6 +118,9 @@ add_test (
 add_subdirectory (apps)
 find_package (PythonInterp 2.7)
 if (PYTHONINTERP_FOUND)
+    if (NOT PYTHON_VERSION_MAJOR EQUAL 2)
+        message (FATAL_ERROR "Python 2.x required and requested, but Python ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR} found.")
+    endif ()
     add_dependencies (check catchsegv)
     add_test (
         NAME test_catchsegv
