@@ -32,8 +32,17 @@ EXTERN_C DWORD
 SetSymOptions(BOOL fDebug)
 {
     DWORD dwSymOptions = SymGetOptions();
+
+    // We have more control calling UnDecorateSymbolName directly Also, we
+    // don't want DbgHelp trying to undemangle MinGW symbols (e.g., from DLL
+    // exports) behind our back (as it will just strip the leading underscore.)
+    if (0) {
+        dwSymOptions |= SYMOPT_UNDNAME;
+    } else {
+        dwSymOptions &= ~SYMOPT_UNDNAME;
+    }
+
     dwSymOptions |=
-        SYMOPT_UNDNAME |
         SYMOPT_LOAD_LINES |
         SYMOPT_OMAP_FIND_NEAREST;
 
@@ -92,10 +101,14 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD n
     pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
     pSymbol->MaxNameLen = nSize;
 
+    DWORD dwOptions = SymGetOptions();
+
     bRet = SymFromAddr(hProcess, dwAddress, &dwDisplacement, pSymbol);
 
     if (bRet) {
-        if (UnDecorateSymbolName(pSymbol->Name, lpSymName, nSize, UNDNAME_COMPLETE) == 0) {
+        // Demangle if not done already
+        if ((dwOptions & SYMOPT_UNDNAME) ||
+            UnDecorateSymbolName(pSymbol->Name, lpSymName, nSize, UNDNAME_COMPLETE) == 0) {
             strncpy(lpSymName, pSymbol->Name, nSize);
         }
     }
