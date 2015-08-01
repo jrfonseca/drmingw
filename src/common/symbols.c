@@ -108,7 +108,7 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD n
     if (bRet) {
         // Demangle if not done already
         if ((dwOptions & SYMOPT_UNDNAME) ||
-            UnDecorateSymbolName(pSymbol->Name, lpSymName, nSize, UNDNAME_COMPLETE) == 0) {
+            UnDecorateSymbolName(pSymbol->Name, lpSymName, nSize, UNDNAME_NAME_ONLY) == 0) {
             strncpy(lpSymName, pSymbol->Name, nSize);
         }
     }

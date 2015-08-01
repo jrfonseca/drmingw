@@ -33,10 +33,7 @@
 #include "dwarf_pe.h"
 #include "dwarf_find.h"
 
-
-extern char *
-__cxa_demangle(const char * __mangled_name, char * __output_buffer,
-               size_t * __length, int * __status);
+#include "demangle.h"
 
 
 struct mgwhelp_module
@@ -541,29 +538,24 @@ MgwSymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
 
 
 static char *
-demangle(const char *mangled)
+demangle(const char *mangled, DWORD Flags)
 {
     assert(mangled);
+
+    // There can be false negatives, such as "_ZwTerminateProcess@8"
     if (mangled[0] != '_' || mangled[1] != 'Z') {
         return NULL;
     }
 
-    /**
-     * See http://gcc.gnu.org/onlinedocs/libstdc++/manual/ext_demangling.html
-     */
-
-    int status = 0;
-    char *output_buffer;
-    output_buffer = __cxa_demangle(mangled, 0, 0, &status);
-    if (status != 0) {
-#ifndef NDEBUG
-        // There can be false negatives, such as "_ZwTerminateProcess@8"
-        OutputDebug("MGWHELP: __cxa_demangle(\"%s\") failed with status %i\n", mangled, status);
-#endif
-        return NULL;
-    } else {
-        return output_buffer;
+    int options = DMGL_PARAMS | DMGL_TYPES;
+    if (Flags & UNDNAME_NAME_ONLY) {
+        options = DMGL_NO_OPTS;
     }
+    if (Flags & UNDNAME_NO_ARGUMENTS) {
+        options &= ~DMGL_PARAMS;
+    }
+
+    return cplus_demangle_v3(mangled, options);
 }
 
 
@@ -577,7 +569,7 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
     if (mgwhelp_find_symbol(hProcess, Address, &info)) {
         char *output_buffer = NULL;
         if (dwOptions & SYMOPT_UNDNAME) {
-            output_buffer = demangle(info.functionname);
+            output_buffer = demangle(info.functionname, UNDNAME_NAME_ONLY);
         }
         if (output_buffer) {
             strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
@@ -605,7 +597,7 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
                            Displacement)) {
             char *output_buffer = NULL;
             if (dwOptions & SYMOPT_UNDNAME) {
-                output_buffer = demangle(Symbol->Name);
+                output_buffer = demangle(Symbol->Name, UNDNAME_NAME_ONLY);
             }
             if (output_buffer) {
                 strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
@@ -645,7 +637,7 @@ MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD Undecor
 {
     assert(DecoratedName != NULL);
 
-    char *output_buffer = demangle(DecoratedName);
+    char *output_buffer = demangle(DecoratedName, Flags);
     if (output_buffer) {
         strncpy(UnDecoratedName, output_buffer, UndecoratedLength);
         free(output_buffer);

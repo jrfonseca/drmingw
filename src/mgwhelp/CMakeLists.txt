@@ -17,12 +17,12 @@ add_library (mgwhelp MODULE
 target_link_libraries (mgwhelp LINK_PRIVATE
     common
     dwarf
+    libiberty
     dbghelp
 )
 
 set_target_properties (mgwhelp PROPERTIES
     PREFIX ""
-    LINKER_LANGUAGE CXX # for __cxa_demangle
 )
 
 install (TARGETS mgwhelp LIBRARY DESTINATION bin)
