@@ -30,6 +30,8 @@
 #include <windows.h>
 #include <dbghelp.h>
 
+#include <getopt.h>
+
 #include "log.h"
 #include "debugger.h"
 #include "symbols.h"
@@ -136,7 +138,7 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 static void
 Usage(void)
 {
-    fputs("usage: stackdump [options] <command-line>\n"
+    fputs("usage: catchsegv [options] <command-line>\n"
           "\n"
           "options:\n"
           "  -? displays command line help text\n"
@@ -178,28 +180,34 @@ main(int argc, char** argv)
      * Parse command line arguments
      */
 
-    while (--argc > 0) {
-        ++argv;
+    while (1) {
+        int opt = getopt(argc, argv, "?dht:v");
 
-        if (!strcmp(*argv, "-?")) {
+        switch (opt) {
+        case 'h':
             Usage();
             return 0;
-        } else if (!strcmp(*argv, "-v")) {
+        case 'v':
             debugOptions.verbose_flag = TRUE;
-        } else if (!strcmp(*argv, "-d")) {
+            break;
+        case 'd':
             debugOptions.debug_flag = TRUE;
-        } else if (!strcmp(*argv, "-t")) {
-            if (argc < 2) {
-                fprintf(stderr, "catchsegv: error: -t missing argument\n\n");
+            break;
+        case 't':
+            g_TimeOut = strtoul(optarg, NULL, 0);
+            break;
+        case '?':
+            if (optopt == '?') {
                 Usage();
-                return 1;
+                return 0;
             }
+            /* fall-trhough */
+        default:
+            opt = -1;
+            break;
+        }
 
-            ++argv;
-            --argc;
-
-            g_TimeOut = atoi(*argv);
-        } else {
+        if (opt == -1) {
             break;
         }
     }
@@ -210,23 +218,24 @@ main(int argc, char** argv)
 
     PSTR pCommandLine = g_CommandLine;
 
-    while (argc > 0) {
+    while (optind < argc) {
+        char *arg = argv[optind];
         ULONG length;
         BOOL quote;
 
-        length = (ULONG)strlen(*argv);
+        length = (ULONG)strlen(arg);
         if (length + 3 + (pCommandLine - g_CommandLine) >= sizeof g_CommandLine) {
             fprintf(stderr, "catchsegv: error: command line length exceeds %Iu characters\n", sizeof g_CommandLine);
             return 1;
         }
 
-        quote = (strchr(*argv, ' ') || strchr(*argv, '\t'));
+        quote = (strchr(arg, ' ') || strchr(arg, '\t'));
 
         if (quote) {
             *pCommandLine++ = '"';
         }
 
-        memcpy(pCommandLine, *argv, length + 1);
+        memcpy(pCommandLine, arg, length + 1);
         pCommandLine += length;
 
         if (quote) {
@@ -235,8 +244,7 @@ main(int argc, char** argv)
 
         *pCommandLine++ = ' ';
 
-        ++argv;
-        --argc;
+        ++optind;
     }
 
     *pCommandLine = 0;
