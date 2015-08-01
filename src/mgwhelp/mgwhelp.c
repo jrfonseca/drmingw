@@ -46,6 +46,9 @@ struct mgwhelp_module
     DWORD64 Base;
     char LoadedImageName[MAX_PATH];
 
+    HANDLE hFileMapping;
+    PBYTE lpFileBase;
+
     DWORD64 image_base_vma;
 
     Dwarf_Debug dbg;
@@ -69,26 +72,14 @@ struct mgwhelp_process *processes = NULL;
  * value of ImageBase in memory changes.
  */
 static DWORD64
-PEGetImageBase(HANDLE hFile)
+PEGetImageBase(PBYTE lpFileBase)
 {
-    HANDLE hFileMapping;
-    PBYTE lpFileBase;
     PIMAGE_DOS_HEADER pDosHeader;
     PIMAGE_NT_HEADERS pNtHeaders;
     PIMAGE_OPTIONAL_HEADER pOptionalHeader;
     PIMAGE_OPTIONAL_HEADER32 pOptionalHeader32;
     PIMAGE_OPTIONAL_HEADER64 pOptionalHeader64;
     DWORD64 ImageBase = 0;
-
-    hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
-    if (!hFileMapping) {
-        goto no_file_mapping;
-    }
-
-    lpFileBase = (PBYTE)MapViewOfFile(hFileMapping, FILE_MAP_READ, 0, 0, 0);
-    if (!lpFileBase) {
-        goto no_view_of_file;
-    }
 
     pDosHeader = (PIMAGE_DOS_HEADER)lpFileBase;
 
@@ -109,10 +100,121 @@ PEGetImageBase(HANDLE hFile)
         assert(0);
     }
 
-no_view_of_file:
-    CloseHandle(hFileMapping);
-no_file_mapping:
     return ImageBase;
+}
+
+
+/*
+ * Search for the symbol on PE's symbol table.
+ *
+ * Symbols for which there's no DWARF debugging information might still appear there, put by MinGW linker.
+ *
+ * - https://msdn.microsoft.com/en-gb/library/ms809762.aspx
+ *   - https://www.microsoft.com/msj/backissues86.aspx
+ * - http://go.microsoft.com/fwlink/p/?linkid=84140
+ */
+static BOOL
+pe_find_symbol(PBYTE lpFileBase,
+               DWORD64 Addr,
+               ULONG MaxSymbolNameLen,
+               LPSTR pSymbolName,
+               PDWORD64 pDisplacement)
+{
+    PIMAGE_DOS_HEADER pDosHeader;
+    PIMAGE_NT_HEADERS pNtHeaders;
+    PIMAGE_OPTIONAL_HEADER pOptionalHeader;
+    PIMAGE_OPTIONAL_HEADER32 pOptionalHeader32;
+    PIMAGE_OPTIONAL_HEADER64 pOptionalHeader64;
+    DWORD64 ImageBase = 0;
+    BOOL bUnderscore = TRUE;
+
+    pDosHeader = (PIMAGE_DOS_HEADER)lpFileBase;
+    pNtHeaders = (PIMAGE_NT_HEADERS)(lpFileBase + pDosHeader->e_lfanew);
+    PIMAGE_SECTION_HEADER Sections = (PIMAGE_SECTION_HEADER) (
+        (PBYTE)pNtHeaders +
+        sizeof(DWORD) +
+        sizeof(IMAGE_FILE_HEADER) +
+        pNtHeaders->FileHeader.SizeOfOptionalHeader
+    );
+    PIMAGE_SYMBOL pSymbolTable = (PIMAGE_SYMBOL) (
+        lpFileBase +
+        pNtHeaders->FileHeader.PointerToSymbolTable
+    );
+    PSTR pStringTable = (PSTR)
+        &pSymbolTable[pNtHeaders->FileHeader.NumberOfSymbols];
+    pOptionalHeader = &pNtHeaders->OptionalHeader;
+    pOptionalHeader32 = (PIMAGE_OPTIONAL_HEADER32)pOptionalHeader;
+    pOptionalHeader64 = (PIMAGE_OPTIONAL_HEADER64)pOptionalHeader;
+
+    switch (pOptionalHeader->Magic) {
+    case IMAGE_NT_OPTIONAL_HDR32_MAGIC :
+        ImageBase = pOptionalHeader32->ImageBase;
+        break;
+    case IMAGE_NT_OPTIONAL_HDR64_MAGIC :
+        ImageBase = pOptionalHeader64->ImageBase;
+        bUnderscore = FALSE;
+        break;
+    default:
+        assert(0);
+    }
+
+    DWORD64 Displacement = ~(DWORD64)0;
+    BOOL bRet = FALSE;
+
+    DWORD i;
+    for (i = 0; i < pNtHeaders->FileHeader.NumberOfSymbols; ++i) {
+        PIMAGE_SYMBOL pSymbol = &pSymbolTable[i];
+
+        DWORD64 SymbolAddr = pSymbol->Value;
+        SHORT SectionNumber = pSymbol->SectionNumber;
+        if (SectionNumber > 0) {
+            PIMAGE_SECTION_HEADER pSection = Sections + SectionNumber - 1;
+            SymbolAddr += ImageBase + pSection->VirtualAddress;
+        }
+
+        LPCSTR SymbolName;
+        char ShortName[9];
+        if (pSymbol->N.Name.Short != 0) {
+            strncpy(ShortName, (LPCSTR)pSymbol->N.ShortName, 8);
+            ShortName[8] = '\0';
+            SymbolName = ShortName;
+        } else {
+            SymbolName = &pStringTable[pSymbol->N.Name.Long];
+        }
+
+        if (bUnderscore && SymbolName[0] == '_') {
+            SymbolName = &SymbolName[1];
+        }
+
+        if (0) {
+            OutputDebug("%04lu: 0x%08I64X %s\n", i, SymbolAddr, SymbolName);
+        }
+
+        if (SymbolAddr <= Addr &&
+            ISFCN(pSymbol->Type) &&
+            SymbolName[0] != '.') {
+            DWORD64 SymbolDisp = Addr - SymbolAddr;
+            if (SymbolDisp < Displacement) {
+                strncpy(pSymbolName, SymbolName, MaxSymbolNameLen);
+
+                bRet = TRUE;
+
+                Displacement = SymbolDisp;
+
+                if (Displacement == 0) {
+                    break;
+                }
+            }
+        }
+
+        i += pSymbol->NumberOfAuxSymbols;
+    }
+
+    if (pDisplacement) {
+        *pDisplacement = Displacement;
+    }
+
+    return bRet;
 }
 
 
@@ -160,7 +262,17 @@ mgwhelp_module_create(struct mgwhelp_process * process,
         bOwnFile = TRUE;
     }
 
-    module->image_base_vma = PEGetImageBase(hFile);
+    module->hFileMapping = CreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL);
+    if (!module->hFileMapping) {
+        goto no_file_mapping;
+    }
+
+    module->lpFileBase = (PBYTE)MapViewOfFile(module->hFileMapping, FILE_MAP_READ, 0, 0, 0);
+    if (!module->lpFileBase) {
+        goto no_view_of_file;
+    }
+
+    module->image_base_vma = PEGetImageBase(module->lpFileBase);
 
     Dwarf_Error error = 0;
     if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
@@ -176,6 +288,12 @@ mgwhelp_module_create(struct mgwhelp_process * process,
 
     return module;
 
+no_view_of_file:
+    CloseHandle(module->hFileMapping);
+no_file_mapping:
+    if (bOwnFile) {
+        CloseHandle(hFile);
+    }
 no_module_name:
     free(module);
 no_module:
@@ -476,12 +594,12 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
     struct mgwhelp_module *module;
     DWORD64 Offset;
     module = mgwhelp_find_module(hProcess, Address, &Offset);
-    if (module && module->dbg) {
-        if (dwarf_pe_find_symbol(module->dbg,
-                             Offset,
-                             Symbol->MaxNameLen,
-                             Symbol->Name,
-                             Displacement)) {
+    if (module && module->lpFileBase) {
+        if (pe_find_symbol(module->lpFileBase,
+                           Offset,
+                           Symbol->MaxNameLen,
+                           Symbol->Name,
+                           Displacement)) {
             char *output_buffer = NULL;
             if (dwOptions & SYMOPT_UNDNAME) {
                 output_buffer = demangle(Symbol->Name);
