@@ -422,6 +422,30 @@ MgwSymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
 }
 
 
+static char *
+demangle(const char *mangled)
+{
+    assert(mangled);
+    if (mangled[0] != '_' || mangled[1] != 'Z') {
+        return NULL;
+    }
+
+    /**
+     * See http://gcc.gnu.org/onlinedocs/libstdc++/manual/ext_demangling.html
+     */
+
+    int status = 0;
+    char *output_buffer;
+    output_buffer = __cxa_demangle(mangled, 0, 0, &status);
+    if (status != 0) {
+        OutputDebug("MGWHELP: __cxa_demangle failed with status %i\n", status);
+        return NULL;
+    } else {
+        return output_buffer;
+    }
+}
+
+
 BOOL WINAPI
 MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
 {
@@ -481,21 +505,11 @@ MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD Undecor
 {
     assert(DecoratedName != NULL);
 
-    if (DecoratedName[0] == '_' && DecoratedName[1] == 'Z') {
-        /**
-         * See http://gcc.gnu.org/onlinedocs/libstdc++/manual/ext_demangling.html
-         */
-
-        int status = 0;
-        char *output_buffer;
-        output_buffer = __cxa_demangle(DecoratedName, 0, 0, &status);
-        if (status != 0) {
-            OutputDebug("MGWHELP: __cxa_demangle failed with status %i\n", status);
-        } else {
-            strncpy(UnDecoratedName, output_buffer, UndecoratedLength);
-            free(output_buffer);
-            return strlen(UnDecoratedName);
-        }
+    char *output_buffer = demangle(DecoratedName);
+    if (output_buffer) {
+        strncpy(UnDecoratedName, output_buffer, UndecoratedLength);
+        free(output_buffer);
+        return strlen(UnDecoratedName);
     }
 
     return UnDecorateSymbolName(DecoratedName, UnDecoratedName, UndecoratedLength, Flags);
