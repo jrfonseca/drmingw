@@ -27,27 +27,48 @@ add_test (
 )
 
 #
-# test_mgwhelp_stripped
+# test_mgwhelp_splited
 #
 
 # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test.debug
-    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test.debug
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_separate_test.debug
+    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_separate_test.debug
     DEPENDS mgwhelp_test
     VERBATIM
 )
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_stripped_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_separate_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_separate_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_separate_test${CMAKE_EXECUTABLE_SUFFIX}
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test.debug
+    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_separate_test.debug
+    VERBATIM
+)
+add_custom_target (mgwhelp_separate_test ALL
+    DEPENDS
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_separate_test${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_separate_test.debug
+)
+add_dependencies (check mgwhelp_separate_test)
+add_test (
+    NAME test_mgwhelp_separate
+    COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_separate_test${CMAKE_EXECUTABLE_SUFFIX}
+)
+
+#
+# test_mgwhelp_stripped
+#
+
+add_custom_command (
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    DEPENDS mgwhelp_test
     VERBATIM
 )
 add_custom_target (mgwhelp_stripped_test ALL
     DEPENDS
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test.debug
 )
 add_dependencies (check mgwhelp_stripped_test)
 add_test (

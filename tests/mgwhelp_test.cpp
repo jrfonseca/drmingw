@@ -48,6 +48,10 @@ comparePath(const char *s1, const char *s2)
 }
 
 
+static BOOL
+g_bStripped = FALSE;
+
+
 static void
 checkSym(HANDLE hProcess,
          PVOID pvSymbol,
@@ -71,7 +75,12 @@ checkSym(HANDLE hProcess,
     if (!ok) {
         test_diagnostic_last_error();
     } else {
-        ok = strcmp(s.Symbol.Name, szSymbolName) == 0;
+        if (!g_bStripped) {
+            ok = strcmp(s.Symbol.Name, szSymbolName) == 0;
+        } else {
+            // XXX: ignore differences due to demangling
+            ok = strncmp(szSymbolName, s.Symbol.Name, strlen(szSymbolName)) == 0;
+        }
         test_line(ok, "SymFromAddr(&%s).Name", szSymbolName);
         if (!ok) {
             test_diagnostic("Name = \"%s\" != \"%s\"",
@@ -93,6 +102,11 @@ checkSymLine(HANDLE hProcess,
     DWORD64 dwAddr = (DWORD64)(UINT_PTR)pvSymbol;
 
     checkSym(hProcess, pvSymbol, szSymbolName);
+
+    if (g_bStripped) {
+        // Don't check line nos
+        return;
+    }
 
     // Test SymGetLineFromAddr64
     DWORD dwDisplacement;
@@ -153,10 +167,14 @@ static const DWORD foo_line = __LINE__; static int foo(int a, int b) {
 
 
 int
-main()
+main(int argc, char **argv)
 {
     HANDLE hProcess = GetCurrentProcess();
     bool ok;
+
+    if (strstr(argv[0], "_stripped_")) {
+        g_bStripped = TRUE;
+    }
 
     HMODULE hMgwHelpDll = GetModuleHandleA("mgwhelp.dll");
     if (!hMgwHelpDll) {
