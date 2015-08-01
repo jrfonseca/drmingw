@@ -556,7 +556,10 @@ demangle(const char *mangled)
     char *output_buffer;
     output_buffer = __cxa_demangle(mangled, 0, 0, &status);
     if (status != 0) {
-        OutputDebug("MGWHELP: __cxa_demangle failed with status %i\n", status);
+#ifndef NDEBUG
+        // There can be false negatives, such as "_ZwTerminateProcess@8"
+        OutputDebug("MGWHELP: __cxa_demangle(\"%s\") failed with status %i\n", mangled, status);
+#endif
         return NULL;
     } else {
         return output_buffer;
