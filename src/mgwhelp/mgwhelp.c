@@ -451,8 +451,19 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 {
     struct find_dwarf_info info;
 
+    DWORD dwOptions = SymGetOptions();
+
     if (mgwhelp_find_symbol(hProcess, Address, &info)) {
-        strncpy(Symbol->Name, info.functionname, Symbol->MaxNameLen);
+        char *output_buffer = NULL;
+        if (dwOptions & SYMOPT_UNDNAME) {
+            output_buffer = demangle(info.functionname);
+        }
+        if (output_buffer) {
+            strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
+            free(output_buffer);
+        } else {
+            strncpy(Symbol->Name, info.functionname, Symbol->MaxNameLen);
+        }
 
         if (Displacement) {
             /* TODO */
@@ -471,6 +482,14 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
                              Symbol->MaxNameLen,
                              Symbol->Name,
                              Displacement)) {
+            char *output_buffer = NULL;
+            if (dwOptions & SYMOPT_UNDNAME) {
+                output_buffer = demangle(Symbol->Name);
+            }
+            if (output_buffer) {
+                strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
+                free(output_buffer);
+            }
             return TRUE;
         }
     }
