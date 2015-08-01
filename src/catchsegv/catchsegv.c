@@ -143,7 +143,8 @@ Usage(void)
           "options:\n"
           "  -? displays command line help text\n"
           "  -v enables verbose output from the debugger\n"
-          "  -t <seconds> specifies a timeout in seconds \n",
+          "  -t <seconds> specifies a timeout in seconds \n"
+          "  -1 dump stack on first chance exceptions \n",
           stderr);
 }
 
@@ -181,7 +182,7 @@ main(int argc, char** argv)
      */
 
     while (1) {
-        int opt = getopt(argc, argv, "?dht:v");
+        int opt = getopt(argc, argv, "?1dht:v");
 
         switch (opt) {
         case 'h':
@@ -192,6 +193,9 @@ main(int argc, char** argv)
             break;
         case 'd':
             debugOptions.debug_flag = TRUE;
+            break;
+        case '1':
+            debugOptions.first_chance = TRUE;
             break;
         case 't':
             g_TimeOut = strtoul(optarg, NULL, 0);
