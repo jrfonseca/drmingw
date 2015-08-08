@@ -33,6 +33,7 @@
 
 typedef struct {
     HANDLE hFileMapping;
+    SIZE_T nFileSize;
     union {
         PBYTE lpFileBase;
         PIMAGE_DOS_HEADER pDosHeader;
@@ -165,6 +166,15 @@ dwarf_pe_init(HANDLE hFile,
         goto no_view_of_file;
     }
 
+    DWORD dwFileSizeHi = 0;
+    DWORD dwFileSizeLo = GetFileSize(hFile, &dwFileSizeHi);
+    pe_obj->nFileSize = dwFileSizeLo;
+#ifdef _WIN64
+    pe_obj->nFileSize |= (SIZE_T)dwFileSizeHi << 32;
+#else
+    assert(dwFileSizeHi == 0);
+#endif
+
     pe_obj->pNtHeaders = (PIMAGE_NT_HEADERS) (
         pe_obj->lpFileBase + 
         pe_obj->pDosHeader->e_lfanew
@@ -179,6 +189,12 @@ dwarf_pe_init(HANDLE hFile,
         pe_obj->lpFileBase + 
         pe_obj->pNtHeaders->FileHeader.PointerToSymbolTable
     );
+    if (pe_obj->pNtHeaders->FileHeader.PointerToSymbolTable +
+        pe_obj->pNtHeaders->FileHeader.NumberOfSymbols * sizeof pe_obj->pSymbolTable[0] > pe_obj->nFileSize) {
+        OutputDebug("MGWHELP: %s - symbol table extends beyond image size\n", image);
+        goto no_intfc;
+    }
+
     pe_obj->pStringTable = (PSTR)
         &pe_obj->pSymbolTable[pe_obj->pNtHeaders->FileHeader.NumberOfSymbols];
 
