@@ -71,11 +71,8 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
     HANDLE hProcess = GetCurrentProcess();
 
-    DWORD dwSymOptions = SymGetOptions();
-    dwSymOptions |=
-        SYMOPT_LOAD_LINES |
-        SYMOPT_DEFERRED_LOADS;
-    SymSetOptions(dwSymOptions);
+    SetSymOptions(FALSE);
+
     if (InitializeSym(hProcess, TRUE)) {
 
         dumpException(hProcess, pExceptionRecord);
