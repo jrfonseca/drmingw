@@ -43,7 +43,7 @@ script:
     echo "set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> Toolchain.cmake
     echo "set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> Toolchain.cmake
     echo "set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> Toolchain.cmake
-- wget -q -O dbghelp.7z "$DBGHELP_URL"
+- travis_retry wget -q -O dbghelp.7z "$DBGHELP_URL"
 - 7zr x -othirdparty/dbghelp/ dbghelp.7z
 - cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake -DWINDBG_DIR=thirdparty/dbghelp -DWINE_PROGRAM=$WINE_PROGRAM
 - make -C build all
