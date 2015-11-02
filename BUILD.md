@@ -1,20 +1,15 @@
-# Continous integration #
-
-[![Build Status](https://travis-ci.org/jrfonseca/drmingw.svg?branch=master)](https://travis-ci.org/jrfonseca/drmingw)
-
-[![Build status](https://ci.appveyor.com/api/projects/status/9q3o5w85s5o5yup5?svg=true)](https://ci.appveyor.com/project/jrfonseca/drmingw)
+# Build Instructions
 
 
-# Dependencies #
+## Dependencies
 
 Required:
 
  * [MinGW-w64](http://mingw-w64.sourceforge.net/) toolchain
 
    * _win32_ threads (as opposed to _posix_ threads) is recommended to avoid dependency on `libwinpthread-1.dll`
- 
+
  * [CMake](http://www.cmake.org/)
- 
 
 Recommended:
 
@@ -24,13 +19,13 @@ Recommended:
  * [Python 2.x](https://www.python.org/downloads/) for running some of the tests.
 
 
-# Cross-compilation toolchain #
+## Cross-compilation toolchain
 
 I always build DrMinGW from Linux with MinGW cross-compilation toolchain.  See
 [here](http://www.vtk.org/Wiki/CmakeMingw) for details.
 
 
-# Native toolchain #
+## Native toolchain
 
 It is also possible to build with a native MinGW toolchain, by doing:
 
