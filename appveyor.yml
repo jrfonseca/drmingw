@@ -16,7 +16,7 @@ environment:
   _NT_SYMBOL_PATH: srv*C:\symbols*http://msdl.microsoft.com/download/symbols
   MINGW_URL: http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.9.2/threads-win32/seh/x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z/download
   MINGW_ARCHIVE: x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
-  DBGHELP_URL: https://www.googledrive.com/host/0B1mEXoWzDm1MaGlUZ0syNEduTGs
+  WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\8.1\Debuggers\x64'
 
 install:
 - if not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
@@ -29,14 +29,14 @@ before_build:
 - g++ --version
 - mingw32-make --version
 - cmake --version
-- appveyor DownloadFile %DBGHELP_URL% -FileName dbghelp.7z
-- 7z x -y -othirdparty/dbghelp/ dbghelp.7z > nul
-- cmake -H. -Bbuild\mingw64 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR=thirdparty/dbghelp
+- ps: (Get-Item "${Env:WINDBG_DIR}\dbghelp.dll").VersionInfo
+- cmake -H. -Bbuild\mingw64 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR="%WINDBG_DIR%"
 
 build_script:
 - cmake --build build\mingw64 --use-stderr --target all -- -j%NUMBER_OF_PROCESSORS%
 
 after_build:
+- set Path=%WINDBG_DIR%;%Path%
 - cmake --build build\mingw64 --use-stderr --target test
 - cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 12"
 - cmake --build build\msvc32 --config Debug -- /verbosity:minimal /maxcpucount
