@@ -9,6 +9,9 @@ set (CPACK_PACKAGE_VERSION_MINOR "7")
 set (CPACK_PACKAGE_VERSION_PATCH "6")
 
 
+option (ENABLE_COVERAGE "Enable code coverage." OFF)
+
+
 ##############################################################################
 # Dependencies
 
@@ -50,6 +53,12 @@ endif ()
 # Set global build options
 
 include (CheckCXXCompilerFlag)
+
+macro (add_compiler_flags)
+    string (REPLACE ";" " " _FLAGS "${ARGV}")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_FLAGS}")
+endmacro ()
 
 macro (add_linker_flags)
     string (REPLACE ";" " " _FLAGS "${ARGV}")
