@@ -6,31 +6,40 @@ branches:
   except:
   - /^travis.*$/
 
-init:
-- git config --global core.autocrlf input
-
 shallow_clone: true
 
+cache:
+- x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
+
 environment:
-  MINGW: C:\Qt\Tools\mingw491_32
   CTEST_OUTPUT_ON_FAILURE: 1
   _NT_SYMBOL_PATH: srv*C:\symbols*http://msdl.microsoft.com/download/symbols
-  DBGHELP_URL: https://www.googledrive.com/host/0B1mEXoWzDm1McE81WFBKTzd5Z3M
+  MINGW_URL: http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.9.2/threads-win32/seh/x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z/download
+  MINGW_ARCHIVE: x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
+  DBGHELP_URL: https://www.googledrive.com/host/0B1mEXoWzDm1MaGlUZ0syNEduTGs
 
-before_build:
+install:
+- if not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
+- 7z x -y "%MINGW_ARCHIVE%" > nul
 # CMake refuses to generate MinGW Makefiles if sh.exe is in the Path
 - del "%ProgramFiles(x86)%\Git\bin\sh.exe"
-- set Path=%MINGW%\bin;%Path%
+
+before_build:
+- set Path=%CD%\mingw64\bin;%Path%
+- g++ --version
 - mingw32-make --version
+- cmake --version
 - appveyor DownloadFile %DBGHELP_URL% -FileName dbghelp.7z
-- 7z x -othirdparty/dbghelp/ dbghelp.7z > nul:
-- cmake -H. -Bbuild\mingw32 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR=thirdparty/dbghelp
+- 7z x -y -othirdparty/dbghelp/ dbghelp.7z > nul
+- cmake -H. -Bbuild\mingw64 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR=thirdparty/dbghelp
 
 build_script:
-- cmake --build build\mingw32 --use-stderr --target all
+- cmake --build build\mingw64 --use-stderr --target all -- -j%NUMBER_OF_PROCESSORS%
 
 after_build:
-- cmake --build build\mingw32 --use-stderr --target test
+- cmake --build build\mingw64 --use-stderr --target test
 - cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 12"
-- cmake --build build\msvc32 --config Debug -- /verbosity:minimal
-- python tests\apps\test.py build\mingw32\bin\catchsegv.exe build\msvc32\Debug
+- cmake --build build\msvc32 --config Debug -- /verbosity:minimal /maxcpucount
+- cmake -Htests\apps -Bbuild\msvc64 -G "Visual Studio 12 Win64"
+- cmake --build build\msvc64 --config Debug -- /verbosity:minimal /maxcpucount
+- python tests\apps\test.py build\mingw64\bin\catchsegv.exe build\msvc32\Debug build\msvc64\Debug
