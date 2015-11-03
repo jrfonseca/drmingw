@@ -6,15 +6,16 @@ branches:
   except:
   - /^travis.*$/
 
-shallow_clone: true
+clone_depth: 5
 
 cache:
 - x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
 - i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
 
 environment:
+  COVERALLS_REPO_TOKEN:
+    secure: QOuiktPDkbsZmX/lOynJrOrrpR09k8C14rSPRjGnohwrgc4Ee97qjoEQpODFb1ZK
   CTEST_OUTPUT_ON_FAILURE: 1
-  _NT_SYMBOL_PATH: srv*C:\symbols*http://msdl.microsoft.com/download/symbols
   matrix:
   - MINGW_DIR: mingw64
     MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.9.2/threads-win32/seh/x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z/download
@@ -28,6 +29,8 @@ environment:
 install:
 - if not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
 - 7z x -y "%MINGW_ARCHIVE%" > nul
+- python -m ensurepip
+- python -m pip install https://github.com/jrfonseca/cpp-coveralls/archive/master.zip
 # CMake refuses to generate MinGW Makefiles if sh.exe is in the Path
 - ps: Get-Command sh.exe -All | Remove-Item
 
@@ -38,7 +41,9 @@ before_build:
 - cmake --version
 - ps: (Get-Item "${Env:WINDBG_DIR}\dbghelp.dll").VersionInfo
 - if "%APPVEYOR_REPO_TAG%"=="true" (set CMAKE_BUILD_TYPE=Release) else (set CMAKE_BUILD_TYPE=Debug)
-- cmake -H. -Bbuild\mingw -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE% -DWINDBG_DIR="%WINDBG_DIR%"
+- set ENABLE_COVERAGE=no
+- if "%MINGW_DIR%"=="mingw64" if NOT "%APPVEYOR_REPO_TAG%"=="true" set ENABLE_COVERAGE=yes
+- cmake -H. -Bbuild\mingw -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE% -DENABLE_COVERAGE=%ENABLE_COVERAGE% -DWINDBG_DIR="%WINDBG_DIR%"
 
 build_script:
 - cmake --build build\mingw --use-stderr --target all -- -j%NUMBER_OF_PROCESSORS%
@@ -53,6 +58,9 @@ after_build:
 - if "%MINGW_DIR%"=="mingw32" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug
 - if "%MINGW_DIR%"=="mingw64" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug build\msvc64\Debug
 - cmake --build build\mingw --use-stderr --target package
+
+on_success:
+- if "%ENABLE_COVERAGE%"=="yes" C:\Python27\Scripts\coveralls --include src --gcov-options="-lp"
 
 artifacts:
 - path: build\mingw\drmingw-*.7z
