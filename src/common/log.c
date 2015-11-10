@@ -95,10 +95,10 @@ dumpContext(
 )
 {
     // Show the registers
-    lprintf("Registers:\r\n");
+    lprintf("Registers:\n");
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
         lprintf(
-            "eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\r\n",
+            "eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n",
             pContext->Eax,
             pContext->Ebx,
             pContext->Ecx,
@@ -109,7 +109,7 @@ dumpContext(
     }
     if (pContext->ContextFlags & CONTEXT_CONTROL) {
         lprintf(
-            "eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\r\n",
+            "eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\n",
             pContext->Eip,
             pContext->Esp,
             pContext->Ebp,
@@ -151,7 +151,7 @@ dumpContext(
             );
         }
     }
-    lprintf("\r\n\r\n");
+    lprintf("\n\n");
 }
 
 
@@ -230,9 +230,9 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
     }
 
     if (MachineType == IMAGE_FILE_MACHINE_I386) {
-        lprintf( "AddrPC   Params\r\n" );
+        lprintf( "AddrPC   Params\n" );
     } else {
-        lprintf( "AddrPC           Params\r\n" );
+        lprintf( "AddrPC           Params\n" );
     }
 
     int nudge = 0;
@@ -303,7 +303,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
             }
         }
 
-        lprintf("\r\n");
+        lprintf("\n");
 
         if (bLine) {
             dumpSourceCode(szFileName, dwLineNumber);
@@ -328,7 +328,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         nudge = -1;
     }
 
-    lprintf("\r\n");
+    lprintf("\n");
 }
 
 
@@ -499,7 +499,7 @@ dumpException(HANDLE hProcess,
         lprintf(" %s location %p", lpszVerb, (PVOID)pExceptionRecord->ExceptionInformation[1]);
     }
 
-    lprintf(".\r\n\r\n");
+    lprintf(".\n\n");
 }
 
 
@@ -534,7 +534,7 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
             while(!feof(fp) && (c = fgetc(fp)) != '\n')
                 if(isprint(c))
                     lprintf("%c", c);
-            lprintf("\r\n");
+            lprintf("\n");
         }
         else
             while(!feof(fp) && (c = fgetc(fp)) != '\n')

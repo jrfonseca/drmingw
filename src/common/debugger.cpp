@@ -306,7 +306,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // status parameter (dwContinueStatus). This value
             // is used by the ContinueDebugEvent function.
             if (pOptions->verbose_flag) {
-                lprintf("EXCEPTION PID=%lu TID=%lu ExceptionCode=0x%lx dwFirstChance=%lu\r\n",
+                lprintf("EXCEPTION PID=%lu TID=%lu ExceptionCode=0x%lx dwFirstChance=%lu\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId,
                         pExceptionRecord->ExceptionCode,
@@ -417,7 +417,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
         case CREATE_THREAD_DEBUG_EVENT:
             if (pOptions->verbose_flag) {
-                lprintf("CREATE_THREAD PID=%lu TID=%lu\r\n",
+                lprintf("CREATE_THREAD PID=%lu TID=%lu\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId
                 );
@@ -441,7 +441,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             if (pOptions->verbose_flag) {
                 PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
 
-                lprintf("CREATE_PROCESS PID=%lu TID=%lu lpBaseOfImage=%p %s\r\n",
+                lprintf("CREATE_PROCESS PID=%lu TID=%lu lpBaseOfImage=%p %s\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId,
                         DebugEvent.u.CreateProcessInfo.lpBaseOfImage,
@@ -471,7 +471,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
         case EXIT_THREAD_DEBUG_EVENT:
             if (pOptions->verbose_flag) {
-                lprintf("EXIT_THREAD PID=%lu TID=%lu dwExitCode=0x%lx\r\n",
+                lprintf("EXIT_THREAD PID=%lu TID=%lu dwExitCode=0x%lx\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId,
                         DebugEvent.u.ExitThread.dwExitCode
@@ -493,7 +493,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
         case EXIT_PROCESS_DEBUG_EVENT: {
             if (pOptions->verbose_flag) {
-                lprintf("EXIT_PROCESS PID=%lu TID=%lu dwExitCode=0x%lx\r\n",
+                lprintf("EXIT_PROCESS PID=%lu TID=%lu dwExitCode=0x%lx\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId,
                         DebugEvent.u.ExitProcess.dwExitCode
@@ -535,7 +535,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             if (pOptions->verbose_flag) {
                 PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
 
-                lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %s\r\n",
+                lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %s\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId,
                         DebugEvent.u.LoadDll.lpBaseOfDll,
@@ -553,7 +553,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
         case UNLOAD_DLL_DEBUG_EVENT:
             if (pOptions->verbose_flag) {
-                lprintf("UNLOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\r\n",
+                lprintf("UNLOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId,
                         DebugEvent.u.UnloadDll.lpBaseOfDll
@@ -569,7 +569,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
         case OUTPUT_DEBUG_STRING_EVENT: {
             if (pOptions->verbose_flag) {
-                lprintf("OUTPUT_DEBUG_STRING PID=%lu TID=%lu\r\n",
+                lprintf("OUTPUT_DEBUG_STRING PID=%lu TID=%lu\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId
                 );
@@ -591,7 +591,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
         case RIP_EVENT:
             if (pOptions->verbose_flag) {
-                lprintf("RIP PID=%lu TID=%lu\r\n",
+                lprintf("RIP PID=%lu TID=%lu\n",
                         DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId
                 );
@@ -600,7 +600,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
         default:
             if (pOptions->verbose_flag) {
-                lprintf("EVENT%lu PID=%lu TID=%lu\r\n",
+                lprintf("EVENT%lu PID=%lu TID=%lu\n",
                     DebugEvent.dwDebugEventCode,
                     DebugEvent.dwProcessId,
                     DebugEvent.dwThreadId

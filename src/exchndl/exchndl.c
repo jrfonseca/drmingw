@@ -45,7 +45,18 @@ writeReport(const char *szText)
 {
     if (REPORT_FILE) {
         DWORD cbWritten;
-        WriteFile(g_hReportFile, szText, strlen(szText), &cbWritten, 0);
+        while (*szText != '\0') {
+            const char *p = szText;
+            while (*p != '\0' && *p != '\n') {
+                ++p;
+            }
+            WriteFile(g_hReportFile, szText, p - szText, &cbWritten, 0);
+            if (*p == '\n') {
+                WriteFile(g_hReportFile, "\r\n", 2, &cbWritten, 0);
+                ++p;
+            }
+            szText = p;
+        }
     } else {
         OutputDebugStringA(szText);
     }
@@ -58,7 +69,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
 
     // Start out with a banner
-    lprintf("-------------------\r\n\r\n");
+    lprintf("-------------------\n\n");
 
     SYSTEMTIME SystemTime;
     GetLocalTime(&SystemTime);
@@ -67,7 +78,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     GetDateFormatA(Locale, 0, &SystemTime, "dddd',' MMMM d',' yyyy", szDateStr, _countof(szDateStr));
     char szTimeStr[128];
     GetTimeFormatA(Locale, 0, &SystemTime, "HH':'mm':'ss", szTimeStr, _countof(szTimeStr));
-    lprintf("Error occured on %s at %s.\r\n\r\n", szDateStr, szTimeStr);
+    lprintf("Error occured on %s at %s.\n\n", szDateStr, szTimeStr);
 
     HANDLE hProcess = GetCurrentProcess();
 
@@ -106,13 +117,13 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     ZeroMemory(&osvi, sizeof osvi);
     osvi.dwOSVersionInfoSize = sizeof osvi;
     GetVersionEx(&osvi);
-    lprintf("Windows %lu.%lu.%lu\r\n",
+    lprintf("Windows %lu.%lu.%lu\n",
             osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
 
-    lprintf("DrMingw %u.%u.%u\r\n",
+    lprintf("DrMingw %u.%u.%u\n",
             PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR, PACKAGE_VERSION_PATCH);
 
-    lprintf("\r\n");
+    lprintf("\n");
 }
 
 #include <stdio.h>
