@@ -149,6 +149,26 @@ Usage(void)
 }
 
 
+/*
+ * Ignore Ctrl-C/Ctrl-Break events, so this process stays alive long enough to
+ * dump the stack backtraces of the debuggee.
+ */
+static BOOL WINAPI
+consoleCtrlHandler(DWORD fdwCtrlType)
+{
+    switch (fdwCtrlType) {
+    case CTRL_C_EVENT:
+        fprintf(stderr, "catchsegv: warning: caught Ctrl-C event\n");
+        return TRUE;
+    case CTRL_BREAK_EVENT:
+        fprintf(stderr, "catchsegv: warning: caught Ctrl-Break event\n");
+        return TRUE;
+    default:
+        return FALSE;
+    }
+}
+
+
 int
 main(int argc, char** argv)
 {
@@ -260,6 +280,8 @@ main(int argc, char** argv)
     }
 
     setDumpCallback(&outputCallback);
+
+    SetConsoleCtrlHandler(&consoleCtrlHandler, TRUE);
 
     // Disable debug heap
     // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366705.aspx
