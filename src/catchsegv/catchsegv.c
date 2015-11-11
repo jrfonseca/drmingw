@@ -320,7 +320,6 @@ main(int argc, char** argv)
     }
 
     DWORD dwProcessId = GetProcessId(ProcessInformation.hProcess);
-    debugOptions.dwProcessId = dwProcessId;
 
     g_hTimerQueue = CreateTimerQueue();
     if (g_hTimerQueue == NULL) {

@@ -27,7 +27,6 @@ typedef struct {
     int verbose_flag;    /* Verbose output. */
     int debug_flag;
     int first_chance;
-    DWORD dwProcessId;   /* Attach to the process with the given identifier.  */
     HANDLE hEvent;       /* Signal an event after process is attached.  */
     DWORD dwThreadId;    /* Resume thread after process is attached */
 } DebugOptions;

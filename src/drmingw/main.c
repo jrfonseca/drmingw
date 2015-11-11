@@ -207,8 +207,10 @@ getProcessIdByName(const char *szProcessName)
 
 static void debugThread(void *arg)
 {
+    DWORD dwProcessId = (DWORD)(UINT_PTR)arg;
+
     // attach debuggee
-    if (!DebugActiveProcess(debug_options.dwProcessId)) {
+    if (!DebugActiveProcess(dwProcessId)) {
         ErrorMessageBox("DebugActiveProcess: %s", LastErrorMessage());
         return;
     }
@@ -225,6 +227,7 @@ static void debugThread(void *arg)
 int
 main(int argc, char **argv)
 {
+    DWORD dwProcessId = 0;
     int c;    /* Character of the parsed option.  */
 
     debug_options.first_chance = 1;
@@ -346,12 +349,12 @@ main(int argc, char **argv)
                 }
                 process_id_given = 1;
                 if (optarg[0] >= '0' && optarg[0] <= '9') {
-                    debug_options.dwProcessId = strtoul(optarg, NULL, 0);
+                    dwProcessId = strtoul(optarg, NULL, 0);
                 } else {
                     debug_options.breakpoint_flag = 1;
-                    debug_options.dwProcessId = getProcessIdByName(optarg);
+                    dwProcessId = getProcessIdByName(optarg);
                 }
-                if (!debug_options.dwProcessId) {
+                if (!dwProcessId) {
                     MessageBoxA(
                         NULL,
                         "Invalid process",
@@ -476,7 +479,7 @@ main(int argc, char **argv)
 
         createDialog();
 
-        _beginthread(debugThread, 0, NULL);
+        _beginthread(debugThread, 0, (void *)(UINT_PTR)dwProcessId);
 
         return mainLoop();
     } else {
