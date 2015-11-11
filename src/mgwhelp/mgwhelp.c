@@ -45,6 +45,7 @@ struct mgwhelp_module
 
     HANDLE hFileMapping;
     PBYTE lpFileBase;
+    SIZE_T nFileSize;
 
     DWORD64 image_base_vma;
 
@@ -111,12 +112,13 @@ PEGetImageBase(PBYTE lpFileBase)
  * - http://go.microsoft.com/fwlink/p/?linkid=84140
  */
 static BOOL
-pe_find_symbol(PBYTE lpFileBase,
+pe_find_symbol(struct mgwhelp_module *module,
                DWORD64 Addr,
                ULONG MaxSymbolNameLen,
                LPSTR pSymbolName,
                PDWORD64 pDisplacement)
 {
+    PBYTE lpFileBase = module->lpFileBase;
     PIMAGE_DOS_HEADER pDosHeader;
     PIMAGE_NT_HEADERS pNtHeaders;
     PIMAGE_OPTIONAL_HEADER pOptionalHeader;
@@ -143,6 +145,12 @@ pe_find_symbol(PBYTE lpFileBase,
     pOptionalHeader32 = (PIMAGE_OPTIONAL_HEADER32)pOptionalHeader;
     pOptionalHeader64 = (PIMAGE_OPTIONAL_HEADER64)pOptionalHeader;
 
+    if (pNtHeaders->FileHeader.PointerToSymbolTable +
+        pNtHeaders->FileHeader.NumberOfSymbols * sizeof pSymbolTable[0] > module->nFileSize) {
+        OutputDebug("MGWHELP: %s - symbol table extends beyond image size\n", module->LoadedImageName);
+        return FALSE;
+    }
+
     switch (pOptionalHeader->Magic) {
     case IMAGE_NT_OPTIONAL_HDR32_MAGIC :
         ImageBase = pOptionalHeader32->ImageBase;
@@ -153,6 +161,7 @@ pe_find_symbol(PBYTE lpFileBase,
         break;
     default:
         assert(0);
+        return FALSE;
     }
 
     DWORD64 Displacement = ~(DWORD64)0;
@@ -269,6 +278,15 @@ mgwhelp_module_create(struct mgwhelp_process * process,
     if (!module->lpFileBase) {
         goto no_view_of_file;
     }
+
+    DWORD dwFileSizeHi = 0;
+    DWORD dwFileSizeLo = GetFileSize(hFile, &dwFileSizeHi);
+    module->nFileSize = dwFileSizeLo;
+#ifdef _WIN64
+    module->nFileSize |= (SIZE_T)dwFileSizeHi << 32;
+#else
+    assert(dwFileSizeHi == 0);
+#endif
 
     module->image_base_vma = PEGetImageBase(module->lpFileBase);
 
@@ -591,7 +609,7 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
     DWORD64 Offset;
     module = mgwhelp_find_module(hProcess, Address, &Offset);
     if (module && module->lpFileBase) {
-        if (pe_find_symbol(module->lpFileBase,
+        if (pe_find_symbol(module,
                            Offset,
                            Symbol->MaxNameLen,
                            Symbol->Name,
