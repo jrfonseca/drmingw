@@ -164,8 +164,8 @@ or
 
  * [binutil's addr2line](http://sourceware.org/binutils/docs/binutils/addr2line.html) (included in MinGW)
  * [cv2pdb - DWARF to PDB converter](https://github.com/rainers/cv2pdb)
- * [google-breakpad](https://code.google.com/p/google-breakpad)
- * [CrashRpt](https://code.google.com/p/crashrpt/)
+ * [google-breakpad](https://chromium.googlesource.com/breakpad/breakpad/)
+ * [CrashRpt](http://crashrpt.sourceforge.net/)
  * [dbg](https://bitbucket.org/edd/dbg/wiki/Home)
 
 ### Suggested Reading
@@ -177,3 +177,4 @@ or
  * [The Win32 Debugging Application Programming Interface](https://msdn.microsoft.com/en-us/library/ms809754.aspx)
  * [Using the Windows debugging API on Windows 64](http://www.howzatt.demon.co.uk/articles/DebuggingInWin64.html)
  * [About Exceptions and Exception Handling](http://crashrpt.sourceforge.net/docs/html/exception_handling.html)
+ * [Microsoft PDB format](https://github.com/Microsoft/microsoft-pdb/blob/master/docs/ExternalResources.md)
