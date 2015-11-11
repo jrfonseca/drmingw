@@ -162,44 +162,45 @@ pe_find_symbol(PBYTE lpFileBase,
     for (i = 0; i < pNtHeaders->FileHeader.NumberOfSymbols; ++i) {
         PIMAGE_SYMBOL pSymbol = &pSymbolTable[i];
 
-        DWORD64 SymbolAddr = pSymbol->Value;
-        SHORT SectionNumber = pSymbol->SectionNumber;
-        if (SectionNumber > 0) {
-            PIMAGE_SECTION_HEADER pSection = Sections + SectionNumber - 1;
-            SymbolAddr += ImageBase + pSection->VirtualAddress;
-        }
+        if (ISFCN(pSymbol->Type)) {
+            DWORD64 SymbolAddr = pSymbol->Value;
+            SHORT SectionNumber = pSymbol->SectionNumber;
+            if (SectionNumber > 0) {
+                PIMAGE_SECTION_HEADER pSection = Sections + SectionNumber - 1;
+                SymbolAddr += ImageBase + pSection->VirtualAddress;
+            }
 
-        LPCSTR SymbolName;
-        char ShortName[9];
-        if (pSymbol->N.Name.Short != 0) {
-            strncpy(ShortName, (LPCSTR)pSymbol->N.ShortName, 8);
-            ShortName[8] = '\0';
-            SymbolName = ShortName;
-        } else {
-            SymbolName = &pStringTable[pSymbol->N.Name.Long];
-        }
+            LPCSTR SymbolName;
+            char ShortName[9];
+            if (pSymbol->N.Name.Short != 0) {
+                strncpy(ShortName, (LPCSTR)pSymbol->N.ShortName, 8);
+                ShortName[8] = '\0';
+                SymbolName = ShortName;
+            } else {
+                SymbolName = &pStringTable[pSymbol->N.Name.Long];
+            }
 
-        if (bUnderscore && SymbolName[0] == '_') {
-            SymbolName = &SymbolName[1];
-        }
+            if (bUnderscore && SymbolName[0] == '_') {
+                SymbolName = &SymbolName[1];
+            }
 
-        if (0) {
-            OutputDebug("%04lu: 0x%08I64X %s\n", i, SymbolAddr, SymbolName);
-        }
+            if (0) {
+                OutputDebug("%04lu: 0x%08I64X %s\n", i, SymbolAddr, SymbolName);
+            }
 
-        if (SymbolAddr <= Addr &&
-            ISFCN(pSymbol->Type) &&
-            SymbolName[0] != '.') {
-            DWORD64 SymbolDisp = Addr - SymbolAddr;
-            if (SymbolDisp < Displacement) {
-                strncpy(pSymbolName, SymbolName, MaxSymbolNameLen);
+            if (SymbolAddr <= Addr &&
+                SymbolName[0] != '.') {
+                DWORD64 SymbolDisp = Addr - SymbolAddr;
+                if (SymbolDisp < Displacement) {
+                    strncpy(pSymbolName, SymbolName, MaxSymbolNameLen);
 
-                bRet = TRUE;
+                    bRet = TRUE;
 
-                Displacement = SymbolDisp;
+                    Displacement = SymbolDisp;
 
-                if (Displacement == 0) {
-                    break;
+                    if (Displacement == 0) {
+                        break;
+                    }
                 }
             }
         }
