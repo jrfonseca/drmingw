@@ -310,7 +310,7 @@ main(int argc, char** argv)
                         NULL, // lpProcessAttributes
                         NULL, // lpThreadAttributes
                         TRUE, // bInheritHandles
-                        DEBUG_ONLY_THIS_PROCESS,
+                        DEBUG_PROCESS,
                         NULL, // lpEnvironment
                         NULL, // lpCurrentDirectory
                         &StartupInfo,
