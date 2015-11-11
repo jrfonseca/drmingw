@@ -215,8 +215,7 @@ refreshSymbolsAndDumpStack(HANDLE hProcess, HANDLE hThread)
     assert(hProcess);
     assert(hThread);
 
-    // XXX: Deferred symbols don't get loaded without this
-    SymRefreshModuleList(hProcess);
+    loadSymbols(hProcess);
 
     dumpStack(hProcess, hThread, NULL);
 }
@@ -383,11 +382,10 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 }
             }
 
-            // XXX: Deferred symbols don't get loaded without this
-            SymRefreshModuleList(pProcessInfo->hProcess);
-
             dumpException(pProcessInfo->hProcess,
                           &DebugEvent.u.Exception.ExceptionRecord);
+
+            loadSymbols(hProcess);
 
             // Find the thread in the thread list
             THREAD_INFO_LIST::const_iterator it;

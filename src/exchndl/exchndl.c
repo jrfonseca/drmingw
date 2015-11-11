@@ -84,9 +84,11 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
     SetSymOptions(FALSE);
 
-    if (InitializeSym(hProcess, TRUE)) {
+    if (InitializeSym(hProcess, FALSE)) {
 
         dumpException(hProcess, pExceptionRecord);
+
+        loadSymbols(hProcess);
 
         PCONTEXT pContext = pExceptionInfo->ContextRecord;
 

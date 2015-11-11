@@ -156,6 +156,18 @@ dumpContext(
 
 
 void
+loadSymbols(HANDLE hProcess)
+{
+    lprintf("Loading symbols...");
+
+    // XXX: Deferred symbols don't get loaded without this
+    SymRefreshModuleList(hProcess);
+
+    lprintf(" done.\n\n");
+}
+
+
+void
 dumpStack(HANDLE hProcess, HANDLE hThread,
           const CONTEXT *pTargetContext)
 {
