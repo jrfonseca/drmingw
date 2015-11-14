@@ -1,5 +1,5 @@
 add_executable (catchsegv
-    catchsegv.c
+    catchsegv.cpp
 )
 
 add_dependencies (catchsegv mgwhelp_implib)

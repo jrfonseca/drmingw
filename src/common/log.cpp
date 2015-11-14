@@ -519,7 +519,7 @@ static BOOL
 dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
 {
     FILE *fp;
-    int i;
+    unsigned i;
     char szFileName[MAX_PATH] = "";
     DWORD dwContext = 2;
 
@@ -536,11 +536,11 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
         return FALSE;
 
     i = 0;
-    while(!feof(fp) && ++i <= (int) dwLineNumber + dwContext)
+    while(!feof(fp) && ++i <= dwLineNumber + dwContext)
     {
         int c;
 
-        if(i >= (int) dwLineNumber - dwContext)
+        if((int)i >= (int) dwLineNumber - (int)dwContext)
         {
             lprintf(i == dwLineNumber ? ">%5i: " : "%6i: ", i);
             while(!feof(fp) && (c = fgetc(fp)) != '\n')

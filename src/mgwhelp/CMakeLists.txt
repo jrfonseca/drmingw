@@ -8,9 +8,9 @@ endif ()
 
 add_library (mgwhelp MODULE
     ${MGWHELP_EXP_DEF}
-    dwarf_find.c
-    dwarf_pe.c
-    mgwhelp.c
+    dwarf_find.cpp
+    dwarf_pe.cpp
+    mgwhelp.cpp
     version.rc
 )
 

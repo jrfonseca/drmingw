@@ -148,7 +148,10 @@ dwarf_pe_init(HANDLE hFile,
               Dwarf_Error *error)
 {
     int res = DW_DLV_ERROR;
-    pe_access_object_t *pe_obj = 0;
+    pe_access_object_t *pe_obj;
+    DWORD dwFileSizeHi;
+    DWORD dwFileSizeLo;
+    Dwarf_Unsigned section_count;
 
     /* Initialize the internal struct */
     pe_obj = (pe_access_object_t *)calloc(1, sizeof *pe_obj);
@@ -166,8 +169,8 @@ dwarf_pe_init(HANDLE hFile,
         goto no_view_of_file;
     }
 
-    DWORD dwFileSizeHi = 0;
-    DWORD dwFileSizeLo = GetFileSize(hFile, &dwFileSizeHi);
+    dwFileSizeHi = 0;
+    dwFileSizeLo = GetFileSize(hFile, &dwFileSizeHi);
     pe_obj->nFileSize = dwFileSizeLo;
 #ifdef _WIN64
     pe_obj->nFileSize |= (SIZE_T)dwFileSizeHi << 32;
@@ -199,9 +202,8 @@ dwarf_pe_init(HANDLE hFile,
         &pe_obj->pSymbolTable[pe_obj->pNtHeaders->FileHeader.NumberOfSymbols];
 
     // https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
-    Dwarf_Unsigned section_count = pe_get_section_count(pe_obj);
-    int section_index;
-    for (section_index = 0; section_index < section_count; ++section_index) {
+    section_count = pe_get_section_count(pe_obj);
+    for (Dwarf_Unsigned section_index = 0; section_index < section_count; ++section_index) {
         Dwarf_Obj_Access_Section doas;
         memset(&doas, 0, sizeof doas);
         int err = 0;
@@ -220,7 +222,7 @@ dwarf_pe_init(HANDLE hFile,
             if (pSeparator) {
                 size_t cbDir = pSeparator - image;
                 size_t cbFile = strnlen(debuglink, doas.size);
-                debugImage = malloc(cbDir + cbFile + 1);
+                debugImage = (char *)malloc(cbDir + cbFile + 1);
                 memcpy(debugImage, image, cbDir);
                 memcpy(debugImage + cbDir, debuglink, cbFile + 1);
             } else {

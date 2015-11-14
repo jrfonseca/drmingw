@@ -1,7 +1,7 @@
 add_library (common STATIC
     debugger.cpp
-    log.c
-    symbols.c
+    log.cpp
+    symbols.cpp
 )
 
 target_link_libraries (common LINK_PRIVATE

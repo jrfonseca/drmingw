@@ -174,7 +174,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                             {
                                 LPSTR pszText;
 
-                                if((pszText = GlobalAlloc(GPTR, dwTextLength + 1)) != NULL)
+                                if((pszText = (LPSTR)GlobalAlloc(GPTR, dwTextLength + 1)) != NULL)
                                 {
                                     if(GetWindowTextA(hEdit, pszText, dwTextLength + 1))
                                     {

@@ -1,7 +1,7 @@
 add_executable (drmingw WIN32
-    dialog.c
-    errmsg.c
-    main.c
+    dialog.cpp
+    errmsg.cpp
+    main.cpp
     resource.rc
 )
 

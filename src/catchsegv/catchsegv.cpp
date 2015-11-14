@@ -83,7 +83,7 @@ EnumWindowCallback(HWND hWnd, LPARAM lParam)
     DWORD dwThreadId;
 
     dwThreadId = GetWindowThreadProcessId(hWnd, &dwProcessId);
-    if (dwProcessId == lParam) {
+    if (dwProcessId == (DWORD)lParam) {
         if (GetWindowLong(hWnd, GWL_STYLE) & DS_MODALFRAME) {
             char szWindowText[256];
             if (GetWindowTextA(hWnd, szWindowText, _countof(szWindowText)) <= 0) {

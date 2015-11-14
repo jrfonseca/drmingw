@@ -7,7 +7,7 @@ else ()
 endif ()
 
 add_library (exchndl MODULE
-    exchndl.c
+    exchndl.cpp
     ${EXCHNDL_EXP_DEF}
     version.rc
 )

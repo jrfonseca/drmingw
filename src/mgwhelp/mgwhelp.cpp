@@ -233,6 +233,9 @@ mgwhelp_module_create(struct mgwhelp_process * process,
 {
     struct mgwhelp_module *module;
     BOOL bOwnFile;
+    DWORD dwFileSizeHi;
+    DWORD dwFileSizeLo;
+    Dwarf_Error error;
 
     module = (struct mgwhelp_module *)calloc(1, sizeof *module);
     if (!module) {
@@ -279,8 +282,8 @@ mgwhelp_module_create(struct mgwhelp_process * process,
         goto no_view_of_file;
     }
 
-    DWORD dwFileSizeHi = 0;
-    DWORD dwFileSizeLo = GetFileSize(hFile, &dwFileSizeHi);
+    dwFileSizeHi = 0;
+    dwFileSizeLo = GetFileSize(hFile, &dwFileSizeHi);
     module->nFileSize = dwFileSizeLo;
 #ifdef _WIN64
     module->nFileSize |= (SIZE_T)dwFileSizeHi << 32;
@@ -290,7 +293,7 @@ mgwhelp_module_create(struct mgwhelp_process * process,
 
     module->image_base_vma = PEGetImageBase(module->lpFileBase);
 
-    Dwarf_Error error = 0;
+    error = 0;
     if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
         /* do nothing */
     }
