@@ -43,6 +43,8 @@ typedef std::map< DWORD, THREAD_INFO > THREAD_INFO_LIST;
 typedef struct {
     HANDLE hProcess;
     THREAD_INFO_LIST Threads;
+    BOOL fBreakpointSignalled;
+    BOOL fWowBreakpointSignalled;
 }
 PROCESS_INFO, * PPROCESS_INFO;
 
@@ -273,8 +275,6 @@ isAbnormalExitCode(DWORD dwExitCode)
 BOOL DebugMainLoop(const DebugOptions *pOptions)
 {
     BOOL fFinished = FALSE;
-    BOOL fBreakpointSignalled = FALSE;
-    BOOL fWowBreakpointSignalled = FALSE;
     BOOL fTerminating = FALSE;
 
     while(!fFinished)
@@ -321,8 +321,8 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             if (DebugEvent.u.Exception.dwFirstChance) {
                 if (pExceptionRecord->ExceptionCode == (DWORD)STATUS_BREAKPOINT) {
                     // Signal the aedebug event
-                    if (!fBreakpointSignalled) {
-                        fBreakpointSignalled = TRUE;
+                    if (!pProcessInfo->fBreakpointSignalled) {
+                        pProcessInfo->fBreakpointSignalled = TRUE;
 
                         if (pOptions->hEvent) {
                             SetEvent(pOptions->hEvent);
@@ -358,8 +358,8 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 }
 
                 if (ExceptionCode == STATUS_WX86_BREAKPOINT) {
-                    if (!fWowBreakpointSignalled) {
-                        fWowBreakpointSignalled = TRUE;
+                    if (!pProcessInfo->fWowBreakpointSignalled) {
+                        pProcessInfo->fWowBreakpointSignalled = TRUE;
                         dwContinueStatus = DBG_CONTINUE;
                         break;
                     }
