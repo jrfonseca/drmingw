@@ -59,9 +59,7 @@ help(void)
         "\t\tSignal an event after process is attached\r\n"
         "  -b, --breakpoint\tTreat debug breakpoints as exceptions\r\n"
         "  -v, --verbose\tVerbose output\r\n"
-#ifndef NDEBUG
         "  -d, --debug\tDebug output\r\n"
-#endif
         ,
         PACKAGE,
         MB_OK | MB_ICONINFORMATION
