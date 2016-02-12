@@ -274,7 +274,7 @@ dwarf_pe_init(HANDLE hFile,
     }
 
 no_intfc:
-    ;
+    UnmapViewOfFile(pe_obj->lpFileBase);
 no_view_of_file:
     CloseHandle(pe_obj->hFileMapping);
 no_file_mapping:
@@ -288,7 +288,10 @@ int
 dwarf_pe_finish(Dwarf_Debug dbg,
                 Dwarf_Error *error)
 {
-    pe_access_object_t *pe_obj = (pe_access_object_t *)dbg->de_obj_file->object;
+    Dwarf_Obj_Access_Interface *intfc = dbg->de_obj_file;
+    pe_access_object_t *pe_obj = (pe_access_object_t *)intfc->object;
+    free(intfc);
+    UnmapViewOfFile(pe_obj->lpFileBase);
     CloseHandle(pe_obj->hFileMapping);
     free(pe_obj);
     return dwarf_object_finish(dbg, error);

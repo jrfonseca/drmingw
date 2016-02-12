@@ -328,6 +328,7 @@ mgwhelp_module_destroy(struct mgwhelp_module * module)
         dwarf_pe_finish(module->dbg, &error);
     }
 
+    UnmapViewOfFile(module->lpFileBase);
     free(module);
 }
 
