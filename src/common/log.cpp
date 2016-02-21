@@ -433,7 +433,7 @@ void
 dumpException(HANDLE hProcess,
               PEXCEPTION_RECORD pExceptionRecord)
 {
-    DWORD ExceptionCode = pExceptionRecord->ExceptionCode;
+    NTSTATUS ExceptionCode = pExceptionRecord->ExceptionCode;
 
     char szModule[MAX_PATH];
     LPCSTR lpcszProcess;
