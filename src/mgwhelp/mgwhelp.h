@@ -36,9 +36,6 @@ MgwSymLoadModuleEx(HANDLE hProcess, HANDLE hFile, PCSTR ImageName, PCSTR ModuleN
 EXTERN_C DWORD64 WINAPI
 MgwSymLoadModuleExW(HANDLE hProcess, HANDLE hFile, PCWSTR ImageName, PCWSTR ModuleName, DWORD64 BaseOfDll, DWORD DllSize, PMODLOAD_DATA Data, DWORD Flags);
 
-EXTERN_C DWORD64 WINAPI
-MgwSymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddress);
-
 EXTERN_C BOOL WINAPI
 MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol);
 

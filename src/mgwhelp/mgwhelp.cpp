@@ -66,6 +66,10 @@ struct mgwhelp_process
 struct mgwhelp_process *processes = NULL;
 
 
+static DWORD64 WINAPI
+GetModuleBase(HANDLE hProcess, DWORD64 dwAddress);
+
+
 /* We must use a memory map of the file, not read memory directly, as the
  * value of ImageBase in memory changes.
  */
@@ -385,7 +389,7 @@ mgwhelp_find_module(HANDLE hProcess, DWORD64 Address, PDWORD64 pOffset)
     DWORD64 Base;
     struct mgwhelp_module *module;
 
-    Base = MgwSymGetModuleBase64(hProcess, Address);
+    Base = GetModuleBase(hProcess, Address);
     if (!Base) {
         return FALSE;
     }
@@ -532,13 +536,13 @@ MgwSymLoadModuleExW(HANDLE hProcess,
 
 
 /*
- * The GetModuleBase64 function retrieves the base address of the module that
+ * The GetModuleBase function retrieves the base address of the module that
  * contains the specified address.
  *
  * Same as SymGetModuleBase64, but that seems to often cause problems.
  */
-DWORD64 WINAPI
-MgwSymGetModuleBase64(HANDLE hProcess, DWORD64 dwAddress)
+static DWORD64 WINAPI
+GetModuleBase(HANDLE hProcess, DWORD64 dwAddress)
 {
     if (hProcess == GetCurrentProcess()) {
         HMODULE hModule = NULL;
