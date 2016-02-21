@@ -36,11 +36,8 @@ EXTERN_C void
 dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
 
 EXTERN_C void
-loadSymbols(HANDLE hProcess);
-
-EXTERN_C void
 dumpStack(HANDLE hProcess, HANDLE hThread,
-          const CONTEXT *pContext);
+          const CONTEXT *pContext = NULL);
 
 EXTERN_C void
 dumpModules(HANDLE hProcess);

@@ -123,6 +123,15 @@ BOOL ObtainSeDebugPrivilege(void)
 }
 
 
+static BOOL
+symCallbackDeferedSymbol(const char *szVerb, ULONG64 CallbackData)
+{
+    PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData = (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
+    lprintf("%s deferred symbol load of: %s (hFile = %p)\n", szVerb, pData->FileName, pData->hFile);
+    return FALSE;
+}
+
+
 static BOOL CALLBACK
 symCallback(HANDLE hProcess,
             ULONG ActionCode,
@@ -132,6 +141,28 @@ symCallback(HANDLE hProcess,
     if (ActionCode == CBA_DEBUG_INFO) {
         lprintf("%s", (LPCSTR)(UINT_PTR)CallbackData);
         return TRUE;
+    }
+
+    if (1) {
+        if (ActionCode == CBA_DEFERRED_SYMBOL_LOAD_PARTIAL) {
+            PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData = (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
+            lprintf("error: partial symbol load of %s\n", pData->FileName);
+            return FALSE;
+        }
+    } else {
+        // Debug partial symbols
+        switch (ActionCode) {
+        case CBA_DEFERRED_SYMBOL_LOAD_START:
+            return symCallbackDeferedSymbol("Starting", CallbackData);
+        case CBA_DEFERRED_SYMBOL_LOAD_COMPLETE:
+            return symCallbackDeferedSymbol("Completed", CallbackData);
+        case CBA_DEFERRED_SYMBOL_LOAD_FAILURE:
+            return symCallbackDeferedSymbol("Failed", CallbackData);
+        case CBA_DEFERRED_SYMBOL_LOAD_CANCEL:
+            return FALSE;
+        case CBA_DEFERRED_SYMBOL_LOAD_PARTIAL:
+            return symCallbackDeferedSymbol("Partial", CallbackData);
+        }
     }
 
     return FALSE;
@@ -170,7 +201,7 @@ GetFileNameFromHandle(HANDLE hFile,
         LPVOID pMem = MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 1);
         if (pMem) {
             if (GetMappedFileNameA(GetCurrentProcess(), pMem, lpszFilePath, cchFilePath)) {
-                // Unlike the example, we don't bother transliting the path with device name to drive letters.
+                // Unlike the example, we don't bother translating the path with device name to drive letters.
                 bSuccess = TRUE;
             }
             UnmapViewOfFile(pMem);
@@ -182,14 +213,45 @@ GetFileNameFromHandle(HANDLE hFile,
 }
 
 
+static DWORD
+getModuleSize(HANDLE hProcess, LPVOID lpBaseOfDll)
+{
+    DWORD Size = 0;
+    while (true) {
+        LPCVOID lpAddress = (PBYTE)lpBaseOfDll + Size;
+
+        MEMORY_BASIC_INFORMATION mbi;
+        if (VirtualQueryEx(hProcess, lpAddress, &mbi, sizeof mbi) == 0 ||
+            mbi.AllocationBase != lpBaseOfDll) {
+            break;
+        }
+
+        Size += mbi.RegionSize;
+    }
+
+    return Size;
+}
+
+
 static void
 loadModule(HANDLE hProcess, HANDLE hFile, PCSTR pszImageName, LPVOID lpBaseOfDll)
 {
-    if (!SymLoadModuleEx(hProcess, hFile, pszImageName, NULL, (UINT_PTR)lpBaseOfDll, 0, NULL, 0)) {
+    bool deferred = SymGetOptions() & SYMOPT_DEFERRED_LOADS;
+
+    // We must pass DllSize for deferred symbols to work correctly
+    // https://groups.google.com/forum/#!topic/comp.os.ms-windows.programmer.win32/ulkwYhM3020
+    DWORD DllSize = 0;
+    if (deferred) {
+        DllSize = getModuleSize(hProcess, lpBaseOfDll);
+    }
+
+    if (!SymLoadModuleEx(hProcess, hFile, pszImageName, NULL, (UINT_PTR)lpBaseOfDll, DllSize, NULL, 0)) {
         OutputDebug("warning: SymLoadModule64 failed: 0x%08lx\n", GetLastError());
     }
 
-    if (hFile) {
+    // DbgHelp keeps an copy of hFile, and closing the handle here may cause
+    // CBA_DEFERRED_SYMBOL_LOAD_PARTIAL events.
+    if (hFile && !deferred) {
         CloseHandle(hFile);
     }
 }
@@ -209,19 +271,6 @@ readProcessString(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T nSize)
     lpszBuffer[NumberOfBytesRead] = '\0';
     return lpszBuffer;
 }
-
-
-static void
-refreshSymbolsAndDumpStack(HANDLE hProcess, HANDLE hThread)
-{
-    assert(hProcess);
-    assert(hThread);
-
-    loadSymbols(hProcess);
-
-    dumpStack(hProcess, hThread, NULL);
-}
-
 
 
 // Trap a particular thread
@@ -245,7 +294,7 @@ TrapThread(DWORD dwProcessId, DWORD dwThreadId)
 
     DWORD dwRet = SuspendThread(hThread);
     if (dwRet != (DWORD)-1) {
-        refreshSymbolsAndDumpStack(hProcess, hThread);
+        dumpStack(hProcess, hThread);
 
         // TODO: Flag fTerminating
 
@@ -385,8 +434,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             dumpException(pProcessInfo->hProcess,
                           &DebugEvent.u.Exception.ExceptionRecord);
 
-            loadSymbols(hProcess);
-
             // Find the thread in the thread list
             THREAD_INFO_LIST::const_iterator it;
             for (it = pProcessInfo->Threads.begin(); it != pProcessInfo->Threads.end(); ++it) {
@@ -483,7 +530,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // Dump the stack on abort()
             if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
-                refreshSymbolsAndDumpStack(hProcess, pThreadInfo->hThread);
+                dumpStack(hProcess, pThreadInfo->hThread);
             }
 
             pProcessInfo->Threads.erase(DebugEvent.dwThreadId);
@@ -504,7 +551,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // Dump the stack on abort()
             if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
-                refreshSymbolsAndDumpStack(hProcess, pThreadInfo->hThread);
+                dumpStack(hProcess, pThreadInfo->hThread);
             }
 
             // Remove the process from the process list
