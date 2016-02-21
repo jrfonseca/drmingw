@@ -32,6 +32,8 @@
 
 #include <getopt.h>
 
+#include <string>
+
 #include "log.h"
 #include "debugger.h"
 #include "symbols.h"
@@ -47,7 +49,6 @@ outputCallback(const char *s)
 
 
 static ULONG g_TimeOut = 0;
-static char g_CommandLine[4096];
 static HANDLE g_hTimer = NULL;
 static HANDLE g_hTimerQueue = NULL;
 static DWORD g_ElapsedTime = 0;
@@ -178,6 +179,65 @@ consoleCtrlHandler(DWORD fdwCtrlType)
 }
 
 
+/**
+ * Determine whether an argument should be quoted.
+ */
+static bool
+needsQuote(const char *arg)
+{
+    char c;
+    while (true) {
+        c = *arg++;
+        if (c == '\0') {
+            break;
+        }
+        if (c == ' ' || c == '\t' || c == '\"') {
+            return true;
+        }
+        if (c == '\\') {
+            c = *arg++;
+            if (c == '\0') {
+                break;
+            }
+            if (c == '"') {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+static void
+quoteArg(std::string &s, const char *arg)
+{
+    char c;
+    unsigned backslashes = 0;
+
+    s.push_back('"');
+    while (true) {
+        c = *arg++;
+        if (c == '\0') {
+            break;
+        } else if (c == '"') {
+            while (backslashes) {
+                s.push_back('\\');
+                --backslashes;
+            }
+            s.push_back('\\');
+        } else {
+            if (c == '\\') {
+                ++backslashes;
+            } else {
+                backslashes = 0;
+            }
+        }
+        s.push_back(c);
+    }
+    s.push_back('"');
+}
+
+
 int
 main(int argc, char** argv)
 {
@@ -249,40 +309,28 @@ main(int argc, char** argv)
      * Concatenate remaining arguments into a command line
      */
 
-    PSTR pCommandLine = g_CommandLine;
+    std::string commandLine;
 
+    char sep = 0;
     while (optind < argc) {
-        char *arg = argv[optind];
-        ULONG length;
-        BOOL quote;
+        const char *arg = argv[optind];
 
-        length = (ULONG)strlen(arg);
-        if (length + 3 + (pCommandLine - g_CommandLine) >= sizeof g_CommandLine) {
-            fprintf(stderr, "catchsegv: error: command line length exceeds %Iu characters\n", sizeof g_CommandLine);
-            return 1;
+        if (sep) {
+            commandLine.push_back(sep);
         }
 
-        quote = (strchr(arg, ' ') || strchr(arg, '\t'));
-
-        if (quote) {
-            *pCommandLine++ = '"';
+        if (needsQuote(arg)) {
+            quoteArg(commandLine, arg);
+        } else {
+            commandLine.append(arg);
         }
 
-        memcpy(pCommandLine, arg, length + 1);
-        pCommandLine += length;
-
-        if (quote) {
-            *pCommandLine++ = '"';
-        }
-
-        *pCommandLine++ = ' ';
+        sep = ' ';
 
         ++optind;
     }
 
-    *pCommandLine = 0;
-
-    if (strlen(g_CommandLine) == 0) {
+    if (commandLine.empty()) {
         fprintf(stderr, "catchsegv: error: no command line given\n\n");
         Usage();
         return EXIT_FAILURE;
@@ -306,7 +354,7 @@ main(int argc, char** argv)
     ZeroMemory(&ProcessInformation, sizeof ProcessInformation);
 
     if (!CreateProcessA(NULL, // lpApplicationName
-                        g_CommandLine,
+                        const_cast<char *>(commandLine.c_str()),
                         NULL, // lpProcessAttributes
                         NULL, // lpThreadAttributes
                         TRUE, // bInheritHandles
