@@ -24,6 +24,9 @@
 
 #include <windows.h>
 
+#include <string>
+#include <vector>
+
 #include "config.h"
 #include "dwarf_incl.h"
 
@@ -217,28 +220,35 @@ dwarf_pe_init(HANDLE hFile,
             pe_load_section(pe_obj, section_index, &data, &err);
             const char *debuglink = (const char *)data;
 
-            const char *pSeparator = getSeparator(image);
-            char *debugImage;
-            if (pSeparator) {
-                size_t cbDir = pSeparator - image;
-                size_t cbFile = strnlen(debuglink, doas.size);
-                debugImage = (char *)malloc(cbDir + cbFile + 1);
-                memcpy(debugImage, image, cbDir);
-                memcpy(debugImage + cbDir, debuglink, cbFile + 1);
-            } else {
-                debugImage = strdup(debuglink);
-            }
+            std::vector<std::string> debugSearchDirs;
 
-            HANDLE hFile = CreateFileA(debugImage, GENERIC_READ, FILE_SHARE_READ, NULL,
-                                       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-            if (hFile != INVALID_HANDLE_VALUE) {
-                res = dwarf_pe_init(hFile, debugImage, errhand, errarg, ret_dbg, error);
-                CloseHandle(hFile);
-            } else {
-                OutputDebug("MGWHELP: %s - not found\n", debugImage);
+            // Search on the image directory
+            const char *pImageSep = getSeparator(image);
+            std::string imageDir;
+            if (pImageSep) {
+                imageDir.append(image, pImageSep);
             }
+            debugSearchDirs.emplace_back(imageDir);
 
-            free(debugImage);
+            // Then search on a .debug subdirectory
+            imageDir.append(".debug\\");
+            debugSearchDirs.emplace_back(imageDir);
+
+            HANDLE hFile = INVALID_HANDLE_VALUE;
+            for (auto const & debugSearchDir : debugSearchDirs) {
+                std::string debugImage(debugSearchDir);
+                debugImage.append(debuglink);
+                const char *debugImageStr = debugImage.c_str();
+                hFile = CreateFileA(debugImageStr, GENERIC_READ, FILE_SHARE_READ, NULL,
+                                    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+                if (hFile == INVALID_HANDLE_VALUE) {
+                    OutputDebug("MGWHELP: %s - not found\n", debugImageStr);
+                } else {
+                    res = dwarf_pe_init(hFile, debugImageStr, errhand, errarg, ret_dbg, error);
+                    CloseHandle(hFile);
+                    break;
+                }
+            }
 
             break;
         }
