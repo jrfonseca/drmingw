@@ -12,6 +12,10 @@ if (MINGW)
     if (HAVE_EXCEPTION_REGISTRATION_RECORD)
         add_definitions (-DHAVE_EXCEPTION_REGISTRATION_RECORD=1)
     endif ()
+
+    # Match MSVC default stack size of 1MB
+    # https://msdn.microsoft.com/en-us/library/8cxs58a6.aspx
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,1048576")
 endif ()
 
 if (MSVC)
@@ -73,5 +77,6 @@ add_test_executable (output_debug_string_w WIN32 output_debug_string_w.c)
 add_test_executable (seh_handled seh_handled.c)
 add_test_executable (seh_unhandled WIN32 seh_unhandled.c)
 add_test_executable (set_thread_name set_thread_name.c)
+add_test_executable (stack_overflow stack_overflow.c)
 add_test_executable (std_terminate std_terminate.cpp)
 add_test_executable (true true.c)
