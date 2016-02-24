@@ -30,7 +30,7 @@
 #include <windows.h>
 
 // http://wiki.winehq.org/DeveloperFaq#detect-wine
-static inline BOOL
+static __inline BOOL
 insideWine(void)
 {
     HMODULE hNtDll = GetModuleHandleA("ntdll");
