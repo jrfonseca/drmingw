@@ -30,7 +30,7 @@ before_build:
 - mingw32-make --version
 - cmake --version
 - ps: (Get-Item "${Env:WINDBG_DIR}\dbghelp.dll").VersionInfo
-- cmake -H. -Bbuild\mingw64 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR="%WINDBG_DIR%"
+- cmake -H. -Bbuild\mingw64 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR="%WINDBG_DIR%" -DENABLE_ZDEBUG_TEST=ON
 
 build_script:
 - cmake --build build\mingw64 --use-stderr --target all -- -j%NUMBER_OF_PROCESSORS%

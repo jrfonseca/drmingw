@@ -29,8 +29,9 @@ add_test (
 #
 # test_mgwhelp_split
 #
-
 # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+#
+
 add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test.debug
     COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test.debug
@@ -112,32 +113,52 @@ add_test (
 #
 # test_mgwhelp_zdebug
 #
+# XXX: MinGW support for objcopy --compress-debug-sections flag is very flaky,
+# depending on the exact toolchain:
+#
+# - some (e.g, the x86_64-4.9.2-release-win32-seh-rt_v4-rev4 used in Appveyor)
+#   just works
+#
+# - others (e.g the ppa:tobydox/mingw-x-trusty used in Travis) fail when
+#   compressing the debug sections with:
+#
+#     BFD: mgwhelp_test.exe: unable to initialize compress status for section .debug_aranges
+#
+# - others (e.g, Ubuntu 15.10's) appear to work but cause libdwarf to fail with
+#   DW_DLE_ARANGE_OFFSET_BAD
+#
+# See also:
+# - https://bugs.kde.org/show_bug.cgi?id=303877
+# - https://sourceware.org/bugzilla/show_bug.cgi?id=14067
+# - https://bugzilla.redhat.com/show_bug.cgi?id=679777
+#
 
-# https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
-add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug --compress-debug-sections $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-    DEPENDS mgwhelp_test
-    VERBATIM
-)
-add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_zdebug_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-    VERBATIM
-)
-add_custom_target (mgwhelp_zdebug_test ALL
-    DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-)
-add_dependencies (check mgwhelp_zdebug_test)
-add_test (
-    NAME test_mgwhelp_zdebug
-    COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-)
-set_tests_properties (test_mgwhelp_zdebug PROPERTIES WILL_FAIL TRUE)
+option (ENABLE_ZDEBUG_TEST "Enable compressed debug sections test." OFF)
+if (ENABLE_ZDEBUG_TEST)
+    add_custom_command (
+        OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug --compress-debug-sections $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+        DEPENDS mgwhelp_test
+        VERBATIM
+    )
+    add_custom_command (
+        OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+        COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_zdebug_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+        WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+        DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+        VERBATIM
+    )
+    add_custom_target (mgwhelp_zdebug_test ALL
+        DEPENDS
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+    )
+    add_dependencies (check mgwhelp_zdebug_test)
+    add_test (
+        NAME test_mgwhelp_zdebug
+        COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+    )
+endif ()
 
 
 #
