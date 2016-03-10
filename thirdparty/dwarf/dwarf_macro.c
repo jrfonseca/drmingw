@@ -176,6 +176,7 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
     Dwarf_Error * error)
 {
     Dwarf_Small *macro_base = 0;
+    Dwarf_Small *macro_end = 0;
     Dwarf_Small *pnext = 0;
     Dwarf_Unsigned endloc = 0;
     unsigned char uc = 0;
@@ -231,6 +232,7 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
         free_macro_stack(dbg,&msdata);
         return (DW_DLV_NO_ENTRY);
     }
+    macro_end = macro_base + dbg->de_debug_macinfo.dss_size;
     /*   FIXME debugfission is NOT handled here.  */
 
     pnext = macro_base + macro_offset;
@@ -273,6 +275,11 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
                 _dwarf_error(dbg, error,
                     DW_DLE_DEBUG_MACRO_INCONSISTENT);
                 return (DW_DLV_ERROR);
+            }
+            res = _dwarf_check_string_valid(dbg,
+                macro_base,pnext,macro_end,error);
+            if (res != DW_DLV_OK) {
+                return res;
             }
             slen = strlen((char *) pnext) + 1;
             pnext += slen;
@@ -349,7 +356,7 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
     /* extra 2 not really needed */
     space_needed = string_offset + str_space + 2;
     return_data = pdata =
-        _dwarf_get_alloc(dbg, DW_DLA_STRING, space_needed);
+        (Dwarf_Small *)_dwarf_get_alloc(dbg, DW_DLA_STRING, space_needed);
     latest_str_loc = pdata + string_offset;
     if (pdata == 0) {
         free_macro_stack(dbg,&msdata);
@@ -399,6 +406,11 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
                 _dwarf_error(dbg, error,
                     DW_DLE_DEBUG_MACRO_INCONSISTENT);
                 return (DW_DLV_ERROR);
+            }
+            res = _dwarf_check_string_valid(dbg,
+                macro_base,pnext,macro_end,error);
+            if (res != DW_DLV_OK) {
+                return res;
             }
             slen = strlen((char *) pnext) + 1;
             strcpy((char *) latest_str_loc, (char *) pnext);

@@ -331,13 +331,11 @@ _dwarf_search_fission_for_key(Dwarf_Debug dbg,
     Dwarf_Unsigned * percu_index_out,
     Dwarf_Error *error)
 {
-    struct Dwarf_Fission_Per_CU_s *dfpcu = 0;
     Dwarf_Unsigned key = 0;
     Dwarf_Unsigned primary_hash = 0;
     Dwarf_Unsigned hashprime = 0;
     Dwarf_Unsigned slots =  xuhdr->gx_slots_in_hash;
     Dwarf_Unsigned mask = slots -1;
-    Dwarf_Unsigned counter = 0;
     Dwarf_Sig8 hashentry_key;
     Dwarf_Unsigned percu_index = 0;
 
@@ -377,14 +375,11 @@ _dwarf_search_fission_for_offset(Dwarf_Debug dbg,
     Dwarf_Sig8 * key_out,
     Dwarf_Error *error)
 {
-    struct Dwarf_Fission_Per_CU_s *dfpcu = 0;
     Dwarf_Unsigned i = 0;
     Dwarf_Unsigned m = 0;
-    Dwarf_Unsigned row = 0;
-    Dwarf_Unsigned col = 0;
     int secnum_index = -1;  /* L index */
     int res = 0;
-    int foundcol = FALSE;
+
     for ( i = 0; i< xuhdr->gx_column_count_sections; i++) {
         /*  We could put the secnums array into xuhdr
             if looping here is too slow. */
@@ -406,6 +401,9 @@ _dwarf_search_fission_for_offset(Dwarf_Debug dbg,
     for ( m = 0; m < xuhdr->gx_slots_in_hash; ++m) {
         Dwarf_Sig8 hash;
         Dwarf_Unsigned indexn = 0;
+        Dwarf_Unsigned sec_offset = 0;
+        Dwarf_Unsigned sec_size = 0;
+
         res = dwarf_get_xu_hash_entry(xuhdr,m,&hash,&indexn,error);
         if (res != DW_DLV_OK) {
             return res;
@@ -416,8 +414,6 @@ _dwarf_search_fission_for_offset(Dwarf_Debug dbg,
             continue;
         }
 
-        Dwarf_Unsigned sec_offset = 0;
-        Dwarf_Unsigned sec_size = 0;
         res = dwarf_get_xu_section_offset(xuhdr,
             indexn,secnum_index,&sec_offset,&sec_size,error);
         if (res != DW_DLV_OK) {
@@ -512,7 +508,6 @@ _dwarf_get_debugfission_for_offset(Dwarf_Debug dbg,
 {
     Dwarf_Xu_Index_Header xuhdr = 0;
     int sres = 0;
-    int sect_index = 0;
     Dwarf_Unsigned percu_index = 0;
     Dwarf_Unsigned sect_index_base = 0;
     const char * key_type = "cu";
@@ -546,7 +541,6 @@ dwarf_get_debugfission_for_key(Dwarf_Debug dbg,
 {
     Dwarf_Xu_Index_Header xuhdr = 0;
     int sres = 0;
-    int sect_index = 0;
     Dwarf_Unsigned percu_index = 0;
 
     sres = _dwarf_load_debug_info(dbg,error);

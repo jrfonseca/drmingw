@@ -219,6 +219,7 @@ dwarf_harmless_cleanout(struct Dwarf_Harmless_s *dhp)
     }
     for (i = 0; i < dhp->dh_maxcount; ++i) {
         free(dhp->dh_errors[i]);
+        dhp->dh_errors[i] = 0;
     }
     free(dhp->dh_errors);
     dhp->dh_errors = 0;

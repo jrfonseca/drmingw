@@ -34,11 +34,13 @@
 #include <stdio.h>
 #include "dwarf_line.h"
 
+#ifdef __sgi /* SGI IRIX ONLY */
 /*  Return DW_DLV_OK or, if error,
     DW_DLV_ERROR.
 
     Thru pointers, return 2 arrays and a count
-    for rqs (IRIX run-time linker).  */
+    for rqs (IRIX run-time linker).
+    ONLY meant for SGI IRIX  */
 int
 _dwarf_line_address_offsets(Dwarf_Debug dbg,
     Dwarf_Die die,
@@ -54,8 +56,12 @@ _dwarf_line_address_offsets(Dwarf_Debug dbg,
     int res;
     Dwarf_Line *linebuf;
 
-    res = _dwarf_internal_srclines(die, &linebuf, &lcount,
-        /* addrlist= */ true, /* linelist= */ false, err);
+    res = _dwarf_internal_srclines(die, /* version= */ NULL,
+        &linebuf, &lcount,
+        /* actuals= */ NULL, /* actualscount= */ NULL,
+        /* addrlist= */ true,
+        /* linelist= */ false,
+        err);
     if (res != DW_DLV_OK) {
         return res;
     }
@@ -88,10 +94,5 @@ _dwarf_line_address_offsets(Dwarf_Debug dbg,
     *addrs = laddrs;
     return DW_DLV_OK;
 }
+#endif /* __sgi */
 
-/*
-   It's impossible for callers of dwarf_srclines() to get to and
-   free all the resources (in particular, the li_context and its
-   lc_file_entries).
-   So this function, new July 2005, does it.
-*/

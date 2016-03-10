@@ -35,6 +35,9 @@ dwarf_get_str(Dwarf_Debug dbg,
    Dwarf_Signed * returned_str_len, Dwarf_Error * error)
 {
     int res = DW_DLV_ERROR;
+    void *secptr = 0;
+    void *begin = 0;
+    void *end = 0;
 
     if (dbg == NULL) {
         _dwarf_error(NULL, error, DW_DLE_DBG_NULL);
@@ -63,10 +66,17 @@ dwarf_get_str(Dwarf_Debug dbg,
     if (!dbg->de_debug_str.dss_size) {
         return (DW_DLV_NO_ENTRY);
     }
+    secptr =dbg->de_debug_str.dss_data;
+    begin = (char *)secptr + offset;
+    end =   (char *)secptr + dbg->de_debug_str.dss_size;
 
+    res = _dwarf_check_string_valid(dbg,secptr,begin,end,error);
+    if (res != DW_DLV_OK) {
+        return res;
+    }
 
-    *string = (char *) dbg->de_debug_str.dss_data + offset;
-
-    *returned_str_len = (strlen(*string));
+    *string = (char *) begin;
+    *returned_str_len = strlen(*string);
     return DW_DLV_OK;
 }
+

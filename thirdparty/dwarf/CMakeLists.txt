@@ -8,18 +8,20 @@ add_library (dwarf STATIC
     dwarf_die_deliv.c
     dwarf_error.c
     dwarf_form.c
+    dwarf_frame.c
     dwarf_frame2.c
     dwarf_frame3.c
-    dwarf_frame.c
     dwarf_funcs.c
     dwarf_global.c
     dwarf_harmless.c
     dwarf_init_finish.c
     dwarf_leb.c
-    dwarf_line2.c
     dwarf_line.c
+    dwarf_line2.c
     dwarf_loc.c
+    #dwarf_loc2.c
     dwarf_macro.c
+    dwarf_macro5.c
     dwarf_print_lines.c
     dwarf_pubtypes.c
     dwarf_query.c
@@ -27,6 +29,7 @@ add_library (dwarf STATIC
     dwarf_sort_line.c
     dwarf_string.c
     dwarf_stubs.c
+    dwarf_tied.c
     dwarf_tsearchhash.c
     dwarf_types.c
     dwarf_util.c

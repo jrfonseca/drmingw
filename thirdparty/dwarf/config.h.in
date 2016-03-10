@@ -94,6 +94,9 @@
 /* Define 1 if want to allow Windows full path detection */
 #undef HAVE_WINDOWS_PATH
 
+/* Define 1 if zlib (decompression library) seems available. */
+#undef HAVE_ZLIB
+
 /* See if __uint32_t is predefined in the compiler. */
 #undef HAVE___UINT32_T
 

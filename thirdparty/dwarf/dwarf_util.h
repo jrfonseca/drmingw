@@ -292,16 +292,17 @@ struct Dwarf_Hash_Table_Entry_s {
 
 
 
-Dwarf_Abbrev_List
-_dwarf_get_abbrev_for_code(Dwarf_CU_Context cu_context,
-    Dwarf_Unsigned code);
+int _dwarf_get_abbrev_for_code(Dwarf_CU_Context cu_context,
+    Dwarf_Unsigned code,
+    Dwarf_Abbrev_List *list_out,Dwarf_Error *error);
 
 
 /* return 1 if string ends before 'endptr' else
 ** return 0 meaning string is not properly terminated.
 ** Presumption is the 'endptr' pts to end of some dwarf section data.
 */
-int _dwarf_string_valid(void *startptr, void *endptr);
+int _dwarf_check_string_valid(Dwarf_Debug dbg,void *areaptr,
+    void *startptr, void *endptr, Dwarf_Error *error);
 
 Dwarf_Unsigned _dwarf_length_of_cu_header(Dwarf_Debug,
     Dwarf_Unsigned offset,Dwarf_Bool dinfo);
@@ -315,6 +316,12 @@ int _dwarf_get_address_size(Dwarf_Debug dbg, Dwarf_Die die);
 int _dwarf_reference_outside_section(Dwarf_Die die,
     Dwarf_Small * startaddr,
     Dwarf_Small * pastend);
+void _dwarf_error_mv_s_to_t(Dwarf_Debug dbgs,Dwarf_Error *errs,
+    Dwarf_Debug dbgt,Dwarf_Error *errt);
+
+int _dwarf_internal_get_die_comp_dir(Dwarf_Die die, const char **compdir_out,
+    const char **comp_name_out,
+    Dwarf_Error *error);
 
 
 #endif /* DWARF_UTIL_H */

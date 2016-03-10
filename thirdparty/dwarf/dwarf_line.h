@@ -1,6 +1,6 @@
 /*
   Copyright (C) 2000, 2004, 2006 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2009-2013 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2009-2015 David Anderson. All Rights Reserved.
   Portions Copyright (C) 2010-2012 SN Systems Ltd. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
@@ -48,8 +48,12 @@
     files that are used in the current compilation unit.
     All of the fields execpt fi_next have meanings that
     are obvious from section 6.2.4 of the Libdwarf Doc.
+    Because of DW_LNE_define_file we
+    make this a list, not an array.
 */
 struct Dwarf_File_Entry_s {
+    struct Dwarf_File_Entry_s *fi_next;
+
     /* Points to string naming the file. */
     Dwarf_Small *fi_file_name;
 
@@ -62,49 +66,175 @@ struct Dwarf_File_Entry_s {
 
     /* Length in bytes of the file. */
     Dwarf_Unsigned fi_file_length;
-
-    /* Pointer for chaining file entries. */
-    Dwarf_File_Entry fi_next;
 };
 
+/*  Part of two-level line tables support. */
+struct Dwarf_Subprog_Entry_s {
+    Dwarf_Small *ds_subprog_name;
+    Dwarf_Unsigned ds_decl_file;
+    Dwarf_Unsigned ds_decl_line;
+};
 
-typedef struct Dwarf_Line_Context_s *Dwarf_Line_Context;
+typedef struct Dwarf_Subprog_Entry_s *Dwarf_Subprog_Entry;
+
 
 /*
     This structure provides the context in which the fields of
     a Dwarf_Line structure are interpreted.  They come from the
     statement program prologue.  **Updated by dwarf_srclines in
     dwarf_line.c.
+
+    lc_magic will be DW_CONTEXT_MAGIC unless there is a serious
+    programming error somewhere.
+    It's set zero when a Line_Context is deallocated.
+    Any other value indicates there is bug somewhere.
 */
+#define DW_CONTEXT_MAGIC 0xd00d1111
 struct Dwarf_Line_Context_s {
-    /*  Points to a chain of entries providing info about source files
-        for the current set of Dwarf_Line structures. File number
-        'li_file 1' is last on the list, the first list entry is the
-        file numbered lc_file_entry_count. The numbering of the file
-        names matches the dwarf2/3 line table specification file table
-        and DW_LNE_define_file numbering rules.  */
+    unsigned    lc_magic;
+
+    /*  lc_new_style_access is non-zero if this was allocated
+        via a dwarf_srclines_b() call or equivalent.
+        Otherwise this is 0.  */
+    unsigned char lc_new_style_access;
+
+    /* The section offset (in .debug_line
+        or .debug_line.dwo of the line table */
+    Dwarf_Unsigned lc_section_offset;
+
+    /*  2 for DWARF2, 3 for DWARF3, 4 for DWARF4, 5 for DWARF5.
+        0xf006 for experimental two-level line tables. */
+    Dwarf_Half lc_version_number;
+
+    /* Total length of the line data for this CU */
+    Dwarf_Unsigned lc_total_length;
+
+    /* Length of the initial length field itself. */
+    Dwarf_Half lc_length_field_length;
+
+    /* address size and segment sizefields new in DWARF5 header.  */
+    Dwarf_Small lc_address_size;
+    Dwarf_Small lc_segment_selector_size;
+
+    Dwarf_Unsigned lc_prologue_length;
+    Dwarf_Unsigned lc_actuals_table_offset;
+    Dwarf_Unsigned lc_logicals_table_offset;
+    Dwarf_Small lc_minimum_instruction_length;
+
+    /*  Start and end of this CU line area. pf_line_ptr_start +
+        pf_total_length + pf_length_field_length == pf_line_ptr_end.
+        Meaning lc_line_ptr_start is before the length info. */
+    Dwarf_Small *lc_line_ptr_start;
+    Dwarf_Small *lc_line_ptr_end;
+    /*  Start of the lines themselves. */
+    Dwarf_Small *lc_line_ptr_lines;
+
+    /* Used to check that decoding of the line prologue is done right. */
+    Dwarf_Small *lc_line_prologue_start;
+
+    Dwarf_Small lc_default_is_stmt;
+    Dwarf_Ubyte lc_maximum_ops_per_instruction; /*DWARF5*/
+    Dwarf_Sbyte lc_line_base;
+    Dwarf_Small lc_line_range;
+
+    /* Highest std opcode (+1).  */
+    Dwarf_Small lc_opcode_base;
+    /*  pf_opcode_base -1 entries (each a count, normally the value of
+        each entry is 0 or 1). */
+    Dwarf_Small *lc_opcode_length_table;
+
+    /*  The number to treat as standard ops. This is a special
+        accomodation of gcc using the new standard opcodes but not
+        updating the version number. It's legal dwarf2, but much better
+        for the user to understand as dwarf3 when 'it looks ok'. */
+    Dwarf_Bool lc_std_op_count;
+
+    /*  Points to a singly-linked list of entries providing info about source files
+        for the current set of Dwarf_Line structures.
+        The initial  entry on the list is 'file 1' per DWARF rules.
+        And so on.  lc_last_entry points at the last entry
+        in the list (so we can easily expand the list).
+        It's a list (not a table) since we may encounter
+        DW_LNE_define_file entries. */
     Dwarf_File_Entry lc_file_entries;
+    Dwarf_File_Entry lc_last_entry;
     /*  Count of number of source files for this set of Dwarf_Line
         structures. */
     Dwarf_Sword lc_file_entry_count;
-    /*  Points to the portion of .debug_line section that contains a
-        list of strings naming the included directories. */
-    Dwarf_Small *lc_include_directories;
 
+
+    /*  Points to the portion of .debug_line section that
+        contains a list of strings naming the included
+        directories.  Do not free().
+        An array of pointers to strings.  */
+    Dwarf_Small **lc_include_directories;
     /*  Count of the number of included directories. */
     Dwarf_Sword lc_include_directories_count;
+
+
+    /*  Points to an array of subprogram entries.
+        With Two level line tables this may be non-zero.
+        An array of Dwarf_Subprogram_Entry_s structs. */
+    Dwarf_Subprog_Entry lc_subprogs;
+
+    /*  Count of the number of subprogram entries
+        With Two level line tables this may be non-zero. */
+    Dwarf_Sword lc_subprogs_count;
 
     /*  Count of the number of lines for this cu. */
     Dwarf_Sword lc_line_count;
 
-    /*  Points to name of compilation directory. */
+    /*  Points to name of compilation directory.
+        That string is in a .debug section so
+        do not free this. */
     Dwarf_Small *lc_compilation_directory;
 
     Dwarf_Debug lc_dbg;
 
-    Dwarf_Half lc_version_number; /* DWARF2/3 version number, 2
-        for DWARF2, 3 for DWARF3. */
+    /*  zero table count is skeleton, or just missing names.
+        1 is standard table.
+        2 means two-level table (experimantal)
+        Other is a bug somewhere.  */
+    Dwarf_Small lc_table_count;
+    Dwarf_Bool lc_is_single_table;
+
+    /* For standard line tables  the logicals are
+        the only tables and linecount_actuals is 0. */
+    Dwarf_Line   *lc_linebuf_logicals;
+    Dwarf_Signed lc_linecount_logicals;
+
+    /* Non-zero only if two-level table with actuals */
+    Dwarf_Line   *lc_linebuf_actuals;
+    Dwarf_Signed lc_linecount_actuals;
+
 };
+
+
+
+/*  The line table set of registers.
+    The state machine state variables.
+    Using names from the DWARF documentation
+    but preceded by lr_.  */
+struct Dwarf_Line_Registers_s {
+    Dwarf_Addr lr_address;        /* DWARF2 */
+    Dwarf_Word lr_file ;          /* DWARF2 */
+    Dwarf_Word lr_line ;          /* DWARF2 */
+    Dwarf_Word lr_column ;        /* DWARF2 */
+    Dwarf_Bool lr_is_stmt;        /* DWARF2 */
+    Dwarf_Bool lr_basic_block;    /* DWARF2 */
+    Dwarf_Bool lr_end_sequence;   /* DWARF2 */
+    Dwarf_Bool lr_prologue_end;   /* DWARF3 */
+    Dwarf_Bool lr_epilogue_begin; /* DWARF3 */
+    Dwarf_Small lr_isa;           /* DWARF3 */
+    Dwarf_Unsigned lr_op_index;      /* DWARF4, operation within VLIW instruction. */
+    Dwarf_Unsigned lr_discriminator; /* DWARF4 */
+    Dwarf_Unsigned lr_call_context;       /* EXPERIMENTAL */
+    Dwarf_Unsigned lr_subprogram;     /* EXPERIMENTAL */
+};
+typedef struct Dwarf_Line_Registers_s *Dwarf_Line_Registers;
+void _dwarf_set_line_table_regs_default_values(Dwarf_Line_Registers regs,
+    Dwarf_Bool is_stmt);
+
 
 
 /*
@@ -124,15 +254,32 @@ struct Dwarf_Line_s {
     Dwarf_Addr li_address;  /* pc value of machine instr */
     union addr_or_line_s {
         struct li_inner_s {
-            Dwarf_Unsigned li_discriminator; /* New as of DWARF4 */
-            Dwarf_Sword li_file;  /* int identifying src file */
-            /*  li_file is a number 1-N, indexing into a conceptual
+            /* New as of DWARF4 */
+            Dwarf_Unsigned li_discriminator;
+
+            /*  int identifying src file
+                li_file is a number 1-N, indexing into a conceptual
                 source file table as described in dwarf2/3 spec line
                 table doc. (see Dwarf_File_Entry lc_file_entries; and
                 Dwarf_Sword lc_file_entry_count;) */
-            Dwarf_Sword li_line;  /* source file line number. */
-            Dwarf_Half li_column; /* source file column number */
+            Dwarf_Sword li_file;
+
+            /*  In single-level table is line number in source file. 1-N
+                In logicals table is not used.
+                In actuals table is index into logicals table.  1-N*/
+            Dwarf_Sword li_line;
+
+            Dwarf_Half li_column; /* source file column number  1-N */
             Dwarf_Small li_isa;   /* New as of DWARF4. */
+
+            /*  Two-level line tables.
+                Is index from logicals table
+                into logicals table. 1-N */
+            Dwarf_Unsigned li_call_context;
+
+            /*  Two-level line tables.
+                is index into subprograms table. 1-N */
+            Dwarf_Unsigned li_subprogram;
 
             /* To save space, use bit flags. */
             /* indicate start of stmt */
@@ -150,9 +297,16 @@ struct Dwarf_Line_s {
             /* Mark a line record as being DW_LNS_set_address. */
             unsigned char li_is_addr_set:1;
         } li_l_data;
-        Dwarf_Off li_offset;  /* for rqs */
+#ifdef __sgi /* SGI IRIX ONLY */
+        Dwarf_Off li_offset;  /* for SGI IRIX rqs only*/
+#endif /* __sgi */
     } li_addr_line;
     Dwarf_Line_Context li_context; /* assoc Dwarf_Line_Context_s */
+
+    /*  Set only on the actuals table of a two-level line table.
+        Assists in the dealloc code.
+    */
+    Dwarf_Bool li_is_actuals_table;
 };
 
 
@@ -163,12 +317,17 @@ int _dwarf_line_address_offsets(Dwarf_Debug dbg,
     Dwarf_Unsigned * returncount,
     Dwarf_Error * err);
 int _dwarf_internal_srclines(Dwarf_Die die,
+    Dwarf_Bool old_interface,
+    Dwarf_Unsigned * version,
+    Dwarf_Small     * table_count,
+    Dwarf_Line_Context *line_context,
     Dwarf_Line ** linebuf,
     Dwarf_Signed * count,
+    Dwarf_Line ** linebuf_actuals,
+    Dwarf_Signed * count_actuals,
     Dwarf_Bool doaddrs,
-    Dwarf_Bool dolines, Dwarf_Error * error);
-
-
+    Dwarf_Bool dolines,
+    Dwarf_Error * error);
 
 /*  The LOP, WHAT_IS_OPCODE stuff is here so it can
     be reused in 3 places.  Seemed hard to keep
@@ -232,10 +391,12 @@ int _dwarf_internal_srclines(Dwarf_Die die,
 #define MAX_LINE_OP_CODE  255
 
 
-/*  The following structs (Line_Table_File_Entry_s,Line_Table_Prefix_s)
+# if 0
+/*  The following structs (Line_Table_File_Entry_s,Dwarf_Line_Context_s)
     and functions allow refactoring common code into a single
     reader routine.
 */
+Not used once Prefix struct folded into line context struct.
 /* There can be zero of more of these needed for 1 line prologue. */
 struct Line_Table_File_Entry_s {
     Dwarf_Small *lte_filename;
@@ -243,74 +404,43 @@ struct Line_Table_File_Entry_s {
     Dwarf_Unsigned lte_last_modification_time;
     Dwarf_Unsigned lte_length_of_file;
 };
+#endif
 
-/* Data  picked up from the line table prologue for a single
-CU. */
-struct Line_Table_Prefix_s {
 
-    /*  pf_total_length is the value of the length field for the line
-        table of this CU. So it does not count the length of itself (the
-        length value) for consistency with the say lenghts recorded in
-        DWARF2/3. */
-    Dwarf_Unsigned pf_total_length;
+/* Operand counts per standard operand.
+   The initial zero is for DW_LNS_copy.
+   This is an economical way to verify we understand the table
+   of standard-opcode-lengths in the line table prologue.  */
+#define STANDARD_OPERAND_COUNT_DWARF2 9
+#define STANDARD_OPERAND_COUNT_DWARF3 12
+/* For two-level line tables, we have three additional standard opcodes. */
+#define STANDARD_OPERAND_COUNT_TWO_LEVEL 15
 
-    /* Length of the initial length field itself. */
-    Dwarf_Half pf_length_field_length;
+void _dwarf_print_header_issue(Dwarf_Debug dbg,
+    const char *specific_msg,
+    Dwarf_Small *data_start,
+    int *err_count_out);
+int _dwarf_decode_line_string_form(Dwarf_Debug dbg,
+    Dwarf_Unsigned form,
+    Dwarf_Unsigned offset_size,
+    Dwarf_Small **line_ptr,
+    Dwarf_Small *line_ptr_end,
+    char **return_str,
+    Dwarf_Error * error);
+int _dwarf_decode_line_udata_form(Dwarf_Debug dbg,
+    Dwarf_Unsigned form,
+    Dwarf_Small **line_ptr,
+    Dwarf_Unsigned *return_val,
+    Dwarf_Error * error);
 
-    /* The version is 2 for DWARF2, 3 for DWARF3 */
-    Dwarf_Half pf_version;
+void _dwarf_update_chain_list( Dwarf_Chain chain_line,
+    Dwarf_Chain *head_chain, Dwarf_Chain *curr_chain);
+void _dwarf_free_chain_entries(Dwarf_Debug dbg,Dwarf_Chain head,int count);
 
-    Dwarf_Unsigned pf_prologue_length;
-    Dwarf_Small pf_minimum_instruction_length;
+int _dwarf_line_context_constructor(Dwarf_Debug dbg, void *m);
+void _dwarf_line_context_destructor(void *m);
 
-    /*  Start and end of this CU line area. pf_line_ptr_start +
-        pf_total_length + pf_length_field_length == pf_line_ptr_end.
-        Meaning pf_line_ptr_start is before the length info. */
-    Dwarf_Small *pf_line_ptr_start;
-    Dwarf_Small *pf_line_ptr_end;
-
-    /* Used to check that decoding of the line prologue is done right. */
-    Dwarf_Small *pf_line_prologue_start;
-
-    Dwarf_Small pf_default_is_stmt;
-    Dwarf_Ubyte pf_maximum_ops_per_instruction;
-    Dwarf_Sbyte pf_line_base;
-    Dwarf_Small pf_line_range;
-
-    /* Highest std opcode (+1).  */
-    Dwarf_Small pf_opcode_base;
-    /*  pf_opcode_base -1 entries (each a count, normally the value of
-        each entry is 0 or 1). */
-    Dwarf_Small *pf_opcode_length_table;
-
-    Dwarf_Unsigned pf_include_directories_count;
-    /*  Array of pointers to dir strings. pf_include_directories_count
-        entriesin the array. */
-    Dwarf_Small **pf_include_directories;
-
-    /* Count of entries in line_table_file_entries array. */
-    Dwarf_Unsigned pf_files_count;
-    struct Line_Table_File_Entry_s *pf_line_table_file_entries;
-
-    /*  The number to treat as standard ops. This is a special
-        accomodation of gcc using the new standard opcodes but not
-        updating the version number. It's legal dwarf2, but much better
-        for the user to understand as dwarf3 when 'it looks ok'. */
-    Dwarf_Bool pf_std_op_count;
-
-};
-
-void dwarf_init_line_table_prefix(struct Line_Table_Prefix_s *pf);
-void dwarf_free_line_table_prefix(struct Line_Table_Prefix_s *pf);
-
-int dwarf_read_line_table_prefix(Dwarf_Debug dbg,
-    Dwarf_Small * data_start,
-    Dwarf_Unsigned data_length,
-    Dwarf_Small ** updated_data_start_out,
-    struct Line_Table_Prefix_s *prefix_out,
-    /*  The following 2 arguments are solely for warning users
-        when there is a surprising 'gap' in the .debug_line info. */
-    Dwarf_Small ** bogus_bytes_ptr,
-    Dwarf_Unsigned * bogus_bytes_count,
-    Dwarf_Error * err,
-    int * err_count_out);
+void _dwarf_print_line_context_record(Dwarf_Debug dbg,
+    Dwarf_Line_Context line_context);
+void _dwarf_context_src_files_destroy(Dwarf_Line_Context context);
+int _dwarf_add_to_files_list(Dwarf_Line_Context context, Dwarf_File_Entry fe);

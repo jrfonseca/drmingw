@@ -53,7 +53,12 @@ struct Dwarf_P_Frame_Pgm_s {
 */
 struct Dwarf_P_Cie_s {
     Dwarf_Ubyte cie_version;
-    char *cie_aug;		/* augmentation */
+
+    /*  augmentation. The string is an strdup() copy
+        and on freeing the Dwarf_P_Cie the string must be freed. */
+    char *cie_aug;
+
+
     Dwarf_Ubyte cie_code_align;	/* alignment of code */
     Dwarf_Sbyte cie_data_align;
     Dwarf_Ubyte cie_ret_reg;	/* return register # */

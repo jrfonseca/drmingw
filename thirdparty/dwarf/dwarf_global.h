@@ -111,7 +111,7 @@ void _dwarf_fix_up_offset_irix(Dwarf_Debug dbg,
     Dwarf_Unsigned *varp,
     char *caller_site_name);
 #define FIX_UP_OFFSET_IRIX_BUG(ldbg,var,name) _dwarf_fix_up_offset_irix(ldbg,&var,name)
-#else
+#else  /* ! __sgi */
 #define FIX_UP_OFFSET_IRIX_BUG(ldbg,var,name)
-#endif
+#endif  /* __sgi */
 

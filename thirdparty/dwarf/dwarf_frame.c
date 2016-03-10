@@ -68,6 +68,43 @@ static void dump_frame_rule(char *msg,
 #endif
 
 
+int
+dwarf_get_frame_section_name(Dwarf_Debug dbg,
+   const char **sec_name,
+   Dwarf_Error *error)
+{
+    struct Dwarf_Section_s *sec = 0;
+    if (error != NULL) {
+        *error = NULL;
+    }
+    sec = &dbg->de_debug_frame;
+    if (sec->dss_size == 0) {
+        /* We don't have such a  section at all. */
+        return DW_DLV_NO_ENTRY;
+    }
+    *sec_name = sec->dss_name;
+    return DW_DLV_OK;
+}
+
+int
+dwarf_get_frame_section_name_eh_gnu(Dwarf_Debug dbg,
+   const char **sec_name,
+   Dwarf_Error *error)
+{
+    struct Dwarf_Section_s *sec = 0;
+    if (error != NULL) {
+        *error = NULL;
+    }
+    sec = &dbg->de_debug_frame_eh_gnu;
+    if (sec->dss_size == 0) {
+        /* We don't have such a  section at all. */
+        return DW_DLV_NO_ENTRY;
+    }
+    *sec_name = sec->dss_name;
+    return DW_DLV_OK;
+}
+
+
 
 /*
     This function is the heart of the debug_frame stuff.  Don't even
@@ -681,6 +718,21 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
                 fp_offset = factored_N_value;
                 break;
             }
+        /*  This is for Metaware with augmentation string HC
+            We do not really know what to do with it. */
+        case DW_CFA_METAWARE_info:
+            {
+                factored_N_value =
+                    _dwarf_decode_u_leb128(instr_ptr, &leb128_length);
+                instr_ptr += leb128_length;
+
+                /* Not really known what the value means or is. */
+                cfa_reg.ru_is_off = 1;
+                cfa_reg.ru_value_type = DW_EXPR_OFFSET;
+                cfa_reg.ru_offset_or_block_len = factored_N_value;
+
+                break;
+            }
         case DW_CFA_nop:
             {
                 break;
@@ -1148,6 +1200,7 @@ dwarf_get_fde_list(Dwarf_Debug dbg,
 
 
 /*  Only works on dwarf sections, not eh_frame
+    because based on DW_AT_MIPS_fde.
     Given a Dwarf_Die, see if it has a
     DW_AT_MIPS_fde attribute and if so use that
     to get an fde offset.
@@ -1163,6 +1216,8 @@ dwarf_get_fde_for_die(Dwarf_Debug dbg,
     Dwarf_Signed signdval = 0;
     Dwarf_Fde new_fde = 0;
     unsigned char *fde_ptr = 0;
+    unsigned char *fde_start_ptr = 0;
+    unsigned char *fde_end_ptr = 0;
     unsigned char *cie_ptr = 0;
     Dwarf_Unsigned cie_id = 0;
 
@@ -1196,7 +1251,9 @@ dwarf_get_fde_for_die(Dwarf_Debug dbg,
     }
 
     fde_offset = signdval;
-    fde_ptr = (dbg->de_debug_frame.dss_data + fde_offset);
+    fde_start_ptr = dbg->de_debug_frame.dss_data;
+    fde_ptr = fde_start_ptr + fde_offset;
+    fde_end_ptr = fde_start_ptr + dbg->de_debug_frame.dss_size;
 
 
     /*  First read in the 'common prefix' to figure out what * we are to
@@ -1219,8 +1276,9 @@ dwarf_get_fde_for_die(Dwarf_Debug dbg,
     /*  Pass NULL, not section pointer, for 3rd argument.
         de_debug_frame.dss_data has no eh_frame relevance. */
     res = dwarf_create_fde_from_after_start(dbg, &prefix,
-        (Dwarf_Small *) NULL,
+        fde_start_ptr,
         fde_ptr,
+        fde_end_ptr,
         /* use_gnu_cie_calc= */ 0,
         /* Dwarf_Cie = */ 0,
         &new_fde, error);
@@ -1255,8 +1313,9 @@ dwarf_get_fde_for_die(Dwarf_Debug dbg,
             de_debug_frame.dss_data has no eh_frame relevance. */
         res2 = dwarf_create_cie_from_after_start(dbg,
             &prefix_c,
-            (Dwarf_Small *) NULL,
+            fde_start_ptr,
             cie_ptr,
+            fde_end_ptr,
             /* cie_count= */ 0,
             /* use_gnu_cie_calc= */
             0, &new_cie, error);
@@ -1348,6 +1407,7 @@ dwarf_get_fde_exception_info(Dwarf_Fde fde,
 }
 
 
+
 /*  A consumer code function.
     Given a CIE pointer, return the normal CIE data thru
     pointers.
@@ -1365,7 +1425,33 @@ dwarf_get_cie_info(Dwarf_Cie cie,
     Dwarf_Unsigned * initial_instructions_length,
     Dwarf_Error * error)
 {
-    Dwarf_Debug dbg;
+    Dwarf_Half offset_size = 0;
+    return dwarf_get_cie_info_b(cie,
+        bytes_in_cie,
+        ptr_to_version,
+        augmenter,
+        code_alignment_factor,
+        data_alignment_factor,
+        return_address_register,
+        initial_instructions,
+        initial_instructions_length,
+        &offset_size,
+        error);
+}
+int
+dwarf_get_cie_info_b(Dwarf_Cie cie,
+    Dwarf_Unsigned * bytes_in_cie,
+    Dwarf_Small * ptr_to_version,
+    char **augmenter,
+    Dwarf_Unsigned * code_alignment_factor,
+    Dwarf_Signed * data_alignment_factor,
+    Dwarf_Half * return_address_register,
+    Dwarf_Ptr * initial_instructions,
+    Dwarf_Unsigned * initial_instructions_length,
+    Dwarf_Half * offset_size,
+    Dwarf_Error * error)
+{
+    Dwarf_Debug dbg = 0;
 
     if (cie == NULL) {
         _dwarf_error(NULL, error, DW_DLE_CIE_NULL);
@@ -1395,7 +1481,9 @@ dwarf_get_cie_info(Dwarf_Cie cie,
             cie->ci_length_size +
             cie->ci_extension_size -
             (cie->ci_cie_instr_start - cie->ci_cie_start);
-
+    }
+    if (offset_size) {
+        *offset_size = cie->ci_length_size;
     }
     *bytes_in_cie = (cie->ci_length);
     return (DW_DLV_OK);

@@ -1,5 +1,4 @@
 /*
-
   Copyright (C) 2000-2005 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright (C) 2007-2011  David Anderson. All Rights Reserved.
 
@@ -52,6 +51,7 @@
 #include "dwarf_tsearch.h"
 #include "dwarf_gdbindex.h"
 #include "dwarf_xu_index.h"
+#include "dwarf_macro5.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -101,6 +101,7 @@ struct reserve_size_s {
 /* Here is how we use the extra prefix area. */
 struct reserve_data_s {
    void *rd_dbg;
+   unsigned short rd_length;
    unsigned short rd_type;
 };
 #define DW_RESERVE sizeof(struct reserve_size_s)
@@ -191,7 +192,9 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
     {sizeof(struct Dwarf_File_Entry_s),MULTIPLY_NO,  0, 0},
 
     /* 36 DW_DLA_LINE_CONTEXT */
-    {sizeof(struct Dwarf_Line_Context_s),MULTIPLY_NO,  0, 0},
+    {sizeof(struct Dwarf_Line_Context_s),MULTIPLY_NO,
+        _dwarf_line_context_constructor,
+        _dwarf_line_context_destructor},
 
     /* 37 DW_DLA_LOC_CHAIN */
     {sizeof(struct Dwarf_Loc_Chain_s),MULTIPLY_NO,  0, 0},
@@ -245,6 +248,19 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
     /* 0x38 56.  New in July 2014. DWARF5 DebugFission dwp file sections
         .debug_cu_index and .debug_tu_index . */
     {sizeof(struct Dwarf_Xu_Index_Header_s),MULTIPLY_NO,  0, 0},
+
+    /*  These required by new features in DWARF5. Also usable
+        for DWARF2,3,4. */
+    /* 57 DW_DLA_LOC_BLOCK_C */
+    {sizeof(struct Dwarf_Loc_c_s),MULTIPLY_CT, 0, 0},
+    /* 58 DW_DLA_LOCDESC_C */
+    {sizeof(struct Dwarf_Locdesc_c_s),MULTIPLY_CT, 0, 0},
+    /* 59 DW_DLA_LOC_HEAD_C */
+    {sizeof(struct Dwarf_Loc_Head_c_s),MULTIPLY_NO, 0, 0},
+    /* 60 DW_DLA_MACRO_CONTEXT */
+    {sizeof(struct Dwarf_Macro_Context_s),MULTIPLY_NO,
+        _dwarf_macro_constructor,
+        _dwarf_macro_destructor},
 };
 
 /*  We are simply using the incoming pointer as the key-pointer.
@@ -273,7 +289,16 @@ tdestroy_free_node(void *nodep)
         /* Internal error, corrupted data. */
         return;
     }
-
+    if(!reserve->rd_dbg) {
+        /*  Unused (corrupted?) node in the tree.
+            Should never happen. */
+        return;
+    }
+    if(!reserve->rd_type) {
+        /*  Unused (corrupted?) node in the tree.
+            Should never happen. */
+        return;
+    }
     if (alloc_instance_basics[type].specialdestructor) {
         alloc_instance_basics[type].specialdestructor(m);
     }
@@ -294,8 +319,6 @@ simple_compare_function(const void *l, const void *r)
     }
     return 0;
 }
-
-
 
 /*  This function returns a pointer to a region
     of memory.  For alloc_types that are not
@@ -324,7 +347,7 @@ _dwarf_get_alloc(Dwarf_Debug dbg,
     short action = 0;
 
     if (dbg == NULL) {
-        return (NULL);
+        return NULL;
     }
     if (type >= ALLOC_AREA_INDEX_TABLE_MAX) {
         /* internal error */
@@ -359,6 +382,7 @@ _dwarf_get_alloc(Dwarf_Debug dbg,
         /* We are not actually using rd_dbg, we are using rd_type. */
         r->rd_dbg = dbg;
         r->rd_type = alloc_type;
+        r->rd_length = size;
         if (alloc_instance_basics[type].specialconstructor) {
             int res =
                 alloc_instance_basics[type].specialconstructor(dbg, ret_mem);
@@ -440,12 +464,19 @@ dwarf_dealloc(Dwarf_Debug dbg,
 {
     unsigned int type = 0;
     char * malloc_addr = 0;
+    struct reserve_data_s * r = 0;
 
     if (space == NULL) {
         return;
     }
     type = alloc_type;
     malloc_addr = (char *)space - DW_RESERVE;
+    r =(struct reserve_data_s *)malloc_addr;
+    if(dbg != r->rd_dbg) {
+        /*  Something is badly wrong. Better to leak than
+            to crash. */
+        return;
+    }
     if (alloc_type == DW_DLA_ERROR) {
         Dwarf_Error ep = (Dwarf_Error)space;
         if (ep->er_static_alloc) {
@@ -465,6 +496,7 @@ dwarf_dealloc(Dwarf_Debug dbg,
         /* internal or user app error */
         return;
     }
+
 
     if (type == DW_DLA_STRING && string_is_in_debug_section(dbg,space)) {
         /*  A string pointer may point into .debug_info or .debug_string etc.
@@ -555,8 +587,10 @@ freecontextlist(Dwarf_Debug dbg, Dwarf_Debug_InfoTypes dis)
         _dwarf_free_abbrev_hash_table_contents(dbg,hash_table);
         nextcontext = context->cc_next;
         dwarf_dealloc(dbg, hash_table, DW_DLA_HASH_TABLE);
+        context->cc_abbrev_hash_table = 0;
         dwarf_dealloc(dbg, context, DW_DLA_CU_CONTEXT);
     }
+    dis->de_cu_context_list = 0;
 }
 
 /*
@@ -594,11 +628,15 @@ _dwarf_free_all_of_one_debug(Dwarf_Debug dbg)
     rela_free(&dbg->de_debug_types);
     rela_free(&dbg->de_debug_abbrev);
     rela_free(&dbg->de_debug_line);
+    rela_free(&dbg->de_debug_line_str);
     rela_free(&dbg->de_debug_loc);
     rela_free(&dbg->de_debug_aranges);
     rela_free(&dbg->de_debug_macinfo);
+    rela_free(&dbg->de_debug_macro);
+    rela_free(&dbg->de_debug_names);
     rela_free(&dbg->de_debug_pubnames);
     rela_free(&dbg->de_debug_str);
+    rela_free(&dbg->de_debug_sup);
     rela_free(&dbg->de_debug_frame);
     rela_free(&dbg->de_debug_frame_eh_gnu);
     rela_free(&dbg->de_debug_pubtypes);
@@ -607,6 +645,11 @@ _dwarf_free_all_of_one_debug(Dwarf_Debug dbg)
     rela_free(&dbg->de_debug_varnames);
     rela_free(&dbg->de_debug_weaknames);
     rela_free(&dbg->de_debug_ranges);
+    rela_free(&dbg->de_debug_str_offsets);
+    rela_free(&dbg->de_debug_addr);
+    rela_free(&dbg->de_debug_gdbindex);
+    rela_free(&dbg->de_debug_cu_index);
+    rela_free(&dbg->de_debug_tu_index);
     dwarf_harmless_cleanout(&dbg->de_harmless_errors);
 
     if (dbg->de_printf_callback.dp_buffer &&
@@ -615,6 +658,12 @@ _dwarf_free_all_of_one_debug(Dwarf_Debug dbg)
     }
 
     dwarf_tdestroy(dbg->de_alloc_tree,tdestroy_free_node);
+    dbg->de_alloc_tree = 0;
+    if (dbg->de_tied_data.td_tied_search) {
+        dwarf_tdestroy(dbg->de_tied_data.td_tied_search,
+            _dwarf_tied_destroy_free_node);
+        dbg->de_tied_data.td_tied_search = 0;
+    }
     memset(dbg, 0, sizeof(*dbg)); /* Prevent accidental use later. */
     free(dbg);
     return (DW_DLV_OK);

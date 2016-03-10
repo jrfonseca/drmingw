@@ -65,7 +65,7 @@ _dwarf_fix_up_offset_irix(Dwarf_Debug dbg,
 #undef LOWER32
     return;
 }
-#endif
+#endif  /* __sgi */
 
 
 int
@@ -75,7 +75,7 @@ dwarf_get_globals(Dwarf_Debug dbg,
 {
     int res = _dwarf_load_section(dbg, &dbg->de_debug_pubnames,error);
     if (res != DW_DLV_OK) {
-        return res;
+        return res = 0;
     }
     if (!dbg->de_debug_pubnames.dss_size) {
         return (DW_DLV_NO_ENTRY);
@@ -151,6 +151,7 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
     int version_err_num)
 {
     Dwarf_Small *pubnames_like_ptr = 0;
+    Dwarf_Small *section_end_ptr = section_data_ptr +section_length;
 
     /*  Points to the context for the current set of global names, and
         contains information to identify the compilation-unit that the
@@ -270,6 +271,7 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
 
         /* Loop thru pairs. DIE off with CU followed by string. */
         while (die_offset_in_cu != 0) {
+            int res;
 
             /*  Already read offset, pubnames_like_ptr now points to the
                 string. */
@@ -287,6 +289,11 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
 
             global->gl_name = pubnames_like_ptr;
 
+            res = _dwarf_check_string_valid(dbg,section_data_ptr,
+                pubnames_like_ptr,section_end_ptr,error);
+            if (res != DW_DLV_OK) {
+                return res;
+            }
             pubnames_like_ptr = pubnames_like_ptr +
                 strlen((char *) pubnames_like_ptr) + 1;
 

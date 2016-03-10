@@ -202,8 +202,12 @@ enum Dwarf_augmentation_type {
         Arm C RVCT 3.0 SP1 and later). See
         http://sourceware.org/ml/gdb-patches/2006-12/msg00249.html
         for details. */
-        aug_unknown,      /* Unknown augmentation, we cannot do much. */
-        aug_past_last
+    aug_unknown,      /* Unknown augmentation, we cannot do much. */
+
+    /*  HC, From http://sourceforge.net/p/elftoolchain/tickets/397/ */
+    aug_metaware,
+
+    aug_past_last
 };
 
 
@@ -397,6 +401,7 @@ int dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
     struct cie_fde_prefix_s *  prefix,
     Dwarf_Small *section_pointer,
     Dwarf_Small *frame_ptr,
+    Dwarf_Small *section_ptr_end,
     int use_gnu_cie_calc,
     Dwarf_Cie  cie_ptr_in,
     Dwarf_Fde *fde_ptr_out,
@@ -406,6 +411,7 @@ int dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
     struct cie_fde_prefix_s *prefix,
     Dwarf_Small* section_pointer,
     Dwarf_Small* frame_ptr,
+    Dwarf_Small *section_ptr_end,
     Dwarf_Unsigned cie_count,
     int use_gnu_cie_calc,
     Dwarf_Cie *cie_ptr_out,

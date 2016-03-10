@@ -220,12 +220,12 @@ extern "C" {
 #define DW_FORM_ref_sup                 0x1c /* DWARF5 */
 #define DW_FORM_strp_sup                0x1d /* DWARF5 */
 #define DW_FORM_data16                  0x1e /* DWARF5 */
-/* 0x1f was left unused accidentally. Reserved for future use. */
+#define DW_FORM_line_strp               0x1f /* DWARF5 */
 #define DW_FORM_ref_sig8                0x20 /* DWARF4 */
 #define DW_FORM_GNU_addr_index          0x1f01 /* GNU extension in debug_info.dwo.*/
 #define DW_FORM_GNU_str_index           0x1f02 /* GNU extension, somewhat like DW_FORM_strp */
 #define DW_FORM_GNU_ref_alt             0x1f20 /* GNU extension. Offset in .debug_info. */
-#define DW_FORM_GNU_strp_alt            0x1f21 /* GNU extension. Offset in .debug_str. */
+#define DW_FORM_GNU_strp_alt            0x1f21 /* GNU extension. Offset in .debug_str of another object file. */
 
 #define DW_AT_sibling                           0x01
 #define DW_AT_location                          0x02
@@ -342,8 +342,8 @@ extern "C" {
 #define DW_AT_call_value                        0x7e /* DWARF5 */
 #define DW_AT_call_origin                       0x7f /* DWARF5 */
 #define DW_AT_call_parameter                    0x80 /* DWARF5 */
-#define DW_AT_call_pc                      0x81 /* DWARF5 */
-#define DW_AT_call_tail_call               0x82 /* DWARF5 */
+#define DW_AT_call_pc                           0x81 /* DWARF5 */
+#define DW_AT_call_tail_call                    0x82 /* DWARF5 */
 #define DW_AT_call_target                       0x83 /* DWARF5 */
 #define DW_AT_call_target_clobbered             0x84 /* DWARF5 */
 #define DW_AT_call_data_location                0x85 /* DWARF5 */
@@ -440,6 +440,8 @@ extern "C" {
 #define DW_AT_GNU_all_tail_call_sites           0x2116 /* GNU */
 #define DW_AT_GNU_all_call_sites                0x2117 /* GNU */
 #define DW_AT_GNU_all_source_call_sites         0x2118 /* GNU */
+/*  Section offset to .debug_macro section. */
+#define DW_AT_GNU_macros                        0x2119 /* GNU */
 /* The GNU DebugFission project: http://gcc.gnu.org/wiki/DebugFission */
 #define DW_AT_GNU_dwo_name                      0x2130 /* GNU */
 #define DW_AT_GNU_dwo_id                        0x2131 /* GNU */
@@ -448,6 +450,9 @@ extern "C" {
 #define DW_AT_GNU_addr_base                     0x2133 /* GNU */
 #define DW_AT_GNU_pubnames                      0x2134 /* GNU */
 #define DW_AT_GNU_pubtypes                      0x2135 /* GNU */
+
+/* To distinguish distinct basic blocks in a single source line. */
+#define DW_AT_GNU_discriminator                 0x2136 /* GNU */
 
 
 
@@ -923,13 +928,6 @@ extern "C" {
 
 #define DW_LANG_hi_user                 0xffff
 
-/*  DWARF5  Line number header entry format name */
-#define DW_LNCT_path            0x1  /* DWARF5 */
-#define DW_LNCT_directory_index 0x2  /* DWARF5 */
-#define DW_LNCT_timestamp       0x3  /* DWARF5 */
-#define DW_LNCT_size            0x4  /* DWARF5 */
-#define DW_LNCT_MD5             0x5  /* DWARF5 */
-
 /* Identifier case name. */
 #define DW_ID_case_sensitive            0x00
 #define DW_ID_up_case                   0x01
@@ -991,6 +989,19 @@ extern "C" {
 #define DW_LNS_set_epilogue_begin       0x0b /* DWARF3 */
 #define DW_LNS_set_isa                  0x0c /* DWARF3 */
 
+/*  Experimental two-level line tables. NOT STD DWARF5 */
+/*  Not saying GNU or anything. There are no
+    DW_LNS_lo_user or DW_LNS_hi_user values though.
+    DW_LNS_set_address_from_logical and
+    DW_LNS_set_subprogram being both 0xd
+    to avoid using up more space in the special opcode table.
+    EXPERIMENTAL DW_LNS follow.
+*/
+#define DW_LNS_set_address_from_logical 0x0d /* Actuals table only */
+#define DW_LNS_set_subprogram           0x0d /* Logicals table only */
+#define DW_LNS_inlined_call             0x0e /* Logicals table only */
+#define DW_LNS_pop_context              0x0f /* Logicals table only */
+
 /* Line number extended opcode name. */
 #define DW_LNE_end_sequence             0x01
 #define DW_LNE_set_address              0x02
@@ -1014,6 +1025,17 @@ extern "C" {
 #define DW_LNE_lo_user                  0x80 /* DWARF3 */
 #define DW_LNE_hi_user                  0xff /* DWARF3 */
 
+/* Type codes for line number program content descriptors (DWARF 5).  */
+#define DW_LNCT_path                    0x1
+#define DW_LNCT_directory_index         0x2
+#define DW_LNCT_timestamp               0x3
+#define DW_LNCT_size                    0x4
+#define DW_LNCT_MD5                     0x5
+/* Experimental two-level line tables. */
+#define DW_LNCT_subprogram_name         0x6
+#define DW_LNCT_decl_file               0x7
+#define DW_LNCT_decl_line               0x8
+
 /* These are known values for DW_LNS_set_isa. */
 #define DW_ISA_UNKNOWN   0
 /* The following two are ARM specific. */
@@ -1026,14 +1048,14 @@ extern "C" {
 #define DW_MACRO_undef                   0x02 /* DWARF5 */
 #define DW_MACRO_start_file              0x03 /* DWARF5 */
 #define DW_MACRO_end_file                0x04 /* DWARF5 */
-#define DW_MACRO_define_indirect         0x05 /* DWARF5 */
-#define DW_MACRO_undef_indirect          0x06 /* DWARF5 */
-#define DW_MACRO_transparent_include     0x07 /* DWARF5 */
-#define DW_MACRO_define_indirect_sup     0x08 /* DWARF5 */
-#define DW_MACRO_undef_indirect_sup      0x09 /* DWARF5 */
-#define DW_MACRO_transparent_include_sup 0x0a /* DWARF5 */
-#define DW_MACRO_define_indirectx        0x0b /* DWARF5 */
-#define DW_MACRO_undef_indirectx         0x0c /* DWARF5 */
+#define DW_MACRO_define_strp             0x05 /* DWARF5 */
+#define DW_MACRO_undef_strp              0x06 /* DWARF5 */
+#define DW_MACRO_import                  0x07 /* DWARF5 */
+#define DW_MACRO_define_sup              0x08 /* DWARF5 */
+#define DW_MACRO_undef_sup               0x09 /* DWARF5 */
+#define DW_MACRO_import_sup              0x0a /* DWARF5 */
+#define DW_MACRO_define_strx             0x0b /* DWARF5 */
+#define DW_MACRO_undef_strx              0x0c /* DWARF5 */
 #define DW_MACRO_lo_user                 0xe0
 #define DW_MACRO_hi_user                 0xff
 
@@ -1085,6 +1107,11 @@ extern "C" {
 #define DW_CFA_GNU_window_save   0x2d  /* GNU */
 #define DW_CFA_GNU_args_size     0x2e /* GNU  */
 #define DW_CFA_GNU_negative_offset_extended  0x2f /* GNU */
+
+/* Metaware if HC is augmentation, apparently meaning High C
+   and the op has a single uleb operand.
+   See http://sourceforge.net/p/elftoolchain/tickets/397/  */
+#define DW_CFA_METAWARE_info     0x34
 
 #define DW_CFA_high_user         0x3f
 

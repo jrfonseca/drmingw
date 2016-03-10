@@ -81,6 +81,80 @@
 #ifndef R_AARCH64_ABS32
 #define R_AARCH64_ABS32 0x102
 #endif
+#ifndef R_MIPS_64
+#define R_MIPS_64   18
+#endif
+#ifndef R_MIPS_TLS_TPREL64
+#define R_MIPS_TLS_TPREL64	48
+#endif
+
+#ifndef EM_IA_64
+#define EM_IA_64            50
+#endif
+#ifndef R_IA64_SECREL32LSB
+#define R_IA64_SECREL32LSB 0x65
+#endif
+#ifndef R_IA64_DIR32MSB
+#define R_IA64_DIR32MSB    0x24
+#endif
+#ifndef R_IA64_DIR32LSB
+#define R_IA64_DIR32LSB    0x25
+#endif
+#ifndef R_IA64_DIR64MSB
+#define R_IA64_DIR64MSB    0x26
+#endif
+#ifndef R_IA64_DIR64LSB
+#define R_IA64_DIR64LSB    0x27
+#endif
+#ifndef R_IA64_SECREL64LSB
+#define R_IA64_SECREL64LSB 0x67
+#endif
+#ifndef R_IA64_SECREL64MSB
+#define R_IA64_SECREL64MSB 0x66
+#endif
+#ifndef R_IA64_DTPREL32LSB
+#define  R_IA64_DTPREL32LSB 0xb5
+#endif
+#ifndef R_IA64_DTPREL32MSB
+#define  R_IA64_DTPREL32MSB 0xb4
+#endif
+#ifndef R_IA64_DTPREL64LSB
+#define  R_IA64_DTPREL64LSB  0xb7
+#endif
+#ifndef R_IA64_DTPREL64MSB
+#define  R_IA64_DTPREL64MSB  0xb6
+#endif
+
+#ifndef EM_S390
+#define EM_S390             22
+#endif
+#ifndef R_390_TLS_LDO32
+#define R_390_TLS_LDO32         52
+#endif
+#ifndef R_390_TLS_LDO64
+#define R_390_TLS_LDO64         53
+#endif
+
+#ifndef R_390_32
+#define R_390_32                4
+#endif
+#ifndef  R_390_64
+#define  R_390_64                22
+#endif
+
+#ifndef EM_SH
+#define EM_SH                42
+#endif
+#ifndef R_SH_DIR32
+#define R_SH_DIR32           1
+#endif
+#ifndef R_SH_TLS_DTPOFF32
+#define R_SH_TLS_DTPOFF32    150
+#endif
+
+
+
+
 
 
 
@@ -204,6 +278,14 @@ dwarf_elf_object_access_internals_init(void* obj_in,
         one calculation, and an approximate one at that. */
     obj->length_size = obj->is_64bit ? 8 : 4;
     obj->pointer_size = obj->is_64bit ? 8 : 4;
+
+#ifdef WIN32
+    if (obj->is_64bit && machine == EM_PPC64) {
+        /*  The SNC compiler generates the EM_PPC64 machine type for the
+            PS3 platform, but is a 32 bits pointer size in user mode. */
+        obj->pointer_size = 4;
+    }
+#endif /* WIN32 */
 
     if (obj->is_64bit && machine != EM_MIPS) {
         /*  MIPS/IRIX makes pointer size and length size 8 for -64.
@@ -603,7 +685,7 @@ is_32bit_abs_reloc(unsigned int type, Dwarf_Half machine)
 #endif /* SH */
 
 #if defined(EM_IA_64) && defined (R_IA64_SECREL32LSB)
-    case EM_IA_64:
+    case EM_IA_64:  /* 32bit? ! */
         r = (0
 #if defined (R_IA64_SECREL32LSB)
             | (type == R_IA64_SECREL32LSB)
@@ -724,6 +806,9 @@ is_64bit_abs_reloc(unsigned int type, Dwarf_Half machine)
 #if defined (R_MIPS_64)
             | (type == R_MIPS_64)
 #endif
+#if defined (R_MIPS_32)
+            | (type == R_MIPS_32)
+#endif
 #if defined(R_MIPS_TLS_DTPREL64)
             | (type == R_MIPS_TLS_DTPREL64)
 #endif
@@ -761,16 +846,22 @@ is_64bit_abs_reloc(unsigned int type, Dwarf_Half machine)
 #endif /* EM_SPARC */
 
 #if defined(EM_IA_64) && defined (R_IA64_SECREL64LSB)
-    case EM_IA_64:
+    case EM_IA_64: /* 64bit */
         r = (0
 #if defined (R_IA64_SECREL64LSB)
             | (type == R_IA64_SECREL64LSB)
+#endif
+#if defined (R_IA64_SECREL32LSB)
+            | (type == R_IA64_SECREL32LSB)
 #endif
 #if defined (R_IA64_DIR64LSB)
             | (type == R_IA64_DIR64LSB)
 #endif
 #if defined (R_IA64_DTPREL64LSB)
             | (type == R_IA64_DTPREL64LSB)
+#endif
+#if defined (R_IA64_REL32LSB)
+            | (type == R_IA64_REL32LSB)
 #endif
             );
         break;
@@ -1002,19 +1093,22 @@ loop_through_relocations(
         return ret;
     }
 
-    /*  Some systems read Elf in read-only memory via mmap or the like.
-        So the only safe thing is to copy the current data into
-        malloc space and refer to the malloc space instead of the
-        space returned by the elf library */
-    mspace = malloc(relocatablesec->dss_size);
-    if (!mspace) {
-        *error = DW_DLE_RELOC_SECTION_MALLOC_FAIL;
-        return DW_DLV_ERROR;
+    if(!relocatablesec->dss_data_was_malloc) {
+        /*  Some systems read Elf in read-only memory via mmap or the like.
+            So the only safe thing is to copy the current data into
+            malloc space and refer to the malloc space instead of the
+            space returned by the elf library */
+        mspace = malloc(relocatablesec->dss_size);
+        if (!mspace) {
+            *error = DW_DLE_RELOC_SECTION_MALLOC_FAIL;
+            return DW_DLV_ERROR;
+        }
+        memcpy(mspace,relocatablesec->dss_data,relocatablesec->dss_size);
+        relocatablesec->dss_data = mspace;
+        target_section = relocatablesec->dss_data;
+        relocatablesec->dss_data_was_malloc = 1;
     }
-    memcpy(mspace,relocatablesec->dss_data,relocatablesec->dss_size);
-    relocatablesec->dss_data = mspace;
     target_section = relocatablesec->dss_data;
-    relocatablesec->dss_data_was_malloc = 1;
 
     ret = apply_rela_entries(
         dbg,
@@ -1107,7 +1201,9 @@ dwarf_elf_object_relocate_a_section(void* obj_in,
     return res;
 }
 
-/* dwarf_elf_object_access_load_section */
+/*  dwarf_elf_object_access_load_section()
+    We are only asked to load sections that
+    libdwarf really needs. */
 static int
 dwarf_elf_object_access_load_section(void* obj_in,
     Dwarf_Half section_index,
@@ -1138,6 +1234,16 @@ dwarf_elf_object_access_load_section(void* obj_in,
             buffer. */
         data = elf_getdata(scn, NULL);
         if (data == NULL) {
+            *error = DW_DLE_MDE;
+            return DW_DLV_ERROR;
+        }
+        if (!data->d_buf) {
+            /*  If NULL it means 'the section has no data'
+                according to libelf documentation.
+                No DWARF-related section should ever have
+                'no data'.  Happens if a section type is
+                SHT_NOBITS and no section libdwarf
+                wants to look at should be SHT_NOBITS. */
             *error = DW_DLE_MDE;
             return DW_DLV_ERROR;
         }

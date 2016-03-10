@@ -54,6 +54,7 @@ dwarf_add_frame_cie(Dwarf_P_Debug dbg,
     Dwarf_Unsigned init_n_bytes, Dwarf_Error * error)
 {
     Dwarf_P_Cie curcie;
+    char *tmpaug = 0;
 
     if (dbg->de_frame_cies == NULL) {
         dbg->de_frame_cies = (Dwarf_P_Cie)
@@ -76,7 +77,11 @@ dwarf_add_frame_cie(Dwarf_P_Debug dbg,
         dbg->de_last_cie = curcie;
     }
     curcie->cie_version = DW_CIE_VERSION;
-    curcie->cie_aug = augmenter;
+    tmpaug = strdup(augmenter);
+    if (!tmpaug) {
+        DWARF_P_DBG_ERROR(dbg, DW_DLE_CIE_ALLOC, DW_DLV_NOCOUNT);
+    }
+    curcie->cie_aug = tmpaug;
     curcie->cie_code_align = code_align;
     curcie->cie_data_align = data_align;
     curcie->cie_ret_reg = return_reg;

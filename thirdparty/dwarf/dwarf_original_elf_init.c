@@ -1,9 +1,8 @@
 /*
-
   Copyright (C) 2000-2006 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright 2007-2010 Sun Microsystems, Inc. All rights reserved.
   Portions Copyright 2008-2010 Arxan Technologies, Inc. All rights reserved.
-  Portions Copyright 2011-2012 David Anderson. All rights reserved.
+  Portions Copyright 2011-2015 David Anderson. All rights reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
@@ -191,3 +190,30 @@ dwarf_finish(Dwarf_Debug dbg, Dwarf_Error * error)
     return dwarf_object_finish(dbg, error);
 }
 
+/*
+    tieddbg should be the executable or .o
+    that has the .debug_addr section that
+    the base dbg refers to. See Split Objects in DWARF5.
+
+    Allows setting to NULL (NULL is the default
+    of  de_tied_data.td_tied_object).
+    New September 2015.
+*/
+int
+dwarf_set_tied_dbg(Dwarf_Debug dbg, Dwarf_Debug tieddbg,Dwarf_Error*error)
+{
+    dbg->de_tied_data.td_tied_object = tieddbg;
+    if (tieddbg) {
+        tieddbg->de_tied_data.td_is_tied_object = TRUE;
+    }
+    return DW_DLV_OK;
+}
+
+/*  Unsure of the use-case of this.
+    New September 2015. */
+int
+dwarf_get_tied_dbg(Dwarf_Debug dbg, Dwarf_Debug *tieddbg_out, Dwarf_Error*error)
+{
+    *tieddbg_out = dbg->de_tied_data.td_tied_object;
+    return DW_DLV_OK;
+}
