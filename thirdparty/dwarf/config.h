@@ -10,4 +10,5 @@
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_UNISTD_H 1
 #define HAVE_WINDOWS_PATH 1
+#define HAVE_ZLIB 1
 #define STDC_HEADERS 1

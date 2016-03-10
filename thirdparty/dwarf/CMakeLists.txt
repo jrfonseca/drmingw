@@ -40,6 +40,8 @@ add_library (dwarf STATIC
     pro_encode_nm.c
 )
 
+target_link_libraries (dwarf z)
+
 install (
     FILES LIBDWARFCOPYRIGHT
     DESTINATION doc
