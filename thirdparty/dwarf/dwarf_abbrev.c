@@ -115,7 +115,6 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
             *length = 1;
         }
         return (DW_DLV_OK);
-
     }
 
     DECODE_LEB128_UWORD(abbrev_ptr, utmp);

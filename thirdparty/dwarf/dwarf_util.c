@@ -380,7 +380,7 @@ copy_abbrev_table_to_new_table(Dwarf_Hash_Table htin,
 
 /*  We allow zero form here, end of list. */
 int
-_dwarf_valid_form_we_know(Dwarf_Debug dbg,
+_dwarf_valid_form_we_know(UNUSEDARG Dwarf_Debug dbg,
     Dwarf_Unsigned at_form,
     Dwarf_Unsigned at_name)
 {

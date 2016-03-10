@@ -284,7 +284,7 @@ dump_bytes(Dwarf_Small * start, long len)
     build_ops_array is FALSE. On second,
     it is TRUE and we know the count so we allocate and fill in
     the ops array. */
-int
+static int
 _dwarf_get_macro_ops_count_internal(Dwarf_Macro_Context macro_context,
     Dwarf_Bool build_ops_array,
     Dwarf_Error *error)
@@ -546,7 +546,7 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
         Dwarf_Word uleblen = 0;
         Dwarf_Unsigned stringindex = 0;
         Dwarf_Unsigned offsettostr= 0;
-        int res = 0;
+        int ress = 0;
         Dwarf_Small form1 =  curop->mo_form->mf_formbytes[1];
 
         linenum = _dwarf_decode_u_leb128(mdata,
@@ -564,28 +564,29 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
 
         /* FIXME */
         /* Redoes the index-getting. Gets offset. */
-        res = _dwarf_extract_string_offset_via_str_offsets(dbg,
+        ress = _dwarf_extract_string_offset_via_str_offsets(dbg,
             mdata,
             DW_AT_macros, /*arbitrary, unused by called routine. */
             form1,
             macro_context->mc_cu_context,
             &offsettostr,
             error);
-        if (res  == DW_DLV_ERROR) {
-            return res;
+        if (ress  == DW_DLV_ERROR) {
+            return ress;
         }
         if (res == DW_DLV_OK) {
+            char *localstr = 0;
+
             *index = stringindex;
             *offset = offsettostr;
-            char *localstr = 0;
-            res = _dwarf_extract_local_debug_str_string_given_offset(dbg,
+            ress = _dwarf_extract_local_debug_str_string_given_offset(dbg,
                 form1,
                 offsettostr,
                 &localstr,
                 error);
-            if(res == DW_DLV_ERROR) {
-                return res;
-            } else if (res == DW_DLV_NO_ENTRY){
+            if(ress == DW_DLV_ERROR) {
+                return ress;
+            } else if (ress == DW_DLV_NO_ENTRY){
                 *macro_string = "<:No string available>";
             } else {
                 *macro_string = (const char *)localstr;
@@ -604,7 +605,7 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
         Dwarf_Word uleblen = 0;
         Dwarf_Unsigned supoffset = 0;
         char *localstring = 0;
-        int res = 0;
+        int resup = 0;
 
         linenum = _dwarf_decode_u_leb128(mdata,
             &uleblen);
@@ -617,10 +618,10 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
         *index = 0;
         *offset = supoffset;
         *forms_count = lformscount;
-        res = _dwarf_get_string_from_tied(dbg, supoffset,
+        resup = _dwarf_get_string_from_tied(dbg, supoffset,
             &localstring, error);
-        if (res != DW_DLV_OK) {
-            if (res == DW_DLV_ERROR) {
+        if (resup != DW_DLV_OK) {
+            if (resup == DW_DLV_ERROR) {
                 if(dwarf_errno(*error) == DW_DLE_NO_TIED_FILE_AVAILABLE) {
                     *macro_string =
                         (char *)"<DW_FORM_str_sup-no-tied_file>";
@@ -673,7 +674,7 @@ specialcat(char *targ,char *src,int trimtarg)
 }
 
 /* If returns NULL caller must handle it. */
-const char *
+static const char *
 construct_from_dir_and_name(const char *dir,
    const char *name)
 {
@@ -694,7 +695,7 @@ construct_from_dir_and_name(const char *dir,
 }
 
 /* If returns NULL caller must handle it. */
-const char *
+static const char *
 construct_at_path_from_parts(Dwarf_Macro_Context mc)
 {
     if (mc->mc_file_path) {
@@ -761,7 +762,7 @@ dwarf_get_macro_startend_file(Dwarf_Macro_Context macro_context,
             &uleblen);
         mdata += uleblen;
         *line_number = linenum;
-        *name_index_to_line_tab = srcindex;;
+        *name_index_to_line_tab = srcindex;
         /*  For DWARF 2,3,4, decrement by 1.
             FOR DWARF 5 do not decrement. */
         if(macro_context->mc_version_number >= 5) {
@@ -975,6 +976,7 @@ read_operands_table(Dwarf_Macro_Context macro_context,
         Dwarf_Small opcode_number = 0;
         Dwarf_Unsigned formcount = 0;
         Dwarf_Word uleblen = 0;
+        int res = 0;
 
         cur_offset = (2 + macro_data) - section_base;
         if (cur_offset >= section_size) {
@@ -1005,7 +1007,7 @@ read_operands_table(Dwarf_Macro_Context macro_context,
                 }
             }
         }
-        int res = validate_opcode(macro_context->mc_dbg,curformentry, error);
+        res = validate_opcode(macro_context->mc_dbg,curformentry, error);
         if(res != DW_DLV_OK) {
             return res;
         }
@@ -1135,6 +1137,7 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
     Dwarf_Unsigned cur_offset = 0;
     Dwarf_Unsigned section_size = 0;
     Dwarf_Small *section_base = 0;
+    Dwarf_Small *section_end = 0;
     Dwarf_Unsigned optablesize = 0;
     Dwarf_Unsigned macro_offset = offset;
     int res = 0;
@@ -1161,6 +1164,7 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
     }
     macro_header = macro_offset + section_base;
     macro_data = macro_header;
+    section_end = section_base +section_size;
 
 
     macro_context = (Dwarf_Macro_Context)
@@ -1171,6 +1175,10 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
         return DW_DLV_ERROR;
     }
 
+    if ((section_base + sizeof(Dwarf_Half) + sizeof(Dwarf_Small)) >                     section_end ) {
+        _dwarf_error(dbg, error, DW_DLE_MACRO_OFFSET_BAD);
+        return DW_DLV_ERROR;
+    }
     READ_UNALIGNED(dbg,version, Dwarf_Half,
         macro_data,sizeof(Dwarf_Half));
     macro_data += sizeof(Dwarf_Half);
@@ -1298,7 +1306,7 @@ int dwarf_macro_operands_table(Dwarf_Macro_Context head,
         return DW_DLV_ERROR;
     }
     dbg = head->mc_dbg;
-    if (index < 0 || index >= head->mc_opcode_count) {
+    if (index >= head->mc_opcode_count) {
         _dwarf_error(dbg, error, DW_DLE_BAD_MACRO_INDEX);
         return DW_DLV_ERROR;
     }
@@ -1369,7 +1377,7 @@ dwarf_get_macro_context_by_offset(Dwarf_Die cu_die,
 
 int dwarf_get_macro_section_name(Dwarf_Debug dbg,
    const char **sec_name_out,
-   Dwarf_Error *error)
+   UNUSEDARG Dwarf_Error *error)
 {
     struct Dwarf_Section_s *sec = 0;
 

@@ -320,6 +320,61 @@ dwarf_elf_object_access_get_section_count(void * obj_in)
 }
 
 
+static int
+_dwarf_get_elf_flags_func(
+    void* obj_in,
+    Dwarf_Half section_index,
+    Dwarf_Unsigned *flags_out,
+    Dwarf_Unsigned *addralign_out,
+    int *error)
+{
+   dwarf_elf_object_access_internals_t*obj =
+        (dwarf_elf_object_access_internals_t*)obj_in;
+
+    Elf32_Shdr *shdr32 = 0;
+
+#ifdef HAVE_ELF64_GETSHDR
+    Elf64_Shdr *shdr64 = 0;
+#endif
+    Elf_Scn *scn = 0;
+
+
+    scn = elf_getscn(obj->elf, section_index);
+    if (scn == NULL) {
+        *error = DW_DLE_MDE;
+        return DW_DLV_ERROR;
+    }
+    if (obj->is_64bit) {
+#ifdef HAVE_ELF64_GETSHDR
+        shdr64 = elf64_getshdr(scn);
+        if (shdr64 == NULL) {
+            *error = DW_DLE_ELF_GETSHDR_ERROR;
+            return DW_DLV_ERROR;
+        }
+
+        /*  Get also section 'sh_type' and sh_info' fields, so the caller
+            can use it for additional tasks that require that info. */
+        *flags_out = shdr64->sh_flags;
+        *addralign_out = shdr64->sh_addralign;
+        return DW_DLV_OK;
+#else
+        *error = DW_DLE_MISSING_ELF64_SUPPORT;
+        return DW_DLV_ERROR;
+#endif /* HAVE_ELF64_GETSHDR */
+    }
+    if ((shdr32 = elf32_getshdr(scn)) == NULL) {
+        *error = DW_DLE_ELF_GETSHDR_ERROR;
+        return DW_DLV_ERROR;
+    }
+
+    /*  Get also the section type, so the caller can use it for
+        additional tasks that require to know the section type. */
+    *flags_out = shdr32->sh_flags;
+    *addralign_out = shdr32->sh_addralign;
+    return DW_DLV_OK;
+}
+
+
 /*  dwarf_elf_object_access_get_section()
 
     If writing a function vaguely like this for a non-elf object,
@@ -329,6 +384,10 @@ dwarf_elf_object_access_get_section_count(void * obj_in)
     section indexes of your non-elf-reading-code
     for all the necessary functions in Dwarf_Obj_Access_Methods_s
     accordingly.
+
+    Should have gotten sh_flags, sh_addralign too.
+    But Dwarf_Obj_Access_Section is publically defined so changing
+    it is quite painful for everyone.
 */
 static
 int
@@ -464,8 +523,8 @@ find_section_to_relocate(Dwarf_Debug dbg,Dwarf_Half section_index,
 
 static void
 get_rela_elf32(Dwarf_Small *data, unsigned int i,
-  int endianness,
-  int machine,
+  UNUSEDARG int endianness,
+  UNUSEDARG int machine,
   struct Dwarf_Elf_Rela *relap)
 {
     Elf32_Rela *relp = (Elf32_Rela*)(data + (i * sizeof(Elf32_Rela)));
@@ -930,8 +989,10 @@ is_64bit_abs_reloc(unsigned int type, Dwarf_Half machine)
     The caller may decide to ignore the errors or report them. */
 static int
 update_entry(Dwarf_Debug dbg,
-    Dwarf_Bool is_64bit, Dwarf_Endianness endianess,
-    Dwarf_Half machine, struct Dwarf_Elf_Rela *rela,
+    Dwarf_Bool is_64bit,
+    UNUSEDARG Dwarf_Endianness endianess,
+    UNUSEDARG Dwarf_Half machine,
+    struct Dwarf_Elf_Rela *rela,
     Dwarf_Small *target_section,
     Dwarf_Small *symtab_section_data,
     Dwarf_Unsigned symtab_section_size,
@@ -1106,10 +1167,9 @@ loop_through_relocations(
         memcpy(mspace,relocatablesec->dss_data,relocatablesec->dss_size);
         relocatablesec->dss_data = mspace;
         target_section = relocatablesec->dss_data;
-        relocatablesec->dss_data_was_malloc = 1;
+        relocatablesec->dss_data_was_malloc = TRUE;
     }
     target_section = relocatablesec->dss_data;
-
     ret = apply_rela_entries(
         dbg,
         obj->is_64bit,
@@ -1305,6 +1365,11 @@ dwarf_elf_object_access_init(dwarf_elf_handle elf,
     /* Initialize the interface struct */
     intfc->object = internals;
     intfc->methods = &dwarf_elf_object_access_methods;
+
+    /*  An access method hidden from non-elf. Needed to
+        handle new-ish SHF_COMPRESSED flag in elf.  */
+    _dwarf_get_elf_flags_func_ptr = _dwarf_get_elf_flags_func;
+
 
     *ret_obj = intfc;
     return DW_DLV_OK;

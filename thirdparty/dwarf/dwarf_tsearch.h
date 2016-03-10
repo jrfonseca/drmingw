@@ -32,7 +32,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 /*  The following interfaces follow tsearch (See the Single
     Unix Specification) but the implementation is
     written without reference to the source  code
@@ -49,6 +48,12 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
+/*  The hashfunc return is now easily changed with
+    cc -Duintptr_t or something. */
+#ifndef DW_TSHASHTYPE
+#define DW_TSHASHTYPE unsigned long
+#endif
+
 /*  The DW_VISIT values passed back to you through
     the callback function in dwarf_twalk();
 */
@@ -64,7 +69,6 @@ DW_VISIT;
 /* void * return values are actually
    void **key so you must dereference these
    once to get a key you passed in.
-
 */
 
 /*  We rename these so there is no conflict with another version
@@ -76,7 +80,6 @@ DW_VISIT;
 #define dwarf_tdestroy _dwarf_tdestroy
 #define dwarf_tdump    _dwarf_tdump
 #define dwarf_initialize_search_hash _dwarf_initialize_search_hash
-
 
 void *dwarf_tsearch(const void * /*key*/, void ** /*rootp*/,
     int (* /*compar*/)(const void *, const void *));
@@ -116,10 +119,9 @@ void dwarf_tdump(const void*root,
 /* Returns NULL  and does nothing
    unless the implemenation used uses a hash tree. */
 void * dwarf_initialize_search_hash( void **treeptr,
-    unsigned long(*hashfunc)(const void *key),
+    DW_TSHASHTYPE (*hashfunc)(const void *key),
     unsigned long size_estimate);
-
-
-
-
 #endif /* DWARF_TSEARCH */
+
+
+

@@ -239,7 +239,7 @@ dwarf_gdbindex_header(Dwarf_Debug dbg,
 int
 dwarf_gdbindex_culist_array(Dwarf_Gdbindex gdbindexptr,
     Dwarf_Unsigned       * list_length,
-    Dwarf_Error          * error)
+    UNUSEDARG Dwarf_Error          * error)
 {
     *list_length = gdbindexptr->gi_culisthdr.dg_count;
     return DW_DLV_OK;
@@ -280,7 +280,7 @@ dwarf_gdbindex_culist_entry(Dwarf_Gdbindex gdbindexptr,
 int
 dwarf_gdbindex_types_culist_array(Dwarf_Gdbindex gdbindexptr,
     Dwarf_Unsigned       * list_length,
-    Dwarf_Error          * error)
+    UNUSEDARG Dwarf_Error          * error)
 {
     *list_length = gdbindexptr->gi_typesculisthdr.dg_count;
     return DW_DLV_OK;
@@ -327,7 +327,7 @@ dwarf_gdbindex_types_culist_entry(Dwarf_Gdbindex gdbindexptr,
 int
 dwarf_gdbindex_addressarea(Dwarf_Gdbindex gdbindexptr,
     Dwarf_Unsigned            * list_length,
-    Dwarf_Error               * error)
+    UNUSEDARG Dwarf_Error               * error)
 {
     *list_length = gdbindexptr->gi_addressareahdr.dg_count;
     return DW_DLV_OK;
@@ -374,7 +374,7 @@ dwarf_gdbindex_addressarea_entry(
 int
 dwarf_gdbindex_symboltable_array(Dwarf_Gdbindex gdbindexptr,
     Dwarf_Unsigned            * list_length,
-    Dwarf_Error               * error)
+    UNUSEDARG Dwarf_Error               * error)
 {
     *list_length = gdbindexptr->gi_symboltablehdr.dg_count;
     return DW_DLV_OK;
@@ -469,13 +469,14 @@ dwarf_gdbindex_cuvector_inner_attributes(Dwarf_Gdbindex gdbindexptr,
 
 
 int
-dwarf_gdbindex_cuvector_instance_expand_value(Dwarf_Gdbindex gdbindexptr,
+dwarf_gdbindex_cuvector_instance_expand_value(
+    UNUSEDARG Dwarf_Gdbindex gdbindexptr,
     Dwarf_Unsigned   value,
     Dwarf_Unsigned * cu_index,
     Dwarf_Unsigned * reserved1,
     Dwarf_Unsigned * symbol_kind,
     Dwarf_Unsigned * is_static,
-    Dwarf_Error    * error)
+    UNUSEDARG Dwarf_Error    * error)
 {
     *cu_index =    value         & 0xffffff;
     *reserved1 =   (value >> 24) & 0xf;
@@ -491,14 +492,19 @@ int
 dwarf_gdbindex_string_by_offset(Dwarf_Gdbindex gdbindexptr,
     Dwarf_Unsigned   stringoffsetinpool,
     const char    ** string_ptr,
-    Dwarf_Error   *  error)
+    UNUSEDARG Dwarf_Error   *  error)
 {
-    Dwarf_Small *pooldata = gdbindexptr->gi_section_data +
-        gdbindexptr->gi_constant_pool_offset;
-    Dwarf_Small *section_end = gdbindexptr->gi_section_data +
-        gdbindexptr->gi_section_length;
+    Dwarf_Small *pooldata = 0;
+    Dwarf_Small *section_end = 0;
+    Dwarf_Small *stringitself = 0;
 
-    Dwarf_Small *stringitself = pooldata + stringoffsetinpool;
+    /*  If gdbindexptr NULL or gdbindexptr->gi_dbg is NULL
+        this is not going to go very well. Ugh. FIXME */
+    pooldata = gdbindexptr->gi_section_data +
+        gdbindexptr->gi_constant_pool_offset;
+    section_end = gdbindexptr->gi_section_data +
+        gdbindexptr->gi_section_length;
+    stringitself = pooldata + stringoffsetinpool;
     if (stringitself > section_end) {
         _dwarf_error(gdbindexptr->gi_dbg, error,DW_DLE_GDB_INDEX_INDEX_ERROR);
         return DW_DLV_ERROR;

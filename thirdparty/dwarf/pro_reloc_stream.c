@@ -137,13 +137,13 @@ _dwarf_pro_reloc_name_stream32(Dwarf_P_Debug dbg, int base_sec_index,
     Never can really do anything: lengths cannot
     be represented as end-start in a stream.  */
 /*ARGSUSED*/ int
-_dwarf_pro_reloc_length_stream(Dwarf_P_Debug dbg,
-    int base_sec_index,
-    Dwarf_Unsigned offset,    /* r_offset of reloc */
-    Dwarf_Unsigned start_symidx,
-    Dwarf_Unsigned end_symidx,
-    enum Dwarf_Rel_Type type,
-    int reltarget_length)
+_dwarf_pro_reloc_length_stream(UNUSEDARG Dwarf_P_Debug dbg,
+    UNUSEDARG int base_sec_index,
+    UNUSEDARG Dwarf_Unsigned offset,    /* r_offset of reloc */
+    UNUSEDARG Dwarf_Unsigned start_symidx,
+    UNUSEDARG Dwarf_Unsigned end_symidx,
+    UNUSEDARG enum Dwarf_Rel_Type type,
+    UNUSEDARG int reltarget_length)
 {
     /* get a slot, fill in the slot entry */
     return DW_DLV_OK;

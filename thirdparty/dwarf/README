@@ -48,7 +48,12 @@ discards ‘const’ qualifier from pointer target type
 [enabled by default]" at compile time are to be expected in
 some pro*.c source files.  Fixing the public prototype could
 cause some producer-library user's code to fail to compile
-so we live with the warnings for now.
+so we live with the warnings.
+
+When cross-compiling, gennames has to be built by the
+native compiler. So try
+  make HOSTCC=cc gennames
+as a first step before the normal make.
 
 
 If your headers are not in the expected places,
@@ -84,18 +89,29 @@ address size is specified as 64 bit].
 Mac OSX (June 2010): Since MacOSX does not use elf, there is no elf.h
 header in the headers provided on MacOSX.
 Use a search engine (like google) to find an elf.h you can use.
-http://www.rockbox.org/tracker/9006?getfile=16683 
+  http://www.rockbox.org/tracker/9006?getfile=16683 
 might be useful.
 In addition, the archive (ar) program on MacOSX does not
 automatically generate some data so modify the generated
 Makefile to add -s to the options to ar.
 
+Windows (February 2016): Those wishing to read DWARF2 or 
+later from Windows PE files (using Mingw) should take a look at 
+  https://github.com/jrfonseca/drmingw/tree/master/src/mgwhelp
+which shows simple LGPL code that implements the necessary object
+reading interfaces for PE objects. dwarf_pe.cpp 
+fills out the Dwarf_Obj_Access_Methods 
+object interface and opens an object
+(see dwarf_object_init())
+using the PE object access making the full libdwarf API
+available.
 To enable dection of Windows pathnames as full paths
 add --enable-windowspath.  Doing this does mean things like
 A:foo and \anything are treated as full paths (these are
 unlikely path names on a POSIX system but are legal 
 POSIX partial paths).
 
+Back to Linux/Unix:
 It is possible to request a shared library (libdwarf.so) build with
 	--enable-shared
 To turn off the build of the archive library (libdwarf.a) specify

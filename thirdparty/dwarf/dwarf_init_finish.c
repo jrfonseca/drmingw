@@ -2,7 +2,7 @@
 
   Copyright (C) 2000,2002,2003,2004,2005 Silicon Graphics, Inc. All Rights Reserved.
   Portions Copyright (C) 2008-2010 Arxan Technologies, Inc. All Rights Reserved.
-  Portions Copyright (C) 2009-2013 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2009-2016 David Anderson. All Rights Reserved.
   Portions Copyright (C) 2010-2012 SN Systems Ltd. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
@@ -52,6 +52,21 @@
 #endif
 #ifdef HAVE_ZLIB
 #include "zlib.h"
+#endif
+
+#ifndef ELFCOMPRESS_ZLIB
+#define ELFCOMPRESS_ZLIB 1
+#endif
+
+/*  If your mingw elf.h is missing SHT_RELA and you do not
+    need SHT_RELA support
+    this define should work for you.
+    It is the elf value, hopefully it will
+    not cause trouble. If does not work, try -1
+    or something else
+    and let us know what works.  */
+#ifndef SHT_RELA
+#define SHT_RELA 4
 #endif
 
 #define DWARF_DBG_ERROR(dbg,errval,retval) \
@@ -122,6 +137,34 @@ get_basic_section_data(Dwarf_Debug dbg,
     secdata->dss_addr = doas->addr;
     secdata->dss_link = doas->link;
     secdata->dss_entrysize = doas->entrysize;
+    if (_dwarf_get_elf_flags_func_ptr) {
+        /*  We do this so we do not need to update the public struct
+            Dwarf_Obj_Access_Section_s and thereby cause
+            binary and source incompatibility. */
+        Dwarf_Unsigned flags = 0;
+        Dwarf_Unsigned addralign = 0;
+        int res = 0;
+        int interr = 0;
+        struct Dwarf_Obj_Access_Interface_s *o = 0;
+
+        o = dbg->de_obj_file;
+        res = _dwarf_get_elf_flags_func_ptr(
+            o->object, section_index,
+            &flags,&addralign,
+            &interr);
+        if (res == DW_DLV_ERROR) {
+            /*  Should never get here. */
+            DWARF_DBG_ERROR(dbg, interr, DW_DLV_ERROR);
+        }
+        if (res == DW_DLV_NO_ENTRY) {
+            return res;
+        }
+        secdata->dss_flags = flags;
+        secdata->dss_addralign = addralign;
+        if (flags & SHF_COMPRESSED) {
+            secdata->dss_requires_decompress = TRUE;
+        }
+    }
     return DW_DLV_OK;
 }
 
@@ -181,6 +224,7 @@ add_debug_section_info(Dwarf_Debug dbg,
         debug_section->ds_emptyerr = emptyerr;
         debug_section->ds_have_dwarf = have_dwarf;
         debug_section->ds_have_zdebug = havezdebug;
+
         ++dbg->de_debug_sections_total_entries;
         return DW_DLV_OK;
     }
@@ -479,7 +523,7 @@ is_section_known_already(Dwarf_Debug dbg,
     const char *scn_name,
     unsigned   *found_section_number,
     unsigned    start_number,
-    int        *err)
+    UNUSEDARG int        *err)
 {
     unsigned i = start_number;
     for ( ; i < dbg->de_debug_sections_total_entries; ++i) {
@@ -930,13 +974,26 @@ dwarf_object_finish(Dwarf_Debug dbg, Dwarf_Error * error)
 }
 
 #ifdef HAVE_ZLIB
-/*  The input stream is assumed to contain
+/*  case 1:
+    The input stream is assumed to contain
     the four letters
     ZLIB
     Followed by 8 bytes of the size of the
     uncompressed stream. Presented as
     a big-endian binary number.
-    Following that is the stream to decompress. */
+    Following that is the stream to decompress.
+
+    case 2:
+    The section flag bit  SHF_COMPRESSED (1 << 11)
+    must be set.
+    we then do the eqivalent of reading a
+        Elf32_External_Chdr
+    or
+        Elf64_External_Chdr
+    to get the type (which must be 1)
+    and the decompressed_length.
+    Then what follows the implicit Chdr is decompressed.
+    */
 static int
 do_decompress_zlib(Dwarf_Debug dbg,
     struct Dwarf_Section_s *section,
@@ -944,15 +1001,13 @@ do_decompress_zlib(Dwarf_Debug dbg,
 {
     Bytef *src = (Bytef *)section->dss_data;
     uLong srclen = section->dss_size;
+    Dwarf_Unsigned flags = section->dss_flags;
     int res = 0;
     Bytef *dest = 0;
     uLongf destlen = 0;
     Dwarf_Unsigned uncompressed_len = 0;
 
-    if(strncmp("ZLIB",(const char *)src,4)) {
-        DWARF_DBG_ERROR(dbg, DW_DLE_ZDEBUG_INPUT_FORMAT_ODD, DW_DLV_ERROR);
-    }
-    {
+    if(!strncmp("ZLIB",(const char *)src,4)) {
         unsigned i = 0;
         unsigned l = 8;
         unsigned char *c = src+4;
@@ -962,6 +1017,34 @@ do_decompress_zlib(Dwarf_Debug dbg,
         }
         src = src + 12;
         srclen -= 12;
+    } else  if (flags & SHF_COMPRESSED) {
+        /*  The prefix is a struct:
+            unsigned int type; followed by pad if following are 64bit!
+            size-of-target-address size
+            size-of-target-address
+        */
+        Dwarf_Small *ptr    = (Dwarf_Small *)src;
+        Dwarf_Unsigned type = 0;
+        Dwarf_Unsigned size = 0;
+        /* Dwarf_Unsigned addralign = 0; */
+        unsigned fldsize    = dbg->de_pointer_size;
+        unsigned structsize = 3* fldsize;
+
+        READ_UNALIGNED(dbg,type,Dwarf_Unsigned,ptr,sizeof(Dwarf_ufixed));
+        ptr += fldsize;
+        READ_UNALIGNED(dbg,size,Dwarf_Unsigned,ptr,fldsize);
+        ptr += fldsize;
+        if (type != ELFCOMPRESS_ZLIB) {
+            DWARF_DBG_ERROR(dbg, DW_DLE_ZDEBUG_INPUT_FORMAT_ODD, DW_DLV_ERROR);
+        }
+        uncompressed_len = size;
+        /*  Not using addralign.
+            READ_UNALIGNED(dbg,addralign,Dwarf_Unsigned,ptr,fldsize); */
+
+        src    += structsize;
+        srclen -= structsize;
+    } else {
+        DWARF_DBG_ERROR(dbg, DW_DLE_ZDEBUG_INPUT_FORMAT_ODD, DW_DLV_ERROR);
     }
     destlen = uncompressed_len;
     dest = malloc(destlen);

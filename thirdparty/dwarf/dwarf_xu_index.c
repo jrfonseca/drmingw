@@ -166,7 +166,7 @@ int dwarf_get_xu_index_section_type(Dwarf_Xu_Index_Header xuhdr,
         the immutable section name. Do not free.
         .debug_cu_index or .debug_tu_index */
     const char ** sectionname,
-    Dwarf_Error * err)
+    UNUSEDARG Dwarf_Error * err)
 {
     *typename    = &xuhdr->gx_type[0];
     *sectionname = xuhdr->gx_section_name;
@@ -325,7 +325,7 @@ dwarf_get_xu_section_offset(Dwarf_Xu_Index_Header xuhdr,
 static Dwarf_Sig8 zerohashkey;
 
 static int
-_dwarf_search_fission_for_key(Dwarf_Debug dbg,
+_dwarf_search_fission_for_key(UNUSEDARG Dwarf_Debug dbg,
     Dwarf_Xu_Index_Header xuhdr,
     Dwarf_Sig8 *key_in,
     Dwarf_Unsigned * percu_index_out,

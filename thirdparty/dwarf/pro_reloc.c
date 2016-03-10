@@ -199,7 +199,7 @@ dwarf_get_relocation_info_count(Dwarf_P_Debug dbg,
     Dwarf_Unsigned *
     count_of_relocation_sections,
     int *drd_buffer_version,
-    Dwarf_Error * error)
+    UNUSEDARG Dwarf_Error * error)
 {
     if (dbg->de_flags & DW_DLC_SYMBOLIC_RELOCATIONS) {
         int i;

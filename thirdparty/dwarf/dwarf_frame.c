@@ -519,7 +519,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
 
                 DECODE_LEB128_UWORD(instr_ptr, lreg);
                 reg_no = (reg_num_type) lreg;
-                ERROR_IF_REG_NUM_TOO_HIGH(reg_no, reg_count);;
+                ERROR_IF_REG_NUM_TOO_HIGH(reg_no, reg_count);
                 factored_N_value =
                     _dwarf_decode_u_leb128(instr_ptr, &leb128_length);
                 instr_ptr += leb128_length;
@@ -2164,8 +2164,10 @@ dwarf_fde_section_offset(Dwarf_Debug dbg, Dwarf_Fde in_fde,
     char *start = 0;
     char *loc = 0;
 
-
-
+    if(!in_fde) {
+        _dwarf_error(dbg, err, DW_DLE_FDE_NULL);
+        return DW_DLV_ERROR;
+    }
     start = (char *) in_fde->fd_section_ptr;
     loc = (char *) in_fde->fd_fde_start;
 
@@ -2194,6 +2196,10 @@ dwarf_cie_section_offset(Dwarf_Debug dbg, Dwarf_Cie in_cie,
     char *start = 0;
     char *loc = 0;
 
+    if(!in_cie) {
+        _dwarf_error(dbg, err, DW_DLE_CIE_NULL);
+        return DW_DLV_ERROR;
+    }
     start = (char *) in_cie->ci_section_ptr;
     loc = (char *) in_cie->ci_cie_start;
 
@@ -2266,13 +2272,13 @@ dwarf_get_fde_augmentation_data(Dwarf_Fde fde,
         _dwarf_error(NULL, error, DW_DLE_FDE_NULL);
         return (DW_DLV_ERROR);
     }
+    if(!fde->fd_gnu_eh_aug_present) {
+        return DW_DLV_NO_ENTRY;
+    }
     cie = fde->fd_cie;
     if (cie == NULL) {
         _dwarf_error(NULL, error, DW_DLE_CIE_NULL);
         return (DW_DLV_ERROR);
-    }
-    if (cie->ci_gnu_eh_augmentation_len == 0) {
-        return DW_DLV_NO_ENTRY;
     }
     *augdata = (Dwarf_Small *) fde->fd_gnu_eh_augmentation_bytes;
     *augdata_len = fde->fd_gnu_eh_augmentation_len;

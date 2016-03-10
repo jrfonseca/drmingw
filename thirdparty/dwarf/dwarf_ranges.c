@@ -67,18 +67,18 @@ int dwarf_get_ranges_a(Dwarf_Debug dbg,
         /*  ASSERT: localdbg->de_debug_ranges is missing: DW_DLV_NO_ENTRY.
             So lets not look in dbg. */
         Dwarf_CU_Context context = 0;
-        int res = 0;
+        int restied = 0;
 
         context = die->di_cu_context;
-        res = _dwarf_get_ranges_base_attr_from_tied(localdbg,
+        restied = _dwarf_get_ranges_base_attr_from_tied(localdbg,
             context,
             &rangebase,
             error);
-        if (res == DW_DLV_ERROR ) {
+        if (restied == DW_DLV_ERROR ) {
             dwarf_dealloc(localdbg,*error,DW_DLA_ERROR);
             *error = 0;
             /* Nothing else to do. Look in original dbg. */
-        } else if (res == DW_DLV_NO_ENTRY ) {
+        } else if (restied == DW_DLV_NO_ENTRY ) {
             /* Nothing else to do. Look in original dbg. */
         } else {
             /*  Ranges are never in a split dwarf object.
@@ -187,7 +187,7 @@ int dwarf_get_ranges(Dwarf_Debug dbg,
 
 void
 dwarf_ranges_dealloc(Dwarf_Debug dbg, Dwarf_Ranges * rangesbuf,
-    Dwarf_Signed rangecount)
+    UNUSEDARG Dwarf_Signed rangecount)
 {
     dwarf_dealloc(dbg,rangesbuf, DW_DLA_RANGES);
 }

@@ -550,7 +550,7 @@ int
 dwarf_get_cu_die_offset_given_cu_header_offset(Dwarf_Debug dbg,
     Dwarf_Off in_cu_header_offset,
     Dwarf_Off * out_cu_die_offset,
-    Dwarf_Error * err)
+    UNUSEDARG Dwarf_Error * err)
 {
     Dwarf_Off len =
         _dwarf_length_of_cu_header(dbg, in_cu_header_offset,true);
@@ -575,7 +575,7 @@ dwarf_get_cu_die_offset_given_cu_header_offset_b(Dwarf_Debug dbg,
     Dwarf_Off in_cu_header_offset,
     Dwarf_Bool is_info,
     Dwarf_Off * out_cu_die_offset,
-    Dwarf_Error * err)
+    UNUSEDARG Dwarf_Error * err)
 {
     Dwarf_Off len =
         _dwarf_length_of_cu_header(dbg, in_cu_header_offset,is_info);

@@ -59,7 +59,7 @@ struct Dwarf_File_Entry_s {
 
     /*  Index into the list of directories of the directory in which
         this file exits. */
-    Dwarf_Sword fi_dir_index;
+    Dwarf_Word fi_dir_index;
 
     /* Time of last modification of the file. */
     Dwarf_Unsigned fi_time_last_mod;
@@ -149,7 +149,8 @@ struct Dwarf_Line_Context_s {
         for the user to understand as dwarf3 when 'it looks ok'. */
     Dwarf_Bool lc_std_op_count;
 
-    /*  Points to a singly-linked list of entries providing info about source files
+    /*  Points to a singly-linked list of entries providing info
+        about source files
         for the current set of Dwarf_Line structures.
         The initial  entry on the list is 'file 1' per DWARF rules.
         And so on.  lc_last_entry points at the last entry
@@ -160,7 +161,7 @@ struct Dwarf_Line_Context_s {
     Dwarf_File_Entry lc_last_entry;
     /*  Count of number of source files for this set of Dwarf_Line
         structures. */
-    Dwarf_Sword lc_file_entry_count;
+    Dwarf_Word lc_file_entry_count;
 
 
     /*  Points to the portion of .debug_line section that
@@ -169,7 +170,7 @@ struct Dwarf_Line_Context_s {
         An array of pointers to strings.  */
     Dwarf_Small **lc_include_directories;
     /*  Count of the number of included directories. */
-    Dwarf_Sword lc_include_directories_count;
+    Dwarf_Word lc_include_directories_count;
 
 
     /*  Points to an array of subprogram entries.
@@ -179,10 +180,10 @@ struct Dwarf_Line_Context_s {
 
     /*  Count of the number of subprogram entries
         With Two level line tables this may be non-zero. */
-    Dwarf_Sword lc_subprogs_count;
+    Dwarf_Word lc_subprogs_count;
 
     /*  Count of the number of lines for this cu. */
-    Dwarf_Sword lc_line_count;
+    Dwarf_Word lc_line_count;
 
     /*  Points to name of compilation directory.
         That string is in a .debug section so
@@ -201,12 +202,11 @@ struct Dwarf_Line_Context_s {
     /* For standard line tables  the logicals are
         the only tables and linecount_actuals is 0. */
     Dwarf_Line   *lc_linebuf_logicals;
-    Dwarf_Signed lc_linecount_logicals;
+    Dwarf_Unsigned lc_linecount_logicals;
 
     /* Non-zero only if two-level table with actuals */
     Dwarf_Line   *lc_linebuf_actuals;
-    Dwarf_Signed lc_linecount_actuals;
-
+    Dwarf_Unsigned lc_linecount_actuals;
 };
 
 
@@ -261,13 +261,13 @@ struct Dwarf_Line_s {
                 li_file is a number 1-N, indexing into a conceptual
                 source file table as described in dwarf2/3 spec line
                 table doc. (see Dwarf_File_Entry lc_file_entries; and
-                Dwarf_Sword lc_file_entry_count;) */
-            Dwarf_Sword li_file;
+                Dwarf_Word lc_file_entry_count;) */
+            Dwarf_Word li_file;
 
             /*  In single-level table is line number in source file. 1-N
                 In logicals table is not used.
                 In actuals table is index into logicals table.  1-N*/
-            Dwarf_Sword li_line;
+            Dwarf_Word li_line;
 
             Dwarf_Half li_column; /* source file column number  1-N */
             Dwarf_Small li_isa;   /* New as of DWARF4. */
@@ -283,19 +283,19 @@ struct Dwarf_Line_s {
 
             /* To save space, use bit flags. */
             /* indicate start of stmt */
-            unsigned char li_is_stmt:1;
+            unsigned li_is_stmt:1;
 
             /* indicate start basic block */
-            unsigned char li_basic_block:1;
+            unsigned li_basic_block:1;
 
             /* first post sequence instr */
-            unsigned char li_end_sequence:1;
+            unsigned li_end_sequence:1;
 
-            unsigned char li_prologue_end:1;
-            unsigned char li_epilogue_begin:1;
+            unsigned li_prologue_end:1;
+            unsigned li_epilogue_begin:1;
 
             /* Mark a line record as being DW_LNS_set_address. */
-            unsigned char li_is_addr_set:1;
+            unsigned li_is_addr_set:1;
         } li_l_data;
 #ifdef __sgi /* SGI IRIX ONLY */
         Dwarf_Off li_offset;  /* for SGI IRIX rqs only*/

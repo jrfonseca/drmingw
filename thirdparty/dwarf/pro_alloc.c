@@ -104,7 +104,7 @@ _dwarf_p_get_alloc(Dwarf_P_Debug dbg, Dwarf_Unsigned size)
 /*
   This routine is only here in case a caller of an older version of the
   library is calling this for some reason.
-  We will clean up any stray blocks when the session is closed.
+  This does nothing!
   No need to remove this block.  In theory the user might be
   depending on the fact that we used to just 'free' this.
   In theory they might also be
@@ -114,11 +114,12 @@ _dwarf_p_get_alloc(Dwarf_P_Debug dbg, Dwarf_Unsigned size)
 
   !!!
   This function is deprecated!  Don't call it inside libdwarf or outside of it.
+  Does nothing!
   !!!
 */
 
 void
-dwarf_p_dealloc(Dwarf_Small * ptr)
+dwarf_p_dealloc(UNUSEDARG Dwarf_Small * ptr)
 {
     return;
 }
@@ -128,7 +129,8 @@ dwarf_p_dealloc(Dwarf_Small * ptr)
 */
 
 void
-_dwarf_p_dealloc(Dwarf_P_Debug dbg, Dwarf_Small * ptr) /* ARGSUSED */
+_dwarf_p_dealloc(UNUSEDARG Dwarf_P_Debug dbg,
+    Dwarf_Small * ptr) /* ARGSUSED */
 {
   memory_list_t *lp;
   lp = BLOCK_TO_LIST(ptr);

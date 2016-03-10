@@ -1242,9 +1242,12 @@ struct Dwarf_Obj_Access_Interface_s {
 #define DW_DLE_BAD_MACRO_INDEX                 323
 #define DW_DLE_MACRO_OP_UNHANDLED              324
 #define DW_DLE_MACRO_PAST_END                  325
+#define DW_DLE_LINE_STRP_OFFSET_BAD            326
+#define DW_DLE_STRING_FORM_IMPROPER            327
+#define DW_DLE_ELF_FLAGS_NOT_AVAILABLE         328
 
     /* DW_DLE_LAST MUST EQUAL LAST ERROR NUMBER */
-#define DW_DLE_LAST        325
+#define DW_DLE_LAST        328
 #define DW_DLE_LO_USER     0x10000
 
     /*  Taken as meaning 'undefined value', this is not
@@ -1341,18 +1344,23 @@ int dwarf_get_elf(Dwarf_Debug /*dbg*/,
 int dwarf_finish(Dwarf_Debug /*dbg*/, Dwarf_Error* /*error*/);
 
 
-int dwarf_object_init(Dwarf_Obj_Access_Interface* /* obj */,
-    Dwarf_Handler /* errhand */,
-    Dwarf_Ptr     /* errarg */,
-    Dwarf_Debug*  /* dbg */,
-    Dwarf_Error*  /* error */);
+int dwarf_object_init(Dwarf_Obj_Access_Interface* /*obj*/,
+    Dwarf_Handler /*errhand*/,
+    Dwarf_Ptr     /*errarg*/,
+    Dwarf_Debug*  /*dbg*/,
+    Dwarf_Error*  /*error*/);
 
 int dwarf_set_tied_dbg(Dwarf_Debug /*basedbg*/,
     Dwarf_Debug /*tied_dbg*/,
-    Dwarf_Error*  /* error */);
+    Dwarf_Error*  /*error*/);
 
-int dwarf_object_finish(Dwarf_Debug /* dbg */,
-    Dwarf_Error* /* error */);
+/*  Likely not very useful.? */
+int dwarf_get_tied_dbg(Dwarf_Debug /*dbg*/,
+    Dwarf_Debug * /*tieddbg_out*/,
+    Dwarf_Error * /*error*/);
+
+int dwarf_object_finish(Dwarf_Debug /*dbg*/,
+    Dwarf_Error* /*error*/);
 
 /*  Section name access.  Because sections might
     now end with .dwo or be .zdebug  or might not.
@@ -1435,7 +1443,7 @@ int dwarf_siblingof_b(Dwarf_Debug /*dbg*/,
     Dwarf_Error*     /*error*/);
 
 /* New 27 April 2015. */
-int dwarf_die_from_hash_signature(Dwarf_Debug dbg,
+int dwarf_die_from_hash_signature(Dwarf_Debug /*dbg*/,
     Dwarf_Sig8 *     /*hash_sig*/,
     const char *     /*sig_type: "tu" or "cu"*/,
     Dwarf_Die*       /*returned_CU_die */,
@@ -1523,6 +1531,11 @@ int dwarf_attr (Dwarf_Die /*die*/,
     Dwarf_Attribute * /*returned_attr*/,
     Dwarf_Error*      /*error*/);
 
+int dwarf_die_text(Dwarf_Die /*die*/,
+    Dwarf_Half    /*attr*/,
+    char       ** /*ret_name*/,
+    Dwarf_Error * /*error*/);
+
 int dwarf_diename(Dwarf_Die /*die*/,
     char   **        /*diename*/,
     Dwarf_Error*     /*error*/);
@@ -1550,6 +1563,14 @@ int dwarf_hasattr(Dwarf_Die /*die*/,
     Dwarf_Half   /*attr*/,
     Dwarf_Bool * /*returned_bool*/,
     Dwarf_Error* /*error*/);
+
+/* Returns the children offsets for the given offset */
+int dwarf_offset_list(Dwarf_Debug /*dbg*/,
+    Dwarf_Off         /*offset*/,
+    Dwarf_Bool        /*is_info*/,
+    Dwarf_Off      ** /*offbuf*/,
+    Dwarf_Unsigned *  /*offcnt*/,
+    Dwarf_Error    *  /*error*/);
 
 /*  BEGIN: loclist_c interfaces
     NEW October 2015.
@@ -1585,15 +1606,15 @@ int dwarf_get_location_op_value_c(Dwarf_Locdesc_c /*locdesc*/,
    Dwarf_Unsigned * /*offset_for_branch*/,
    Dwarf_Error*     /*error*/);
 
-int dwarf_loclist_from_expr_c(Dwarf_Debug dbg,
-    Dwarf_Ptr      expression_in,
-    Dwarf_Unsigned expression_length,
-    Dwarf_Half     address_size,
-    Dwarf_Half     offset_size,
-    Dwarf_Small    dwarf_version,
-    Dwarf_Loc_Head_c* loc_head,
-    Dwarf_Unsigned  * listlen,
-    Dwarf_Error     * error);
+int dwarf_loclist_from_expr_c(Dwarf_Debug /*dbg*/,
+    Dwarf_Ptr      /*expression_in*/,
+    Dwarf_Unsigned /*expression_length*/,
+    Dwarf_Half     /*address_size*/,
+    Dwarf_Half     /*offset_size*/,
+    Dwarf_Small    /*dwarf_version*/,
+    Dwarf_Loc_Head_c* /*loc_head*/,
+    Dwarf_Unsigned  * /*listlen*/,
+    Dwarf_Error     * /*error*/);
 
 /* This frees all memory allocated by the applicable
     dwarf_get_loclist_c() */
@@ -1677,6 +1698,11 @@ int dwarf_highpc_b(Dwarf_Die /*die*/,
 int dwarf_highpc(Dwarf_Die /*die*/,
     Dwarf_Addr  *    /*returned_addr*/,
     Dwarf_Error*     /*error*/);
+
+/*  New January 2016. */
+int dwarf_dietype_offset(Dwarf_Die /*die*/,
+    Dwarf_Off   * /*return_off*/,
+    Dwarf_Error * /*error*/);
 
 int dwarf_bytesize(Dwarf_Die /*die*/,
     Dwarf_Unsigned * /*returned_size*/,
@@ -2201,7 +2227,7 @@ int dwarf_pubtypename(Dwarf_Type /*type*/,
     char   **        /*returned_name*/,
     Dwarf_Error*     /*error*/);
 
-int dwarf_pubtype_die_offset(Dwarf_Type /*type*/,
+int dwarf_pubtype_type_die_offset(Dwarf_Type /*type*/,
     Dwarf_Off*       /*return_offset*/,
     Dwarf_Error*     /*error*/);
 
@@ -2350,11 +2376,11 @@ int dwarf_get_fde_list(Dwarf_Debug /*dbg*/,
 
 /* Release storage gotten by dwarf_get_fde_list_eh() or
    dwarf_get_fde_list() */
-void dwarf_fde_cie_list_dealloc(Dwarf_Debug dbg,
-    Dwarf_Cie *cie_data,
-    Dwarf_Signed cie_element_count,
-    Dwarf_Fde *fde_data,
-    Dwarf_Signed fde_element_count);
+void dwarf_fde_cie_list_dealloc(Dwarf_Debug /*dbg*/,
+    Dwarf_Cie *  /*cie_data*/,
+    Dwarf_Signed /*cie_element_count*/,
+    Dwarf_Fde *  /*fde_data*/,
+    Dwarf_Signed /*fde_element_count*/);
 
 
 
@@ -2581,7 +2607,7 @@ int dwarf_get_macro_context_by_offset(Dwarf_Die /*die*/,
     Dwarf_Unsigned      * /*version_out*/,
     Dwarf_Macro_Context * /*macro_context*/,
     Dwarf_Unsigned      * /*macro_ops_count_out*/,
-    Dwarf_Unsigned      */* macro_ops_data_length*/,
+    Dwarf_Unsigned      * /*macro_ops_data_length*/,
     Dwarf_Error         * /*error*/);
 
 void dwarf_dealloc_macro_context(Dwarf_Macro_Context /*mc*/);
@@ -2617,13 +2643,13 @@ int dwarf_macro_operands_table(Dwarf_Macro_Context /*head*/,
     op_start_section_offset is the section offset of
     the macro operator (which is a single unsigned byte,
     and is followed by the macro operand data). */
-int dwarf_get_macro_op(Dwarf_Macro_Context macro_context,
-    Dwarf_Unsigned op_number,
-    Dwarf_Unsigned * op_start_section_offset,
-    Dwarf_Half    * macro_operator,
-    Dwarf_Half    * forms_count,
-    const Dwarf_Small **   formcode_array,
-    Dwarf_Error *error);
+int dwarf_get_macro_op(Dwarf_Macro_Context /*macro_context*/,
+    Dwarf_Unsigned   /*op_number*/,
+    Dwarf_Unsigned * /*op_start_section_offset*/,
+    Dwarf_Half     * /*macro_operator*/,
+    Dwarf_Half     * /*forms_count*/,
+    const Dwarf_Small **  /*formcode_array*/,
+    Dwarf_Error    * /*error*/);
 
 int dwarf_get_macro_defundef(Dwarf_Macro_Context /*macro_context*/,
     Dwarf_Unsigned   /*op_number*/,
@@ -2631,23 +2657,18 @@ int dwarf_get_macro_defundef(Dwarf_Macro_Context /*macro_context*/,
     Dwarf_Unsigned * /*index*/,
     Dwarf_Unsigned * /*offset*/,
     Dwarf_Half     * /*forms_count*/,
-    const char     ** /*macro_string*/,
+    const char    ** /*macro_string*/,
     Dwarf_Error    * /*error*/);
 int dwarf_get_macro_startend_file(Dwarf_Macro_Context /*macro_context*/,
     Dwarf_Unsigned   /*op_number*/,
     Dwarf_Unsigned * /*line_number*/,
     Dwarf_Unsigned * /*name_index_to_line_tab*/,
-    const char     ** /*src_file_name*/,
+    const char    ** /*src_file_name*/,
     Dwarf_Error    * /*error*/);
 int dwarf_get_macro_import(Dwarf_Macro_Context /*macro_context*/,
     Dwarf_Unsigned   /*op_number*/,
     Dwarf_Unsigned * /*target_offset*/,
     Dwarf_Error    * /*error*/);
-
-
-
-
-
 
 /*  END: DWARF5 .debug_macro interfaces. */
 
@@ -2741,12 +2762,13 @@ int dwarf_ld_sort_lines(
    info.
    The _dwarf name is obsolete. Use dwarf_ instead.
 */
-int _dwarf_fde_section_offset(Dwarf_Debug dbg,
+int _dwarf_fde_section_offset(Dwarf_Debug /*dbg*/,
     Dwarf_Fde         /*in_fde*/,
     Dwarf_Off *       /*fde_off*/,
     Dwarf_Off *       /*cie_off*/,
     Dwarf_Error *     /*err*/);
-int dwarf_fde_section_offset(Dwarf_Debug dbg,
+
+int dwarf_fde_section_offset(Dwarf_Debug /*dbg*/,
     Dwarf_Fde         /*in_fde*/,
     Dwarf_Off *       /*fde_off*/,
     Dwarf_Off *       /*cie_off*/,
@@ -3018,11 +3040,11 @@ int dwarf_get_debugfission_for_die(Dwarf_Die /* die */,
 
 /* Given a key (hash signature)  from a .o, find the per-cu information
     for the CU with that key. */
-int dwarf_get_debugfission_for_key(Dwarf_Debug /* dbg */,
-    Dwarf_Sig8 *                 /* key, hash signature */,
-    const char * key_type        /* "cu" or "tu" */,
-    Dwarf_Debug_Fission_Per_CU * /* percu_out */,
-    Dwarf_Error *                /* err */);
+int dwarf_get_debugfission_for_key(Dwarf_Debug /*dbg*/,
+    Dwarf_Sig8 *                 /*key, hash signature */,
+    const char * key_type        /*"cu" or "tu" */,
+    Dwarf_Debug_Fission_Per_CU * /*percu_out */,
+    Dwarf_Error *                /*err */);
 
 /*  END debugfission dwp .debug_cu_index and .debug_tu_index operations. */
 
@@ -3214,7 +3236,7 @@ Dwarf_P_Attribute dwarf_add_AT_reference_b(Dwarf_P_Debug /*dbg*/,
    New 22 October, 2013.
 */
 int
-dwarf_fixup_AT_reference_die(Dwarf_P_Debug /*dbg */,
+dwarf_fixup_AT_reference_die(Dwarf_P_Debug /*dbg*/,
     Dwarf_Half    /* attrnum */,
     Dwarf_P_Die   /* sourcedie*/,
     Dwarf_P_Die   /* targetdie*/,
@@ -3222,7 +3244,7 @@ dwarf_fixup_AT_reference_die(Dwarf_P_Debug /*dbg */,
 
 
 Dwarf_P_Attribute dwarf_add_AT_dataref(
-    Dwarf_P_Debug   /* dbg*/,
+    Dwarf_P_Debug   /*dbg*/,
     Dwarf_P_Die     /*ownerdie*/,
     Dwarf_Half      /*attr*/,
     Dwarf_Unsigned  /*pcvalue*/,
@@ -3369,7 +3391,7 @@ Dwarf_Unsigned dwarf_add_frame_fde_b(
     Dwarf_Error*   /*error*/);
 
 Dwarf_Unsigned dwarf_add_frame_info_b(
-    Dwarf_P_Debug dbg   /*dbg*/,
+    Dwarf_P_Debug   /*dbg*/,
     Dwarf_P_Fde     /*fde*/,
     Dwarf_P_Die     /*die*/,
     Dwarf_Unsigned  /*cie*/,
@@ -3383,7 +3405,7 @@ Dwarf_Unsigned dwarf_add_frame_info_b(
     Dwarf_Error*    /*error*/);
 
 Dwarf_Unsigned dwarf_add_frame_info(
-    Dwarf_P_Debug dbg   /*dbg*/,
+    Dwarf_P_Debug   /*dbg*/,
     Dwarf_P_Fde     /*fde*/,
     Dwarf_P_Die     /*die*/,
     Dwarf_Unsigned  /*cie*/,
@@ -3469,13 +3491,13 @@ void dwarf_dealloc_uncompressed_block(
 );
 
 void * dwarf_compress_integer_block(
-    Dwarf_P_Debug,    /* dbg */
-    Dwarf_Bool,       /* signed==true (or unsigned) */
-    Dwarf_Small,      /* size of integer units: 8, 16, 32, 64 */
-    void*,            /* data */
-    Dwarf_Unsigned,   /* number of elements */
-    Dwarf_Unsigned*,  /* number of bytes in output block */
-    Dwarf_Error*      /* error */
+    Dwarf_P_Debug,    /*dbg*/
+    Dwarf_Bool,       /*signed==true (or unsigned)*/
+    Dwarf_Small,      /*size of integer units: 8, 16, 32, 64*/
+    void*,            /*data*/
+    Dwarf_Unsigned,   /*number of elements*/
+    Dwarf_Unsigned*,  /*number of bytes in output block*/
+    Dwarf_Error*      /*error*/
 );
 
 /*  Decode an array of signed leb integers (so of course the
@@ -3490,13 +3512,13 @@ void * dwarf_compress_integer_block(
     Returns number of units in output block (ie, number of elements
     of the array that the return value points to) thru the argument.  */
 void * dwarf_uncompress_integer_block(
-    Dwarf_Debug,      /* dbg */
-    Dwarf_Bool,       /* signed==true (or unsigned) */
-    Dwarf_Small,      /* size of integer units: 8, 16, 32, 64 */
-    void*,            /* input data */
-    Dwarf_Unsigned,   /* number of bytes in input */
-    Dwarf_Unsigned*,  /* number of units in output block */
-    Dwarf_Error*      /* error */
+    Dwarf_Debug,      /*dbg */
+    Dwarf_Bool,       /*signed==true (or unsigned) */
+    Dwarf_Small,      /*size of integer units: 8, 16, 32, 64 */
+    void*,            /*input data */
+    Dwarf_Unsigned,   /*number of bytes in input */
+    Dwarf_Unsigned*,  /*number of units in output block */
+    Dwarf_Error*      /*error */
 );
 
 /* Operations to create location expressions. */
@@ -3796,40 +3818,40 @@ unsigned dwarf_set_harmless_error_list_size(Dwarf_Debug /*dbg*/,
 
 /* BEGIN FILE */
 
-extern int dwarf_get_TAG_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_children_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_FORM_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_AT_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_OP_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_ATE_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_DS_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_END_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_ATCF_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_ACCESS_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_VIS_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_VIRTUALITY_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_LANG_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_ID_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_CC_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_INL_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_ORD_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_DSC_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_LNS_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_LNE_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_LLE_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_ISA_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_MACINFO_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_CFA_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_EH_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_FRAME_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_CHILDREN_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_ADDR_name(unsigned int /*val_in*/, const char ** /*s_out */);
-extern int dwarf_get_SECT_name (unsigned int /*val_in*/,const char ** /*s_out*/);
-extern int dwarf_get_MACRO_name (unsigned int /*val_in*/,const char ** /*s_out*/);
-extern int dwarf_get_DEFAULT_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_AT_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_ATCF_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_ATE_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_CC_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_CFA_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_CHILDREN_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_children_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_DEFAULTED_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_DS_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_DSC_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_EH_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_END_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_FORM_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_FRAME_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_ID_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_IDX_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_INL_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_ISA_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_LANG_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_LLE_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_LNCT_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_LNE_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_LNS_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_MACINFO_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_MACRO_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_OP_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_ORD_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_SECT_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_TAG_name(unsigned int /*val_in*/, const char ** /*s_out */);
 extern int dwarf_get_UT_name (unsigned int /*val_in*/,const char ** /*s_out*/);
+extern int dwarf_get_VIRTUALITY_name(unsigned int /*val_in*/, const char ** /*s_out */);
+extern int dwarf_get_VIS_name(unsigned int /*val_in*/, const char ** /*s_out */);
 
 /* END FILE */
 

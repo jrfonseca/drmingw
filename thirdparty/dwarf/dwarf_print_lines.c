@@ -170,8 +170,8 @@ print_line_detail(
 #include "dwarf_line_table_reader_common.c"
 
 void
-_dwarf_print_line_context_record(Dwarf_Debug dbg,
-    Dwarf_Line_Context line_context)
+_dwarf_print_line_context_record(UNUSEDARG Dwarf_Debug dbg,
+    UNUSEDARG Dwarf_Line_Context line_context)
 {
     return;
 }
@@ -280,10 +280,10 @@ _dwarf_internal_printlines(Dwarf_Die die,
     }
     {
         Dwarf_Unsigned fission_size = 0;
-        int res = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
+        int resfis = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
             &fission_offset,&fission_size,error);
-        if(res != DW_DLV_OK) {
-            return res;
+        if(resfis != DW_DLV_OK) {
+            return resfis;
         }
     }
 
@@ -423,8 +423,9 @@ _dwarf_internal_printlines(Dwarf_Die die,
     if (line_context->lc_file_entry_count) {
         Dwarf_File_Entry fe = line_context->lc_file_entries;
         Dwarf_File_Entry fe2 = fe;
-        unsigned u = 0;
-        for (u = 0 ; fe2 ; fe2 = fe->fi_next,++u ) {
+        unsigned fiu = 0;
+
+        for (fiu = 0 ; fe2 ; fe2 = fe->fi_next,++fiu ) {
             Dwarf_Unsigned tlm2 = 0;
             Dwarf_Unsigned di = 0;
             Dwarf_Unsigned fl = 0;
@@ -436,8 +437,8 @@ _dwarf_internal_printlines(Dwarf_Die die,
 
             dwarf_printf(dbg,
                 "  file[%u]  %s (file-number: %u) \n",
-                (unsigned) u, (char *) fe->fi_file_name,
-                (unsigned)(u+1));
+                (unsigned) fiu, (char *) fe->fi_file_name,
+                (unsigned)(fiu+1));
             dwarf_printf(dbg,
                 "    dir index %d\n", (int) di);
             {
@@ -457,17 +458,17 @@ _dwarf_internal_printlines(Dwarf_Die die,
     if (line_context->lc_version_number == EXPERIMENTAL_LINE_TABLES_VERSION) {
         /*  Print the subprograms list. */
         Dwarf_Unsigned count = line_context->lc_subprogs_count;
-        Dwarf_Unsigned u = 0;
+        Dwarf_Unsigned exu = 0;
         Dwarf_Subprog_Entry sub = line_context->lc_subprogs;
         dwarf_printf(dbg,"  subprograms count"
             " %" DW_PR_DUu "\n",count);
         if (count > 0) {
             dwarf_printf(dbg,"    indx  file   line   name\n");
         }
-        for (u = 0 ; u < count ; u++,sub++) {
+        for (exu = 0 ; exu < count ; exu++,sub++) {
             dwarf_printf(dbg,"    [%2" DW_PR_DUu "] %4" DW_PR_DUu
                 "    %4" DW_PR_DUu " %s\n",
-                u+1,
+                exu+1,
                 sub->ds_decl_file,
                 sub->ds_decl_line,
                 sub->ds_subprog_name);

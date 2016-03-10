@@ -55,7 +55,7 @@ int dwarf_get_offset_size(Dwarf_Debug dbg,
         _dwarf_error(NULL, error, DW_DLE_DBG_NULL);
         return (DW_DLV_ERROR);
     }
-    *offset_size = dbg->de_length_size;;
+    *offset_size = dbg->de_length_size;
     return DW_DLV_OK;
 }
 
@@ -148,9 +148,10 @@ dwarf_die_offsets(Dwarf_Die die,
     Dwarf_Off *cu_off,
     Dwarf_Error *error)
 {
+    int res = 0;
+
     *off = 0;
     *cu_off = 0;
-    int res = 0;
     res = dwarf_dieoffset(die,off,error);
     if (res == DW_DLV_OK) {
         res = dwarf_die_CU_offset(die,cu_off,error);
@@ -186,6 +187,110 @@ dwarf_tag(Dwarf_Die die, Dwarf_Half * tag, Dwarf_Error * error)
 {
     CHECK_DIE(die, DW_DLV_ERROR);
     *tag = (die->di_abbrev_list->ab_tag);
+    return DW_DLV_OK;
+}
+
+/* Returns the children offsets for the given offset */
+int
+dwarf_offset_list(Dwarf_Debug dbg,
+    Dwarf_Off offset, Dwarf_Bool is_info,
+    Dwarf_Off **offbuf, Dwarf_Unsigned *offcnt, Dwarf_Error * error)
+{
+    Dwarf_Die die = 0;
+    Dwarf_Die child = 0;
+    Dwarf_Die sib_die = 0;
+    Dwarf_Die cur_die = 0;
+    Dwarf_Off cur_off = 0;
+    Dwarf_Word off_count = 0;
+    int res = 0;
+
+    /* Temporary counter. */
+    Dwarf_Unsigned i = 0;
+
+    /* Points to contiguous block of Dwarf_Off's to be returned. */
+    Dwarf_Off *ret_offsets = 0;
+
+    Dwarf_Chain_2 curr_chain = 0;
+    Dwarf_Chain_2 prev_chain = 0;
+    Dwarf_Chain_2 head_chain = 0;
+
+    *offbuf = NULL;
+    *offcnt = 0;
+
+    /* Get DIE for offset */
+    res = dwarf_offdie_b(dbg,offset,is_info,&die,error);
+    if (DW_DLV_OK != res) {
+        return res;
+    }
+
+    /* Get first child for die */
+    res = dwarf_child(die,&child,error);
+    if (DW_DLV_ERROR == res || DW_DLV_NO_ENTRY == res) {
+        return res;
+    }
+
+    cur_die = child;
+    for (;;) {
+        if (DW_DLV_OK == res) {
+            /* Get Global offset for current die */
+            dwarf_dieoffset(cur_die,&cur_off,error);
+
+            /* Record offset in current entry chain */
+            curr_chain = (Dwarf_Chain_2)_dwarf_get_alloc(dbg,DW_DLA_CHAIN_2,1);
+            if (curr_chain == NULL) {
+                _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
+                return (DW_DLV_ERROR);
+            }
+
+            /* Put current offset on singly_linked list. */
+            curr_chain->ch_item = cur_off;
+            ++off_count;
+
+            if (head_chain == NULL) {
+                head_chain = prev_chain = curr_chain;
+            }
+            else {
+                prev_chain->ch_next = curr_chain;
+                prev_chain = curr_chain;
+            }
+        }
+
+        /* Process any siblings entries if any */
+        sib_die = 0;
+        res = dwarf_siblingof_b(dbg,cur_die,is_info,&sib_die,error);
+        if (DW_DLV_ERROR == res) {
+            return res;
+        }
+        if (DW_DLV_NO_ENTRY == res) {
+            /* Done at this level. */
+            break;
+        }
+        /* res == DW_DLV_OK */
+        if (cur_die != die) {
+            dwarf_dealloc(dbg,cur_die,DW_DLA_DIE);
+        }
+        cur_die = sib_die;
+    }
+
+    /* Points to contiguous block of Dwarf_Off's. */
+    ret_offsets = (Dwarf_Off *) _dwarf_get_alloc(dbg, DW_DLA_ADDR, off_count);
+    if (ret_offsets == NULL) {
+        _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
+        return (DW_DLV_ERROR);
+    }
+
+    /*  Store offsets in contiguous block, and deallocate the chain. */
+    curr_chain = head_chain;
+    for (i = 0; i < off_count; i++) {
+        *(ret_offsets + i) = curr_chain->ch_item;
+        prev_chain = curr_chain;
+        curr_chain = curr_chain->ch_next;
+        dwarf_dealloc(dbg, prev_chain, DW_DLA_CHAIN_2);
+    }
+
+    *offbuf = ret_offsets;
+    *offcnt = off_count;
+
     return DW_DLV_OK;
 }
 
@@ -405,7 +510,7 @@ _dwarf_get_value_ptr(Dwarf_Die die,
         if (res != DW_DLV_OK) {
             return res;
         }
-        if ( (die_info_end  - info_ptr) < value_size) {
+        if ((info_ptr + value_size) > die_info_end) {
             /*  Something badly wrong. We point past end
                 of debug_info or debug_types . */
             _dwarf_error(dbg,error,DW_DLE_DIE_ABBREV_BAD);
@@ -418,7 +523,10 @@ _dwarf_get_value_ptr(Dwarf_Die die,
 
 
 int
-dwarf_diename(Dwarf_Die die, char **ret_name, Dwarf_Error * error)
+dwarf_die_text(Dwarf_Die die,
+    Dwarf_Half attr,
+    char **ret_name,
+    Dwarf_Error * error)
 {
     Dwarf_Half attr_form = 0;
     Dwarf_Debug dbg = 0;
@@ -428,7 +536,7 @@ dwarf_diename(Dwarf_Die die, char **ret_name, Dwarf_Error * error)
 
     CHECK_DIE(die, DW_DLV_ERROR);
 
-    res = _dwarf_get_value_ptr(die, DW_AT_name, &attr_form,&info_ptr,error);
+    res = _dwarf_get_value_ptr(die, attr, &attr_form,&info_ptr,error);
     if (res == DW_DLV_ERROR) {
         return res;
     }
@@ -487,6 +595,15 @@ dwarf_diename(Dwarf_Die die, char **ret_name, Dwarf_Error * error)
     *ret_name = (char *) (dbg->de_debug_str.dss_data + string_offset);
     return DW_DLV_OK;
 }
+
+int
+dwarf_diename(Dwarf_Die die,
+    char **ret_name,
+    Dwarf_Error * error)
+{
+    return dwarf_die_text(die,DW_AT_name,ret_name,error);
+}
+
 
 
 int
@@ -607,7 +724,7 @@ _dwarf_extract_address_from_debug_addr(Dwarf_Debug dbg,
     return DW_DLV_OK;
 }
 
-int
+static int
 _dwarf_look_in_local_and_tied_by_index(
     Dwarf_Debug dbg,
     Dwarf_CU_Context context,
@@ -780,6 +897,27 @@ dwarf_highpc(Dwarf_Die die,
     }
     return (DW_DLV_OK);
 }
+
+/*  If the giving 'die' contains the DW_AT_type attribute, it returns
+    the offset referenced by the attribute.
+    In case of DW_DLV_NO_ENTRY or DW_DLV_ERROR it sets offset zero. */
+int
+dwarf_dietype_offset(Dwarf_Die die,
+    Dwarf_Off *return_off, Dwarf_Error *error)
+{
+    int res = 0;
+    Dwarf_Off offset = 0;
+    Dwarf_Attribute attr = 0;
+
+    CHECK_DIE(die, DW_DLV_ERROR);
+    res = dwarf_attr(die,DW_AT_type,&attr,error);
+    if (res == DW_DLV_OK) {
+        res = dwarf_global_formref(attr,&offset,error);
+    }
+    *return_off = offset;
+    return res;
+}
+
 
 
 int
@@ -1483,7 +1621,8 @@ dw_get_special_offset(Dwarf_Half attrnum)
    to accurately determine the form 'class' as documented
    in the DWARF spec. This is per DWARF4, but will work
    for DWARF2 or 3 as well.  */
-enum Dwarf_Form_Class dwarf_get_form_class(
+enum Dwarf_Form_Class
+dwarf_get_form_class(
     Dwarf_Half dwversion,
     Dwarf_Half attrnum,
     Dwarf_Half offset_size,
@@ -1560,7 +1699,7 @@ enum Dwarf_Form_Class dwarf_get_form_class(
         break;
     };
     return DW_FORM_CLASS_UNKNOWN;
-};
+}
 
 /*  Given a DIE, figure out what the CU's DWARF version is
     and the size of an offset

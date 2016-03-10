@@ -335,6 +335,13 @@ struct Dwarf_Section_s {
 
     /* Object section number in object file. */
     unsigned dss_number;
+
+    /*  These are elf flags and non-elf object should
+        just leave these fields zero. Which is essentially
+        automatic as they are not in
+        Dwarf_Obj_Access_Section_s.  */
+    Dwarf_Word  dss_flags;
+    Dwarf_Word  dss_addralign;
 };
 
 /*  Overview: if next_to_use== first, no error slots are used.
@@ -665,6 +672,12 @@ struct Dwarf_Chain_s {
     Dwarf_Chain ch_next;
 };
 
+typedef struct Dwarf_Chain_o *Dwarf_Chain_2;
+struct Dwarf_Chain_o {
+    Dwarf_Off ch_item;
+    Dwarf_Chain_2 ch_next;
+};
+
     /* Size of cu header version stamp field. */
 #define CU_VERSION_STAMP_SIZE   sizeof(Dwarf_Half)
 
@@ -807,6 +820,15 @@ int _dwarf_extract_local_debug_str_string_given_offset(Dwarf_Debug dbg,
 
 int _dwarf_file_name_is_full_path(Dwarf_Small  *fname);
 
+/*  This is an elf-only extension to get SHF_COMPRESSED flag from sh_flags.
+    if pointer not set (which is normal for non-elf objects)
+    it is fine.  */
+int (*_dwarf_get_elf_flags_func_ptr)(
+    void* obj_in,
+    Dwarf_Half section_index,
+    Dwarf_Unsigned *flags_out,
+    Dwarf_Unsigned *addralign_out,
+    int *error);
 
 Dwarf_Byte_Ptr _dwarf_calculate_section_end_ptr(Dwarf_CU_Context context);
 

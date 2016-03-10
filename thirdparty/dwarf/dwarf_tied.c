@@ -84,11 +84,11 @@ tied_make_entry(Dwarf_Sig8 *key, Dwarf_CU_Context val)
     A hash needed because we are using a hash search
     here. Would not be needed for the other tree searchs
     like balanced trees..  */
-static unsigned long
+static DW_TSHASHTYPE
 tied_data_hashfunc(const void *keyp)
 {
     const struct Dwarf_Tied_Entry_s * enp = keyp;
-    unsigned long hashv = 0;
+    DW_TSHASHTYPE hashv = 0;
     /* Just take some of the 8 bytes of the signature. */
     memcpy(&hashv,enp->dt_key.signature,sizeof(hashv));
     return hashv;

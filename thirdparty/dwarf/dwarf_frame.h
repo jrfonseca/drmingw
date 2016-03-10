@@ -303,15 +303,23 @@ struct Dwarf_Fde_s {
         Augmentation Data. Set if CIE ci_augmentation_type
         is aug_gcc_eh_z. Zero if unused. */
     Dwarf_Unsigned fd_gnu_eh_augmentation_len;
+    Dwarf_Bool fd_gnu_eh_aug_present;
     Dwarf_Ptr fd_gnu_eh_augmentation_bytes;
     Dwarf_Addr fd_gnu_eh_lsda; /* If 'L' augmentation letter
         present:  is address of the
         Language Specific Data Area (LSDA). If not 'L" is zero. */
 
+
     /* The following 3 are about the Elf section the FDEs come from. */
     Dwarf_Small * fd_section_ptr;
     Dwarf_Unsigned fd_section_length;
     Dwarf_Unsigned fd_section_index;
+
+    /*  If fd_eh_table_value_set is true, then fd_eh_table_value is
+        meaningful.  Never meaningful for .debug_frame, is
+        part of .eh_frame. */
+    Dwarf_Unsigned fd_eh_table_value;
+    Dwarf_Bool fd_eh_table_value_set;
 
 };
 

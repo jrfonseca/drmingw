@@ -113,6 +113,7 @@
 #define DW_DLA_PUBTYPES_CONTEXT 0x2b  /* DWARF3 */
 #define DW_DLA_HASH_TABLE_ENTRY 0x2c
 #define DW_DLA_FISSION_PERCU    0x2d
+#define DW_DLA_CHAIN_2          0x3d
 /* Thru 0x36 reserved for internal future use. */
 
 /*  Maximum number of allocation types for allocation routines.

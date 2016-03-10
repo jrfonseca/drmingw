@@ -261,16 +261,18 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
     {sizeof(struct Dwarf_Macro_Context_s),MULTIPLY_NO,
         _dwarf_macro_constructor,
         _dwarf_macro_destructor},
+
+    /* 61 DW_DLA_CHAIN_2 */
+    {sizeof(struct Dwarf_Chain_o),MULTIPLY_NO, 0, 0},
 };
 
 /*  We are simply using the incoming pointer as the key-pointer.
 */
-typedef unsigned long VALTYPE;
 
-static unsigned long
+static DW_TSHASHTYPE
 simple_value_hashfunc(const void *keyp)
 {
-    VALTYPE up = (VALTYPE )keyp;
+    DW_TSHASHTYPE up = (DW_TSHASHTYPE)keyp;
     return up;
 }
 /*  We did alloc something but not a fixed-length thing.
@@ -309,8 +311,8 @@ tdestroy_free_node(void *nodep)
 static int
 simple_compare_function(const void *l, const void *r)
 {
-    VALTYPE lp = (VALTYPE)l;
-    VALTYPE rp = (VALTYPE)r;
+    DW_TSHASHTYPE lp = (DW_TSHASHTYPE)l;
+    DW_TSHASHTYPE rp = (DW_TSHASHTYPE)r;
     if(lp < rp) {
         return -1;
     }
@@ -558,7 +560,7 @@ _dwarf_get_debug(void)
     No longer used.
 */
 void
-dwarf_print_memory_stats(Dwarf_Debug dbg)
+dwarf_print_memory_stats(UNUSEDARG Dwarf_Debug dbg)
 {
 }
 

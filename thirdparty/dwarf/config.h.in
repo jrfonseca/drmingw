@@ -91,6 +91,9 @@
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
+/* Define 1 if __attribute__ ((unused)) compiles ok. */
+#undef HAVE_UNUSED_ATTRIBUTE
+
 /* Define 1 if want to allow Windows full path detection */
 #undef HAVE_WINDOWS_PATH
 

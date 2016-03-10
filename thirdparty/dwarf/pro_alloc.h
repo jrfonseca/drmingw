@@ -28,6 +28,7 @@
 
 Dwarf_Ptr _dwarf_p_get_alloc(Dwarf_P_Debug, Dwarf_Unsigned);
 
-void _dwarf_p_dealloc(Dwarf_P_Debug dbg, Dwarf_Small * ptr);
+void dwarf_p_dealloc(Dwarf_Small * ptr); /* DO NOT USE. */
+void _dwarf_p_dealloc(Dwarf_P_Debug,Dwarf_Small * ptr);
 
 void _dwarf_p_dealloc_all(Dwarf_P_Debug dbg);

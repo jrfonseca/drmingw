@@ -432,7 +432,7 @@ dwarf_get_loclist_c(Dwarf_Attribute attr,
             int off_res  = DW_DLV_ERROR;
             int count_res = DW_DLV_ERROR;
             int loclist_count = 0;
-            int lli = 0;
+            Dwarf_Unsigned lli = 0;
 
             off_res = _dwarf_get_loclist_header_start(dbg,
                 attr, &loclist_offset, error);
@@ -521,7 +521,7 @@ dwarf_get_loclist_c(Dwarf_Attribute attr,
             int off_res  = DW_DLV_ERROR;
             int count_res = DW_DLV_ERROR;
             int loclist_count = 0;
-            int lli = 0;
+            Dwarf_Unsigned lli = 0;
 
             off_res = _dwarf_get_loclist_header_start(dbg,
                 attr, &loclist_offset, error);

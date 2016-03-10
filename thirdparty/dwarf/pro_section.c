@@ -479,9 +479,9 @@ write_ubyte(unsigned val,
 }
 static unsigned
 pretend_write_uval(Dwarf_Unsigned val,
-    Dwarf_P_Debug dbg,
-    int elfsectno,
-    Dwarf_Error* error)
+    UNUSEDARG Dwarf_P_Debug dbg,
+    UNUSEDARG int elfsectno,
+    UNUSEDARG Dwarf_Error* error)
 {
     char buff1[ENCODE_SPACE_NEEDED];
     int nbytes = 0;
@@ -1467,7 +1467,7 @@ dwarf_get_string_attributes_count(Dwarf_P_Debug dbg,
     Dwarf_Unsigned *
     count_of_sa_sections,
     int *drd_buffer_version,
-    Dwarf_Error *error)
+    UNUSEDARG Dwarf_Error *error)
 {
     int i = 0;
     unsigned int count = 0;
@@ -1488,7 +1488,7 @@ dwarf_get_string_attributes_info(Dwarf_P_Debug dbg,
     Dwarf_Signed *elf_section_index,
     Dwarf_Unsigned *sect_sa_buffer_count,
     Dwarf_P_String_Attr *sect_sa_buffer,
-    Dwarf_Error *error)
+    UNUSEDARG Dwarf_Error *error)
 {
     int i = 0;
     int next = dbg->de_sect_sa_next_to_return;
@@ -1975,7 +1975,7 @@ _dwarf_pro_generate_debuginfo(Dwarf_P_Debug dbg, Dwarf_Error * error)
 /*ARGSUSED*/                   /* pretend all args used */
 Dwarf_Ptr
 dwarf_get_section_bytes(Dwarf_P_Debug dbg,
-    Dwarf_Signed dwarf_section,
+    UNUSEDARG Dwarf_Signed dwarf_section,
     Dwarf_Signed * section_idx,
     Dwarf_Unsigned * length, Dwarf_Error * error)
 {

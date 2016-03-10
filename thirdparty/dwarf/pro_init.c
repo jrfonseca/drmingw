@@ -136,7 +136,7 @@ dwarf_producer_init(Dwarf_Unsigned flags,
     void * user_data,
     const char *isa_name, /* See isa_reloc_s. */
     const char *dwarf_version, /* V2 V3 V4 or V5. */
-    const char *extra, /* Extra input strings, comma separated. */
+    UNUSEDARG const char *extra, /* Extra input strings, comma separated. */
     Dwarf_P_Debug *dbg_returned,
     Dwarf_Error * error)
 {
@@ -169,7 +169,9 @@ dwarf_producer_init(Dwarf_Unsigned flags,
 }
 
 static int
-set_reloc_numbers(Dwarf_P_Debug dbg,Dwarf_Unsigned flags,const char *abiname)
+set_reloc_numbers(Dwarf_P_Debug dbg,
+    UNUSEDARG Dwarf_Unsigned flags,
+    const char *abiname)
 {
     struct isa_relocs_s *isap = 0;
     for(isap = &isa_relocs[0];  ;isap++) {
@@ -195,7 +197,7 @@ set_reloc_numbers(Dwarf_P_Debug dbg,Dwarf_Unsigned flags,const char *abiname)
         }
     }
     /* UNREACHED */
-};
+}
 
 static int
 common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,

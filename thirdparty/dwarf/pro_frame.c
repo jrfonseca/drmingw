@@ -124,7 +124,7 @@ dwarf_add_frame_fde_b(Dwarf_P_Debug dbg,
     Dwarf_Unsigned symidx,
     Dwarf_Unsigned symidx_of_end,
     Dwarf_Addr offset_from_end_sym,
-    Dwarf_Error * error)
+    UNUSEDARG Dwarf_Error * error)
 {
     Dwarf_P_Fde curfde;
 
@@ -206,7 +206,7 @@ dwarf_add_frame_info_b(Dwarf_P_Debug dbg,
     Dwarf_Unsigned offset_from_end_symbol,
     Dwarf_Signed offset_into_exception_tables,
     Dwarf_Unsigned exception_table_symbol,
-    Dwarf_Error * error)
+    UNUSEDARG Dwarf_Error * error)
 {
     Dwarf_P_Fde curfde;
 

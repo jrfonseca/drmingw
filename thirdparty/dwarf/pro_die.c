@@ -349,7 +349,7 @@ _dwarf_pro_add_AT_fde(Dwarf_P_Debug dbg,
 
     /* fill in the information */
     new_attr->ar_attribute = DW_AT_MIPS_fde;
-    new_attr->ar_attribute_form = dbg->de_ar_data_attribute_form;;
+    new_attr->ar_attribute_form = dbg->de_ar_data_attribute_form;
     new_attr->ar_rel_type = dbg->de_offset_reloc;
     new_attr->ar_nbytes = uwordb_size;
     new_attr->ar_next = NULL;

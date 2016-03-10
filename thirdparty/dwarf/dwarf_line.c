@@ -107,7 +107,8 @@ _dwarf_file_name_is_full_path(Dwarf_Small  *fname)
 #include "dwarf_line_table_reader_common.c"
 
 static void
-special_cat(char *dst,char *src,int srclen)
+special_cat(char *dst,char *src,
+    UNUSEDARG int srclen)
 {
 #if defined (HAVE_WINDOWS_PATH)
     /*  Always '/' instead of '\\', this is a Windows -> Unix
@@ -357,10 +358,10 @@ dwarf_srcfiles(Dwarf_Die die,
     {
         Dwarf_Unsigned fission_offset = 0;
         Dwarf_Unsigned fission_size = 0;
-        int res = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
+        int resl = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
             &fission_offset,&fission_size,error);
-        if(res != DW_DLV_OK) {
-            return res;
+        if(resl != DW_DLV_OK) {
+            return resl;
         }
         line_ptr += fission_offset;
     }
@@ -584,10 +585,10 @@ _dwarf_internal_srclines(Dwarf_Die die,
     }
     {
         Dwarf_Unsigned fission_size = 0;
-        int res = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
+        int resf = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
             &fission_offset,&fission_size,error);
-        if(res != DW_DLV_OK) {
-            return res;
+        if(resf != DW_DLV_OK) {
+            return resf;
         }
         line_ptr += fission_offset;
     }
@@ -1050,12 +1051,15 @@ dwarf_srclines_subprog_count(Dwarf_Line_Context line_context,
     */
 int
 dwarf_srclines_subprog_data(Dwarf_Line_Context line_context,
-    Dwarf_Signed index,
+    Dwarf_Signed index_in,
     const char ** name,
     Dwarf_Unsigned *decl_file,
     Dwarf_Unsigned *decl_line,
     Dwarf_Error *error)
 {
+    /*  Negative values not sensible. Leaving traditional
+        signed interfaces. */
+    Dwarf_Unsigned index = (Dwarf_Unsigned)index_in;
     Dwarf_Subprog_Entry sub = 0;
     if (!line_context || line_context->lc_magic != DW_CONTEXT_MAGIC) {
         _dwarf_error(NULL, error, DW_DLE_LINE_CONTEXT_BOTCH);
@@ -1082,14 +1086,16 @@ dwarf_srclines_files_count(Dwarf_Line_Context line_context,
         _dwarf_error(NULL, error, DW_DLE_LINE_CONTEXT_BOTCH);
         return (DW_DLV_ERROR);
     }
-    *count_out = line_context->lc_file_entry_count;
+    /*  Negative values not sensible. Leaving traditional
+        signed interfaces. */
+    *count_out = (Dwarf_Signed)line_context->lc_file_entry_count;
     return DW_DLV_OK;
 }
 
 /* New October 2015. */
 int
 dwarf_srclines_files_data(Dwarf_Line_Context line_context,
-    Dwarf_Signed     index,
+    Dwarf_Signed     index_in,
     const char **    name,
     Dwarf_Unsigned * directory_index,
     Dwarf_Unsigned * last_mod_time,
@@ -1097,7 +1103,10 @@ dwarf_srclines_files_data(Dwarf_Line_Context line_context,
     Dwarf_Error    * error)
 {
     Dwarf_File_Entry fi = 0;
-    Dwarf_Signed i  =0;
+    Dwarf_Unsigned i  =0;
+    /*  Negative values not sensible. Leaving traditional
+        signed interfaces. */
+    Dwarf_Unsigned index = (Dwarf_Unsigned)index_in;
     if (!line_context || line_context->lc_magic != DW_CONTEXT_MAGIC) {
         _dwarf_error(NULL, error, DW_DLE_LINE_CONTEXT_BOTCH);
         return (DW_DLV_ERROR);
@@ -1143,10 +1152,15 @@ dwarf_srclines_include_dir_count(Dwarf_Line_Context line_context,
 /* New October 2015. */
 int
 dwarf_srclines_include_dir_data(Dwarf_Line_Context line_context,
-    Dwarf_Signed   index,
+    Dwarf_Signed   index_in,
     const char  ** name,
     Dwarf_Error *  error)
 {
+    /*  It never made sense that the srclines used a signed count.
+        But that cannot be fixed in interfaces for compatibility.
+        So we adjust here. */
+    Dwarf_Word index = index_in;
+
     if (!line_context || line_context->lc_magic != DW_CONTEXT_MAGIC) {
         _dwarf_error(NULL, error, DW_DLE_LINE_CONTEXT_BOTCH);
         return (DW_DLV_ERROR);
@@ -1347,13 +1361,17 @@ dwarf_lineoff_b(Dwarf_Line line,
 
 
 static int
-dwarf_filename(Dwarf_Line_Context context, Dwarf_Sword fileno,
+dwarf_filename(Dwarf_Line_Context context,
+    Dwarf_Sword fileno_in,
     char **ret_filename, Dwarf_Error *error)
 {
-    Dwarf_Signed i = 0;
+    Dwarf_Unsigned i = 0;
     Dwarf_File_Entry file_entry = 0;
     Dwarf_Debug dbg = context->lc_dbg;
     int res = 0;
+    /*  Negative values not sensible. Leaving traditional
+        signed interfaces. */
+    Dwarf_Word fileno = (Dwarf_Word)fileno_in;
 
     if (fileno > context->lc_file_entry_count) {
         _dwarf_error(dbg, error, DW_DLE_LINE_FILE_NUM_BAD);
@@ -1763,7 +1781,7 @@ _dwarf_decode_line_string_form(Dwarf_Debug dbg,
         return DW_DLV_OK;
         }
     case DW_FORM_string: {
-        Dwarf_Small *secend = line_ptr_end;;
+        Dwarf_Small *secend = line_ptr_end;
         Dwarf_Small *strptr = *line_ptr;
         res = _dwarf_check_string_valid(dbg,
             strptr ,strptr,secend,error);

@@ -29,6 +29,10 @@
 #include "dwarf_incl.h"
 #include <stdio.h>
 
+/*  THIS IS OBSOLETE. DO NOT USE.
+    No prototype was ever made public.
+    There is no implementation of any use at all. */
+
 /*ARGSUSED*/ int
 dwarf_nextglob(Dwarf_Debug dbg,
     Dwarf_Global glob,

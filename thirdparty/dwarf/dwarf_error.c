@@ -402,8 +402,11 @@ const char *_dwarf_errmsgs[] = {
     "DW_DLE_UNKNOWN_FORM(321) Possibly corrupt DWARF data",
     "DW_DLE_BAD_MACRO_HEADER_POINTER(322)",
     "DW_DLE_BAD_MACRO_INDEX(323)",
-    "DW_DLE_MACRO_OP_UNHANDLED(324)",
+    "DW_DLE_MACRO_OP_UNHANDLED(324) Possibly an implementation extension",
     "DW_DLE_MACRO_PAST_END(325)",
+    "DW_DLE_LINE_STRP_OFFSET_BAD(326)",
+    "DW_DLE_STRING_FORM_IMPROPER(327) An internal libdwarf logic error",
+    "DW_DLE_ELF_FLAGS_NOT_AVAILABLE(328) elf/non-elf object confusion?",
 };
 
 
