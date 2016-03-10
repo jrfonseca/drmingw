@@ -110,6 +110,37 @@ add_test (
 
 
 #
+# test_mgwhelp_zdebug
+#
+
+# https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+add_custom_command (
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug --compress-debug-sections $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+    DEPENDS mgwhelp_test
+    VERBATIM
+)
+add_custom_command (
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_zdebug_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+    VERBATIM
+)
+add_custom_target (mgwhelp_zdebug_test ALL
+    DEPENDS
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+)
+add_dependencies (check mgwhelp_zdebug_test)
+add_test (
+    NAME test_mgwhelp_zdebug
+    COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+)
+set_tests_properties (test_mgwhelp_zdebug PROPERTIES WILL_FAIL TRUE)
+
+
+#
 # test_exchndl
 #
 
