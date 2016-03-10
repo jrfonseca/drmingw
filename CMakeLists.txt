@@ -33,10 +33,12 @@ include_directories (
     ${CMAKE_SOURCE_DIR}/thirdparty/elf
     ${CMAKE_SOURCE_DIR}/thirdparty/dwarf
     ${CMAKE_SOURCE_DIR}/thirdparty/libiberty
+    ${CMAKE_SOURCE_DIR}/thirdparty/zlib
 )
 
 add_subdirectory (thirdparty/dwarf)
 add_subdirectory (thirdparty/libiberty)
+add_subdirectory (thirdparty/zlib)
 
 # Find dlltool
 get_filename_component (GCC_NAME ${CMAKE_C_COMPILER} NAME)
