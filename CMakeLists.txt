@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8.11)
+cmake_minimum_required (VERSION 3.1)
 
 
 project (drmingw)
@@ -162,11 +162,7 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set (CPACK_SYSTEM_NAME win64)
 endif ()
 
-if (CMAKE_VERSION VERSION_LESS 3.1)
-    set (CPACK_GENERATOR "ZIP")
-else ()
-    set (CPACK_GENERATOR "7Z")
-endif ()
+set (CPACK_GENERATOR "7Z")
 
 set (CPACK_STRIP_FILES ON)
 
