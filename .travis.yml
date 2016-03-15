@@ -65,6 +65,7 @@ deploy:
     secure: frTz8L+ex+foqv1fpVJX9guW/YHftxhjJ3SKwcfLmIW/NP77FVLgF8PgyLyPVbRkUOoSZpNYGQcWEpOF3bEK5HbeQScuV75TgSO2n2Ie4UqMO7+4G3bY5+Ni/SvfA/qt7krZQeNc0wCtPX+QjD4HLmSXfnie6PMZw/q5pkjN9fI=
   file_glob: true
   file: build/drmingw-*.zip
+  skip_cleanup: true
   on:
     repo: jrfonseca/drmingw
     tags: true
