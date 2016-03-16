@@ -51,3 +51,7 @@ after_build:
 - if "%MINGW_DIR%"=="mingw64" cmake --build build\msvc64 --config Debug -- /verbosity:minimal /maxcpucount
 - if "%MINGW_DIR%"=="mingw32" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug
 - if "%MINGW_DIR%"=="mingw64" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug build\msvc64\Debug
+- cmake --build build\mingw --use-stderr --target package
+
+artifacts:
+- path: build\mingw\drmingw-*.7z
