@@ -10,13 +10,20 @@ shallow_clone: true
 
 cache:
 - x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
+- i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
 
 environment:
   CTEST_OUTPUT_ON_FAILURE: 1
   _NT_SYMBOL_PATH: srv*C:\symbols*http://msdl.microsoft.com/download/symbols
-  MINGW_URL: http://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.9.2/threads-win32/seh/x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z/download
-  MINGW_ARCHIVE: x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
-  WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\8.1\Debuggers\x64'
+  matrix:
+  - MINGW_DIR: mingw64
+    MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.9.2/threads-win32/seh/x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z/download
+    MINGW_ARCHIVE: x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
+    WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\8.1\Debuggers\x64'
+  - MINGW_DIR: mingw32
+    MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.9.2/threads-win32/dwarf/i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z/download
+    MINGW_ARCHIVE: i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
+    WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\8.1\Debuggers\x86'
 
 install:
 - if not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
@@ -25,21 +32,22 @@ install:
 - ps: Get-Command sh.exe -All | Remove-Item
 
 before_build:
-- set Path=%CD%\mingw64\bin;%Path%
+- set Path=%CD%\%MINGW_DIR%\bin;%Path%
 - g++ --version
 - mingw32-make --version
 - cmake --version
 - ps: (Get-Item "${Env:WINDBG_DIR}\dbghelp.dll").VersionInfo
-- cmake -H. -Bbuild\mingw64 -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR="%WINDBG_DIR%" -DENABLE_ZDEBUG_TEST=ON
+- cmake -H. -Bbuild\mingw -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug -DWINDBG_DIR="%WINDBG_DIR%" -DENABLE_ZDEBUG_TEST=ON
 
 build_script:
-- cmake --build build\mingw64 --use-stderr --target all -- -j%NUMBER_OF_PROCESSORS%
+- cmake --build build\mingw --use-stderr --target all -- -j%NUMBER_OF_PROCESSORS%
 
 after_build:
 - set Path=%WINDBG_DIR%;%Path%
-- cmake --build build\mingw64 --use-stderr --target test
+- cmake --build build\mingw --use-stderr --target test
 - cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 12"
 - cmake --build build\msvc32 --config Debug -- /verbosity:minimal /maxcpucount
-- cmake -Htests\apps -Bbuild\msvc64 -G "Visual Studio 12 Win64"
-- cmake --build build\msvc64 --config Debug -- /verbosity:minimal /maxcpucount
-- python tests\apps\test.py build\mingw64\bin\catchsegv.exe build\msvc32\Debug build\msvc64\Debug
+- if "%MINGW_DIR%"=="mingw64" cmake -Htests\apps -Bbuild\msvc64 -G "Visual Studio 12 Win64"
+- if "%MINGW_DIR%"=="mingw64" cmake --build build\msvc64 --config Debug -- /verbosity:minimal /maxcpucount
+- if "%MINGW_DIR%"=="mingw32" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug
+- if "%MINGW_DIR%"=="mingw64" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug build\msvc64\Debug
