@@ -55,3 +55,11 @@ after_build:
 
 artifacts:
 - path: build\mingw\drmingw-*.7z
+
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: Rf0TA9vQvL01s+4HPbWG3Yz5RYB52EsxJYHreX+eC3o0K6gip8Gyf9b3enCEN0Xe
+  artifact: /.*\.7z/
+  on:
+    appveyor_repo_tag: true
