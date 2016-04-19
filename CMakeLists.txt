@@ -94,9 +94,8 @@ if (HAVE_STATIC_LIBSTDCXX_FLAG)
     add_linker_flags (-static-libstdc++)
 endif ()
 
-# Enable stack protection on debug builds
-set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fstack-protector-all")
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fstack-protector-all")
+# Enable stack protection
+add_compiler_flags (-fstack-protector-all)
 # MinGW doesn't link against libssp automatically, and furthermore
 # we want static linking.
 set (SSP_LIBRARY "-Wl,-Bstatic -lssp -Wl,-Bdynamic")
