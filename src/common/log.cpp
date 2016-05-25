@@ -469,7 +469,7 @@ dumpException(HANDLE hProcess,
         lprintf(" an Unknown [0x%lX] Exception", ExceptionCode);
     }
 
-    // Now print information about where the fault occured
+    // Now print information about where the fault occurred
     lprintf(" at location %p", pExceptionRecord->ExceptionAddress);
     if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
        GetModuleFileNameExA(hProcess, hModule, szModule, sizeof szModule))

@@ -78,7 +78,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     GetDateFormatA(Locale, 0, &SystemTime, "dddd',' MMMM d',' yyyy", szDateStr, _countof(szDateStr));
     char szTimeStr[128];
     GetTimeFormatA(Locale, 0, &SystemTime, "HH':'mm':'ss", szTimeStr, _countof(szTimeStr));
-    lprintf("Error occured on %s at %s.\n\n", szDateStr, szTimeStr);
+    lprintf("Error occurred on %s at %s.\n\n", szDateStr, szTimeStr);
 
     HANDLE hProcess = GetCurrentProcess();
 

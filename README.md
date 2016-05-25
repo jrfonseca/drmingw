@@ -26,13 +26,13 @@ To install enter
 
     drmingw -i
 
-Dr. Mingw will register itself as the JIT debugger by writting into the system registry. Make sure you have Administrator rights. See [this page](http://msdn.microsoft.com/en-us/library/windows/desktop/bb204634.aspx) for more information on how this works.
+Dr. Mingw will register itself as the JIT debugger by writing into the system registry. Make sure you have Administrator rights. See [this page](http://msdn.microsoft.com/en-us/library/windows/desktop/bb204634.aspx) for more information on how this works.
 
-If the installation is sucessful, the following message box should appear:
+If the installation is successful, the following message box should appear:
 
 ![Install](img/install.png)
 
-To enable other options they must be set them allong with the **-i** option. For example,
+To enable other options they must be set them along with the **-i** option. For example,
 
     drmingw -i -v
 
@@ -104,7 +104,7 @@ Here is how `sample.RPT` should look like:
 
     -------------------
     
-    Error occured on Tuesday, June 25, 2013 at 08:18:51.
+    Error occurred on Tuesday, June 25, 2013 at 08:18:51.
     
     z:\projects\drmingw\sample\sample.exe caused an Access Violation at location 74D2ECC0 in module C:\Windows\syswow64\msvcrt.dll Writing to location 00000001.
     

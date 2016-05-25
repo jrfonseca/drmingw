@@ -470,7 +470,7 @@ main(int argc, char **argv)
         if(!ObtainSeDebugPrivilege())
             MessageBoxA(
                 NULL,
-                "An error occured while obtaining debug privileges.\nDrMingw will not debug system processes.",
+                "An error occurred while obtaining debug privileges.\nDrMingw will not debug system processes.",
                 "DrMingw",
                 MB_OK | MB_ICONERROR
             );
