@@ -125,6 +125,30 @@ Here is how `sample.RPT` should look like:
     77269F42 00401280 7EFDE000 00000000  ntdll.dll!RtlInitializeExceptionChain
     77269F15 00401280 7EFDE000 00000000  ntdll.dll!RtlInitializeExceptionChain
 
+## CatchSegv
+
+Dr. Mingw also includes a Windows port of GLIBC's `catchsegv` utility, which enables you to run a program, dumping a stack backtrace on any fatal exception.  Dr. Mingw's catchsegv has additional features:
+
+* will collect and dump all `OutputDebugString` messages to stderr
+
+* will trap if the application creates a modal dialog (e.g. `MessageBox`)
+
+* will follow all child processes
+
+* allows to specify a time out
+
+All the above make Dr. Mingw's catchsegv ideally suited for test automation.
+
+Here's the how to use it:
+
+    usage: catchsegv [options] <command-line>
+    
+    options:
+      -? displays command line help text
+      -v enables verbose output from the debugger
+      -t <seconds> specifies a timeout in seconds
+      -1 dump stack on first chance exceptions
+
 ## Frequently Asked Questions
 
 ### Why do I get a different stack trace from your example?
