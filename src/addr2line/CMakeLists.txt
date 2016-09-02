@@ -8,3 +8,5 @@ target_link_libraries (addr2line
     common
     ${MGWHELP_IMPLIB}
 )
+
+install (TARGETS addr2line RUNTIME DESTINATION bin)

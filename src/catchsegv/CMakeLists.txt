@@ -9,3 +9,5 @@ target_link_libraries (catchsegv
     ${MGWHELP_IMPLIB}
     winmm
 )
+
+install (TARGETS catchsegv RUNTIME DESTINATION bin)
