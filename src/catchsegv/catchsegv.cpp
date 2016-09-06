@@ -152,27 +152,21 @@ Usage(void)
 
 /*
  * Ignore Ctrl-C / Ctrl-Break events, so this process stays alive long enough
- * to dump the stack backtraces of the debuggee.
+ * to dump the stack backtraces of the debuggee.  But honour the second event.
  */
 static BOOL WINAPI
 consoleCtrlHandler(DWORD fdwCtrlType)
 {
-    static int cBreaks = 0;
-
-    // Honour the second break
-    if (cBreaks) {
-        return FALSE;
-    }
+    static int cCtrlC = 0;
+    static int cCtrlBreak = 0;
 
     switch (fdwCtrlType) {
     case CTRL_C_EVENT:
         fprintf(stderr, "catchsegv: warning: caught Ctrl-C event\n");
-        ++cBreaks;
-        return TRUE;
+        return cCtrlC++ ? FALSE : TRUE;
     case CTRL_BREAK_EVENT:
         fprintf(stderr, "catchsegv: warning: caught Ctrl-Break event\n");
-        ++cBreaks;
-        return TRUE;
+        return cCtrlBreak++ ? FALSE : TRUE;
     default:
         return FALSE;
     }

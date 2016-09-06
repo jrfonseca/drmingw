@@ -426,7 +426,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     break;
                 }
 
-                if (!pOptions->first_chance) {
+                if (ExceptionCode == DBG_CONTROL_C ||
+                    ExceptionCode == DBG_CONTROL_BREAK) {
+                    dwContinueStatus = DBG_CONTINUE;
+                } else if (!pOptions->first_chance) {
+                    // Ignore other first change exceptions
                     break;
                 }
             }
@@ -441,8 +445,10 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 HANDLE hThread = it->second.hThread;
                 if (dwThreadId != DebugEvent.dwThreadId &&
                     ExceptionCode != STATUS_BREAKPOINT &&
-                    ExceptionCode != STATUS_WX86_BREAKPOINT) {
-                        continue;
+                    ExceptionCode != STATUS_WX86_BREAKPOINT &&
+                    ExceptionCode != DBG_CONTROL_C &&
+                    ExceptionCode != DBG_CONTROL_BREAK) {
+                    continue;
                 }
 
                 dumpStack(pProcessInfo->hProcess, hThread, NULL);
