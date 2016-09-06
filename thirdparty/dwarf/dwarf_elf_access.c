@@ -33,13 +33,13 @@
 #include "dwarf_elf_access.h"
 
 /* Include Relocation definitions in the case of Windows */
-#ifdef WIN32
+#ifdef _WIN32
 #include "dwarf_reloc_arm.h"
 #include "dwarf_reloc_mips.h"
 #include "dwarf_reloc_ppc.h"
 #include "dwarf_reloc_ppc64.h"
 #include "dwarf_reloc_x86_64.h"
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 #ifdef HAVE_ELF_H
 #include <elf.h>
@@ -279,13 +279,13 @@ dwarf_elf_object_access_internals_init(void* obj_in,
     obj->length_size = obj->is_64bit ? 8 : 4;
     obj->pointer_size = obj->is_64bit ? 8 : 4;
 
-#ifdef WIN32
+#ifdef _WIN32
     if (obj->is_64bit && machine == EM_PPC64) {
         /*  The SNC compiler generates the EM_PPC64 machine type for the
             PS3 platform, but is a 32 bits pointer size in user mode. */
         obj->pointer_size = 4;
     }
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
     if (obj->is_64bit && machine != EM_MIPS) {
         /*  MIPS/IRIX makes pointer size and length size 8 for -64.
@@ -994,6 +994,7 @@ update_entry(Dwarf_Debug dbg,
     UNUSEDARG Dwarf_Half machine,
     struct Dwarf_Elf_Rela *rela,
     Dwarf_Small *target_section,
+    Dwarf_Unsigned target_section_size,
     Dwarf_Small *symtab_section_data,
     Dwarf_Unsigned symtab_section_size,
     Dwarf_Unsigned symtab_section_entrysize,
@@ -1029,9 +1030,12 @@ update_entry(Dwarf_Debug dbg,
         *error = DW_DLE_RELOC_SECTION_SYMBOL_INDEX_BAD;
         return DW_DLV_ERROR;
     }
-
-
-
+    if (offset >= target_section_size) {
+        /*  If offset really big, any add will overflow.
+            So lets stop early if offset is corrupt. */
+        *error = DW_DLE_RELOC_INVALID;
+        return DW_DLV_ERROR;
+    }
     if (is_64bit) {
 #ifdef HAVE_ELF64_SYM
         sym = &((Elf64_Sym*)symtab_section_data)[sym_idx];
@@ -1060,14 +1064,22 @@ update_entry(Dwarf_Debug dbg,
         *error = DW_DLE_RELOC_SECTION_RELOC_TARGET_SIZE_UNKNOWN;
         return DW_DLV_ERROR;
     }
-
-
+    if ( (offset + reloc_size) < offset) {
+        /* Another check for overflow. */
+        *error = DW_DLE_RELOC_INVALID;
+        return DW_DLV_ERROR;
+    }
+    if ( (offset + reloc_size) > target_section_size) {
+        *error = DW_DLE_RELOC_INVALID;
+        return DW_DLV_ERROR;
+    }
     {
         /*  Assuming we do not need to do a READ_UNALIGNED here
             at target_section + offset and add its value to
             outval.  Some ABIs say no read (for example MIPS),
             but if some do then which ones? */
         Dwarf_Unsigned outval = sym->st_value + addend;
+        /*  The 0th byte goes at offset. */
         WRITE_UNALIGNED(dbg,target_section + offset,
             &outval,sizeof(outval),reloc_size);
     }
@@ -1085,6 +1097,7 @@ apply_rela_entries(Dwarf_Debug dbg,
     Dwarf_Endianness endianess,
     Dwarf_Half machine,
     Dwarf_Small *target_section,
+    Dwarf_Unsigned target_section_size,
     Dwarf_Small *symtab_section,
     Dwarf_Unsigned symtab_section_size,
     Dwarf_Unsigned symtab_section_entrysize,
@@ -1108,6 +1121,7 @@ apply_rela_entries(Dwarf_Debug dbg,
                 machine,
                 &(relas)[i],
                 target_section,
+                target_section_size,
                 symtab_section,
                 symtab_section_size,
                 symtab_section_entrysize,
@@ -1175,6 +1189,7 @@ loop_through_relocations(
         obj->is_64bit,
         obj->endianness, obj->machine,
         target_section,
+        relocatablesec->dss_size,
         symtab_section,
         symtab_section_size,
         symtab_section_entrysize,

@@ -33,6 +33,10 @@
 /*  This is used to print a .debug_abbrev section without
     knowing about the DIEs that use the abbrevs.
 
+    dwarf_get_abbrev() and,
+    in dwarf_util.c,  _dwarf_get_abbrev_for_code()
+
+
     When we have a simple .o
     there is at least a hope of iterating through
     the abbrevs meaningfully without knowing
@@ -59,15 +63,15 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
 {
     Dwarf_Small *abbrev_ptr = 0;
     Dwarf_Small *abbrev_section_end = 0;
-    Dwarf_Half attr = 0;
-    Dwarf_Half attr_form = 0;
+    Dwarf_Half attr         = 0;
+    Dwarf_Half attr_form    = 0;
     Dwarf_Abbrev ret_abbrev = 0;
     Dwarf_Unsigned labbr_count = 0;
-    Dwarf_Unsigned utmp = 0;
+    Dwarf_Unsigned utmp     = 0;
 
-    if (dbg == NULL) {
+    if (!dbg) {
         _dwarf_error(NULL, error, DW_DLE_DBG_NULL);
-        return (DW_DLV_ERROR);
+        return DW_DLV_ERROR;
     }
     if (dbg->de_debug_abbrev.dss_data == 0) {
         /*  Loads abbrev section (and .debug_info as we do those
@@ -80,24 +84,23 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
     }
 
     if (offset >= dbg->de_debug_abbrev.dss_size) {
-        return (DW_DLV_NO_ENTRY);
+        return DW_DLV_NO_ENTRY;
     }
-
     ret_abbrev = (Dwarf_Abbrev) _dwarf_get_alloc(dbg, DW_DLA_ABBREV, 1);
     if (ret_abbrev == NULL) {
         _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
-        return (DW_DLV_ERROR);
+        return DW_DLV_ERROR;
     }
-    ret_abbrev->ab_dbg = dbg;
+    ret_abbrev->dab_dbg = dbg;
     if (returned_abbrev == 0 || abbr_count == 0) {
         dwarf_dealloc(dbg, ret_abbrev, DW_DLA_ABBREV);
         _dwarf_error(dbg, error, DW_DLE_DWARF_ABBREV_NULL);
-        return (DW_DLV_ERROR);
+        return DW_DLV_ERROR;
     }
 
 
     *abbr_count = 0;
-    if (length != NULL) {
+    if (length) {
         *length = 1;
     }
 
@@ -106,52 +109,56 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
     abbrev_section_end =
         dbg->de_debug_abbrev.dss_data + dbg->de_debug_abbrev.dss_size;
 
-    DECODE_LEB128_UWORD(abbrev_ptr, utmp);
-    ret_abbrev->ab_code = (Dwarf_Word) utmp;
-    if (ret_abbrev->ab_code == 0) {
+    DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp,
+        dbg,error,abbrev_section_end);
+    ret_abbrev->dab_code = (Dwarf_Word) utmp;
+    if (ret_abbrev->dab_code == 0) {
         *returned_abbrev = ret_abbrev;
         *abbr_count = 0;
         if (length) {
             *length = 1;
         }
-        return (DW_DLV_OK);
+        return DW_DLV_OK;
     }
 
-    DECODE_LEB128_UWORD(abbrev_ptr, utmp);
-    ret_abbrev->ab_tag = utmp;
-    ret_abbrev->ab_has_child = *(abbrev_ptr++);
-    ret_abbrev->ab_abbrev_ptr = abbrev_ptr;
+    DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp,
+        dbg,error,abbrev_section_end);
+    ret_abbrev->dab_tag = utmp;
+    ret_abbrev->dab_has_child = *(abbrev_ptr++);
+    ret_abbrev->dab_abbrev_ptr = abbrev_ptr;
 
     do {
-        Dwarf_Unsigned utmp2;
+        Dwarf_Unsigned utmp2 = 0;
 
-        DECODE_LEB128_UWORD(abbrev_ptr, utmp2);
+        DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp2,
+            dbg,error,abbrev_section_end);
         attr = (Dwarf_Half) utmp2;
-        DECODE_LEB128_UWORD(abbrev_ptr, utmp2);
+        DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp2,
+            dbg,error,abbrev_section_end);
         attr_form = (Dwarf_Half) utmp2;
         if (!_dwarf_valid_form_we_know(dbg,attr_form,attr)) {
             _dwarf_error(NULL, error, DW_DLE_UNKNOWN_FORM);
             return (DW_DLV_ERROR);
         }
-
-        if (attr != 0)
-            (labbr_count)++;
-
+        if (attr != 0) {
+            labbr_count++;
+        }
     } while (abbrev_ptr < abbrev_section_end &&
         (attr != 0 || attr_form != 0));
-
+    /* Global section offset. */
+    ret_abbrev->dab_goffset = offset;
+    ret_abbrev->dab_count = labbr_count;
     if (abbrev_ptr > abbrev_section_end) {
         dwarf_dealloc(dbg, ret_abbrev, DW_DLA_ABBREV);
         _dwarf_error(dbg, error, DW_DLE_ABBREV_DECODE_ERROR);
-        return (DW_DLV_ERROR);
+        return DW_DLV_ERROR;
     }
-
-    if (length != NULL)
+    if (length) {
         *length = abbrev_ptr - dbg->de_debug_abbrev.dss_data - offset;
-
+    }
     *returned_abbrev = ret_abbrev;
     *abbr_count = labbr_count;
-    return (DW_DLV_OK);
+    return DW_DLV_OK;
 }
 
 int
@@ -164,7 +171,7 @@ dwarf_get_abbrev_code(Dwarf_Abbrev abbrev,
         return (DW_DLV_ERROR);
     }
 
-    *returned_code = abbrev->ab_code;
+    *returned_code = abbrev->dab_code;
     return (DW_DLV_OK);
 }
 
@@ -179,7 +186,7 @@ dwarf_get_abbrev_tag(Dwarf_Abbrev abbrev,
         return (DW_DLV_ERROR);
     }
 
-    *returned_tag = abbrev->ab_tag;
+    *returned_tag = abbrev->dab_tag;
     return (DW_DLV_OK);
 }
 
@@ -194,7 +201,7 @@ dwarf_get_abbrev_children_flag(Dwarf_Abbrev abbrev,
         return (DW_DLV_ERROR);
     }
 
-    *returned_flag = abbrev->ab_has_child;
+    *returned_flag = abbrev->dab_has_child;
     return (DW_DLV_OK);
 }
 
@@ -220,19 +227,19 @@ dwarf_get_abbrev_entry(Dwarf_Abbrev abbrev,
         return (DW_DLV_ERROR);
     }
 
-    if (abbrev->ab_code == 0) {
+    if (abbrev->dab_code == 0) {
         return (DW_DLV_NO_ENTRY);
     }
 
-    if (abbrev->ab_dbg == NULL) {
+    if (abbrev->dab_dbg == NULL) {
         _dwarf_error(NULL, error, DW_DLE_DBG_NULL);
         return (DW_DLV_ERROR);
     }
 
-    abbrev_ptr = abbrev->ab_abbrev_ptr;
+    abbrev_ptr = abbrev->dab_abbrev_ptr;
     abbrev_end =
-        abbrev->ab_dbg->de_debug_abbrev.dss_data +
-        abbrev->ab_dbg->de_debug_abbrev.dss_size;
+        abbrev->dab_dbg->de_debug_abbrev.dss_data +
+        abbrev->dab_dbg->de_debug_abbrev.dss_size;
 
     for (attr = 1, attr_form = 1;
         indx >= 0 && abbrev_ptr < abbrev_end && (attr != 0 ||
@@ -241,14 +248,16 @@ dwarf_get_abbrev_entry(Dwarf_Abbrev abbrev,
         Dwarf_Unsigned utmp4;
 
         mark_abbrev_ptr = abbrev_ptr;
-        DECODE_LEB128_UWORD(abbrev_ptr, utmp4);
+        DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp4,abbrev->dab_dbg,
+            error,abbrev_end);
         attr = (Dwarf_Half) utmp4;
-        DECODE_LEB128_UWORD(abbrev_ptr, utmp4);
+        DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp4,abbrev->dab_dbg,
+            error,abbrev_end);
         attr_form = (Dwarf_Half) utmp4;
     }
 
     if (abbrev_ptr >= abbrev_end) {
-        _dwarf_error(abbrev->ab_dbg, error, DW_DLE_ABBREV_DECODE_ERROR);
+        _dwarf_error(abbrev->dab_dbg, error, DW_DLE_ABBREV_DECODE_ERROR);
         return (DW_DLV_ERROR);
     }
 
@@ -256,11 +265,12 @@ dwarf_get_abbrev_entry(Dwarf_Abbrev abbrev,
         return (DW_DLV_NO_ENTRY);
     }
 
-    if (form != NULL)
+    if (form != NULL) {
         *form = attr_form;
-    if (offset != NULL)
-        *offset = mark_abbrev_ptr - abbrev->ab_dbg->de_debug_abbrev.dss_data;
-
+    }
+    if (offset != NULL) {
+        *offset = mark_abbrev_ptr - abbrev->dab_dbg->de_debug_abbrev.dss_data;
+    }
     *returned_attr_num = (attr);
     return DW_DLV_OK;
 }

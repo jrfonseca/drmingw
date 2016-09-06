@@ -221,17 +221,18 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
         }
         /*  READ_AREA_LENGTH updates pubnames_like_ptr for consumed
             bytes. */
-        READ_AREA_LENGTH(dbg, length, Dwarf_Unsigned,
+        READ_AREA_LENGTH_CK(dbg, length, Dwarf_Unsigned,
             pubnames_like_ptr, local_length_size,
-            local_extension_size);
+            local_extension_size,error,section_length,section_end_ptr);
         pubnames_context->pu_length_size = local_length_size;
         pubnames_context->pu_extension_size = local_extension_size;
         pubnames_context->pu_dbg = dbg;
 
         pubnames_ptr_past_end_cu = pubnames_like_ptr + length;
 
-        READ_UNALIGNED(dbg, version, Dwarf_Half,
-            pubnames_like_ptr, sizeof(Dwarf_Half));
+        READ_UNALIGNED_CK(dbg, version, Dwarf_Half,
+            pubnames_like_ptr, sizeof(Dwarf_Half),
+            error,section_end_ptr);
         pubnames_like_ptr += sizeof(Dwarf_Half);
         /* ASSERT: DW_PUBNAMES_VERSION2 == DW_PUBTYPES_VERSION2 */
         if (version != DW_PUBNAMES_VERSION2) {
@@ -240,9 +241,10 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
         }
 
         /* Offset of CU header in debug section. */
-        READ_UNALIGNED(dbg, pubnames_context->pu_offset_of_cu_header,
+        READ_UNALIGNED_CK(dbg, pubnames_context->pu_offset_of_cu_header,
             Dwarf_Off, pubnames_like_ptr,
-            pubnames_context->pu_length_size);
+            pubnames_context->pu_length_size,
+            error,section_end_ptr);
         pubnames_like_ptr += pubnames_context->pu_length_size;
 
         FIX_UP_OFFSET_IRIX_BUG(dbg,
@@ -250,9 +252,10 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
             "pubnames cu header offset");
 
 
-        READ_UNALIGNED(dbg, pubnames_context->pu_info_length,
+        READ_UNALIGNED_CK(dbg, pubnames_context->pu_info_length,
             Dwarf_Unsigned, pubnames_like_ptr,
-            pubnames_context->pu_length_size);
+            pubnames_context->pu_length_size,
+            error,section_end_ptr);
         pubnames_like_ptr += pubnames_context->pu_length_size;
 
         if (pubnames_like_ptr > (section_data_ptr + section_length)) {
@@ -262,9 +265,10 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
 
         /*  Read initial offset (of DIE within CU) of a pubname, final
             entry is not a pair, just a zero offset. */
-        READ_UNALIGNED(dbg, die_offset_in_cu, Dwarf_Off,
+        READ_UNALIGNED_CK(dbg, die_offset_in_cu, Dwarf_Off,
             pubnames_like_ptr,
-            pubnames_context->pu_length_size);
+            pubnames_context->pu_length_size,
+            error,section_end_ptr);
         pubnames_like_ptr += pubnames_context->pu_length_size;
         FIX_UP_OFFSET_IRIX_BUG(dbg,
             die_offset_in_cu, "offset of die in cu");
@@ -297,7 +301,6 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
             pubnames_like_ptr = pubnames_like_ptr +
                 strlen((char *) pubnames_like_ptr) + 1;
 
-
             /* Finish off current entry chain */
             curr_chain =
                 (Dwarf_Chain) _dwarf_get_alloc(dbg, DW_DLA_CHAIN, 1);
@@ -317,13 +320,12 @@ _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
             }
 
             /* Fead offset for the *next* entry */
-            READ_UNALIGNED(dbg, die_offset_in_cu, Dwarf_Off,
-                pubnames_like_ptr, pubnames_context->pu_length_size);
-
+            READ_UNALIGNED_CK(dbg, die_offset_in_cu, Dwarf_Off,
+                pubnames_like_ptr, pubnames_context->pu_length_size,
+                error,section_end_ptr);
             pubnames_like_ptr += pubnames_context->pu_length_size;
             FIX_UP_OFFSET_IRIX_BUG(dbg,
                 die_offset_in_cu, "offset of next die in cu");
-
             if (pubnames_like_ptr > (section_data_ptr + section_length)) {
                 _dwarf_error(dbg, error, length_err_num);
                 return (DW_DLV_ERROR);
@@ -510,6 +512,8 @@ dwarf_global_name_offsets(Dwarf_Global global,
 
     if (cu_die_offset != NULL) {
         /* Globals cannot refer to debug_types */
+        int cres = 0;
+        Dwarf_Unsigned headerlen = 0;
         int res = _dwarf_load_debug_info(dbg, error);
 
         if (res != DW_DLV_OK) {
@@ -524,10 +528,13 @@ dwarf_global_name_offsets(Dwarf_Global global,
             _dwarf_error(NULL, error, DW_DLE_OFFSET_BAD);
             return (DW_DLV_ERROR);
         }
-        *cu_die_offset = off + _dwarf_length_of_cu_header(dbg, off,true);
+        cres = _dwarf_length_of_cu_header(dbg, off,true,
+            &headerlen,error);
+        if(cres != DW_DLV_OK) {
+            return cres;
+        }
+        *cu_die_offset = off + headerlen;
     }
-
-
     return DW_DLV_OK;
 }
 
@@ -536,7 +543,9 @@ dwarf_global_name_offsets(Dwarf_Global global,
 
     New June, 2001.
     Used by SGI IRIX debuggers.
-    No error is possible.
+    No error used to be possible.
+    As of May 2016 an error is possible if the DWARF is
+    corrupted! (IRIX debuggers are no longer built ...)
 
     See also dwarf_CU_dieoffset_given_die().
 
@@ -552,12 +561,15 @@ dwarf_get_cu_die_offset_given_cu_header_offset(Dwarf_Debug dbg,
     Dwarf_Off * out_cu_die_offset,
     UNUSEDARG Dwarf_Error * err)
 {
-    Dwarf_Off len =
-        _dwarf_length_of_cu_header(dbg, in_cu_header_offset,true);
+    Dwarf_Off headerlen = 0;
+    int cres = 0;
 
-    Dwarf_Off newoff = in_cu_header_offset + len;
-
-    *out_cu_die_offset = newoff;
+    cres = _dwarf_length_of_cu_header(dbg, in_cu_header_offset,true,
+        &headerlen,err);
+    if (cres != DW_DLV_OK) {
+        return cres;
+    }
+    *out_cu_die_offset = in_cu_header_offset + headerlen;
     return DW_DLV_OK;
 }
 
@@ -577,12 +589,15 @@ dwarf_get_cu_die_offset_given_cu_header_offset_b(Dwarf_Debug dbg,
     Dwarf_Off * out_cu_die_offset,
     UNUSEDARG Dwarf_Error * err)
 {
-    Dwarf_Off len =
-        _dwarf_length_of_cu_header(dbg, in_cu_header_offset,is_info);
+    Dwarf_Off headerlen = 0;
+    int cres = 0;
 
-    Dwarf_Off newoff = in_cu_header_offset + len;
-
-    *out_cu_die_offset = newoff;
+    cres = _dwarf_length_of_cu_header(dbg, in_cu_header_offset,is_info,
+        &headerlen,err);
+    if (cres != DW_DLV_OK) {
+        return cres;
+    }
+    *out_cu_die_offset = in_cu_header_offset + headerlen;
     return DW_DLV_OK;
 }
 /*  dwarf_CU_dieoffset_given_die returns

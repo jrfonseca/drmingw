@@ -228,6 +228,7 @@ struct Dwarf_Cie_s {
     Dwarf_Small ci_return_address_register;
     Dwarf_Small *ci_cie_start;
     Dwarf_Small *ci_cie_instr_start;
+    Dwarf_Small *ci_cie_end;
     Dwarf_Debug ci_dbg;
     Dwarf_Frame ci_initial_table;
     Dwarf_Cie ci_next;
@@ -259,6 +260,8 @@ struct Dwarf_Cie_s {
         record the position so fde can get it on fde creation. */
     Dwarf_Unsigned ci_index;
     Dwarf_Small *  ci_section_ptr;
+    Dwarf_Unsigned ci_section_length;
+    Dwarf_Small *  ci_section_end;
     /*  DWARF4 adds address size and segment size to the CIE: the .debug_info
         section may not always be present to allow libdwarf to
         find address_size from the compilation-unit. */
@@ -287,6 +290,7 @@ struct Dwarf_Fde_s {
     Dwarf_Addr fd_address_range;
     Dwarf_Small *fd_fde_start;
     Dwarf_Small *fd_fde_instr_start;
+    Dwarf_Small *fd_fde_end;
     Dwarf_Debug fd_dbg;
 
     /*  fd_offset_into_exception_tables is SGI/IRIX exception table
@@ -314,12 +318,18 @@ struct Dwarf_Fde_s {
     Dwarf_Small * fd_section_ptr;
     Dwarf_Unsigned fd_section_length;
     Dwarf_Unsigned fd_section_index;
+    Dwarf_Small * fd_section_end;
 
     /*  If fd_eh_table_value_set is true, then fd_eh_table_value is
         meaningful.  Never meaningful for .debug_frame, is
         part of .eh_frame. */
     Dwarf_Unsigned fd_eh_table_value;
     Dwarf_Bool fd_eh_table_value_set;
+
+    /* The following are memoization to save recalculation. */
+    struct Dwarf_Frame_s fd_fde_table;
+    Dwarf_Addr    fd_fde_pc_requested;
+    Dwarf_Bool    fd_have_fde_tab;
 
 };
 
@@ -349,9 +359,14 @@ _dwarf_get_augmentation_type(Dwarf_Debug dbg,
     Dwarf_Small *augmentation_string,
     int is_gcc_eh_frame);
 
-Dwarf_Unsigned _dwarf_get_return_address_reg(Dwarf_Small *frame_ptr,
+int _dwarf_get_return_address_reg(Dwarf_Small *frame_ptr,
     int version,
-    unsigned long *size);
+    Dwarf_Debug dbg,
+    Dwarf_Byte_Ptr section_end,
+    unsigned long *size,
+    Dwarf_Unsigned *return_address_register,
+    Dwarf_Error *error);
+
 
 /*  Temporary recording of crucial cie/fde prefix data.
     Vastly simplifies some argument lists.  */
@@ -394,7 +409,9 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
     Dwarf_Debug dbg,
     Dwarf_Half reg_num_of_cfa,
     Dwarf_Sword * returned_count,
-    int *returned_error);
+    Dwarf_Bool  * has_more_rows,
+    Dwarf_Addr  * subsequent_pc,
+    Dwarf_Error * error);
 
 
 int dwarf_read_cie_fde_prefix(Dwarf_Debug dbg,
@@ -428,3 +445,4 @@ int dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
 
 int _dwarf_frame_constructor(Dwarf_Debug dbg,void * );
 void _dwarf_frame_destructor (void *);
+void _dwarf_fde_destructor (void *);

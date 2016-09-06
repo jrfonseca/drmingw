@@ -78,8 +78,8 @@ _dwarf_addr_finder(dwarf_elf_handle elf_file_ptr,
 
     Dwarf_Error err = 0;
     Dwarf_Debug dbg = 0;
-    int res = 0;
-    int errval = 0;
+    int res         = 0;
+    int errval      = 0;
     int sections_found = 0;
 
     res = dwarf_elf_init(elf_file_ptr, DW_DLC_READ, /* errhand */ 0,
@@ -168,17 +168,17 @@ _dwarf_addr_finder(dwarf_elf_handle elf_file_ptr,
 static int
 handle_debug_info(Dwarf_Debug dbg, int *errval)
 {
-    Dwarf_Unsigned nxtoff = 1;
-    Dwarf_Unsigned hdr_length;
-    Dwarf_Half version_stamp;
-    Dwarf_Unsigned abbrev_offset;
-    Dwarf_Half addr_size;
-    Dwarf_Error err;
-    int terminate_now = 0;
-    int res = 0;
-    Dwarf_Die sibdie;
-    int sibres;
-    int nres = DW_DLV_OK;
+    Dwarf_Unsigned nxtoff     = 1;
+    Dwarf_Unsigned hdr_length = 0;
+    Dwarf_Half version_stamp  = 0;
+    Dwarf_Unsigned abbrev_offset = 0;
+    Dwarf_Half addr_size      = 0;
+    Dwarf_Error err           = 0;
+    int terminate_now         = 0;
+    int res                   = 0;
+    Dwarf_Die sibdie          = 0;
+    int sibres                = 0;
+    int nres                  = DW_DLV_OK;
 
 
     for (nres = dwarf_next_cu_header(dbg, &hdr_length, &version_stamp,
@@ -250,11 +250,11 @@ static int
 handle_attr_addr(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half attrnum,
     Dwarf_Error * perr)
 {
-    int res = DW_DLV_OK;
-    Dwarf_Off offset;
-    Dwarf_Addr addr;
-    Dwarf_Half form;
-    int ares;
+    int res          = DW_DLV_OK;
+    Dwarf_Off offset = 0;
+    Dwarf_Addr addr  = 0;
+    Dwarf_Half form  = 0;
+    int ares         = 0;
 
     Dwarf_Attribute attr;
 
@@ -305,15 +305,15 @@ static int
 handle_attr_locdesc(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half attrnum,
     Dwarf_Error * perr)
 {
-    int retval = DW_DLV_OK;
-    Dwarf_Attribute attr;
-    Dwarf_Locdesc *llbuf;
-    Dwarf_Signed i;
-    Dwarf_Off offset;
-    Dwarf_Loc *locp;
-    unsigned int entindx;
-    int res;
-    int ares;
+    int retval           = DW_DLV_OK;
+    Dwarf_Attribute attr = 0;
+    Dwarf_Locdesc *llbuf = 0;
+    Dwarf_Signed i       = 0;
+    Dwarf_Off offset     = 0;
+    Dwarf_Loc *locp      = 0;
+    unsigned int entindx = 0;
+    int res              = 0;
+    int ares             = 0;
 
 
     ares = dwarf_attr(die, attrnum, &attr, perr);
@@ -395,16 +395,15 @@ handle_attr_locdesc(Dwarf_Debug dbg, Dwarf_Die die, Dwarf_Half attrnum,
 static int
 process_this_die_attrs(Dwarf_Debug dbg, Dwarf_Die newdie, int *errval)
 {
-    Dwarf_Error err;
-    Dwarf_Half i;
-    Dwarf_Half newattrnum;
-    int res;
-    int tres;
-    Dwarf_Half ltag;
+    Dwarf_Error err = 0;
+    Dwarf_Half i    = 0;
+    Dwarf_Half newattrnum = 0;
+    int res         = 0;
+    int tres        = 0;
+    Dwarf_Half ltag = 0;
+    Dwarf_Off doff  = 0;
 
-    Dwarf_Off doff;
     int doffres = dwarf_dieoffset(newdie, &doff, &err);
-
     if (doffres != DW_DLV_OK) {
         if (doffres == DW_DLV_ERROR) {
             *errval = (int) dwarf_errno(err);
@@ -428,8 +427,8 @@ process_this_die_attrs(Dwarf_Debug dbg, Dwarf_Die newdie, int *errval)
     }
 
     for (i = 0; i < sizeof(might_have_addr) / sizeof(int); i++) {
-        int resattr;
-        Dwarf_Bool hasattr;
+        int resattr        = 0;
+        Dwarf_Bool hasattr = 0;
 
         newattrnum = might_have_addr[i];
         err = 0;
@@ -450,8 +449,8 @@ process_this_die_attrs(Dwarf_Debug dbg, Dwarf_Die newdie, int *errval)
         }
     }
     for (i = 0; i < sizeof(might_have_locdesc) / sizeof(int); i++) {
-        int resattr;
-        Dwarf_Bool hasattr;
+        int resattr        = 0;
+        Dwarf_Bool hasattr = 0;
 
         newattrnum = might_have_locdesc[i];
         err = 0;
@@ -491,12 +490,12 @@ do_this_die_and_dealloc(Dwarf_Debug dbg, Dwarf_Die die, int *errval)
 {
 
     Dwarf_Die prevdie = 0;
-    Dwarf_Die newdie = die;
-    Dwarf_Error err = 0;
-    int res = 0;
-    int sibres = DW_DLV_OK;
-    int tres = DW_DLV_OK;
-    Dwarf_Die sibdie;
+    Dwarf_Die newdie  = die;
+    Dwarf_Error err   = 0;
+    int res           = 0;
+    int sibres        = DW_DLV_OK;
+    int tres          = DW_DLV_OK;
+    Dwarf_Die sibdie  = 0;
 
     while (sibres == DW_DLV_OK) {
         Dwarf_Die ch_die;
@@ -573,17 +572,16 @@ static int
 handle_debug_frame(Dwarf_Debug dbg, Dwarf_addr_callback_func cb_func,
     int *errval)
 {
-    int retval = DW_DLV_OK;
-    int res;
-    Dwarf_Error err;
-    Dwarf_Addr *addrlist;
-    Dwarf_Off *offsetlist;
-    Dwarf_Signed count;
-    int i;
+    int retval            = DW_DLV_OK;
+    int res               = 0;
+    Dwarf_Error err       = 0;
+    Dwarf_Addr *addrlist  = 0;
+    Dwarf_Off *offsetlist = 0;
+    Dwarf_Signed count    = 0;
+    int i                 = 0;
 
-    res =
-        _dwarf_frame_address_offsets(dbg, &addrlist, &offsetlist,
-            &count, &err);
+    res = _dwarf_frame_address_offsets(dbg, &addrlist,
+        &offsetlist, &count, &err);
     if (res == DW_DLV_OK) {
         for (i = 0; i < count; i++) {
             cb_func(DW_SECTION_FRAME, offsetlist[i], addrlist[i]);
@@ -604,11 +602,11 @@ handle_debug_aranges(Dwarf_Debug dbg, Dwarf_addr_callback_func cb_func,
     int *errval)
 {
     int retval = DW_DLV_OK;
-    Dwarf_Error err;
-    Dwarf_Addr *aranges;
-    Dwarf_Signed count;
-    int indx;
-    Dwarf_Off *offsets;
+    Dwarf_Error err = 0;
+    Dwarf_Addr *aranges = 0;
+    Dwarf_Signed count = 0;
+    int indx = 0;
+    Dwarf_Off *offsets = 0;
 
     retval =
         _dwarf_get_aranges_addr_offsets(dbg, &aranges, &offsets, &count,
@@ -636,17 +634,16 @@ static int
 handle_debug_line(Dwarf_Debug dbg, Dwarf_Die cu_die,
     Dwarf_addr_callback_func cb_func, int *errval)
 {
-    int retval = DW_DLV_OK;
-    int res;
-    Dwarf_Error err;
-    Dwarf_Addr *addrlist;
-    Dwarf_Off *offsetlist;
-    Dwarf_Unsigned count;
-    Dwarf_Unsigned i;
+    int retval            = DW_DLV_OK;
+    int res               = 0;
+    Dwarf_Error err       = 0;
+    Dwarf_Addr *addrlist  = 0;
+    Dwarf_Off *offsetlist = 0;
+    Dwarf_Unsigned count  = 0;
+    Dwarf_Unsigned i      = 0;
 
-    res =
-        _dwarf_line_address_offsets(dbg, cu_die, &addrlist, &offsetlist,
-            &count, &err);
+    res = _dwarf_line_address_offsets(dbg, cu_die, &addrlist,
+        &offsetlist, &count, &err);
     if (res == DW_DLV_OK) {
         for (i = 0; i < count; i++) {
             cb_func(DW_SECTION_LINE, offsetlist[i], addrlist[i]);

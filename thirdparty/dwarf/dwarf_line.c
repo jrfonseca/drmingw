@@ -203,6 +203,11 @@ create_fullest_file_path(Dwarf_Debug dbg,
         if (dirno > 0 && fe->fi_dir_index > 0) {
             inc_dir_name = (char *) line_context->lc_include_directories[
                 fe->fi_dir_index - 1];
+            if (!inc_dir_name) {
+                /*  This should never ever happen except in case
+                    of a corrupted object file. */
+                inc_dir_name = "<erroneous NULL include dir pointer>";
+            }
             incdirnamelen = strlen(inc_dir_name);
         }
         full_name = (char *) _dwarf_get_alloc(dbg, DW_DLA_STRING,
@@ -306,6 +311,7 @@ dwarf_srcfiles(Dwarf_Die die,
     int lres = DW_DLV_ERROR;
     unsigned i = 0;
     int res = DW_DLV_ERROR;
+    Dwarf_Small *section_start = 0;
 
     /*  ***** BEGIN CODE ***** */
     /*  Reset error. */
@@ -334,7 +340,7 @@ dwarf_srcfiles(Dwarf_Die die,
     if (!dbg->de_debug_line.dss_size) {
         return (DW_DLV_NO_ENTRY);
     }
-
+    section_start = dbg->de_debug_line.dss_data;
 
     lres = dwarf_whatform(stmt_list_attr,&attrform,error);
     if (lres != DW_DLV_OK) {
@@ -343,7 +349,7 @@ dwarf_srcfiles(Dwarf_Die die,
     if (attrform != DW_FORM_data4 && attrform != DW_FORM_data8 &&
         attrform != DW_FORM_sec_offset  &&
         attrform != DW_FORM_GNU_ref_alt) {
-        _dwarf_error(dbg, error, DW_DLE_LINE_OFFSET_BAD);
+        _dwarf_error(dbg, error, DW_DLE_LINE_OFFSET_WRONG_FORM);
         return (DW_DLV_ERROR);
     }
     lres = dwarf_global_formref(stmt_list_attr, &line_offset, error);
@@ -364,6 +370,11 @@ dwarf_srcfiles(Dwarf_Die die,
             return resl;
         }
         line_ptr += fission_offset;
+        if (line_ptr > dbg->de_debug_line.dss_data +
+            dbg->de_debug_line.dss_size) {
+            _dwarf_error(dbg, error, DW_DLE_FISSION_ADDITION_ERROR);
+            return DW_DLV_ERROR;
+        }
     }
     dwarf_dealloc(dbg, stmt_list_attr, DW_DLA_ATTR);
 
@@ -387,6 +398,7 @@ dwarf_srcfiles(Dwarf_Die die,
         Dwarf_Small *line_ptr_out = 0;
         int dres = _dwarf_read_line_table_header(dbg,
             context,
+            section_start,
             line_ptr,
             dbg->de_debug_line.dss_size,
             &line_ptr_out,
@@ -518,6 +530,7 @@ _dwarf_internal_srclines(Dwarf_Die die,
         cu. */
     Dwarf_Small *line_ptr_actuals = 0;
     Dwarf_Small *section_start = 0;
+    Dwarf_Small *section_end = 0;
 
     /*  Pointer to a DW_AT_stmt_list attribute in case it exists in the
         die. */
@@ -583,6 +596,8 @@ _dwarf_internal_srclines(Dwarf_Die die,
         _dwarf_error(dbg, error, DW_DLE_LINE_OFFSET_BAD);
         return (DW_DLV_ERROR);
     }
+    section_start = dbg->de_debug_line.dss_data;
+    section_end = section_start  +dbg->de_debug_line.dss_size;
     {
         Dwarf_Unsigned fission_size = 0;
         int resf = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
@@ -591,12 +606,24 @@ _dwarf_internal_srclines(Dwarf_Die die,
             return resf;
         }
         line_ptr += fission_offset;
+        if (line_ptr > section_end) {
+            _dwarf_error(dbg, error, DW_DLE_FISSION_ADDITION_ERROR);
+            return DW_DLV_ERROR;
+        }
     }
 
     section_start = dbg->de_debug_line.dss_data;
+    section_end = section_start  +dbg->de_debug_line.dss_size;
     orig_line_ptr = section_start + line_offset + fission_offset;
     line_ptr = orig_line_ptr;
     dwarf_dealloc(dbg, stmt_list_attr, DW_DLA_ATTR);
+    if ((line_offset + fission_offset) > dbg->de_debug_line.dss_size) {
+        _dwarf_error(dbg, error, DW_DLE_LINE_OFFSET_BAD);
+    }
+    if (line_ptr > section_end) {
+        _dwarf_error(dbg, error, DW_DLE_LINE_OFFSET_BAD);
+        return DW_DLV_ERROR;
+    }
 
     /*  If die has DW_AT_comp_dir attribute, get the string that names
         the compilation directory. */
@@ -620,7 +647,9 @@ _dwarf_internal_srclines(Dwarf_Die die,
         Dwarf_Small *newlinep = 0;
         int resp = _dwarf_read_line_table_header(dbg,
             cu_context,
-            line_ptr, dbg->de_debug_line.dss_size,
+            section_start,
+            line_ptr,
+            dbg->de_debug_line.dss_size,
             &newlinep,
             line_context,
             NULL,NULL,
@@ -1713,6 +1742,10 @@ void
 _dwarf_print_header_issue(Dwarf_Debug dbg,
     const char *specific_msg,
     Dwarf_Small *data_start,
+    Dwarf_Signed value,
+    unsigned index,
+    unsigned tabv,
+    unsigned linetabv,
     int *err_count_out)
 {
     if (!err_count_out) {
@@ -1722,7 +1755,12 @@ _dwarf_print_header_issue(Dwarf_Debug dbg,
     if (dwarf_cmdline_options.check_verbose_mode){
         dwarf_printf(dbg,
             "\n*** DWARF CHECK: "
-            ".debug_line: %s", specific_msg);
+            ".debug_line: %s %" DW_PR_DSd,
+            specific_msg,value);
+        if (index || tabv || linetabv) {
+            dwarf_printf(dbg,"; Mismatch index %u stdval %u linetabval %u",
+                index,tabv,linetabv);
+        }
 
         if (data_start >= dbg->de_debug_line.dss_data &&
             (data_start < (dbg->de_debug_line.dss_data +
@@ -1769,7 +1807,8 @@ _dwarf_decode_line_string_form(Dwarf_Debug dbg,
         secstart = dbg->de_debug_line_str.dss_data;
         secend = secstart + dbg->de_debug_line_str.dss_size;
 
-        READ_UNALIGNED(dbg, offset, Dwarf_Unsigned,offsetptr, offset_size);
+        READ_UNALIGNED_CK(dbg, offset, Dwarf_Unsigned,offsetptr, offset_size,
+            error,line_ptr_end);
         *line_ptr += offset_size;
         strptr = secstart + offset;
         res = _dwarf_check_string_valid(dbg,
@@ -1783,6 +1822,7 @@ _dwarf_decode_line_string_form(Dwarf_Debug dbg,
     case DW_FORM_string: {
         Dwarf_Small *secend = line_ptr_end;
         Dwarf_Small *strptr = *line_ptr;
+
         res = _dwarf_check_string_valid(dbg,
             strptr ,strptr,secend,error);
         if (res != DW_DLV_OK) {
@@ -1803,6 +1843,7 @@ _dwarf_decode_line_udata_form(Dwarf_Debug dbg,
     Dwarf_Unsigned form,
     Dwarf_Small **line_ptr,
     Dwarf_Unsigned *return_val,
+    Dwarf_Small *line_end_ptr,
     Dwarf_Error * error)
 {
     Dwarf_Unsigned val = 0;
@@ -1811,7 +1852,7 @@ _dwarf_decode_line_udata_form(Dwarf_Debug dbg,
     switch (form) {
 
     case DW_FORM_udata:
-        DECODE_LEB128_UWORD(lp, val);
+        DECODE_LEB128_UWORD_CK(lp, val,dbg,error,line_end_ptr);
         *return_val = val;
         *line_ptr = lp;
         return DW_DLV_OK;

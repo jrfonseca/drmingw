@@ -33,7 +33,7 @@
 #define DWARF_RELOC_X86_64
 
 /* Include the definitions only in the case of Windows */
-#ifdef WIN32
+#ifdef _WIN32
 /* Relocation types for AMD x86-64 architecture */
 #define R_X86_64_NONE             0 /* No reloc */
 #define R_X86_64_64               1 /* Direct 64 bit  */
@@ -80,7 +80,7 @@
 
 /*  Keep this the last entry.  */
 #define R_X86_64_NUM             39
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /* Relocation types for X86_64 */
 static const char *reloc_type_names_X86_64[] = {

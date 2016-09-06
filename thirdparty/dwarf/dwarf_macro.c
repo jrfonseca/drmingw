@@ -255,8 +255,10 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
         return (DW_DLV_ERROR);
     }
     for (count = 0; !done && count < max_count; ++count) {
-        unsigned long slen;
-        Dwarf_Word len;
+        unsigned long slen = 0;
+
+        /* Set but not used */
+        UNUSEDARG Dwarf_Unsigned utemp = 0;
 
         uc = *pnext;
         ++pnext;                /* get past the type code */
@@ -266,9 +268,8 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
             /* line, string */
         case DW_MACINFO_vendor_ext:
             /* number, string */
-            (void) _dwarf_decode_u_leb128(pnext, &len);
-
-            pnext += len;
+            DECODE_LEB128_UWORD_CK(pnext,utemp,dbg,error,
+                macro_end);
             if (((Dwarf_Unsigned)(pnext - macro_base)) >=
                 dbg->de_debug_macinfo.dss_size) {
                 free_macro_stack(dbg,&msdata);
@@ -294,8 +295,8 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
             break;
         case DW_MACINFO_start_file:
             /* line, file index */
-            (void) _dwarf_decode_u_leb128(pnext, &len);
-            pnext += len;
+            DECODE_LEB128_UWORD_CK(pnext,utemp,dbg,error,
+                macro_end);
             if (((Dwarf_Unsigned)(pnext - macro_base)) >=
                 dbg->de_debug_macinfo.dss_size) {
                 free_macro_stack(dbg,&msdata);
@@ -303,8 +304,8 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
                     DW_DLE_DEBUG_MACRO_INCONSISTENT);
                 return (DW_DLV_ERROR);
             }
-            (void) _dwarf_decode_u_leb128(pnext, &len);
-            pnext += len;
+            DECODE_LEB128_UWORD_CK(pnext,utemp,dbg,error,
+                macro_end);
             if (((Dwarf_Unsigned)(pnext - macro_base)) >=
                 dbg->de_debug_macinfo.dss_size) {
                 free_macro_stack(dbg,&msdata);
@@ -370,9 +371,8 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
     /* A series ends with a type code of 0. */
 
     for (final_count = 0; !done && final_count < count; ++final_count) {
-        unsigned long slen;
-        Dwarf_Word len;
-        Dwarf_Unsigned v1;
+        unsigned long slen = 0;
+        Dwarf_Unsigned v1 = 0;
         Dwarf_Macro_Details *pdmd = (Dwarf_Macro_Details *) (pdata +
             (final_count * sizeof (Dwarf_Macro_Details)));
 
@@ -395,10 +395,10 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
             /* line, string */
         case DW_MACINFO_vendor_ext:
             /* number, string */
-            v1 = _dwarf_decode_u_leb128(pnext, &len);
+            DECODE_LEB128_UWORD_CK(pnext,v1,dbg,error,
+                macro_end);
             pdmd->dmd_lineno = v1;
 
-            pnext += len;
             if (((Dwarf_Unsigned)(pnext - macro_base)) >=
                 dbg->de_debug_macinfo.dss_size) {
                 free_macro_stack(dbg,&msdata);
@@ -428,9 +428,9 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
             break;
         case DW_MACINFO_start_file:
             /* Line, file index */
-            v1 = _dwarf_decode_u_leb128(pnext, &len);
+            DECODE_LEB128_UWORD_CK(pnext,v1,dbg,error,
+                macro_end);
             pdmd->dmd_lineno = v1;
-            pnext += len;
             if (((Dwarf_Unsigned)(pnext - macro_base)) >=
                 dbg->de_debug_macinfo.dss_size) {
                 free_macro_stack(dbg,&msdata);
@@ -439,14 +439,14 @@ dwarf_get_macro_details(Dwarf_Debug dbg,
                     DW_DLE_DEBUG_MACRO_INCONSISTENT);
                 return (DW_DLV_ERROR);
             }
-            v1 = _dwarf_decode_u_leb128(pnext, &len);
+            DECODE_LEB128_UWORD_CK(pnext,v1,dbg,error,
+                macro_end);
             pdmd->dmd_fileindex = v1;
             (void) _dwarf_macro_stack_push_index(dbg, fileindex,
                 &msdata);
             /*  We ignore the error, we just let fileindex ** be -1 when
                 we pop this one. */
             fileindex = v1;
-            pnext += len;
             if (((Dwarf_Unsigned)(pnext - macro_base)) >=
                 dbg->de_debug_macinfo.dss_size) {
                 free_macro_stack(dbg,&msdata);

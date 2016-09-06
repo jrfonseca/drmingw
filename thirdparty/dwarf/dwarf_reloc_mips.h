@@ -29,7 +29,7 @@
 #define DWARF_RELOC_MIPS
 
 /* Include the definitions only in the case of Windows */
-#ifdef WIN32
+#ifdef _WIN32
 /* Relocation types for MIPS */
 #define R_MIPS_NONE                   0
 #define R_MIPS_16                     1
@@ -74,7 +74,7 @@
 
 /*  Keep this the last entry.  */
 #define R_MIPS_NUM                   35
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /* Relocation types for MIPS */
 static const char *reloc_type_names_MIPS[] = {

@@ -34,7 +34,7 @@
 
 
 /* Include the definitions only in the case of Windows */
-#ifdef WIN32
+#ifdef _WIN32
 /* Relocation types for ARM */
 #define R_ARM_NONE                    0
 #define R_ARM_PC24                    1
@@ -161,7 +161,7 @@
 
 /*  Keep this the last entry.  */
 #define R_ARM_NUM                   256
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /* ARM relocations defined by the ABIs */
 static const char *reloc_type_names_ARM[] = {

@@ -1,6 +1,5 @@
 /*
-
-  Copyright (C) 2008-2015 David Anderson. All Rights Reserved.
+  Copyright (C) 2008-2016 David Anderson. All Rights Reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
@@ -75,6 +74,9 @@ int dwarf_get_ranges_a(Dwarf_Debug dbg,
             &rangebase,
             error);
         if (restied == DW_DLV_ERROR ) {
+            if(!error) {
+                return restied;
+            }
             dwarf_dealloc(localdbg,*error,DW_DLA_ERROR);
             *error = 0;
             /* Nothing else to do. Look in original dbg. */
@@ -122,13 +124,15 @@ int dwarf_get_ranges_a(Dwarf_Debug dbg,
             return (DW_DLV_ERROR);
         }
         entry_count++;
-        READ_UNALIGNED(localdbg,re->cur.dwr_addr1,
+        READ_UNALIGNED_CK(localdbg,re->cur.dwr_addr1,
             Dwarf_Addr, rangeptr,
-            address_size);
+            address_size,
+            error,section_end);
         rangeptr +=  address_size;
-        READ_UNALIGNED(localdbg,re->cur.dwr_addr2 ,
+        READ_UNALIGNED_CK(localdbg,re->cur.dwr_addr2 ,
             Dwarf_Addr, rangeptr,
-            address_size);
+            address_size,
+            error,section_end);
         rangeptr +=  address_size;
         if (!base) {
             base = re;

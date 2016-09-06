@@ -29,18 +29,21 @@
 
 
 /*
-    This struct holds information about a abbreviation.
+    This struct holds information about an abbreviation.
     It is put in the hash table for abbreviations for
     a compile-unit.
 */
 struct Dwarf_Abbrev_List_s {
-    Dwarf_Unsigned ab_code;
-    Dwarf_Half ab_tag;
-    Dwarf_Half ab_has_child;
+    Dwarf_Unsigned abl_code;
+    Dwarf_Half abl_tag;
+    Dwarf_Half abl_has_child;
 
     /*  Points to start of attribute and form pairs in the .debug_abbrev
         section for the abbrev. */
-    Dwarf_Byte_Ptr ab_abbrev_ptr;
+    Dwarf_Byte_Ptr abl_abbrev_ptr;
+    struct Dwarf_Abbrev_List_s *abl_next;
 
-    struct Dwarf_Abbrev_List_s *ab_next;
+    /* Section global offset of this abbrev entry. */
+    Dwarf_Off      abl_goffset;
+    Dwarf_Unsigned abl_count;
 };

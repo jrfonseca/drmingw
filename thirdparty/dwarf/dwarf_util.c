@@ -1,6 +1,6 @@
 /*
   Copyright (C) 2000-2005 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2012 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2016 David Anderson. All Rights Reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
@@ -145,6 +145,7 @@ _dwarf_get_size_of_val(Dwarf_Debug dbg,
     Dwarf_Small * val_ptr,
     int v_length_size,
     Dwarf_Unsigned *size_out,
+    Dwarf_Small *section_end_ptr,
     Dwarf_Error*error)
 {
     Dwarf_Unsigned length = 0;
@@ -206,14 +207,15 @@ _dwarf_get_size_of_val(Dwarf_Debug dbg,
         return DW_DLV_OK;
 
     case DW_FORM_block2:
-        READ_UNALIGNED(dbg, ret_value, Dwarf_Unsigned,
-            val_ptr, sizeof(Dwarf_Half));
+        READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
+            val_ptr, sizeof(Dwarf_Half),error,section_end_ptr);
         *size_out = ret_value + sizeof(Dwarf_Half);
         return DW_DLV_OK;
 
     case DW_FORM_block4:
-        READ_UNALIGNED(dbg, ret_value, Dwarf_Unsigned,
-            val_ptr, sizeof(Dwarf_ufixed));
+        READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
+            val_ptr, sizeof(Dwarf_ufixed),
+            error,section_end_ptr);
         *size_out = ret_value + sizeof(Dwarf_ufixed);
         return DW_DLV_OK;
 
@@ -238,10 +240,12 @@ _dwarf_get_size_of_val(Dwarf_Debug dbg,
         return DW_DLV_OK;
 
     case DW_FORM_block:
-    case DW_FORM_exprloc:
-        length = _dwarf_decode_u_leb128(val_ptr, &leb128_length);
+    case DW_FORM_exprloc: {
+        DECODE_LEB128_UWORD_LEN_CK(val_ptr,length,leb128_length,
+            dbg,error,section_end_ptr);
         *size_out = length + leb128_length;
-        return DW_DLV_OK;
+        return DW_DLV_OK;;
+    }
 
     case DW_FORM_flag_present:
         *size_out = 0;
@@ -256,12 +260,16 @@ _dwarf_get_size_of_val(Dwarf_Debug dbg,
         *size_out = v_length_size;
         return DW_DLV_OK;
 
-    case DW_FORM_ref_udata:
+    case DW_FORM_ref_udata: {
+        UNUSEDARG Dwarf_Unsigned v = 0;
+
         /*  Discard the decoded value, we just want the length
             of the value. */
-        _dwarf_decode_u_leb128(val_ptr, &leb128_length);
+        DECODE_LEB128_UWORD_LEN_CK(val_ptr,v,leb128_length,
+            dbg,error,section_end_ptr);
         *size_out = leb128_length;
-        return DW_DLV_OK;
+        return DW_DLV_OK;;
+    }
 
     case DW_FORM_indirect:
         {
@@ -269,7 +277,8 @@ _dwarf_get_size_of_val(Dwarf_Debug dbg,
             int res = 0;
             Dwarf_Unsigned real_form_len = 0;
 
-            form_indirect = _dwarf_decode_u_leb128(val_ptr, &indir_len);
+            DECODE_LEB128_UWORD_LEN_CK(val_ptr,form_indirect,indir_len,
+                dbg,error,section_end_ptr);
             if (form_indirect == DW_FORM_indirect) {
                 /* We are in big trouble: The true form
                     of DW_FORM_indirect is
@@ -285,6 +294,7 @@ _dwarf_get_size_of_val(Dwarf_Debug dbg,
                 val_ptr + indir_len,
                 v_length_size,
                 &real_form_len,
+                section_end_ptr,
                 error);
             if(res != DW_DLV_OK) {
                 return res;
@@ -309,32 +319,46 @@ _dwarf_get_size_of_val(Dwarf_Debug dbg,
         *size_out = 8;
         return DW_DLV_OK;
 
-    case DW_FORM_sdata:
+    case DW_FORM_sdata: {
         /*  Discard the decoded value, we just want the length
             of the value. */
-        _dwarf_decode_s_leb128(val_ptr, &leb128_length);
-        *size_out = (leb128_length);
+        UNUSEDARG Dwarf_Signed v = 0;
+
+        /*  Discard the decoded value, we just want the length
+            of the value. */
+        DECODE_LEB128_SWORD_LEN_CK(val_ptr,v,leb128_length,
+            dbg,error,section_end_ptr);
+        *size_out = leb128_length;
         return DW_DLV_OK;
+    }
 
 
     case DW_FORM_addrx:
     case DW_FORM_GNU_addr_index:
     case DW_FORM_strx:
-    case DW_FORM_GNU_str_index:
-        _dwarf_decode_u_leb128(val_ptr, &leb128_length);
+    case DW_FORM_GNU_str_index: {
+        UNUSEDARG Dwarf_Unsigned v = 0;
+
+        DECODE_LEB128_UWORD_LEN_CK(val_ptr,v,leb128_length,
+            dbg,error,section_end_ptr);
         *size_out = leb128_length;
         return DW_DLV_OK;
+    }
 
     case DW_FORM_strp:
         *size_out = v_length_size;
         return DW_DLV_OK;
 
-    case DW_FORM_udata:
+    case DW_FORM_udata: {
         /*  Discard the decoded value, we just want the length
             of the value. */
-        _dwarf_decode_u_leb128(val_ptr, &leb128_length);
+        UNUSEDARG Dwarf_Unsigned v = 0;
+
+        DECODE_LEB128_UWORD_LEN_CK(val_ptr,v,leb128_length,
+            dbg,error,section_end_ptr);
         *size_out = leb128_length;
         return DW_DLV_OK;
+    }
     }
 }
 
@@ -362,15 +386,15 @@ copy_abbrev_table_to_new_table(Dwarf_Hash_Table htin,
         Dwarf_Abbrev_List nextlistent = 0;
 
         for (; listent ; listent = nextlistent) {
-            unsigned newtmp = listent->ab_code;
+            unsigned newtmp = listent->abl_code;
             unsigned newhash = newtmp%entry_out_count;
             Dwarf_Hash_Table_Entry e;
-            nextlistent = listent->ab_next;
+            nextlistent = listent->abl_next;
             e = entry_out+newhash;
             /*  Move_entry_to_new_hash. This reverses the
                 order of the entries, effectively, but
                 that does not seem significant. */
-            listent->ab_next = e->at_head;
+            listent->abl_next = e->at_head;
             e->at_head = listent;
 
             htout->tb_total_abbrev_count++;
@@ -425,6 +449,8 @@ _dwarf_valid_form_we_know(UNUSEDARG Dwarf_Debug dbg,
     While the lists can move and entries can be moved between
     lists on reallocation, any given Dwarf_Abbrev_list entry
     never moves once allocated, so the pointer is safe to return.
+
+    See also dwarf_get_abbrev() in dwarf_abbrev.c.
 
     Returns NULL on error.  */
 int
@@ -494,8 +520,8 @@ _dwarf_get_abbrev_for_code(Dwarf_CU_Context cu_context, Dwarf_Unsigned code,
 
     /* Determine if the 'code' is the list of synonyms already. */
     for (hash_abbrev_entry = entry_cur->at_head;
-        hash_abbrev_entry != NULL && hash_abbrev_entry->ab_code != code;
-        hash_abbrev_entry = hash_abbrev_entry->ab_next);
+        hash_abbrev_entry != NULL && hash_abbrev_entry->abl_code != code;
+        hash_abbrev_entry = hash_abbrev_entry->abl_next);
     if (hash_abbrev_entry != NULL) {
         /*  This returns a pointer to an abbrev list entry, not
             the list itself. */
@@ -539,13 +565,20 @@ _dwarf_get_abbrev_for_code(Dwarf_CU_Context cu_context, Dwarf_Unsigned code,
 
     do {
         unsigned new_hashable_val = 0;
-        DECODE_LEB128_UWORD(abbrev_ptr, abbrev_code);
-        DECODE_LEB128_UWORD(abbrev_ptr, abbrev_tag);
+        Dwarf_Off  abb_goff = 0;
+        Dwarf_Unsigned atcount = 0;
+
+        abb_goff = abbrev_ptr - dbg->de_debug_abbrev.dss_data;
+        DECODE_LEB128_UWORD_CK(abbrev_ptr, abbrev_code,
+            dbg,error,end_abbrev_ptr);
+        DECODE_LEB128_UWORD_CK(abbrev_ptr, abbrev_tag,
+            dbg,error,end_abbrev_ptr);
 
         inner_list_entry = (Dwarf_Abbrev_List)
             _dwarf_get_alloc(cu_context->cc_dbg, DW_DLA_ABBREV_LIST, 1);
         if (inner_list_entry == NULL) {
-            return DW_DLV_NO_ENTRY;
+            _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
+            return DW_DLV_ERROR;
         }
 
         new_hashable_val = abbrev_code;
@@ -553,29 +586,35 @@ _dwarf_get_abbrev_for_code(Dwarf_CU_Context cu_context, Dwarf_Unsigned code,
             hash_table_base->tb_table_entry_count;
         inner_hash_entry = entry_base + hash_num;
         /* Move_entry_to_new_hash */
-        inner_list_entry->ab_next = inner_hash_entry->at_head;
+        inner_list_entry->abl_next = inner_hash_entry->at_head;
         inner_hash_entry->at_head = inner_list_entry;
 
         hash_table_base->tb_total_abbrev_count++;
 
-        inner_list_entry->ab_code = abbrev_code;
-        inner_list_entry->ab_tag = abbrev_tag;
-        inner_list_entry->ab_has_child = *(abbrev_ptr++);
-        inner_list_entry->ab_abbrev_ptr = abbrev_ptr;
+        inner_list_entry->abl_code = abbrev_code;
+        inner_list_entry->abl_tag = abbrev_tag;
+        inner_list_entry->abl_has_child = *(abbrev_ptr++);
+        inner_list_entry->abl_abbrev_ptr = abbrev_ptr;
+        inner_list_entry->abl_goffset =  abb_goff;
 
         hash_table_base->tb_total_abbrev_count++;
 
         /*  Cycle thru the abbrev content, ignoring the content except
             to find the end of the content. */
         do {
-            DECODE_LEB128_UWORD(abbrev_ptr, attr_name);
-            DECODE_LEB128_UWORD(abbrev_ptr, attr_form);
+            DECODE_LEB128_UWORD_CK(abbrev_ptr, attr_name,
+                dbg,error,end_abbrev_ptr);
+            DECODE_LEB128_UWORD_CK(abbrev_ptr, attr_form,
+                dbg,error,end_abbrev_ptr);
             if (!_dwarf_valid_form_we_know(dbg,attr_form,attr_name)) {
                 _dwarf_error(dbg,error,DW_DLE_UNKNOWN_FORM);
                 return DW_DLV_ERROR;
             }
-
+            atcount++;
         } while (attr_name != 0 && attr_form != 0);
+        /*  We counted one too high, by counting the NUL
+            byte pair at end of list. So decrement. */
+        inner_list_entry->abl_count = atcount-1;
 
         /*  We may have fallen off the end of content,  that is not
             a botch in the section, as there is no rule that the last
@@ -712,20 +751,29 @@ _dwarf_memcpy_swap_bytes(void *s1, const void *s2, size_t len)
     given a known cu header location ( an offset in .debug_info
     or debug_types).  */
 /* ARGSUSED */
-Dwarf_Unsigned
+int
 _dwarf_length_of_cu_header(Dwarf_Debug dbg, Dwarf_Unsigned offset,
-    Dwarf_Bool is_info)
+    Dwarf_Bool is_info,
+    Dwarf_Unsigned *area_length_out,
+    Dwarf_Error *error)
 {
     int local_length_size = 0;
     int local_extension_size = 0;
     Dwarf_Unsigned length = 0;
     Dwarf_Unsigned final_size = 0;
-    Dwarf_Small *cuptr =
-        is_info? dbg->de_debug_info.dss_data + offset:
-            dbg->de_debug_types.dss_data+ offset;
+    Dwarf_Small *section_start =
+        is_info? dbg->de_debug_info.dss_data:
+            dbg->de_debug_types.dss_data;
+    Dwarf_Small *cuptr = section_start + offset;
+    Dwarf_Unsigned section_length =
+        is_info? dbg->de_debug_info.dss_size:
+            dbg->de_debug_types.dss_size;
+    Dwarf_Small * section_end_ptr =
+        section_start + section_length;
 
-    READ_AREA_LENGTH(dbg, length, Dwarf_Unsigned,
-        cuptr, local_length_size, local_extension_size);
+    READ_AREA_LENGTH_CK(dbg, length, Dwarf_Unsigned,
+        cuptr, local_length_size, local_extension_size,
+        error,section_length,section_end_ptr);
 
     final_size = local_extension_size +  /* initial extension, if present */
         local_length_size +     /* Size of cu length field. */
@@ -740,7 +788,8 @@ _dwarf_length_of_cu_header(Dwarf_Debug dbg, Dwarf_Unsigned offset,
             /* type offset size */
             local_length_size;
     }
-    return final_size;
+    *area_length_out = final_size;
+    return DW_DLV_OK;
 }
 
 /*  Pretend we know nothing about the CU
@@ -809,8 +858,8 @@ _dwarf_free_abbrev_hash_table_contents(Dwarf_Debug dbg,Dwarf_Hash_Table hash_tab
 
         abbrev = tb->at_head;
         for (; abbrev; abbrev = nextabbrev) {
-            nextabbrev = abbrev->ab_next;
-            abbrev->ab_next = 0;
+            nextabbrev = abbrev->abl_next;
+            abbrev->abl_next = 0;
             dwarf_dealloc(dbg, abbrev, DW_DLA_ABBREV_LIST);
         }
         tb->at_head = 0;
@@ -985,12 +1034,18 @@ dwarf_printf(Dwarf_Debug dbg,
 }
 
 /*  Often errs and errt point to the same Dwarf_Error,
-    So exercise care. */
-
+    So exercise care.
+    All the arguments MUST be non-null.*/
 void
 _dwarf_error_mv_s_to_t(Dwarf_Debug dbgs,Dwarf_Error *errs,
     Dwarf_Debug dbgt,Dwarf_Error *errt)
 {
+    if (!errt || !errs) {
+        return;
+    }
+    if (!dbgs || !dbgt) {
+        return;
+    }
     if(dbgs == dbgt) {
         if(errs != errt) {
             Dwarf_Error ers = *errs;
@@ -1007,4 +1062,102 @@ _dwarf_error_mv_s_to_t(Dwarf_Debug dbgs,Dwarf_Error *errs,
         _dwarf_error(dbgt,errt, mydw_errno);
     }
 }
+
+static int
+inthissection(struct Dwarf_Section_s *sec,Dwarf_Small *ptr)
+{
+    if (!sec->dss_data) {
+        return FALSE;
+    }
+    if (ptr < sec->dss_data ) {
+        return FALSE;
+    }
+    if (ptr >= (sec->dss_data + sec->dss_size) ) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
+#define FINDSEC(m_s,m_p,n,st,l,e)    \
+do {                                 \
+    if (inthissection((m_s),(m_p))) { \
+        *(n) = (m_s)->dss_name;      \
+        *(st)= (m_s)->dss_data;      \
+        *(l) = (m_s)->dss_size;      \
+        *(e) = (m_s)->dss_data + (m_s)->dss_size; \
+        return DW_DLV_OK;            \
+    }                                \
+} while (0)
+
+
+/* So we can know a section end even when we do not
+    have the section info apriori  It's only
+    needed for a subset of sections. */
+int
+_dwarf_what_section_are_we(Dwarf_Debug dbg,
+    Dwarf_Small    *  our_pointer,
+    const char     ** section_name_out,
+    Dwarf_Small    ** sec_start_ptr_out,
+    Dwarf_Unsigned *  sec_len_out,
+    Dwarf_Small    ** sec_end_ptr_out,
+    UNUSEDARG Dwarf_Error    *  error)
+{
+    FINDSEC(&dbg->de_debug_info,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_loc,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_line,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_aranges,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_macro,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_ranges,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_str_offsets,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_addr,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_pubtypes,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_gdbindex,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_abbrev,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_cu_index,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_tu_index,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_line_str,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_types,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_sup,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_frame,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    FINDSEC(&dbg->de_debug_frame_eh_gnu,
+        our_pointer, section_name_out,
+        sec_start_ptr_out, sec_len_out, sec_end_ptr_out);
+    return DW_DLV_NO_ENTRY;
+}
+
+
 

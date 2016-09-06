@@ -337,7 +337,7 @@ _dwarf_update_line_sec(Dwarf_Small * line_ptr,
     dwarf_init_line_table_prefix(&prefix);
     {
         Dwarf_Small *line_ptr_out = 0;
-        Dwarf_Error error;
+        Dwarf_Error error = 0;
         int dres = _dwarf_read_line_table_prefix(dbg,
             NULL, /* context*/
             line_ptr,

@@ -33,7 +33,7 @@
 #define DWARF_RELOC_PPC
 
 /* Include the definitions only in the case of Windows */
-#ifdef WIN32
+#ifdef _WIN32
 /* PowerPC relocations defined by the ABIs */
 #define R_PPC_NONE                   0
 #define R_PPC_ADDR32                 1 /* 32bit absolute address */
@@ -139,7 +139,7 @@
 
 /* Keep this the last entry.  */
 #define R_PPC_NUM                   95
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /* PowerPC relocations defined by the ABIs */
 static const char *reloc_type_names_PPC[] = {

@@ -591,13 +591,14 @@ struct Dwarf_Debug_s {
 
     struct Dwarf_Section_s de_debug_pubtypes; /* DWARF3 .debug_pubtypes */
 
-    struct Dwarf_Section_s de_debug_funcnames;
 
-    /* SGI IRIX extension essentially
-        identical to DWARF3 .debug_pubtypes. */
+    /*  Four SGI IRIX extensions essentially
+        identical to DWARF3 .debug_pubtypes.
+        Only on SGI IRIX. */
+    struct Dwarf_Section_s de_debug_funcnames;
     struct Dwarf_Section_s de_debug_typenames;
-    struct Dwarf_Section_s de_debug_varnames; /* SGI IRIX only. */
-    struct Dwarf_Section_s de_debug_weaknames; /* SGI IRIX only. */
+    struct Dwarf_Section_s de_debug_varnames;
+    struct Dwarf_Section_s de_debug_weaknames;
 
     struct Dwarf_Section_s de_debug_ranges;
     /*  Following two part of DebugFission. */
@@ -766,6 +767,8 @@ int _dwarf_get_fission_addition_die(Dwarf_Die die, int dw_sect_index,
 
 int _dwarf_get_addr_index_itself(int theform,
     Dwarf_Small *info_ptr,
+    Dwarf_Debug dbg,
+    Dwarf_CU_Context cu_context,
     Dwarf_Unsigned *val_out,
     Dwarf_Error * error);
 
@@ -830,7 +833,10 @@ int (*_dwarf_get_elf_flags_func_ptr)(
     Dwarf_Unsigned *addralign_out,
     int *error);
 
-Dwarf_Byte_Ptr _dwarf_calculate_section_end_ptr(Dwarf_CU_Context context);
+Dwarf_Byte_Ptr _dwarf_calculate_info_section_start_ptr(Dwarf_CU_Context context, Dwarf_Unsigned *section_len_out);
+
+Dwarf_Byte_Ptr _dwarf_calculate_info_section_end_ptr(Dwarf_CU_Context context);
+Dwarf_Byte_Ptr _dwarf_calculate_abbrev_section_end_ptr(Dwarf_CU_Context context);
 
 void _dwarf_dumpsig(const char *msg, Dwarf_Sig8 *sig,int lineno);
 

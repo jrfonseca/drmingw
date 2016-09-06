@@ -1,5 +1,4 @@
 /*
-
   Copyright (C) 2000-2006 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright (C) 2007-2012 David Anderson. All Rights Reserved.
   Portions Copyright (C) 2010-2012 SN Systems Ltd. All Rights Reserved.
@@ -62,7 +61,7 @@ static int get_gcc_eh_augmentation(Dwarf_Debug dbg,
     unsigned long
     *size_of_augmentation_data,
     enum Dwarf_augmentation_type augtype,
-    Dwarf_Small * section_pointer,
+    Dwarf_Small * section_end_pointer,
     Dwarf_Small * fde_eh_encoding_out,
     char *augmentation,
     Dwarf_Error *error);
@@ -82,6 +81,7 @@ static int read_encoded_ptr(Dwarf_Debug dbg,
     Dwarf_Small * section_pointer,
     Dwarf_Small * input_field,
     int gnu_encoding,
+    Dwarf_Small * section_ptr_end,
     Dwarf_Half address_size,
     Dwarf_Unsigned * addr,
     Dwarf_Small ** input_field_out,
@@ -594,15 +594,16 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
         augmentation, use_gnu_cie_calc);
     if (augt == aug_eh) {
         /* REFERENCED *//* Not used in this instance */
-        Dwarf_Unsigned exception_table_addr;
+        UNUSEDARG Dwarf_Unsigned exception_table_addr;
 
         if ((frame_ptr+local_length_size)  >= section_ptr_end) {
             _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
             return DW_DLV_ERROR;
         }
         /* this is per egcs-1.1.2 as on RH 6.0 */
-        READ_UNALIGNED(dbg, exception_table_addr,
-            Dwarf_Unsigned, frame_ptr, local_length_size);
+        READ_UNALIGNED_CK(dbg, exception_table_addr,
+            Dwarf_Unsigned, frame_ptr, local_length_size,
+            error,section_ptr_end);
         frame_ptr += local_length_size;
     }
     {
@@ -615,9 +616,17 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
                 return DW_DLV_ERROR;
             }
             address_size = *((unsigned char *)frame_ptr);
+            if (address_size  <  1) {
+                _dwarf_error(dbg, error, DW_DLE_ADDRESS_SIZE_ERROR);
+                return (DW_DLV_ERROR);
+            }
             if (address_size  > sizeof(Dwarf_Addr)) {
                 _dwarf_error(dbg, error, DW_DLE_ADDRESS_SIZE_ERROR);
                 return (DW_DLV_ERROR);
+            }
+            if ((frame_ptr+2)  >= section_ptr_end) {
+                _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+                return DW_DLV_ERROR;
             }
             ++frame_ptr;
             segment_size = *((unsigned char *)frame_ptr);
@@ -633,7 +642,7 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
             _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
             return DW_DLV_ERROR;
         }
-        DECODE_LEB128_UWORD(frame_ptr, lreg);
+        DECODE_LEB128_UWORD_CK(frame_ptr, lreg,dbg,error,section_ptr_end);
         code_alignment_factor = (Dwarf_Word) lreg;
         data_alignment_factor =
             (Dwarf_Sword) _dwarf_decode_s_leb128(frame_ptr,
@@ -644,8 +653,11 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
             _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
             return DW_DLV_ERROR;
         }
-        return_address_register =
-            _dwarf_get_return_address_reg(frame_ptr, version, &size);
+        res = _dwarf_get_return_address_reg(frame_ptr, version,
+            dbg,section_ptr_end, &size,&return_address_register,error);
+        if(res != DW_DLV_OK) {
+            return res;
+        }
         if (return_address_register > dbg->de_frame_reg_rules_entry_count) {
             _dwarf_error(dbg, error, DW_DLE_CIE_RET_ADDR_REG_ERROR);
             return (DW_DLV_ERROR);
@@ -666,7 +678,7 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
         Dwarf_Word length_of_augmented_fields;
 
         /* Decode the length of augmented fields. */
-        DECODE_LEB128_UWORD(frame_ptr, lreg);
+        DECODE_LEB128_UWORD_CK(frame_ptr, lreg,dbg,error,section_ptr_end);
         length_of_augmented_fields = (Dwarf_Word) lreg;
         /* set the frame_ptr to point at the instruction start. */
         frame_ptr += length_of_augmented_fields;
@@ -685,7 +697,7 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
 
         err = get_gcc_eh_augmentation(dbg, frame_ptr, &increment,
             augt,
-            prefix->cf_section_ptr,
+            section_ptr_end,
             &eh_fde_encoding,
             (char *) augmentation,error);
         if (err == DW_DLV_ERROR) {
@@ -706,9 +718,14 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
             _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
             return DW_DLV_ERROR;
         }
-        DECODE_LEB128_UWORD(frame_ptr, adlen);
+        DECODE_LEB128_UWORD_CK(frame_ptr, adlen,
+            dbg,error,section_ptr_end);
         cie_aug_data_len = adlen;
         cie_aug_data = frame_ptr;
+        if (frame_ptr + adlen > section_ptr_end) {
+            _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+            return DW_DLV_ERROR;
+        }
         resz = gnu_aug_encodings(dbg,
             (char *) augmentation,
             cie_aug_data,
@@ -781,6 +798,9 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
 
     new_cie->ci_index = cie_count;
     new_cie->ci_section_ptr = prefix->cf_section_ptr;
+    new_cie->ci_section_end = section_ptr_end;
+    new_cie->ci_cie_end = new_cie->ci_cie_start + new_cie->ci_length +
+        new_cie->ci_length_size+ new_cie->ci_extension_size,
     /* The Following new in DWARF4 */
     new_cie->ci_address_size = address_size;
     new_cie->ci_segment_size = segment_size;
@@ -842,6 +862,7 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
                 section_pointer,
                 frame_ptr,
                 cieptr-> ci_gnu_fde_begin_encoding,
+                section_ptr_end,
                 address_size,
                 &initial_location,
                 &fp_updated,error);
@@ -857,6 +878,7 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
             res = read_encoded_ptr(dbg, (Dwarf_Small *) NULL,
                 frame_ptr,
                 cieptr->ci_gnu_fde_begin_encoding,
+                section_ptr_end,
                 address_size,
                 &address_range, &fp_updated,error);
             if (res != DW_DLV_OK) {
@@ -867,7 +889,8 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
         {
             Dwarf_Unsigned adlen = 0;
 
-            DECODE_LEB128_UWORD(frame_ptr, adlen);
+            DECODE_LEB128_UWORD_CK(frame_ptr, adlen,
+                dbg,error,section_ptr_end);
             fde_aug_data_len = adlen;
             fde_aug_data = frame_ptr;
             frame_ptr += adlen;
@@ -878,11 +901,13 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
             _dwarf_error(dbg,error,DW_DLE_DEBUG_FRAME_LENGTH_BAD);
             return DW_DLV_ERROR;
         }
-        READ_UNALIGNED(dbg, initial_location, Dwarf_Addr,
-            frame_ptr, address_size);
+        READ_UNALIGNED_CK(dbg, initial_location, Dwarf_Addr,
+            frame_ptr, address_size,
+            error,section_ptr_end);
         frame_ptr += address_size;
-        READ_UNALIGNED(dbg, address_range, Dwarf_Addr,
-            frame_ptr, address_size);
+        READ_UNALIGNED_CK(dbg, address_range, Dwarf_Addr,
+            frame_ptr, address_size,
+            error,section_ptr_end);
         frame_ptr += address_size;
     }
     switch (augt) {
@@ -893,7 +918,8 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
         Dwarf_Unsigned lreg = 0;
         Dwarf_Word length_of_augmented_fields = 0;
 
-        DECODE_LEB128_UWORD(frame_ptr, lreg);
+        DECODE_LEB128_UWORD_CK(frame_ptr, lreg,
+            dbg,error,section_ptr_end);
         length_of_augmented_fields = (Dwarf_Word) lreg;
 
         saved_frame_ptr = frame_ptr;
@@ -903,8 +929,9 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
             _dwarf_error(dbg,error,DW_DLE_DEBUG_FRAME_LENGTH_BAD);
             return DW_DLV_ERROR;
         }
-        READ_UNALIGNED(dbg, offset_into_exception_tables,
-            Dwarf_Addr, frame_ptr, sizeof(Dwarf_sfixed));
+        READ_UNALIGNED_CK(dbg, offset_into_exception_tables,
+            Dwarf_Addr, frame_ptr, sizeof(Dwarf_sfixed),
+            error,section_ptr_end);
         SIGN_EXTEND(offset_into_exception_tables,
             sizeof(Dwarf_sfixed));
         frame_ptr = saved_frame_ptr + length_of_augmented_fields;
@@ -924,9 +951,10 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
             _dwarf_error(dbg,error,DW_DLE_DEBUG_FRAME_LENGTH_BAD);
             return DW_DLV_ERROR;
         }
-        READ_UNALIGNED(dbg, eh_table_value,
+        READ_UNALIGNED_CK(dbg, eh_table_value,
             Dwarf_Unsigned, frame_ptr,
-            address_size);
+            address_size,
+            error,section_ptr_end);
         eh_table_value_set = TRUE;
         frame_ptr += address_size;
         }
@@ -967,6 +995,9 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
     new_fde->fd_address_range = address_range;
     new_fde->fd_fde_start = prefix->cf_start_addr;
     new_fde->fd_fde_instr_start = frame_ptr;
+    new_fde->fd_fde_end = prefix->cf_start_addr +
+        prefix->cf_length +  prefix->cf_local_length_size  +
+        prefix->cf_local_extension_size;
     new_fde->fd_dbg = dbg;
     new_fde->fd_offset_into_exception_tables =
         offset_into_exception_tables;
@@ -976,6 +1007,7 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
     new_fde->fd_section_ptr = prefix->cf_section_ptr;
     new_fde->fd_section_index = prefix->cf_section_index;
     new_fde->fd_section_length = prefix->cf_section_length;
+    new_fde->fd_section_end = section_ptr_end;
 
     if (augt == aug_gcc_eh_z) {
         new_fde->fd_gnu_eh_aug_present = TRUE;
@@ -1036,9 +1068,10 @@ dwarf_read_cie_fde_prefix(Dwarf_Debug dbg,
         return DW_DLV_ERROR;
     }
     /* READ_AREA_LENGTH updates frame_ptr for consumed bytes */
-    READ_AREA_LENGTH(dbg, length, Dwarf_Unsigned,
+    READ_AREA_LENGTH_CK(dbg, length, Dwarf_Unsigned,
         frame_ptr, local_length_size,
-        local_extension_size);
+        local_extension_size,error,
+        section_length_in,section_end);
 
     if (length == 0) {
         /*  nul bytes at end of section, seen at end of egcs eh_frame
@@ -1052,8 +1085,8 @@ dwarf_read_cie_fde_prefix(Dwarf_Debug dbg,
     }
 
     cie_ptr_addr = frame_ptr;
-    READ_UNALIGNED(dbg, cie_id, Dwarf_Unsigned,
-        frame_ptr, local_length_size);
+    READ_UNALIGNED_CK(dbg, cie_id, Dwarf_Unsigned,
+        frame_ptr, local_length_size,error,section_end);
     SIGN_EXTEND(cie_id, local_length_size);
     frame_ptr += local_length_size;
 
@@ -1061,6 +1094,14 @@ dwarf_read_cie_fde_prefix(Dwarf_Debug dbg,
     data_out->cf_addr_after_prefix = frame_ptr;
 
     data_out->cf_length = length;
+    if (length > section_length_in) {
+        _dwarf_error(dbg,error,DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+        return DW_DLV_ERROR;
+    }
+    if (cie_ptr_addr+length > section_end) {
+        _dwarf_error(dbg,error,DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+        return DW_DLV_ERROR;
+    }
     data_out->cf_local_length_size = local_length_size;
     data_out->cf_local_extension_size = local_extension_size;
 
@@ -1311,6 +1352,7 @@ gnu_aug_encodings(Dwarf_Debug dbg, char *augmentation,
                 (Dwarf_Small *) NULL,
                 cur_aug_p,
                 encoding,
+                end_aug_p,
                 address_size,
                 gnu_pers_addr_out,
                 &updated_aug_p,
@@ -1345,12 +1387,12 @@ read_encoded_ptr(Dwarf_Debug dbg,
     Dwarf_Small * section_pointer,
     Dwarf_Small * input_field,
     int gnu_encoding,
+    Dwarf_Small * section_end,
     Dwarf_Half address_size,
     Dwarf_Unsigned * addr,
     Dwarf_Small ** input_field_updated,
     Dwarf_Error *error)
 {
-    Dwarf_Word length = 0;
     int value_type = gnu_encoding & 0xf;
     Dwarf_Small *input_field_original = input_field;
 
@@ -1368,25 +1410,25 @@ read_encoded_ptr(Dwarf_Debug dbg,
         */
         Dwarf_Unsigned ret_value = 0;
 
-        READ_UNALIGNED(dbg, ret_value, Dwarf_Unsigned,
-            input_field, address_size);
+        READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
+            input_field, address_size,error,section_end);
         *addr = ret_value;
         *input_field_updated = input_field + address_size;
         }
         break;
     case DW_EH_PE_uleb128:{
-        Dwarf_Unsigned val = _dwarf_decode_u_leb128(input_field,
-            &length);
+        Dwarf_Unsigned val = 0;
 
+        DECODE_LEB128_UWORD_CK(input_field,val,dbg,error,section_end);
         *addr = val;
-        *input_field_updated = input_field + length;
+        *input_field_updated = input_field;
         }
         break;
     case DW_EH_PE_udata2:{
         Dwarf_Unsigned ret_value = 0;
 
-        READ_UNALIGNED(dbg, ret_value, Dwarf_Unsigned,
-            input_field, 2);
+        READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
+            input_field, 2,error,section_end);
         *addr = ret_value;
         *input_field_updated = input_field + 2;
         }
@@ -1396,8 +1438,8 @@ read_encoded_ptr(Dwarf_Debug dbg,
         Dwarf_Unsigned ret_value = 0;
 
         /* ASSERT: sizeof(Dwarf_ufixed) == 4 */
-        READ_UNALIGNED(dbg, ret_value, Dwarf_Unsigned,
-            input_field, sizeof(Dwarf_ufixed));
+        READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
+            input_field, sizeof(Dwarf_ufixed),error,section_end);
         *addr = ret_value;
         *input_field_updated = input_field + sizeof(Dwarf_ufixed);
         }
@@ -1407,25 +1449,26 @@ read_encoded_ptr(Dwarf_Debug dbg,
         Dwarf_Unsigned ret_value = 0;
 
         /* ASSERT: sizeof(Dwarf_Unsigned) == 8 */
-        READ_UNALIGNED(dbg, ret_value, Dwarf_Unsigned,
-            input_field, sizeof(Dwarf_Unsigned));
+        READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
+            input_field, sizeof(Dwarf_Unsigned),error,section_end);
         *addr = ret_value;
         *input_field_updated = input_field + sizeof(Dwarf_Unsigned);
         }
         break;
 
     case DW_EH_PE_sleb128:{
-        Dwarf_Signed val = _dwarf_decode_s_leb128(input_field,
-            &length);
+        Dwarf_Signed val = 0;
 
+        DECODE_LEB128_SWORD_CK(input_field,val,dbg,error,section_end);
         *addr = (Dwarf_Unsigned) val;
-        *input_field_updated = input_field + length;
+        *input_field_updated = input_field;
         }
         break;
     case DW_EH_PE_sdata2:{
         Dwarf_Unsigned val = 0;
 
-        READ_UNALIGNED(dbg, val, Dwarf_Unsigned, input_field, 2);
+        READ_UNALIGNED_CK(dbg, val, Dwarf_Unsigned, input_field, 2,
+            error,section_end);
         SIGN_EXTEND(val, 2);
         *addr = (Dwarf_Unsigned) val;
         *input_field_updated = input_field + 2;
@@ -1436,9 +1479,9 @@ read_encoded_ptr(Dwarf_Debug dbg,
         Dwarf_Unsigned val = 0;
 
         /* ASSERT: sizeof(Dwarf_ufixed) == 4 */
-        READ_UNALIGNED(dbg, val,
+        READ_UNALIGNED_CK(dbg, val,
             Dwarf_Unsigned, input_field,
-            sizeof(Dwarf_ufixed));
+            sizeof(Dwarf_ufixed),error,section_end);
         SIGN_EXTEND(val, sizeof(Dwarf_ufixed));
         *addr = (Dwarf_Unsigned) val;
         *input_field_updated = input_field + sizeof(Dwarf_ufixed);
@@ -1448,9 +1491,9 @@ read_encoded_ptr(Dwarf_Debug dbg,
         Dwarf_Unsigned val = 0;
 
         /* ASSERT: sizeof(Dwarf_Unsigned) == 8 */
-        READ_UNALIGNED(dbg, val,
+        READ_UNALIGNED_CK(dbg, val,
             Dwarf_Unsigned, input_field,
-            sizeof(Dwarf_Unsigned));
+            sizeof(Dwarf_Unsigned),error,section_end);
         *addr = (Dwarf_Unsigned) val;
         *input_field_updated = input_field + sizeof(Dwarf_Unsigned);
         }
@@ -1553,14 +1596,16 @@ _dwarf_get_augmentation_type(UNUSEDARG Dwarf_Debug dbg,
     caller can increment frame_ptr appropriately).
 
     'frame_ptr' points within section.
-    'section_pointer' points to section base address in memory.
+    'section_end' points to end of section area of interest.
+
+    Why is fde_eh_encoding_out there? It's unused.
 */
 /* ARGSUSED */
 static int
 get_gcc_eh_augmentation(Dwarf_Debug dbg, Dwarf_Small * frame_ptr,
     unsigned long *size_of_augmentation_data,
     enum Dwarf_augmentation_type augtype,
-    UNUSEDARG Dwarf_Small * section_pointer,
+    Dwarf_Small * section_ptr_end,
     Dwarf_Small * fde_eh_encoding_out,
     char *augmentation,
     Dwarf_Error *error)
@@ -1570,12 +1615,13 @@ get_gcc_eh_augmentation(Dwarf_Debug dbg, Dwarf_Small * frame_ptr,
 
     if (augtype == aug_gcc_eh_z) {
         /* Has leading 'z'. */
+        UNUSEDARG Dwarf_Unsigned val = 0;
         Dwarf_Word leb128_length = 0;
 
         /* Dwarf_Unsigned eh_value = */
-        _dwarf_decode_u_leb128(frame_ptr, &leb128_length);
+        DECODE_LEB128_UWORD_LEN_CK(frame_ptr,val,leb128_length,
+            dbg,error,section_ptr_end);
         augdata_size += leb128_length;
-        frame_ptr += leb128_length;
         suffix = augmentation + 1;
     } else {
         /*  Prefix is 'eh'.  As in gcc 3.2. No suffix present

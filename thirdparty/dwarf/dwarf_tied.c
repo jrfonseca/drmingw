@@ -314,14 +314,14 @@ struct test_data_s {
 };
 
 
-struct Dwarf_Tied_Entry_s *
+static struct Dwarf_Tied_Entry_s *
 makeentry(unsigned long instance, unsigned ct)
 {
     Dwarf_Sig8 s8;
     Dwarf_CU_Context context = 0;
-    memset(&s8,0,sizeof(s8));
     struct Dwarf_Tied_Entry_s * entry = 0;
 
+    memset(&s8,0,sizeof(s8));
     /* Silly, but just a test...*/
     memcpy(&s8,&instance,sizeof(instance));
     context = (Dwarf_CU_Context)instance;
@@ -409,7 +409,6 @@ int main()
 {
     void *tied_data = 0;
     unsigned u = 0;
-    int res;
 
     INITTREE(tied_data,tied_data_hashfunc);
     for ( ; testdata[u].action; ++u) {

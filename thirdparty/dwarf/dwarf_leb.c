@@ -43,40 +43,41 @@
 Dwarf_Unsigned
 _dwarf_decode_u_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
 {
-    unsigned char byte;
-    Dwarf_Word word_number;
-    Dwarf_Unsigned number;
-    Dwarf_Sword shift;
+    unsigned char byte     = 0;
+    Dwarf_Word word_number = 0;
+    Dwarf_Unsigned number  = 0;
+    Dwarf_Sword shift      = 0;
     /*  The byte_length value will be a small non-negative integer. */
-    unsigned byte_length = 0;
+    unsigned byte_length   = 0;
 
     /*  The following unrolls-the-loop for the first few bytes and
         unpacks into 32 bits to make this as fast as possible.
         word_number is assumed big enough that the shift has a defined
         result. */
     if ((*leb128 & 0x80) == 0) {
-        if (leb128_length != NULL)
+        if (leb128_length) {
             *leb128_length = 1;
+        }
         return (*leb128);
     } else if ((*(leb128 + 1) & 0x80) == 0) {
-        if (leb128_length != NULL)
+        if (leb128_length) {
             *leb128_length = 2;
-
+        }
         word_number = *leb128 & 0x7f;
         word_number |= (*(leb128 + 1) & 0x7f) << 7;
         return (word_number);
     } else if ((*(leb128 + 2) & 0x80) == 0) {
-        if (leb128_length != NULL)
+        if (leb128_length) {
             *leb128_length = 3;
-
+        }
         word_number = *leb128 & 0x7f;
         word_number |= (*(leb128 + 1) & 0x7f) << 7;
         word_number |= (*(leb128 + 2) & 0x7f) << 14;
         return (word_number);
     } else if ((*(leb128 + 3) & 0x80) == 0) {
-        if (leb128_length != NULL)
+        if (leb128_length) {
             *leb128_length = 4;
-
+        }
         word_number = *leb128 & 0x7f;
         word_number |= (*(leb128 + 1) & 0x7f) << 7;
         word_number |= (*(leb128 + 2) & 0x7f) << 14;
@@ -90,13 +91,14 @@ _dwarf_decode_u_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
     number = 0;
     shift = 0;
     byte_length = 1;
-    byte = *(leb128);
+    byte = *leb128;
     for (;;) {
         number |= ((Dwarf_Unsigned) (byte & 0x7f)) << shift;
 
         if ((byte & 0x80) == 0) {
-            if (leb128_length != NULL)
+            if (leb128_length) {
                 *leb128_length = byte_length;
+            }
             return (number);
         }
         shift += 7;
@@ -104,8 +106,11 @@ _dwarf_decode_u_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
         byte_length++;
         if (byte_length > BYTESLEBMAX) {
             /*  Erroneous input. What to do?
-                Abort? Return error? Just stop here?*/
-            *leb128_length = BYTESLEBMAX;
+                Abort? Return error? Just stop here?
+                Call _dwarf_decode_u_leb128_chk instead. */
+            if( leb128_length) {
+                *leb128_length = BYTESLEBMAX;
+            }
             return number;
         }
         ++leb128;
@@ -113,23 +118,99 @@ _dwarf_decode_u_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
     }
 }
 
+/* Decode ULEB with checking */
+int
+_dwarf_decode_u_leb128_chk(Dwarf_Small * leb128, Dwarf_Word * leb128_length,
+    Dwarf_Unsigned *outval,Dwarf_Byte_Ptr endptr)
+{
+    unsigned char byte     = 0;
+    Dwarf_Word word_number = 0;
+    Dwarf_Unsigned number  = 0;
+    Dwarf_Sword shift      = 0;
+    /*  The byte_length value will be a small non-negative integer. */
+    unsigned byte_length   = 0;
+
+    if (leb128 >=endptr) {
+        return DW_DLV_ERROR;
+    }
+    /*  The following unrolls-the-loop for the first two bytes and
+        unpacks into 32 bits to make this as fast as possible.
+        word_number is assumed big enough that the shift has a defined
+        result. */
+    if ((*leb128 & 0x80) == 0) {
+        if (leb128_length) {
+            *leb128_length = 1;
+        }
+        *outval = *leb128;
+        return DW_DLV_OK;
+    } else {
+        if ((leb128+1) >=endptr) {
+            return DW_DLV_ERROR;
+        }
+        if ((*(leb128 + 1) & 0x80) == 0) {
+            if (leb128_length) {
+                *leb128_length = 2;
+            }
+            word_number = *leb128 & 0x7f;
+            word_number |= (*(leb128 + 1) & 0x7f) << 7;
+            *outval = word_number;
+            return DW_DLV_OK;
+        }
+        /* Gets messy to hand-inline more byte checking. */
+    }
+
+    /*  The rest handles long numbers Because the 'number' may be larger
+        than the default int/unsigned, we must cast the 'byte' before
+        the shift for the shift to have a defined result. */
+    number = 0;
+    shift = 0;
+    byte_length = 1;
+    byte = *leb128;
+    for (;;) {
+        number |= ((Dwarf_Unsigned) (byte & 0x7f)) << shift;
+
+        if ((byte & 0x80) == 0) {
+            if (leb128_length) {
+                *leb128_length = byte_length;
+            }
+            *outval = number;
+            return DW_DLV_OK;
+        }
+        shift += 7;
+
+        byte_length++;
+        if (byte_length > BYTESLEBMAX) {
+            /*  Erroneous input.  */
+            if( leb128_length) {
+                *leb128_length = BYTESLEBMAX;
+            }
+            break;
+        }
+        ++leb128;
+        if ((leb128) >=endptr) {
+            return DW_DLV_ERROR;
+        }
+        byte = *leb128;
+    }
+    return DW_DLV_ERROR;
+}
+
+
 #define BITSINBYTE 8
 
 /*  decode SLEB */
 Dwarf_Signed
 _dwarf_decode_s_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
 {
-    Dwarf_Signed number = 0;
-    Dwarf_Bool sign = 0;
-    Dwarf_Word shift = 0;
-    unsigned char byte = *leb128;
+    Dwarf_Signed number  = 0;
+    Dwarf_Bool sign      = 0;
+    Dwarf_Word shift     = 0;
+    unsigned char byte   = *leb128;
     /*  The byte_length value will be a small non-negative integer. */
     unsigned byte_length = 1;
 
-
     /*  byte_length being the number of bytes of data absorbed so far in
         turning the leb into a Dwarf_Signed. */
-
     for (;;) {
         sign = byte & 0x40;
         number |= ((Dwarf_Signed) ((byte & 0x7f))) << shift;
@@ -142,9 +223,12 @@ _dwarf_decode_s_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
         byte = *leb128;
         byte_length++;
         if (byte_length > BYTESLEBMAX) {
-            /*  Erroneous input. What to do?
-                Abort? Return error? Just stop here?*/
-            *leb128_length = BYTESLEBMAX;
+            /*  Erroneous input, as who would put leading
+                0x80 for leading zeros?
+                call _dwarf_decode_s_leb128_chk instead. */
+            if (leb128_length) {
+                *leb128_length = BYTESLEBMAX;
+            }
             return number;
         }
     }
@@ -153,7 +237,63 @@ _dwarf_decode_s_leb128(Dwarf_Small * leb128, Dwarf_Word * leb128_length)
         number |= -((Dwarf_Signed) 1 << shift);
     }
 
-    if (leb128_length != NULL)
+    if (leb128_length) {
         *leb128_length = byte_length;
-    return (number);
+    }
+    return number;
 }
+
+int
+_dwarf_decode_s_leb128_chk(Dwarf_Small * leb128, Dwarf_Word * leb128_length,
+    Dwarf_Signed *outval,Dwarf_Byte_Ptr endptr)
+{
+    Dwarf_Signed number  = 0;
+    Dwarf_Bool sign      = 0;
+    Dwarf_Word shift     = 0;
+    unsigned char byte   = 0;
+    /*  The byte_length value will be a small non-negative integer. */
+    unsigned byte_length = 1;
+
+    /*  byte_length being the number of bytes of data absorbed so far in
+        turning the leb into a Dwarf_Signed. */
+    if (!outval) {
+        return DW_DLV_ERROR;
+    }
+    if (leb128 >= endptr) {
+        return DW_DLV_ERROR;
+    }
+    byte   = *leb128;
+    for (;;) {
+        sign = byte & 0x40;
+        number |= ((Dwarf_Signed) ((byte & 0x7f))) << shift;
+        shift += 7;
+
+        if ((byte & 0x80) == 0) {
+            break;
+        }
+        ++leb128;
+        byte = *leb128;
+        byte_length++;
+        if (leb128 >= endptr) {
+            return DW_DLV_ERROR;
+        }
+        if (byte_length > BYTESLEBMAX) {
+            /*  Erroneous input. */
+            if (leb128_length) {
+                *leb128_length = BYTESLEBMAX;
+            }
+            return DW_DLV_ERROR;
+        }
+    }
+
+    if ((shift < sizeof(Dwarf_Signed) * BITSINBYTE) && sign) {
+        number |= -((Dwarf_Signed) 1 << shift);
+    }
+
+    if (leb128_length) {
+        *leb128_length = byte_length;
+    }
+    *outval = number;
+    return DW_DLV_OK;
+}
+

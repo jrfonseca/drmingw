@@ -1,3 +1,28 @@
+May 23, 2016
+  When building a shared-library the soname is set
+  in the dynamic section "libdwarf.so.1".
+  Much more testing of object correctness is done
+  to catch corrupted dwarf and corrupted object files.
+March 14, 2016
+  When libdwarf callers provide neither an error argument nor
+  an error-handler function pointer libdwarf gives up on detecting
+  an error. Before now it emitted a short message on stderr
+  and did abort().  Now it emits a short message on stdout
+  and does abort(). Having libdwarf just stop application
+  processing (stopping the entire application) was never 
+  good application-development policy, so one hopes no one 
+  ever relied on doing no-error-handling themselves.
+  So one hopes no one will actually notice this change.
+  The change makes it much easier to test that the error
+  handling is all behaving as intended.
+March 1, 2016
+  Much support of GNU extensions to dwarf and 
+  of DWARF5 features now exist in libdwarf.
+  Including the ability to deal with the most
+  usual forms of split-dwarf.
+  Handling of zlib compression of dwarf is now
+  automatic (assuming you had zlib visible when
+  configuring libdwarf).
 May 01, 2015
   dwarf_next_cu_header_d() is the latest extension for CU reading.
   Earlier versions still supported.

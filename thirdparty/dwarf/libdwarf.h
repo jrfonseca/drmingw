@@ -1245,9 +1245,28 @@ struct Dwarf_Obj_Access_Interface_s {
 #define DW_DLE_LINE_STRP_OFFSET_BAD            326
 #define DW_DLE_STRING_FORM_IMPROPER            327
 #define DW_DLE_ELF_FLAGS_NOT_AVAILABLE         328
+#define DW_DLE_LEB_IMPROPER                    329
+#define DW_DLE_DEBUG_LINE_RANGE_ZERO           330
+#define DW_DLE_READ_LITTLEENDIAN_ERROR         331
+#define DW_DLE_READ_BIGENDIAN_ERROR            332
+#define DW_DLE_RELOC_INVALID                   333
+#define DW_DLE_INFO_HEADER_ERROR               334
+#define DW_DLE_ARANGES_HEADER_ERROR            335
+#define DW_DLE_LINE_OFFSET_WRONG_FORM          336
+#define DW_DLE_FORM_BLOCK_LENGTH_ERROR         337
+#define DW_DLE_ZLIB_SECTION_SHORT              338
+#define DW_DLE_CIE_INSTR_PTR_ERROR             339
+#define DW_DLE_FDE_INSTR_PTR_ERROR             340
+#define DW_DLE_FISSION_ADDITION_ERROR          341
+#define DW_DLE_HEADER_LEN_BIGGER_THAN_SECSIZE  342
+#define DW_DLE_LOCEXPR_OFF_SECTION_END         343
+#define DW_DLE_POINTER_SECTION_UNKNOWN         344
+#define DW_DLE_ERRONEOUS_XU_INDEX_SECTION      345
+#define DW_DLE_DIRECTORY_FORMAT_COUNT_VS_DIRECTORIES_MISMATCH 346
+#define DW_DLE_COMPRESSED_EMPTY_SECTION        347
 
     /* DW_DLE_LAST MUST EQUAL LAST ERROR NUMBER */
-#define DW_DLE_LAST        328
+#define DW_DLE_LAST        347
 #define DW_DLE_LO_USER     0x10000
 
     /*  Taken as meaning 'undefined value', this is not
@@ -1475,6 +1494,13 @@ int dwarf_offdie_b(Dwarf_Debug /*dbg*/,
     New October 2011. */
 Dwarf_Bool dwarf_get_die_infotypes_flag(Dwarf_Die /*die*/);
 
+/*  New March 2016.
+    So we can associate a DIE's abbreviations with the contents
+    the abbreviations section. */
+int dwarf_die_abbrev_global_offset(Dwarf_Die /*die*/,
+    Dwarf_Off       * /*abbrev_offset*/,
+    Dwarf_Unsigned  * /*abbrev_count*/,
+    Dwarf_Error*      /*error*/);
 
 /*  operations on DIEs */
 int dwarf_tag(Dwarf_Die /*die*/,
@@ -2481,7 +2507,20 @@ int dwarf_get_fde_info_for_reg3(Dwarf_Fde /*fde*/,
     Dwarf_Addr*      /*row_pc_out*/,
     Dwarf_Error*     /*error*/);
 
-/* Use this to get the cfa. */
+/*  Use this or the next function to get the cfa.
+    New function, June 11, 2016*/
+int dwarf_get_fde_info_for_cfa_reg3_b(Dwarf_Fde /*fde*/,
+    Dwarf_Addr       /*pc_requested*/,
+    Dwarf_Small  *   /*value_type*/,
+    Dwarf_Signed *   /*offset_relevant*/,
+    Dwarf_Signed*    /*register*/,
+    Dwarf_Signed*    /*offset_or_block_len*/,
+    Dwarf_Ptr   *    /*block_ptr */,
+    Dwarf_Addr*      /*row_pc_out*/,
+    Dwarf_Bool  *    /* has_more_rows */,
+    Dwarf_Addr  *    /* subsequent_pc */,
+    Dwarf_Error*     /*error*/);
+/* Use this to get the cfa. Or the above function. */
 int dwarf_get_fde_info_for_cfa_reg3(Dwarf_Fde /*fde*/,
     Dwarf_Addr       /*pc_requested*/,
     Dwarf_Small  *   /*value_type*/,

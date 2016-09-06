@@ -1,5 +1,4 @@
 /*
-
   Copyright (C) 2000,2002,2003,2004,2005 Silicon Graphics, Inc. All Rights Reserved.
   Portions Copyright (C) 2008-2010 Arxan Technologies, Inc. All Rights Reserved.
   Portions Copyright (C) 2009-2016 David Anderson. All Rights Reserved.
@@ -999,14 +998,20 @@ do_decompress_zlib(Dwarf_Debug dbg,
     struct Dwarf_Section_s *section,
     Dwarf_Error * error)
 {
-    Bytef *src = (Bytef *)section->dss_data;
+    Bytef *basesrc = (Bytef *)section->dss_data;
+    Bytef *src = (Bytef *)basesrc;
     uLong srclen = section->dss_size;
     Dwarf_Unsigned flags = section->dss_flags;
+    Dwarf_Small *endsection = 0;
     int res = 0;
     Bytef *dest = 0;
     uLongf destlen = 0;
     Dwarf_Unsigned uncompressed_len = 0;
 
+    endsection = basesrc + srclen;
+    if ((src + 12) >endsection) {
+        DWARF_DBG_ERROR(dbg, DW_DLE_ZLIB_SECTION_SHORT, DW_DLV_ERROR);
+    }
     if(!strncmp("ZLIB",(const char *)src,4)) {
         unsigned i = 0;
         unsigned l = 8;
@@ -1030,9 +1035,11 @@ do_decompress_zlib(Dwarf_Debug dbg,
         unsigned fldsize    = dbg->de_pointer_size;
         unsigned structsize = 3* fldsize;
 
-        READ_UNALIGNED(dbg,type,Dwarf_Unsigned,ptr,sizeof(Dwarf_ufixed));
+        READ_UNALIGNED_CK(dbg,type,Dwarf_Unsigned,ptr,sizeof(Dwarf_ufixed),
+            error,endsection);
         ptr += fldsize;
-        READ_UNALIGNED(dbg,size,Dwarf_Unsigned,ptr,fldsize);
+        READ_UNALIGNED_CK(dbg,size,Dwarf_Unsigned,ptr,fldsize,
+            error,endsection);
         ptr += fldsize;
         if (type != ELFCOMPRESS_ZLIB) {
             DWARF_DBG_ERROR(dbg, DW_DLE_ZDEBUG_INPUT_FORMAT_ODD, DW_DLV_ERROR);
@@ -1046,6 +1053,9 @@ do_decompress_zlib(Dwarf_Debug dbg,
     } else {
         DWARF_DBG_ERROR(dbg, DW_DLE_ZDEBUG_INPUT_FORMAT_ODD, DW_DLV_ERROR);
     }
+    if( (src +srclen) > endsection) {
+        DWARF_DBG_ERROR(dbg, DW_DLE_ZLIB_SECTION_SHORT, DW_DLV_ERROR);
+    }
     destlen = uncompressed_len;
     dest = malloc(destlen);
     if(!dest) {
@@ -1053,10 +1063,13 @@ do_decompress_zlib(Dwarf_Debug dbg,
     }
     res = uncompress(dest,&destlen,src,srclen);
     if (res == Z_BUF_ERROR) {
+        free(dest);
         DWARF_DBG_ERROR(dbg, DW_DLE_ZLIB_BUF_ERROR, DW_DLV_ERROR);
     } else if (res == Z_MEM_ERROR) {
+        free(dest);
         DWARF_DBG_ERROR(dbg, DW_DLE_ALLOC_FAIL, DW_DLV_ERROR);
     } else if (res != Z_OK) {
+        free(dest);
         /* Probably Z_DATA_ERROR. */
         DWARF_DBG_ERROR(dbg, DW_DLE_ZLIB_DATA_ERROR, DW_DLV_ERROR);
     }
@@ -1090,14 +1103,33 @@ _dwarf_load_section(Dwarf_Debug dbg,
         and that section is always empty.
         Non-elf object formats must honor that by ensuring that
         (when they assign numbers to 'sections' or 'section-like-things')
-        they never assign a real section section-number  0 to dss_index. */
+        they never assign a real section section-number  0 to dss_index.
+
+        There is also a convention for 'bss' that that section and its
+        like sections have no data but do have a size.
+        That is never true of DWARF sections */
     res = o->methods->load_section(
         o->object, section->dss_index,
         &section->dss_data, &err);
-    if (res == DW_DLV_ERROR){
+    if (res == DW_DLV_ERROR) {
         DWARF_DBG_ERROR(dbg, err, DW_DLV_ERROR);
     }
+    if (res == DW_DLV_NO_ENTRY) {
+        /*  Gets this for section->dss_index 0.
+            Which by ELF definition is a section index
+            which is not used (reserved by Elf to
+            mean no-section-index).
+            Otherwise NULL dss_data gets error.
+            BSS would legitimately have no data, but
+            no DWARF related section could possbly be bss. */
+        return res;
+    }
     if (section->dss_requires_decompress) {
+        if (!section->dss_data) {
+            /*  Impossible. This makes no sense.
+                Corrupt object. */
+            DWARF_DBG_ERROR(dbg, DW_DLE_COMPRESSED_EMPTY_SECTION, DW_DLV_ERROR);
+        }
 #ifdef HAVE_ZLIB
         res = do_decompress_zlib(dbg,section,error);
         if (res != DW_DLV_OK) {

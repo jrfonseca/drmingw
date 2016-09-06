@@ -35,11 +35,15 @@
 struct Dwarf_Abbrev_s {
     /*  No TAG should exceed DW_TAG_hi_user, 0xffff, but
         we do allow a larger value here. */
-    Dwarf_Word ab_tag;
+    Dwarf_Word dab_tag;
     /*  Abbreviations are numbered (normally sequentially from
         1 and so 16 bits is not enough!  */
-    Dwarf_Word ab_code;
-    Dwarf_Small ab_has_child;
-    Dwarf_Byte_Ptr ab_abbrev_ptr;
-    Dwarf_Debug ab_dbg;
+    Dwarf_Word dab_code;
+    Dwarf_Small dab_has_child;
+    Dwarf_Byte_Ptr dab_abbrev_ptr;
+    Dwarf_Debug dab_dbg;
+
+    /* Section global offset of the abbrev. */
+    Dwarf_Off    dab_goffset;
+    Dwarf_Off    dab_count;
 };

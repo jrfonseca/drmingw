@@ -89,7 +89,6 @@ _dwarf_frame_address_offsets(Dwarf_Debug dbg, Dwarf_Addr ** addrlist,
         Dwarf_Small *instr_end = 0;
         Dwarf_Sword icount = 0;
         int j = 0;
-        int dw_err;
 
         ciep = cie_data[i];
         instoff = ciep->ci_cie_instr_start - dbg->de_debug_frame.dss_data;
@@ -109,10 +108,10 @@ _dwarf_frame_address_offsets(Dwarf_Debug dbg, Dwarf_Addr ** addrlist,
             /* cie= */ 0,
             dbg,
             DW_FRAME_CFA_COL,
-            &icount, &dw_err);
+            &icount,
+            NULL, NULL,err);
         if (res == DW_DLV_ERROR) {
-            _dwarf_error(dbg, err, dw_err);
-            return (res);
+            return res;
         } else if (res == DW_DLV_NO_ENTRY) {
             continue;
         }
@@ -160,7 +159,6 @@ _dwarf_frame_address_offsets(Dwarf_Debug dbg, Dwarf_Addr ** addrlist,
         Dwarf_Off off = 0;
         Dwarf_Addr addr = 0;
         int j = 0;
-        int dw_err;
 
         fdep = fde_data[i];
         off = fdep->fd_initial_loc_pos - dbg->de_debug_frame.dss_data;
@@ -205,10 +203,10 @@ _dwarf_frame_address_offsets(Dwarf_Debug dbg, Dwarf_Addr ** addrlist,
             /* cie= */ 0,
             dbg,
             DW_FRAME_CFA_COL,
-            &icount, &dw_err);
+            &icount,
+            NULL,NULL,err);
         if (res == DW_DLV_ERROR) {
-            _dwarf_error(dbg, err, dw_err);
-            return (res);
+            return res;
         } else if (res == DW_DLV_NO_ENTRY) {
             continue;
         }

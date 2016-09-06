@@ -29,7 +29,7 @@
 #define DWARF_RELOC_PPC64
 
 /* Include the definitions only in the case of Windows */
-#ifdef WIN32
+#ifdef _WIN32
 
 #include "dwarf_reloc_ppc.h"
 
@@ -153,7 +153,7 @@
 
 /*  Keep this the last entry.  */
 #define R_PPC64_NUM                111
-#endif /* WIN32 */
+#endif /* _WIN32 */
 
 /* PowerPC64 relocations defined by the ABIs */
 static const char *reloc_type_names_PPC64[] = {

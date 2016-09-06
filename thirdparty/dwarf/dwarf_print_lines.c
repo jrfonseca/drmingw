@@ -278,6 +278,7 @@ _dwarf_internal_printlines(Dwarf_Die die,
         _dwarf_error(dbg, error, DW_DLE_LINE_OFFSET_BAD);
         return (DW_DLV_ERROR);
     }
+    section_start =  dbg->de_debug_line.dss_data;
     {
         Dwarf_Unsigned fission_size = 0;
         int resfis = _dwarf_get_fission_addition_die(die, DW_SECT_LINE,
@@ -287,7 +288,6 @@ _dwarf_internal_printlines(Dwarf_Die die,
         }
     }
 
-    section_start =  dbg->de_debug_line.dss_data;
     orig_line_ptr = section_start + line_offset + fission_offset;
     line_ptr = orig_line_ptr;
     dwarf_dealloc(dbg, stmt_list_attr, DW_DLA_ATTR);
@@ -322,7 +322,9 @@ _dwarf_internal_printlines(Dwarf_Die die,
         Dwarf_Small *newlinep = 0;
         int dres = _dwarf_read_line_table_header(dbg,
             cu_context,
-            line_ptr,dbg->de_debug_line.dss_size,
+            section_start,
+            line_ptr,
+            dbg->de_debug_line.dss_size,
             &newlinep,
             line_context,
             &bogus_bytes_ptr,

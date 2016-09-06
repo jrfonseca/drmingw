@@ -114,6 +114,9 @@ struct Dwarf_Macro_Context_s {
     Dwarf_Small * mc_macro_header;
     Dwarf_Small * mc_macro_ops;
 
+    /*  These are malloc space, not _dwarf_get_alloc()
+        so the  DW_DLA_MACRO_CONTEXT dealloc will
+        free them. */
     char **       mc_srcfiles;
     Dwarf_Signed  mc_srcfiles_count;
 

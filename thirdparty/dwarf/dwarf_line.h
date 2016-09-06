@@ -147,7 +147,7 @@ struct Dwarf_Line_Context_s {
         accomodation of gcc using the new standard opcodes but not
         updating the version number. It's legal dwarf2, but much better
         for the user to understand as dwarf3 when 'it looks ok'. */
-    Dwarf_Bool lc_std_op_count;
+    Dwarf_Small lc_std_op_count;
 
     /*  Points to a singly-linked list of entries providing info
         about source files
@@ -354,7 +354,7 @@ int _dwarf_internal_srclines(Dwarf_Die die,
             or a special case. */                        \
         if ((opcode) == DW_EXTENDED_OPCODE) {            \
             type = LOP_EXTENDED;                         \
-        } else if (((highest_std)+1) >= (base)) {        \
+        } else if ((highest_std+1) >= (base)) {        \
             /*  == Standard case: compile of             \
                 dwarf_line.c and object                  \
                 have same standard op codes set.         \
@@ -419,6 +419,10 @@ struct Line_Table_File_Entry_s {
 void _dwarf_print_header_issue(Dwarf_Debug dbg,
     const char *specific_msg,
     Dwarf_Small *data_start,
+    Dwarf_Signed value,
+    unsigned index,
+    unsigned tabv,
+    unsigned linetabv,
     int *err_count_out);
 int _dwarf_decode_line_string_form(Dwarf_Debug dbg,
     Dwarf_Unsigned form,
@@ -431,6 +435,7 @@ int _dwarf_decode_line_udata_form(Dwarf_Debug dbg,
     Dwarf_Unsigned form,
     Dwarf_Small **line_ptr,
     Dwarf_Unsigned *return_val,
+    Dwarf_Small *line_end_ptr,
     Dwarf_Error * error);
 
 void _dwarf_update_chain_list( Dwarf_Chain chain_line,
