@@ -1,0 +1,27 @@
+# http://editorconfig.org
+
+root = true
+
+[*.{c,h,cpp,hpp,cc,hh,inl,rc}]
+indent_style = space
+indent_size = 4
+
+[*.py]
+indent_style = space
+indent_size = 4
+
+[{CMakeLists.txt,*.cmake}]
+indent_style = space
+indent_size = 4
+
+[*.{markdown,md}]
+trim_trailing_whitespace = false
+
+[*.yml]
+indent_style = space
+indent_size = 2
+
+[{Makefile,*.mk,*.def}]
+indent_style = tab
+indent_size = 8
+tab_width = 8
