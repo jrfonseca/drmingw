@@ -220,6 +220,9 @@ def main():
         if not testNameRe.search(testName):
             continue
 
+        if sys.platform != 'win32' and testName in ('ctrl_break', 'ctrl_c'):
+            continue
+
         testSrc = os.path.join(testsSrcDir, testSrcFile)
 
         for testsExeDir in testsExeDirs:
