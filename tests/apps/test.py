@@ -78,7 +78,14 @@ def test((catchsegvExe, testExe, testSrc)):
     stdout = tempfile.TemporaryFile()
     stderr = tempfile.TemporaryFile()
 
-    p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr)
+    # Isolate this python script from console events
+    creationflags = 0
+    if sys.platform == 'win32':
+        testName, _ = os.path.splitext(os.path.basename(testSrc))
+        if testName.startswith('ctrl_'):
+            creationflags |= subprocess.CREATE_NEW_CONSOLE
+
+    p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, creationflags=creationflags)
     p.wait()
 
     stdout.seek(0)
