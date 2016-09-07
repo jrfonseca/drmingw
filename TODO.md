@@ -7,6 +7,7 @@
 
   - https://github.com/gcc-mirror/gcc/tree/master/libbacktrace
   - http://www.nongnu.org/libunwind/
+  - http://blog.reverberate.org/2013/05/deep-wizardry-stack-unwinding.html
 
 - Generate gdb core dumps
 

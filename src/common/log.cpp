@@ -257,10 +257,6 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         )
             break;
 
-        // Basic sanity check to make sure  the frame is OK.  Bail if not.
-        if (StackFrame.AddrFrame.Offset == 0)
-            break;
-
         if (MachineType == IMAGE_FILE_MACHINE_I386) {
             lprintf(
                 "%08lX %08lX %08lX %08lX",
@@ -309,11 +305,9 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
             dumpSourceCode(szFileName, dwLineNumber);
         }
 
-        if (StackFrame.AddrStack.Offset < PrevFrameStackOffset) {
-            break;
-        }
-
-        if (StackFrame.AddrPC.Offset == 0xBAADF00D) {
+        // Basic sanity check to make sure  the frame is OK.  Bail if not.
+        if (StackFrame.AddrStack.Offset < PrevFrameStackOffset ||
+            StackFrame.AddrPC.Offset == 0xBAADF00D) {
             break;
         }
 
