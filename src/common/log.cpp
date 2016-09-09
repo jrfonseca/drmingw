@@ -235,6 +235,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         lprintf( "AddrPC           Params\n" );
     }
 
+    DWORD64 PrevFrameStackOffset = StackFrame.AddrStack.Offset - 1;
     int nudge = 0;
 
     while (TRUE) {
@@ -242,7 +243,6 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         char szFileName[MAX_PATH] = "";
         DWORD dwLineNumber = 0;
 
-        DWORD PrevFrameStackOffset = StackFrame.AddrStack.Offset;
         if (!StackWalk64(
                 MachineType,
                 hProcess,
@@ -306,10 +306,11 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         }
 
         // Basic sanity check to make sure  the frame is OK.  Bail if not.
-        if (StackFrame.AddrStack.Offset < PrevFrameStackOffset ||
+        if (StackFrame.AddrStack.Offset <= PrevFrameStackOffset ||
             StackFrame.AddrPC.Offset == 0xBAADF00D) {
             break;
         }
+        PrevFrameStackOffset = StackFrame.AddrStack.Offset;
 
         /*
          * When we walk into the callers, StackFrame.AddrPC.Offset will not
