@@ -155,6 +155,18 @@ dumpContext(
 }
 
 
+// http://wiki.winehq.org/DeveloperFaq#detect-wine
+static inline BOOL
+isInsideWine(void)
+{
+    HMODULE hNtDll = GetModuleHandleA("ntdll");
+    if (!hNtDll) {
+        return FALSE;
+    }
+    return GetProcAddress(hNtDll, "wine_get_version") != NULL;
+}
+
+
 void
 dumpStack(HANDLE hProcess, HANDLE hThread,
           const CONTEXT *pTargetContext)
@@ -235,6 +247,8 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         lprintf( "AddrPC           Params\n" );
     }
 
+    BOOL bInsideWine = isInsideWine();
+
     DWORD64 PrevFrameStackOffset = StackFrame.AddrStack.Offset - 1;
     int nudge = 0;
 
@@ -311,6 +325,12 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
             break;
         }
         PrevFrameStackOffset = StackFrame.AddrStack.Offset;
+
+        // Wine's StackWalk64 implementation on certain yield never ending
+        // stack backtraces unless one bails out when AddrFrame is zero.
+        if (bInsideWine && StackFrame.AddrFrame.Offset == 0) {
+            break;
+        }
 
         /*
          * When we walk into the callers, StackFrame.AddrPC.Offset will not
