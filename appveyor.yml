@@ -12,6 +12,9 @@ cache:
 - x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
 - i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
 
+# https://www.appveyor.com/docs/build-environment/#build-worker-images
+image: Visual Studio 2017
+
 environment:
   COVERALLS_REPO_TOKEN:
     secure: QOuiktPDkbsZmX/lOynJrOrrpR09k8C14rSPRjGnohwrgc4Ee97qjoEQpODFb1ZK
@@ -20,11 +23,11 @@ environment:
   - MINGW_DIR: mingw64
     MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/4.9.2/threads-win32/seh/x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z/download
     MINGW_ARCHIVE: x86_64-4.9.2-release-win32-seh-rt_v4-rev4.7z
-    WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\8.1\Debuggers\x64'
+    WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\10\Debuggers\x64'
   - MINGW_DIR: mingw32
     MINGW_URL: https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/4.9.2/threads-win32/dwarf/i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z/download
     MINGW_ARCHIVE: i686-4.9.2-release-win32-dwarf-rt_v4-rev4.7z
-    WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\8.1\Debuggers\x86'
+    WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\10\Debuggers\x86'
 
 install:
 - if not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
@@ -53,9 +56,9 @@ build_script:
 after_build:
 - set Path=%WINDBG_DIR%;%Path%
 - cmake --build build\mingw --use-stderr --target test
-- cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 12"
+- cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 15 2017" -DCMAKE_SYSTEM_VERSION=10.0.16299.0
 - cmake --build build\msvc32 --config Debug -- /verbosity:minimal /maxcpucount
-- if "%MINGW_DIR%"=="mingw64" cmake -Htests\apps -Bbuild\msvc64 -G "Visual Studio 12 Win64"
+- if "%MINGW_DIR%"=="mingw64" cmake -Htests\apps -Bbuild\msvc64 -G "Visual Studio 15 2017 Win64" -DCMAKE_SYSTEM_VERSION=10.0.16299.0
 - if "%MINGW_DIR%"=="mingw64" cmake --build build\msvc64 --config Debug -- /verbosity:minimal /maxcpucount
 - if "%MINGW_DIR%"=="mingw32" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug
 - if "%MINGW_DIR%"=="mingw64" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug build\msvc64\Debug
