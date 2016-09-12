@@ -22,7 +22,6 @@ matrix:
     - APT_PACKAGES="p7zip mingw32-x-gcc wine1.6-i386:i386"
     - MINGW_ROOT=/opt/mingw32
     - MINGW_PREFIX=i686-w64-mingw32
-    - DBGHELP_URL=https://www.googledrive.com/host/0B1mEXoWzDm1McE81WFBKTzd5Z3M
     - WINE_PROGRAM=/usr/bin/wine
   - compiler: ": Win64"
     env:
@@ -30,7 +29,6 @@ matrix:
     - APT_PACKAGES="p7zip mingw64-x-gcc wine1.6-amd64"
     - MINGW_ROOT=/opt/mingw64
     - MINGW_PREFIX=x86_64-w64-mingw32
-    - DBGHELP_URL=https://www.googledrive.com/host/0B1mEXoWzDm1MaGlUZ0syNEduTGs
     - WINE_PROGRAM=/usr/bin/wine64
 
 before_install:
@@ -51,9 +49,7 @@ script:
     echo "set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)" >> Toolchain.cmake
     echo "set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)" >> Toolchain.cmake
     echo "set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)" >> Toolchain.cmake
-- travis_retry wget -q -O dbghelp.7z "$DBGHELP_URL"
-- 7zr x -othirdparty/dbghelp/ dbghelp.7z
-- cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake -DWINDBG_DIR=thirdparty/dbghelp -DWINE_PROGRAM=$WINE_PROGRAM
+- cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=Toolchain.cmake -DWINE_PROGRAM=$WINE_PROGRAM
 - make -C build all
 - $WINE_PROGRAM wineboot
 - xvfb-run -a -s '-screen 0 1024x768x24' make -C build test
