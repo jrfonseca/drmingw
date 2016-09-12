@@ -1,4 +1,5 @@
 .*.sw?
+*.7z
 *.RPT
 *.a
 *.cmake
