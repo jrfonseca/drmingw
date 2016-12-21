@@ -144,45 +144,54 @@ static
 LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 {
     static LONG cBeenHere = 0;
+    bool ignore = false;
 
-    if (InterlockedIncrement(&cBeenHere) == 1) {
-        UINT fuOldErrorMode;
-
-        fuOldErrorMode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
-
-        if (REPORT_FILE) {
-            if (!g_hReportFile) {
-                if (strcmp(g_szLogFileName, "-") == 0) {
-                    g_hReportFile = GetStdHandle(STD_ERROR_HANDLE);
-                    g_bOwnReportFile = FALSE;
-                } else {
-                    g_hReportFile = CreateFileA(
-                        g_szLogFileName,
-                        GENERIC_WRITE,
-                        FILE_SHARE_READ | FILE_SHARE_WRITE,
-                        0,
-                        OPEN_ALWAYS,
-                        0,
-                        0
-                    );
-                    g_bOwnReportFile = TRUE;
-                }
-            }
-
-            if (g_hReportFile) {
-                SetFilePointer(g_hReportFile, 0, 0, FILE_END);
-
-                GenerateExceptionReport(pExceptionInfo);
-
-                FlushFileBuffers(g_hReportFile);
-            }
-        } else {
-            GenerateExceptionReport(pExceptionInfo);
-        }
-
-        SetErrorMode(fuOldErrorMode);
+    PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
+    DWORD ExceptionCode = pExceptionRecord->ExceptionCode;
+    if (ExceptionCode == MS_VC_SET_THREAD_NAME_EXCEPTION) {
+	ignore = true;
     }
-    InterlockedDecrement(&cBeenHere);
+
+    if (!ignore) {
+	if (InterlockedIncrement(&cBeenHere) == 1) {
+	    UINT fuOldErrorMode;
+
+	    fuOldErrorMode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+
+	    if (REPORT_FILE) {
+		if (!g_hReportFile) {
+		    if (strcmp(g_szLogFileName, "-") == 0) {
+			g_hReportFile = GetStdHandle(STD_ERROR_HANDLE);
+			g_bOwnReportFile = FALSE;
+		    } else {
+			g_hReportFile = CreateFileA(
+			    g_szLogFileName,
+			    GENERIC_WRITE,
+			    FILE_SHARE_READ | FILE_SHARE_WRITE,
+			    0,
+			    OPEN_ALWAYS,
+			    0,
+			    0
+			);
+			g_bOwnReportFile = TRUE;
+		    }
+		}
+
+		if (g_hReportFile) {
+		    SetFilePointer(g_hReportFile, 0, 0, FILE_END);
+
+		    GenerateExceptionReport(pExceptionInfo);
+
+		    FlushFileBuffers(g_hReportFile);
+		}
+	    } else {
+		GenerateExceptionReport(pExceptionInfo);
+	    }
+
+	    SetErrorMode(fuOldErrorMode);
+	}
+	InterlockedDecrement(&cBeenHere);
+    }
 
     if (g_prevExceptionFilter)
         return g_prevExceptionFilter(pExceptionInfo);

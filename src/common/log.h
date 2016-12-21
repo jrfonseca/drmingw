@@ -20,6 +20,7 @@
 
 #include <windows.h>
 
+#define MS_VC_SET_THREAD_NAME_EXCEPTION 0x406d1388
 
 typedef void (*DumpCallback)(const char *);
 

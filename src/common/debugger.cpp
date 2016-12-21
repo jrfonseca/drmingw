@@ -421,7 +421,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                  *
                  * TODO: Note down the thread name
                  */
-                if (ExceptionCode == 0x406d1388) {
+		if (ExceptionCode == MS_VC_SET_THREAD_NAME_EXCEPTION) {
                     dwContinueStatus = DBG_CONTINUE;
                     break;
                 }
