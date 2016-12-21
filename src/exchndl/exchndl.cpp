@@ -38,7 +38,7 @@ static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
 static char g_szLogFileName[MAX_PATH] = "";
 static HANDLE g_hReportFile;
 static BOOL g_bOwnReportFile;
-static DWORD g_dwSetupTreadId = 0;
+static DWORD g_dwSetupThreadId = 0;
 
 static void
 writeReport(const char *szText)
@@ -66,7 +66,7 @@ static
 void dumpThreadInfo()
 {
     lprintf("Current Thread ID: %lu\n", GetCurrentThreadId());
-    lprintf("  Setup Thread ID: %lu (probably main thread)\n\n", g_dwSetupTreadId);
+    lprintf("  Setup Thread ID: %lu (probably main thread)\n\n", g_dwSetupThreadId);
 }
 
 static
@@ -218,7 +218,7 @@ Setup(void)
         }
     }
 
-    g_dwSetupTreadId = GetCurrentThreadId();
+    g_dwSetupThreadId = GetCurrentThreadId();
 }
 
 
