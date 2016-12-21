@@ -32,13 +32,13 @@
 
 #define REPORT_FILE 1
 
-
 // Declare the static variables
 static BOOL g_bHandlerSet = FALSE;
 static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
 static char g_szLogFileName[MAX_PATH] = "";
 static HANDLE g_hReportFile;
 static BOOL g_bOwnReportFile;
+static DWORD g_dwSetupTreadId = 0;
 
 static void
 writeReport(const char *szText)
@@ -62,6 +62,12 @@ writeReport(const char *szText)
     }
 }
 
+static
+void dumpThreadInfo()
+{
+    lprintf("Current Thread ID: %lu\n", GetCurrentThreadId());
+    lprintf("  Setup Thread ID: %lu (probably main thread)\n\n", g_dwSetupTreadId);
+}
 
 static
 void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
@@ -87,6 +93,8 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     if (InitializeSym(hProcess, TRUE)) {
 
         dumpException(hProcess, pExceptionRecord);
+
+	dumpThreadInfo();
 
         PCONTEXT pContext = pExceptionInfo->ContextRecord;
 
@@ -209,6 +217,8 @@ Setup(void)
             strcat(g_szLogFileName, "EXCHNDL.RPT");
         }
     }
+
+    g_dwSetupTreadId = GetCurrentThreadId();
 }
 
 
