@@ -430,7 +430,7 @@ getExceptionString(DWORD ExceptionCode)
         return "Control+C";
     case DBG_CONTROL_BREAK: // 0x40010008
         return "Control+Break";
-    case 0x406D1388:
+    case MS_VC_SET_THREAD_NAME_EXCEPTION:
         return "Thread Name Exception";
 
     case RPC_S_UNKNOWN_IF:
