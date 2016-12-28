@@ -42,8 +42,9 @@ before_build:
 - echo "NUMBER_OF_PROCESSORS=%NUMBER_OF_PROCESSORS%"
 - ps: (Get-Item "${Env:WINDBG_DIR}\dbghelp.dll").VersionInfo
 - if "%APPVEYOR_REPO_TAG%"=="true" (set CMAKE_BUILD_TYPE=Release) else (set CMAKE_BUILD_TYPE=Debug)
-- set ENABLE_COVERAGE=no
-- if "%MINGW_DIR%"=="mingw64" if NOT "%APPVEYOR_REPO_TAG%"=="true" set ENABLE_COVERAGE=yes
+- set ENABLE_COVERAGE=yes
+- if "%APPVEYOR_REPO_TAG%"=="true" set ENABLE_COVERAGE=no
+- if NOT "%MINGW_DIR%"=="mingw64" set ENABLE_COVERAGE=no
 - cmake -H. -Bbuild\mingw -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE% -DENABLE_COVERAGE=%ENABLE_COVERAGE% -DWINDBG_DIR="%WINDBG_DIR%"
 
 build_script:
@@ -61,6 +62,7 @@ after_build:
 - cmake --build build\mingw --use-stderr --target package
 
 on_success:
+- if "%COVERALLS_REPO_TOKEN%"=="" set ENABLE_COVERAGE=no
 - if "%ENABLE_COVERAGE%"=="yes" C:\Python27\Scripts\coveralls --include src --gcov-options="-lp"
 
 artifacts:
