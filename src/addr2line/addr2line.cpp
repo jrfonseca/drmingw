@@ -22,9 +22,12 @@
  */
 
 
+#define __STDC_FORMAT_MACROS 1
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include <windows.h>
 #include <dbghelp.h>
@@ -112,11 +115,11 @@ main(int argc, char **argv)
         const char *arg = argv[i];
         DWORD64 dwRelAddr;
         if (arg[0] == '0' && arg[1] == 'x') {
-            sscanf(&arg[2], "%08I64X", &dwRelAddr);
+            sscanf(&arg[2], "%08" PRIX64, &dwRelAddr);
         } else {
             dwRelAddr = atol(arg);
         }
-        printf("dwRelAddr = %08I64X\n", dwRelAddr);
+        printf("dwRelAddr = %08" PRIX64 "\n", dwRelAddr);
 
         UINT_PTR dwAddr = (UINT_PTR)hModule + dwRelAddr;
 
