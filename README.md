@@ -189,7 +189,8 @@ or
 
  * [binutil's addr2line](http://sourceware.org/binutils/docs/binutils/addr2line.html) (included in MinGW)
  * [cv2pdb - DWARF to PDB converter](https://github.com/rainers/cv2pdb)
- * [google-breakpad](https://chromium.googlesource.com/breakpad/breakpad/)
+ * [Breakpad](https://chromium.googlesource.com/breakpad/breakpad/)
+ * [Crashpad](https://crashpad.chromium.org/)
  * [CrashRpt](http://crashrpt.sourceforge.net/)
  * [dbg](https://bitbucket.org/edd/dbg/wiki/Home)
 
