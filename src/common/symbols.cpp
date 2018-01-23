@@ -66,11 +66,12 @@ EXTERN_C BOOL
 InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
 {
     // Provide default symbol search path
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms680689.aspx
     // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
     char szSymSearchPathBuf[MAX_PATH * 2];
     const char *szSymSearchPath = NULL;
     if (getenv("_NT_SYMBOL_PATH") == NULL &&
-        getenv("_NT_ALTERNATE_SYMBOL_PATH") == NULL) {
+        getenv("_NT_ALT_SYMBOL_PATH") == NULL) {
         char szLocalAppData[MAX_PATH];
         HRESULT hr = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szLocalAppData);
         assert(SUCCEEDED(hr));
