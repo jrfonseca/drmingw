@@ -45,4 +45,11 @@ if (WINDBG_FOUND)
             "${WINDBG_DIR}/symsrv.yes"
         DESTINATION bin
     )
+    if (EXISTS "${WINDBG_DIR}/dbgcore.dll")
+        install (
+            FILES
+                "${WINDBG_DIR}/dbgcore.dll"
+            DESTINATION bin
+        )
+    endif ()
 endif ()
