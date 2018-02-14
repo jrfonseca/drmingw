@@ -516,10 +516,40 @@ dumpModules(HANDLE hProcess)
         return;
     }
 
+    DWORD MachineType;
+#ifdef _WIN64
+    BOOL bWow64 = FALSE;
+    IsWow64Process(hProcess, &bWow64);
+    if (bWow64) {
+        MachineType = IMAGE_FILE_MACHINE_I386;
+    } else {
+#else
+    {
+#endif
+#ifndef _WIN64
+        MachineType = IMAGE_FILE_MACHINE_I386;
+#else
+        MachineType = IMAGE_FILE_MACHINE_AMD64;
+#endif
+    }
+
     MODULEENTRY32 me32;
     me32.dwSize = sizeof me32;
     if (Module32First(hModuleSnap, &me32)) {
         do {
+            if (MachineType == IMAGE_FILE_MACHINE_I386) {
+                lprintf(
+                    "%08lX-%08lX ",
+                    (DWORD)(DWORD64)me32.modBaseAddr,
+                    (DWORD)(DWORD64)me32.modBaseAddr + me32.modBaseSize
+                );
+            } else {
+                lprintf(
+                    "%016I64X-%016I64X ",
+                    (DWORD64)me32.modBaseAddr,
+                    (DWORD64)me32.modBaseAddr + me32.modBaseSize
+                );
+            }
             const char *szBaseName = getBaseName(me32.szExePath);
             DWORD dwVInfo[4];
             if (getModuleVersionInfo(me32.szExePath, dwVInfo)) {
