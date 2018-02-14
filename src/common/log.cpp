@@ -240,7 +240,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
                     lprintf("  [%s @ %ld]", szFileName, dwLineNumber);
                 }
             } else {
-                lprintf("!0x%I64x", AddrPC - (DWORD)(INT_PTR)hModule);
+                lprintf("!0x%I64x", AddrPC - (DWORD64)(INT_PTR)hModule);
             }
         }
 
