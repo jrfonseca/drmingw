@@ -98,8 +98,9 @@ def test((catchsegvExe, testExe, testSrc)):
     stderr = stderr.replace('\r\n', '\n')
 
     if options.verbose:
-        sys.stderr.write(stderr)
-        sys.stderr.write(stdout)
+        with stdoutLock:
+            sys.stderr.write(stderr)
+            sys.stderr.write(stdout)
 
     # Adjust return code
     exitCode = p.returncode
