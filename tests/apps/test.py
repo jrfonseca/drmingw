@@ -57,6 +57,42 @@ def checkString(needle, haystack):
     return needleRe.search(haystack) is not None
 
 
+def haveAnsiEscapes():
+    if sys.platform != 'win32':
+        return True
+
+    if os.environ.get('APPVEYOR', 'False') == 'True':
+        # https://help.appveyor.com/discussions/suggestions/197-support-ansi-color-codes
+        return True;
+
+    import ctypes.wintypes
+
+    STD_OUTPUT_HANDLE = -11
+    ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+
+    # Set output mode to handle virtual terminal sequences
+    # https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx
+    hConsoleHandle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+    dwMode = ctypes.wintypes.DWORD()
+    if ctypes.windll.kernel32.GetConsoleMode(hConsoleHandle, ctypes.byref(dwMode)):
+        dwMode = ctypes.wintypes.DWORD(dwMode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+        if ctypes.windll.kernel32.SetConsoleMode(hConsoleHandle, dwMode):
+            return True
+
+    return False
+
+
+if haveAnsiEscapes():
+    _csi = '\33['
+    NORMAL = _csi + '0m'
+    RED = _csi + '31m'
+    GREEN = _csi + '32m'
+else:
+    NORMAL = ''
+    RED = ''
+    GREEN = ''
+
+
 def test((catchsegvExe, testExe, testSrc)):
     result = True
 
@@ -111,7 +147,7 @@ def test((catchsegvExe, testExe, testSrc)):
 
     if exitCode == 125:
         # skip
-        writeStdout('ok - %s # skip\n' % (testExe,))
+        writeStdout('%sok - %s # skip%s\n' % (GREEN, testExe, NORMAL))
     else:
         # Search the source file for '// CHECK_...' annotations and process
         # them.
@@ -146,9 +182,9 @@ def test((catchsegvExe, testExe, testSrc)):
                 else:
                     assert False
 
-                ok_or_not = ['not ok', 'ok']
+                ok_or_not = [RED + 'not ok', GREEN + 'ok']
                 checkExpr = mo.group(2)
-                writeStdout('%s - %s %s %s\n' % (ok_or_not[int(bool(ok))], testExe, 'CHECK_' + checkName, checkExpr))
+                writeStdout('%s - %s %s %s%s\n' % (ok_or_not[int(bool(ok))], testExe, 'CHECK_' + checkName, checkExpr, NORMAL))
                 if not ok:
                     result = False
     
