@@ -142,10 +142,11 @@ Usage(void)
     fputs("usage: catchsegv [options] <command-line>\n"
           "\n"
           "options:\n"
-          "  -? displays command line help text\n"
-          "  -v enables verbose output from the debugger\n"
-          "  -t <seconds> specifies a timeout in seconds \n"
-          "  -1 dump stack on first chance exceptions \n",
+          "  -?         displays command line help text\n"
+          "  -v         enables verbose output from the debugger\n"
+          "  -t SECONDS specifies a timeout in seconds \n"
+          "  -1         dump stack on first chance exceptions \n"
+          "  -H         use debug heap\n" ,
           stderr);
 }
 
@@ -264,8 +265,9 @@ main(int argc, char** argv)
      * Parse command line arguments
      */
 
+    bool debugHeap = false;
     while (1) {
-        int opt = getopt(argc, argv, "?1dht:v");
+        int opt = getopt(argc, argv, "?1dhHt:v");
 
         switch (opt) {
         case 'h':
@@ -282,6 +284,9 @@ main(int argc, char** argv)
             break;
         case 't':
             g_TimeOut = strtoul(optarg, NULL, 0);
+            break;
+        case 'H':
+            debugHeap = true;
             break;
         case '?':
             if (optopt == '?') {
@@ -336,7 +341,9 @@ main(int argc, char** argv)
 
     // Disable debug heap
     // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366705.aspx
-    SetEnvironmentVariableA("_NO_DEBUG_HEAP", "1");
+    if (!debugHeap) {
+        SetEnvironmentVariableA("_NO_DEBUG_HEAP", "1");
+    }
 
     STARTUPINFOA StartupInfo;
     ZeroMemory(&StartupInfo, sizeof StartupInfo);
