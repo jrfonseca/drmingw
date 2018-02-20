@@ -19,6 +19,10 @@ if (MINGW)
 endif ()
 
 if (MSVC)
+    if (CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION)
+        message (STATUS "Using Windows SDK ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
+    endif ()
+
     # http://www.cmake.org/Wiki/CMake_FAQ#How_can_I_build_my_MSVC_application_with_a_static_runtime.3F
     foreach (flag_var
         CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
