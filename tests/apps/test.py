@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ###########################################################################
 #
-# Copyright 2015 Jose Fonseca
+# Copyright 2015-2018 Jose Fonseca
 # All Rights Reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,6 +37,10 @@ import tempfile
 import threading
 import multiprocessing.dummy as multiprocessing
 
+from multiprocessing import cpu_count
+
+
+assert sys.version_info.major >= 3
 
 
 stdoutLock = threading.Lock()
@@ -93,7 +97,9 @@ else:
     GREEN = ''
 
 
-def test((catchsegvExe, testExe, testSrc)):
+def test(args):
+    catchsegvExe, testExe, testSrc = args
+
     result = True
 
     cmd = [
@@ -130,8 +136,11 @@ def test((catchsegvExe, testExe, testSrc)):
     stdout = stdout.read()
     stderr = stderr.read()
 
-    stdout = stdout.replace('\r\n', '\n')
-    stderr = stderr.replace('\r\n', '\n')
+    stdout = stdout.replace(b'\r\n', b'\n')
+    stderr = stderr.replace(b'\r\n', b'\n')
+
+    stdout = stdout.decode(errors='replace')
+    stderr = stderr.decode(errors='replace')
 
     if options.verbose:
         with stdoutLock:
@@ -241,7 +250,7 @@ def main():
 
     failedTests = []
 
-    numJobs = multiprocessing.cpu_count()
+    numJobs = cpu_count()
     pool = multiprocessing.Pool(numJobs)
 
     testSrcFiles = os.listdir(testsSrcDir)
