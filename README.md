@@ -26,7 +26,7 @@ To install enter
 
     drmingw -i
 
-Dr. Mingw will register itself as the JIT debugger by writing into the system registry. Make sure you have Administrator rights. See [this page](http://msdn.microsoft.com/en-us/library/windows/desktop/bb204634.aspx) for more information on how this works.
+Dr. Mingw will register itself as the JIT debugger by writing into the system registry. Make sure you have Administrator rights. See [this page](http://msdn.microsoft.com/en-us/library/windows/desktop/bb204634.aspx) and [this page](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/enabling-postmortem-debugging) for more information on how this works.
 
 If the installation is successful, the following message box should appear:
 
@@ -57,7 +57,6 @@ The following table describes the Dr. Mingw command-line options.  All comand-li
 | **-h**         | **--help**             | Print help and exit |
 | **-V**         | **--version**          | Print version and exit |
 | **-i**         | **--install**          | Install as the default JIT debugger |
-| **-a**         | **--auto**             | Automatically start (used with **-i** or **--install**) |
 | **-u**         | **--uninstall**        | Uninstall |
 | **-p** _pid_   | **--process-id=**_pid_ | Attach to the process with the given identifier |
 | **-e** _event_ | **--event=**_event_    | Signal an event after process is attached |

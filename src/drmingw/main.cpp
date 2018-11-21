@@ -35,7 +35,6 @@
 
 static int process_id_given = 0;    /* Whether process-id was given.  */
 static int install_given = 0;    /* Whether install was given.  */
-static int auto_given = 0;    /* Whether auto was given.  */
 static int uninstall_given = 0;    /* Whether uninstall was given.  */
 
 static DebugOptions debug_options;
@@ -51,7 +50,6 @@ help(void)
         "  -h, --help\tPrint help and exit\r\n"
         "  -V, --version\tPrint version and exit\r\n"
         "  -i, --install\tInstall as the default JIT debugger\r\n"
-        "  -a, --auto\tStart automatically (used with -i)\r\n"
         "  -u, --uninstall\tUninstall\r\n"
         "  -pLONG, --process-id=LONG\r\n"
         "\t\tAttach to the process with the given identifier\r\n"
@@ -63,6 +61,16 @@ help(void)
         ,
         PACKAGE,
         MB_OK | MB_ICONINFORMATION
+    );
+}
+
+
+static LSTATUS
+regSetStr(HKEY hKey, LPCSTR lpValueName, LPCSTR szStr)
+{
+    return RegSetValueExA(
+        hKey, lpValueName, 0, REG_SZ,
+        reinterpret_cast<LPCBYTE>(szStr), strlen(szStr) + 1
     );
 }
 
@@ -106,24 +114,10 @@ install(REGSAM samDesired)
     }
 
     // Write the Debugger value.
-    lRet = RegSetValueExA(
-        hKey,
-        "Debugger",    // The debugger value.
-        0,
-        REG_SZ,
-        (CONST BYTE *) szFullCommand,
-        strlen(szFullCommand)*sizeof(char)
-    );
+    lRet = regSetStr(hKey, "Debugger", szFullCommand);
     if (lRet == ERROR_SUCCESS) {
         // Write the Auto value.
-        lRet = RegSetValueExA(
-            hKey,
-            "Auto",    // The auto value.
-            0,
-            REG_SZ,
-            (CONST BYTE *)  (auto_given ? "1" : "0"),
-            sizeof(char)
-        );
+        lRet = regSetStr(hKey, "Auto", "1");
     }
 
     // Close the key no matter what happened.
@@ -151,25 +145,12 @@ uninstall(REGSAM samDesired)
     }
 
     // Write the Debugger value.
-    lRet = RegSetValueExA(
-        hKey,
-        "Debugger",    // The debugger value.
-        0,
-        REG_SZ,
-        (CONST BYTE *) "",
-        0
-    );
-    if (lRet == ERROR_SUCCESS) {
-        // Write the Auto value.
-        lRet = RegSetValueExA(
-            hKey,
-            "Auto",    // The auto value.
-            0,
-            REG_SZ,
-            (CONST BYTE *)  "0",
-            sizeof(char)
-        );
-    }
+    lRet = regSetStr(hKey, "Debugger", "");
+
+    // Leave Auto value as "1".  It is the default
+    // (https://docs.microsoft.com/en-us/windows/desktop/Debug/configuring-automatic-debugging)
+    // and setting it to "0" doesn't seem to work as documented on Windows 10
+    // (https://github.com/jrfonseca/drmingw/issues/38)
 
     // Close the key no matter what happened.
     RegCloseKey(hKey);
@@ -238,7 +219,6 @@ main(int argc, char **argv)
             { "help", 0, NULL, 'h'},
             { "version", 0, NULL, 'V'},
             { "install", 0, NULL, 'i'},
-            { "auto", 0, NULL, 'a'},
             { "uninstall", 0, NULL, 'u'},
             { "process-id", 1, NULL, 'p'},
             { "event", 1, NULL, 'e'},
@@ -249,7 +229,7 @@ main(int argc, char **argv)
             { NULL, 0, NULL, 0}
         };
 
-        c = getopt_long_only(argc, argv, "?hViaup:e:t:vbd", long_options, &option_index);
+        c = getopt_long_only(argc, argv, "?hViup:e:t:vbd", long_options, &option_index);
 
         if (c == -1)
             break;    /* Exit from `while (1)' loop.  */
@@ -296,36 +276,12 @@ main(int argc, char **argv)
                 install_given = 1;
                 break;
 
-            case 'a':    /* Automatically start.  */
-                if (uninstall_given)
-                {
-                    MessageBoxA(
-                        NULL,
-                        "conficting options `--uninstall' (`-u') and `--auto' (`-a')",
-                        PACKAGE,
-                        MB_OK | MB_ICONSTOP
-                    );
-                    return 0;
-                }
-                auto_given = 1;
-                break;
-
             case 'u':    /* Uninstall.  */
                 if (install_given)
                 {
                     MessageBoxA(
                         NULL,
                         "conficting options `--install' (`-i') and `--uninstall' (`-u')",
-                        PACKAGE,
-                        MB_OK | MB_ICONSTOP
-                    );
-                    return 0;
-                }
-                if (auto_given)
-                {
-                    MessageBoxA(
-                        NULL,
-                        "conficting options `--auto' (`-a') and `--uninstall' (`-u')",
                         PACKAGE,
                         MB_OK | MB_ICONSTOP
                     );
