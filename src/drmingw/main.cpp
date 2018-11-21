@@ -17,12 +17,14 @@
  */
 
 #include <assert.h>
+#include <stdlib.h>
+
+#include <string>
 
 #include <windows.h>
 #include <tlhelp32.h>
 
 #include <process.h>
-#include <stdlib.h>
 
 #include "getopt.h"
 #include "debugger.h"
@@ -79,24 +81,24 @@ static DWORD
 install(REGSAM samDesired)
 {
     char szFile[MAX_PATH];
-
     if (!GetModuleFileNameA(NULL, szFile, MAX_PATH)) {
         return GetLastError();
     }
         
-    char szFullCommand[MAX_PATH + 256];
+    std::string debuggerCommand;
+    debuggerCommand += '"';
+    debuggerCommand += szFile;
+    debuggerCommand += "\" -p %ld -e %ld";
+    if (debug_options.verbose_flag)
+        debuggerCommand += " -v";
+    if (debug_options.breakpoint_flag)
+        debuggerCommand += " -b";
+    if (debug_options.debug_flag)
+        debuggerCommand += " -d";
+
     HKEY hKey;
     long lRet;
     DWORD dwDisposition;
-
-    strcpy(szFullCommand, szFile);
-    strcat(szFullCommand, " -p %ld -e %ld");
-    if (debug_options.verbose_flag)
-        strcat(szFullCommand, " -v");
-    if (debug_options.breakpoint_flag)
-        strcat(szFullCommand, " -b");
-    if (debug_options.debug_flag)
-        strcat(szFullCommand, " -d");
 
     lRet = RegCreateKeyExA(
         HKEY_LOCAL_MACHINE,
@@ -114,7 +116,7 @@ install(REGSAM samDesired)
     }
 
     // Write the Debugger value.
-    lRet = regSetStr(hKey, "Debugger", szFullCommand);
+    lRet = regSetStr(hKey, "Debugger", debuggerCommand.c_str());
     if (lRet == ERROR_SUCCESS) {
         // Write the Auto value.
         lRet = regSetStr(hKey, "Auto", "1");
