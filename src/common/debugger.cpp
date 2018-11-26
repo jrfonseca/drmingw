@@ -556,17 +556,6 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 dumpStack(pProcessInfo->hProcess, hThread, &Context);
 
                 if (!DebugEvent.u.Exception.dwFirstChance) {
-                    /*
-                     * XXX: WOW64 exception info is not very reliable.  It's
-                     * not clear whether we should pass a WOW64_CONTEXT, or
-                     * force a CONTEXT.
-                     */
-#if 0
-                    ZeroMemory(&Context, sizeof Context);
-                    Context.ContextFlags = CONTEXT_ALL;
-                    GetThreadContext(hThread, &Context);
-#endif
-
                     EXCEPTION_POINTERS ExceptionPointers;
                     ExceptionPointers.ExceptionRecord = pExceptionRecord;
                     ExceptionPointers.ContextRecord = &Context;

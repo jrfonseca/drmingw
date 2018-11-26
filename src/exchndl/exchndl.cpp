@@ -89,6 +89,7 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
         dumpException(hProcess, pExceptionRecord);
 
         PCONTEXT pContext = pExceptionInfo->ContextRecord;
+        assert(pContext);
 
         // XXX: In 64-bits WINE we can get context record that don't match the
         // exception record somehow

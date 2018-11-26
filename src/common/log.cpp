@@ -88,9 +88,9 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
 static void
 dumpContext(
 #ifdef _WIN64
-            PWOW64_CONTEXT pContext
+            const WOW64_CONTEXT *pContext
 #else
-            PCONTEXT pContext
+            const CONTEXT *pContext
 #endif
 )
 {
@@ -169,7 +169,7 @@ isInsideWine(void)
 
 void
 dumpStack(HANDLE hProcess, HANDLE hThread,
-          PCONTEXT pContext)
+          const CONTEXT *pContext)
 {
     DWORD MachineType;
 
@@ -183,7 +183,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         IsWow64Process(hProcess, &bWow64);
     }
     if (bWow64) {
-        PWOW64_CONTEXT pWow64Context = reinterpret_cast<PWOW64_CONTEXT>(pContext);
+        const WOW64_CONTEXT *pWow64Context = reinterpret_cast<const WOW64_CONTEXT *>(pContext);
         assert((pWow64Context->ContextFlags & WOW64_CONTEXT_FULL) == WOW64_CONTEXT_FULL);
 #ifdef _WIN64
         dumpContext(pWow64Context);
@@ -211,6 +211,11 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
     StackFrame.AddrStack.Mode = AddrModeFlat;
     StackFrame.AddrFrame.Mode = AddrModeFlat;
 
+    /*
+     * StackWalk64 modifies Context, so pass a copy.
+     */
+    CONTEXT Context = *pContext;
+
     if (MachineType == IMAGE_FILE_MACHINE_I386) {
         lprintf( "AddrPC   Params\n" );
     } else {
@@ -232,7 +237,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
                 hProcess,
                 hThread,
                 &StackFrame,
-                pContext,
+                &Context,
                 NULL, // ReadMemoryRoutine
                 SymFunctionTableAccess64,
                 SymGetModuleBase64,
