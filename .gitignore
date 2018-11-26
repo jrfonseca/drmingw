@@ -4,6 +4,7 @@
 *.a
 *.cmake
 *.debug
+*.dmp
 *.dll
 *.exe
 *.o

@@ -237,10 +237,10 @@ int
 main(int argc, char** argv)
 {
     DebugOptions debugOptions = {0};
-    debugOptions.breakpoint_flag = 0;
-    debugOptions.verbose_flag = 0;
-    debugOptions.debug_flag = 0;
-    debugOptions.first_chance = 0;
+    debugOptions.breakpoint_flag = false;
+    debugOptions.verbose_flag = false;
+    debugOptions.debug_flag = false;
+    debugOptions.first_chance = false;
 
     /*
      * Disable error message boxes.
@@ -267,26 +267,29 @@ main(int argc, char** argv)
 
     bool debugHeap = false;
     while (1) {
-        int opt = getopt(argc, argv, "?1dhHt:v");
+        int opt = getopt(argc, argv, "?1dhHt:zv");
 
         switch (opt) {
         case 'h':
             Usage();
             return 0;
         case 'v':
-            debugOptions.verbose_flag = TRUE;
+            debugOptions.verbose_flag = true;
             break;
         case 'd':
-            debugOptions.debug_flag = TRUE;
+            debugOptions.debug_flag = true;
             break;
         case '1':
-            debugOptions.first_chance = TRUE;
+            debugOptions.first_chance = true;
             break;
         case 't':
             g_TimeOut = strtoul(optarg, NULL, 0);
             break;
         case 'H':
             debugHeap = true;
+            break;
+        case 'z':
+            debugOptions.minidump = true;
             break;
         case '?':
             if (optopt == '?') {

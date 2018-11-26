@@ -45,6 +45,7 @@ typedef struct {
     THREAD_INFO_LIST Threads;
     BOOL fBreakpointSignalled;
     BOOL fWowBreakpointSignalled;
+    BOOL fDumpWritten;
 }
 PROCESS_INFO, * PPROCESS_INFO;
 
@@ -288,14 +289,80 @@ getThreadContext(HANDLE hProcess, HANDLE hThread,
     if (bWow64) {
         PWOW64_CONTEXT pWow64Context = reinterpret_cast<PWOW64_CONTEXT>(pContext);
         static_assert(sizeof *pContext >= sizeof *pWow64Context, "WOW64_CONTEXT should fit in CONTEXT");
-        pWow64Context->ContextFlags = WOW64_CONTEXT_FULL;
+        pWow64Context->ContextFlags = WOW64_CONTEXT_ALL;
         bSuccess = Wow64GetThreadContext(hThread, pWow64Context);
     } else {
-        pContext->ContextFlags = CONTEXT_FULL;
+        pContext->ContextFlags = CONTEXT_ALL;
         bSuccess = GetThreadContext(hThread, pContext);
     }
 
     return bSuccess;
+}
+
+
+static void
+writeDump(DWORD dwProcessId,
+          PPROCESS_INFO pProcessInfo,
+          PMINIDUMP_EXCEPTION_INFORMATION pExceptionParam)
+{
+    if (pProcessInfo->fDumpWritten) {
+        return;
+    }
+    pProcessInfo->fDumpWritten = TRUE;
+
+    char szFilePath[MAX_PATH];
+    _snprintf(szFilePath, sizeof szFilePath, "%lu.dmp", dwProcessId);
+    HANDLE hFile = CreateFile(szFilePath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+                              FILE_ATTRIBUTE_NORMAL, nullptr);
+
+    /*
+     * http://www.debuginfo.com/articles/effminidumps2.html#minidump
+     */
+    UINT DumpType = MiniDumpWithPrivateReadWriteMemory |
+                    MiniDumpWithDataSegs |
+                    MiniDumpWithHandleData |
+                    MiniDumpWithFullMemoryInfo |
+                    MiniDumpWithThreadInfo |
+                    MiniDumpWithUnloadedModules;
+
+    std::string comment = "Dump generated with DrMingw\n";
+
+    BOOL bWow64 = FALSE;
+    if (HAVE_WIN64) {
+        IsWow64Process(pProcessInfo->hProcess, &bWow64);
+    }
+    if (bWow64) {
+        comment += "Enter `.effmach x86` command to debug this WOW64 dump with WinDbg (https://bit.ly/2TLG7hl)\n";
+    }
+
+    MINIDUMP_USER_STREAM UserStreams[1];
+    UserStreams[0].Type = CommentStreamA;
+    UserStreams[0].BufferSize = comment.length();
+    UserStreams[0].Buffer = (PVOID)comment.c_str();
+
+    MINIDUMP_USER_STREAM_INFORMATION UserStreamParam;
+    UserStreamParam.UserStreamCount = _countof(UserStreams);
+    UserStreamParam.UserStreamArray = UserStreams;
+
+    BOOL bSuccess = FALSE;
+    if (hFile != INVALID_HANDLE_VALUE) {
+        bSuccess = MiniDumpWriteDump(pProcessInfo->hProcess,
+                                     dwProcessId,
+                                     hFile,
+                                     (MINIDUMP_TYPE)DumpType,
+                                     pExceptionParam,
+                                     &UserStreamParam,
+                                     nullptr);
+
+        CloseHandle(hFile);
+    }
+
+    if (bSuccess) {
+        lprintf("info: minidump written to %s\n", szFilePath);
+
+    } else {
+        lprintf("error: failed to write minidump to %s\n", szFilePath);
+    }
 }
 
 
@@ -324,6 +391,7 @@ TrapThread(DWORD dwProcessId, DWORD dwThreadId)
         if (getThreadContext(hProcess, hThread, &Context)) {
             dumpStack(hProcess, hThread, &Context);
         }
+        writeDump(dwProcessId, pProcessInfo, nullptr);
 
         // TODO: Flag fTerminating
 
@@ -486,6 +554,30 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 }
 
                 dumpStack(pProcessInfo->hProcess, hThread, &Context);
+
+                if (!DebugEvent.u.Exception.dwFirstChance) {
+                    /*
+                     * XXX: WOW64 exception info is not very reliable.  It's
+                     * not clear whether we should pass a WOW64_CONTEXT, or
+                     * force a CONTEXT.
+                     */
+#if 0
+                    ZeroMemory(&Context, sizeof Context);
+                    Context.ContextFlags = CONTEXT_ALL;
+                    GetThreadContext(hThread, &Context);
+#endif
+
+                    EXCEPTION_POINTERS ExceptionPointers;
+                    ExceptionPointers.ExceptionRecord = pExceptionRecord;
+                    ExceptionPointers.ContextRecord = &Context;
+
+                    MINIDUMP_EXCEPTION_INFORMATION ExceptionParam;
+                    ExceptionParam.ThreadId = DebugEvent.dwThreadId;
+                    ExceptionParam.ExceptionPointers = &ExceptionPointers;
+                    ExceptionParam.ClientPointers = FALSE;
+
+                    writeDump(DebugEvent.dwProcessId, pProcessInfo, &ExceptionParam);
+                }
             }
 
             if (!DebugEvent.u.Exception.dwFirstChance) {
@@ -538,6 +630,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
             pProcessInfo->hProcess = hProcess;
+            pProcessInfo->fDumpWritten = !pOptions->minidump;
 
             pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
             pThreadInfo->hThread = DebugEvent.u.CreateProcessInfo.hThread;
@@ -600,6 +693,8 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 if (getThreadContext(hProcess, hThread, &Context)) {
                     dumpStack(hProcess, hThread, &Context);
                 }
+
+                writeDump(DebugEvent.dwProcessId, pProcessInfo, nullptr);
             }
 
             // Remove the process from the process list

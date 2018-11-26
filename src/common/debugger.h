@@ -22,14 +22,15 @@
 #include <windows.h>
 
 
-typedef struct {
-    int breakpoint_flag; /* Treat breakpoints as exceptions. */
-    int verbose_flag;    /* Verbose output. */
-    int debug_flag;
-    int first_chance;
+struct DebugOptions {
+    bool breakpoint_flag; /* Treat breakpoints as exceptions. */
+    bool verbose_flag;    /* Verbose output. */
+    bool debug_flag;
+    bool first_chance;
+    bool minidump;
     HANDLE hEvent;       /* Signal an event after process is attached.  */
     DWORD dwThreadId;    /* Resume thread after process is attached */
-} DebugOptions;
+};
 
 EXTERN_C BOOL ObtainSeDebugPrivilege(void);
 EXTERN_C BOOL DebugMainLoop(const DebugOptions *pOptions);

@@ -39,7 +39,7 @@ static int process_id_given = 0;    /* Whether process-id was given.  */
 static int install_given = 0;    /* Whether install was given.  */
 static int uninstall_given = 0;    /* Whether uninstall was given.  */
 
-static DebugOptions debug_options;
+static DebugOptions debug_options = { 0 };
 
 static void
 help(void)
@@ -307,7 +307,7 @@ main(int argc, char **argv)
                 if (optarg[0] >= '0' && optarg[0] <= '9') {
                     dwProcessId = strtoul(optarg, NULL, 0);
                 } else {
-                    debug_options.breakpoint_flag = 1;
+                    debug_options.breakpoint_flag = true;
                     dwProcessId = getProcessIdByName(optarg);
                 }
                 if (!dwProcessId) {
@@ -342,15 +342,15 @@ main(int argc, char **argv)
             }
 
             case 'b':    /* Treat debug breakpoints as exceptions */
-                debug_options.breakpoint_flag = 1;
+                debug_options.breakpoint_flag = true;
                 break;
 
             case 'v':    /* Verbose output.  */
-                debug_options.verbose_flag = 1;
+                debug_options.verbose_flag = true;
                 break;
 
             case 'd':    /* Debug output.  */
-                debug_options.debug_flag = 1;
+                debug_options.debug_flag = true;
                 break;
 
             default:    /* bug: option not considered.  */
