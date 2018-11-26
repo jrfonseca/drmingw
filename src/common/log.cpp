@@ -169,77 +169,47 @@ isInsideWine(void)
 
 void
 dumpStack(HANDLE hProcess, HANDLE hThread,
-          const CONTEXT *pTargetContext)
+          PCONTEXT pContext)
 {
     DWORD MachineType;
 
-    CONTEXT Context;
-    ZeroMemory(&Context, sizeof Context);
-    Context.ContextFlags = CONTEXT_FULL;
-    PCONTEXT pContext;
+    assert(pContext);
 
     STACKFRAME64 StackFrame;
     ZeroMemory(&StackFrame, sizeof StackFrame);
 
-    if (pTargetContext) {
-        assert(hProcess == GetCurrentProcess());
-        assert((pTargetContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
-    }
-
-#ifdef _WIN64
     BOOL bWow64 = FALSE;
-    WOW64_CONTEXT Wow64Context;
-    IsWow64Process(hProcess, &bWow64);
+    if (HAVE_WIN64) {
+        IsWow64Process(hProcess, &bWow64);
+    }
     if (bWow64) {
-        MachineType = IMAGE_FILE_MACHINE_I386;
-        ZeroMemory(&Wow64Context, sizeof Wow64Context);
-        Wow64Context.ContextFlags = WOW64_CONTEXT_FULL;
-        if (!Wow64GetThreadContext(hThread, &Wow64Context)) {
-            // XXX: This happens with WINE after EXIT_PROCESS_DEBUG_EVENT
-            return;
-        }
-        assert(pTargetContext == NULL);
-        pContext = (PCONTEXT)&Wow64Context;
-        dumpContext(&Wow64Context);
-        StackFrame.AddrPC.Offset = Wow64Context.Eip;
-        StackFrame.AddrPC.Mode = AddrModeFlat;
-        StackFrame.AddrStack.Offset = Wow64Context.Esp;
-        StackFrame.AddrStack.Mode = AddrModeFlat;
-        StackFrame.AddrFrame.Offset = Wow64Context.Ebp;
-        StackFrame.AddrFrame.Mode = AddrModeFlat;
-    } else {
-#else
-    {
+        PWOW64_CONTEXT pWow64Context = reinterpret_cast<PWOW64_CONTEXT>(pContext);
+        assert((pWow64Context->ContextFlags & WOW64_CONTEXT_FULL) == WOW64_CONTEXT_FULL);
+#ifdef _WIN64
+        dumpContext(pWow64Context);
 #endif
-        if (pTargetContext) {
-            Context = *pTargetContext;
-        } else {
-            if (!GetThreadContext(hThread, &Context)) {
-                // XXX: This happens with WINE after EXIT_PROCESS_DEBUG_EVENT
-                return;
-            }
-        }
-        pContext = &Context;
-
+        MachineType = IMAGE_FILE_MACHINE_I386;
+        StackFrame.AddrPC.Offset = pWow64Context->Eip;
+        StackFrame.AddrStack.Offset = pWow64Context->Esp;
+        StackFrame.AddrFrame.Offset = pWow64Context->Ebp;
+    } else {
+        assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
 #ifndef _WIN64
         MachineType = IMAGE_FILE_MACHINE_I386;
         dumpContext(pContext);
         StackFrame.AddrPC.Offset = pContext->Eip;
-        StackFrame.AddrPC.Mode = AddrModeFlat;
         StackFrame.AddrStack.Offset = pContext->Esp;
-        StackFrame.AddrStack.Mode = AddrModeFlat;
         StackFrame.AddrFrame.Offset = pContext->Ebp;
-        StackFrame.AddrFrame.Mode = AddrModeFlat;
 #else
         MachineType = IMAGE_FILE_MACHINE_AMD64;
         StackFrame.AddrPC.Offset = pContext->Rip;
-        StackFrame.AddrPC.Mode = AddrModeFlat;
         StackFrame.AddrStack.Offset = pContext->Rsp;
-        StackFrame.AddrStack.Mode = AddrModeFlat;
         StackFrame.AddrFrame.Offset = pContext->Rbp;
-        StackFrame.AddrFrame.Mode = AddrModeFlat;
 #endif
     }
+    StackFrame.AddrPC.Mode = AddrModeFlat;
+    StackFrame.AddrStack.Mode = AddrModeFlat;
+    StackFrame.AddrFrame.Mode = AddrModeFlat;
 
     if (MachineType == IMAGE_FILE_MACHINE_I386) {
         lprintf( "AddrPC   Params\n" );

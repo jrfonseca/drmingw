@@ -273,6 +273,32 @@ readProcessString(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T nSize)
 }
 
 
+static BOOL
+getThreadContext(HANDLE hProcess, HANDLE hThread,
+                 PCONTEXT pContext)
+{
+    ZeroMemory(pContext, sizeof *pContext);
+
+    BOOL bWow64 = FALSE;
+    if (HAVE_WIN64) {
+        IsWow64Process(hProcess, &bWow64);
+    }
+
+    BOOL bSuccess;
+    if (bWow64) {
+        PWOW64_CONTEXT pWow64Context = reinterpret_cast<PWOW64_CONTEXT>(pContext);
+        static_assert(sizeof *pContext >= sizeof *pWow64Context, "WOW64_CONTEXT should fit in CONTEXT");
+        pWow64Context->ContextFlags = WOW64_CONTEXT_FULL;
+        bSuccess = Wow64GetThreadContext(hThread, pWow64Context);
+    } else {
+        pContext->ContextFlags = CONTEXT_FULL;
+        bSuccess = GetThreadContext(hThread, pContext);
+    }
+
+    return bSuccess;
+}
+
+
 // Trap a particular thread
 BOOL
 TrapThread(DWORD dwProcessId, DWORD dwThreadId)
@@ -294,7 +320,10 @@ TrapThread(DWORD dwProcessId, DWORD dwThreadId)
 
     DWORD dwRet = SuspendThread(hThread);
     if (dwRet != (DWORD)-1) {
-        dumpStack(hProcess, hThread);
+        CONTEXT Context;
+        if (getThreadContext(hProcess, hThread, &Context)) {
+            dumpStack(hProcess, hThread, &Context);
+        }
 
         // TODO: Flag fTerminating
 
@@ -451,7 +480,12 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                     continue;
                 }
 
-                dumpStack(pProcessInfo->hProcess, hThread, NULL);
+                CONTEXT Context;
+                if (!getThreadContext(hProcess, hThread, &Context)) {
+                    continue;
+                }
+
+                dumpStack(pProcessInfo->hProcess, hThread, &Context);
             }
 
             if (!DebugEvent.u.Exception.dwFirstChance) {
@@ -536,7 +570,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // Dump the stack on abort()
             if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
-                dumpStack(hProcess, pThreadInfo->hThread);
+                HANDLE hThread = pThreadInfo->hThread;
+                CONTEXT Context;
+                if (getThreadContext(hProcess, hThread, &Context)) {
+                    dumpStack(hProcess, hThread, &Context);
+                }
             }
 
             pProcessInfo->Threads.erase(DebugEvent.dwThreadId);
@@ -557,7 +595,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // Dump the stack on abort()
             if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
-                dumpStack(hProcess, pThreadInfo->hThread);
+                HANDLE hThread = pThreadInfo->hThread;
+                CONTEXT Context;
+                if (getThreadContext(hProcess, hThread, &Context)) {
+                    dumpStack(hProcess, hThread, &Context);
+                }
             }
 
             // Remove the process from the process list

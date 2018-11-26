@@ -102,8 +102,11 @@ set (SSP_LIBRARY "-Wl,-Bstatic -lssp -Wl,-Bdynamic")
 set (CMAKE_C_STANDARD_LIBRARIES "${SSP_LIBRARY} ${CMAKE_C_STANDARD_LIBRARIES}")
 set (CMAKE_CXX_STANDARD_LIBRARIES "${SSP_LIBRARY} ${CMAKE_CXX_STANDARD_LIBRARIES}")
 
-if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    add_definitions (-DHAVE_WIN64=1)
+else ()
     add_linker_flags (-Wl,--enable-stdcall-fixup)
+    add_definitions (-DHAVE_WIN64=0)
 endif ()
 
 # Put all executables into top-level bin subdirectory
