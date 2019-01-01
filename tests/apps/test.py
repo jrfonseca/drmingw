@@ -65,23 +65,22 @@ def haveAnsiEscapes():
     if sys.platform != 'win32':
         return True
 
+    # Set output mode to handle virtual terminal sequences
+    # https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx
+    import ctypes.wintypes
+    STD_OUTPUT_HANDLE = -11
+    hConsoleHandle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+    if hConsoleHandle:
+        dwMode = ctypes.wintypes.DWORD()
+        if ctypes.windll.kernel32.GetConsoleMode(hConsoleHandle, ctypes.byref(dwMode)):
+            ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+            dwMode = ctypes.wintypes.DWORD(dwMode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
+            if ctypes.windll.kernel32.SetConsoleMode(hConsoleHandle, dwMode):
+                return True
+
     if os.environ.get('APPVEYOR', 'False') == 'True':
         # https://help.appveyor.com/discussions/suggestions/197-support-ansi-color-codes
         return True;
-
-    import ctypes.wintypes
-
-    STD_OUTPUT_HANDLE = -11
-    ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
-
-    # Set output mode to handle virtual terminal sequences
-    # https://msdn.microsoft.com/en-us/library/windows/desktop/mt638032.aspx
-    hConsoleHandle = ctypes.windll.kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
-    dwMode = ctypes.wintypes.DWORD()
-    if ctypes.windll.kernel32.GetConsoleMode(hConsoleHandle, ctypes.byref(dwMode)):
-        dwMode = ctypes.wintypes.DWORD(dwMode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
-        if ctypes.windll.kernel32.SetConsoleMode(hConsoleHandle, dwMode):
-            return True
 
     return False
 
