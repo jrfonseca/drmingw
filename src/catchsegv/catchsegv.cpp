@@ -148,6 +148,7 @@ Usage(void)
           "  -t SECONDS   specifies a timeout in seconds\n"
           "  -1           dump stack on first chance exceptions\n"
           "  -z           write minidumps\n"
+          "  -Z DIRECTORY write minidumps to specified directory\n"
           "  -H           use debug heap\n",
           stderr);
 }
@@ -263,7 +264,7 @@ main(int argc, char** argv)
 
     bool debugHeap = false;
     while (1) {
-        int opt = getopt(argc, argv, "?1dhHt:zv");
+        int opt = getopt(argc, argv, "?1dhHt:zZ:v");
 
         switch (opt) {
         case 'h':
@@ -286,6 +287,10 @@ main(int argc, char** argv)
             break;
         case 'z':
             debugOptions.minidump = true;
+            break;
+        case 'Z':
+            debugOptions.minidump = true;
+            debugOptions.minidumpDir = optarg;
             break;
         case '?':
             if (optopt == '?') {

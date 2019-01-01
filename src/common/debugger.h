@@ -28,6 +28,7 @@ struct DebugOptions {
     bool debug_flag = false;
     bool first_chance = false;
     bool minidump = false;
+    const char *minidumpDir = nullptr;
     HANDLE hEvent = nullptr;      // Signal an event after process is attached
     DWORD dwThreadId = 0;         // Resume thread after process is attached
 };

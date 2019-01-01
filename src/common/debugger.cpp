@@ -313,8 +313,15 @@ writeDump(DWORD dwProcessId,
     }
     pProcessInfo->fDumpWritten = TRUE;
 
-    char szFilePath[MAX_PATH];
-    _snprintf(szFilePath, sizeof szFilePath, "%lu.dmp", dwProcessId);
+    std::string filePath;
+    if (debugOptions.minidumpDir) {
+        filePath += debugOptions.minidumpDir;
+        filePath += '\\';
+    }
+    filePath += std::to_string(dwProcessId);
+    filePath += ".dmp";
+    LPCSTR szFilePath = filePath.c_str();
+
     HANDLE hFile = CreateFile(szFilePath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
                               FILE_ATTRIBUTE_NORMAL, nullptr);
 
