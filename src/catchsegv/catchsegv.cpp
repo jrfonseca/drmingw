@@ -142,11 +142,13 @@ Usage(void)
     fputs("usage: catchsegv [options] <command-line>\n"
           "\n"
           "options:\n"
-          "  -?         displays command line help text\n"
-          "  -v         enables verbose output from the debugger\n"
-          "  -t SECONDS specifies a timeout in seconds \n"
-          "  -1         dump stack on first chance exceptions \n"
-          "  -H         use debug heap\n" ,
+          "  -?|-h        displays command line help text\n"
+          "  -v           enables verbose output from the debugger\n"
+          "  -d           enables debugging output (for debugging catchsegv itself)\n"
+          "  -t SECONDS   specifies a timeout in seconds\n"
+          "  -1           dump stack on first chance exceptions\n"
+          "  -z           write minidumps\n"
+          "  -H           use debug heap\n",
           stderr);
 }
 
