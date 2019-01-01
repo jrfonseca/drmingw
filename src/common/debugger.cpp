@@ -423,13 +423,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
     BOOL fFinished = FALSE;
     BOOL fTerminating = FALSE;
 
-    while(!fFinished)
-    {
+    while (!fFinished) {
         DEBUG_EVENT DebugEvent;            // debugging event information
         DWORD dwContinueStatus = DBG_CONTINUE;    // exception continuation
         PPROCESS_INFO pProcessInfo;
         PTHREAD_INFO pThreadInfo;
-        HANDLE hProcess;
 
         // Wait for a debugging event to occur. The second parameter indicates
         // that the function does not return until a debugging event occurs.
@@ -549,7 +547,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 }
 
                 CONTEXT Context;
-                if (!getThreadContext(hProcess, hThread, &Context)) {
+                if (!getThreadContext(pProcessInfo->hProcess, hThread, &Context)) {
                     continue;
                 }
 
@@ -615,7 +613,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
                 );
             }
 
-            hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
+            HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
             pProcessInfo->hProcess = hProcess;
@@ -647,11 +645,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
 
             // Remove the thread from the thread list
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
-            hProcess = pProcessInfo->hProcess;
 
             // Dump the stack on abort()
             if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
+                HANDLE hProcess = pProcessInfo->hProcess;
                 HANDLE hThread = pThreadInfo->hThread;
                 CONTEXT Context;
                 if (getThreadContext(hProcess, hThread, &Context)) {
@@ -672,11 +670,11 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
-            hProcess = pProcessInfo->hProcess;
 
             // Dump the stack on abort()
             if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
+                HANDLE hProcess = pProcessInfo->hProcess;
                 HANDLE hThread = pThreadInfo->hThread;
                 CONTEXT Context;
                 if (getThreadContext(hProcess, hThread, &Context)) {
@@ -689,7 +687,7 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             // Remove the process from the process list
             g_Processes.erase(DebugEvent.dwProcessId);
 
-            if (!SymCleanup(hProcess)) {
+            if (!SymCleanup(pProcessInfo->hProcess)) {
                 OutputDebug("SymCleanup failed with 0x%08lx\n", GetLastError());
             }
 
@@ -721,9 +719,8 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
-            hProcess = pProcessInfo->hProcess;
 
-            loadModule(hProcess, hFile, lpImageName, DebugEvent.u.LoadDll.lpBaseOfDll);
+            loadModule(pProcessInfo->hProcess, hFile, lpImageName, DebugEvent.u.LoadDll.lpBaseOfDll);
 
             break;
         }
@@ -738,9 +735,8 @@ BOOL DebugMainLoop(const DebugOptions *pOptions)
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
-            hProcess = pProcessInfo->hProcess;
 
-            SymUnloadModule64(hProcess, (UINT_PTR)DebugEvent.u.UnloadDll.lpBaseOfDll);
+            SymUnloadModule64(pProcessInfo->hProcess, (UINT_PTR)DebugEvent.u.UnloadDll.lpBaseOfDll);
 
             break;
 
