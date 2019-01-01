@@ -23,15 +23,17 @@
 
 
 struct DebugOptions {
-    bool breakpoint_flag; /* Treat breakpoints as exceptions. */
-    bool verbose_flag;    /* Verbose output. */
-    bool debug_flag;
-    bool first_chance;
-    bool minidump;
-    HANDLE hEvent;       /* Signal an event after process is attached.  */
-    DWORD dwThreadId;    /* Resume thread after process is attached */
+    bool breakpoint_flag = false; // Treat breakpoints as exceptions
+    bool verbose_flag = false;    // Verbose output
+    bool debug_flag = false;
+    bool first_chance = false;
+    bool minidump = false;
+    HANDLE hEvent = nullptr;      // Signal an event after process is attached
+    DWORD dwThreadId = 0;         // Resume thread after process is attached
 };
 
+EXTERN_C DebugOptions debugOptions;
+
 EXTERN_C BOOL ObtainSeDebugPrivilege(void);
-EXTERN_C BOOL DebugMainLoop(const DebugOptions *pOptions);
+EXTERN_C BOOL DebugMainLoop(void);
 EXTERN_C BOOL TrapThread(DWORD dwProcessId, DWORD dwThreadId);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2009-2015 Jose Fonseca
+ * Copyright 2009-2018 Jose Fonseca
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -236,12 +236,6 @@ quoteArg(std::string &s, const char *arg)
 int
 main(int argc, char** argv)
 {
-    DebugOptions debugOptions = {0};
-    debugOptions.breakpoint_flag = false;
-    debugOptions.verbose_flag = false;
-    debugOptions.debug_flag = false;
-    debugOptions.first_chance = false;
-
     /*
      * Disable error message boxes.
      */
@@ -403,7 +397,7 @@ main(int argc, char** argv)
      * Main event loop.
      */
 
-    DebugMainLoop(&debugOptions);
+    DebugMainLoop();
 
     DWORD dwExitCode = STILL_ACTIVE;
     GetExitCodeProcess(ProcessInformation.hProcess, &dwExitCode);

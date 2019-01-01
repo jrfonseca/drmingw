@@ -39,7 +39,6 @@ static int process_id_given = 0;    /* Whether process-id was given.  */
 static int install_given = 0;    /* Whether install was given.  */
 static int uninstall_given = 0;    /* Whether uninstall was given.  */
 
-static DebugOptions debug_options = { 0 };
 
 static void
 help(void)
@@ -89,11 +88,11 @@ install(REGSAM samDesired)
     debuggerCommand += '"';
     debuggerCommand += szFile;
     debuggerCommand += "\" -p %ld -e %ld";
-    if (debug_options.verbose_flag)
+    if (debugOptions.verbose_flag)
         debuggerCommand += " -v";
-    if (debug_options.breakpoint_flag)
+    if (debugOptions.breakpoint_flag)
         debuggerCommand += " -b";
-    if (debug_options.debug_flag)
+    if (debugOptions.debug_flag)
         debuggerCommand += " -d";
 
     HKEY hKey;
@@ -198,9 +197,9 @@ static void debugThread(void *arg)
 
     setDumpCallback(appendText);
 
-    SetSymOptions(debug_options.debug_flag);
+    SetSymOptions(debugOptions.debug_flag);
 
-    DebugMainLoop(&debug_options);
+    DebugMainLoop();
 }
 
 
@@ -211,7 +210,7 @@ main(int argc, char **argv)
     DWORD dwProcessId = 0;
     int c;    /* Character of the parsed option.  */
 
-    debug_options.first_chance = 1;
+    debugOptions.first_chance = 1;
 
     while (1)
     {
@@ -307,7 +306,7 @@ main(int argc, char **argv)
                 if (optarg[0] >= '0' && optarg[0] <= '9') {
                     dwProcessId = strtoul(optarg, NULL, 0);
                 } else {
-                    debug_options.breakpoint_flag = true;
+                    debugOptions.breakpoint_flag = true;
                     dwProcessId = getProcessIdByName(optarg);
                 }
                 if (!dwProcessId) {
@@ -322,7 +321,7 @@ main(int argc, char **argv)
                 break;
 
             case 'e':    /* Signal an event after process is attached.  */
-                if (debug_options.hEvent)
+                if (debugOptions.hEvent)
                 {
                     MessageBoxA(
                         NULL,
@@ -332,25 +331,25 @@ main(int argc, char **argv)
                     );
                     return 1;
                 }
-                debug_options.hEvent = (HANDLE) (INT_PTR) atol (optarg);
+                debugOptions.hEvent = (HANDLE) (INT_PTR) atol (optarg);
                 break;
 
             case 't': {
                 /* Thread id.  Used when debugging WinRT apps. */
-                debug_options.dwThreadId = strtoul(optarg, NULL, 0);
+                debugOptions.dwThreadId = strtoul(optarg, NULL, 0);
                 break;
             }
 
             case 'b':    /* Treat debug breakpoints as exceptions */
-                debug_options.breakpoint_flag = true;
+                debugOptions.breakpoint_flag = true;
                 break;
 
             case 'v':    /* Verbose output.  */
-                debug_options.verbose_flag = true;
+                debugOptions.verbose_flag = true;
                 break;
 
             case 'd':    /* Debug output.  */
-                debug_options.debug_flag = true;
+                debugOptions.debug_flag = true;
                 break;
 
             default:    /* bug: option not considered.  */
