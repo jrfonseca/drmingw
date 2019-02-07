@@ -274,7 +274,6 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
             GetModuleFileNameExA(hProcess, hModule, szModule, MAX_PATH)) {
 
             lprintf( "  %s", getBaseName(szModule));
-            lprintf( "+0x%I64x", AddrPC - (DWORD64)(INT_PTR)hModule);
 
             bSymbol = GetSymFromAddr(hProcess, AddrPC + nudge, szSymName, MAX_SYM_NAME_SIZE);
             if (bSymbol) {
@@ -284,6 +283,8 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
                 if (bLine) {
                     lprintf( "  [%s @ %ld]", szFileName, dwLineNumber);
                 }
+            } else {
+                lprintf( "!0x%I64x", AddrPC - (DWORD)(INT_PTR)hModule);
             }
         }
 
