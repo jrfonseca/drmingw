@@ -32,7 +32,25 @@
 #include <windows.h>
 #include <dbghelp.h>
 
+#include <getopt.h>
+
 #include "symbols.h"
+
+
+static void
+usage(const char *argv0)
+{
+    fprintf(stderr,
+            "usage: %s -e EXECUTABLE ADDRESS ...\n"
+            "\n"
+            "options:\n"
+            "  -C             demangle C++ function names\n"
+            "  -e EXECUTABLE  specify the EXE/DLL\n"
+            "  -f             show functions\n"
+            "  -H             displays command line help text\n"
+            "  -p             pretty print\n",
+            argv0);
+}
 
 
 static BOOL CALLBACK
@@ -55,15 +73,55 @@ main(int argc, char **argv)
 {
     BOOL bRet;
     DWORD dwRet;
+    bool debug = false;
+    char *szModule = nullptr;
+    bool functions = false;
+    bool demangle = false;
+    bool pretty = false;
 
-    if (argc < 3) {
-        fprintf(stderr, "usage: %s <dll> <addr> ...\n", argv[0]);
-        return 1;
+    while (1) {
+        int opt = getopt(argc, argv, "?CDe:fHp");
+
+        switch (opt) {
+        case 'C':
+            demangle = true;
+            break;
+        case 'D':
+            debug = true;
+            break;
+        case 'e':
+            szModule = optarg;
+            break;
+        case 'f':
+            functions = true;
+            break;
+        case 'H':
+            usage(argv[0]);
+            return EXIT_SUCCESS;
+        case 'p':
+            pretty = true;
+            break;
+        case '?':
+            fprintf(stderr, "error: invalid option `%c`\n", optopt);
+            /* pass-through */
+        default:
+            usage(argv[0]);
+            return EXIT_FAILURE;
+        case -1:
+            break;
+        }
+        if (opt == -1) {
+            break;
+        }
+    }
+
+    if (szModule == nullptr) {
+        usage(argv[0]);
+        return EXIT_FAILURE;
     }
 
     // Load the module
-    char *szModule = argv[1];
-    HMODULE hModule = NULL;
+    HMODULE hModule = nullptr;
 #ifdef _WIN64
     hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
 #endif
@@ -72,7 +130,7 @@ main(int argc, char **argv)
     }
     if (!hModule) {
         fprintf(stderr, "error: failed to load %s\n", szModule);
-        return 1;
+        return EXIT_FAILURE;
     }
 
     DWORD dwSymOptions = SymGetOptions();
@@ -84,60 +142,61 @@ main(int argc, char **argv)
 #endif
 
     // We can get more information by calling UnDecorateSymbolName() ourselves.
-    if (0) {
-        dwSymOptions |= SYMOPT_UNDNAME;
-    } else {
-        dwSymOptions &= ~SYMOPT_UNDNAME;
-    }
+    dwSymOptions &= ~SYMOPT_UNDNAME;
     
     SymSetOptions(dwSymOptions);
-
 
     HANDLE hProcess = GetCurrentProcess();
     bRet = InitializeSym(hProcess, FALSE);
     assert(bRet);
 
-
-    SymRegisterCallback64(hProcess, &callback, 0);
-
+    if (debug) {
+        SymRegisterCallback64(hProcess, &callback, 0);
+    }
 
     dwRet = SymLoadModuleEx(hProcess, NULL, szModule, NULL, (DWORD64)(UINT_PTR)hModule, 0, NULL, 0);
     if (!dwRet) {
-        fprintf(stderr, "error: failed to load module symbols\n");
+        fprintf(stderr, "warning: failed to load module symbols\n");
     }
 
     if (!GetModuleHandleA("symsrv.dll")) {
-        fprintf(stderr, "symbol server not loaded\n");
+        fprintf(stderr, "warning: symbol server not loaded\n");
     }
 
+    while (optind < argc) {
+        const char *arg = argv[optind++];
 
-    for (int i = 2; i < argc; ++i) {
-        const char *arg = argv[i];
         DWORD64 dwRelAddr;
         if (arg[0] == '0' && arg[1] == 'x') {
             sscanf(&arg[2], "%08" PRIX64, &dwRelAddr);
         } else {
             dwRelAddr = atol(arg);
         }
-        printf("dwRelAddr = %08" PRIX64 "\n", dwRelAddr);
 
         UINT_PTR dwAddr = (UINT_PTR)hModule + dwRelAddr;
 
-        struct {
-            SYMBOL_INFO Symbol;
-            CHAR Name[512];
-        } sym;
-        ZeroMemory(&sym, sizeof sym);
-        sym.Symbol.SizeOfStruct = sizeof sym.Symbol;
-        sym.Symbol.MaxNameLen = sizeof sym.Symbol.Name + sizeof sym.Name;
-        DWORD64 dwSymDisplacement = 0;
-        bRet = SymFromAddr(hProcess, dwAddr, &dwSymDisplacement, &sym.Symbol);
-        if (bRet) {
-            printf("Symbol.Name = %s\n", sym.Symbol.Name);
+        if (functions) {
+            struct {
+                SYMBOL_INFO Symbol;
+                CHAR Name[512];
+            } sym;
             char UnDecoratedName[512];
-            if (UnDecorateSymbolName( sym.Symbol.Name, UnDecoratedName, sizeof UnDecoratedName, UNDNAME_COMPLETE)) {
-                printf("UnDecoratedName = %s\n", UnDecoratedName);
+            const char *function = "??";
+            ZeroMemory(&sym, sizeof sym);
+            sym.Symbol.SizeOfStruct = sizeof sym.Symbol;
+            sym.Symbol.MaxNameLen = sizeof sym.Symbol.Name + sizeof sym.Name;
+            DWORD64 dwSymDisplacement = 0;
+            bRet = SymFromAddr(hProcess, dwAddr, &dwSymDisplacement, &sym.Symbol);
+            if (bRet) {
+                function = sym.Symbol.Name;
+                if (demangle) {
+                    if (UnDecorateSymbolName( sym.Symbol.Name, UnDecoratedName, sizeof UnDecoratedName, UNDNAME_COMPLETE)) {
+                        function = UnDecoratedName;
+                    }
+                }
             }
+            fputs(function, stdout);
+            fputs(pretty ? " at " : "\n", stdout);
         }
 
         IMAGEHLP_LINE64 line;
@@ -146,11 +205,11 @@ main(int argc, char **argv)
         DWORD dwLineDisplacement = 0;
         bRet = SymGetLineFromAddr64(hProcess, dwAddr, &dwLineDisplacement, &line);
         if (bRet) {
-            printf("FileName = %s\n", line.FileName);
-            printf("LineNumber = %lu\n", line.LineNumber);
+            fprintf(stdout, "%s:%lu\n", line.FileName, line.LineNumber);
+        } else {
+            fputs("??:?\n", stdout);
         }
-
-        printf("\n");
+        fflush(stdout);
     }
 
 
