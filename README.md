@@ -126,7 +126,7 @@ Here is how `sample.RPT` should look like:
 
 ## CatchSegv
 
-Dr. Mingw also includes a Windows port of GLIBC's `catchsegv` utility, which enables you to run a program, dumping a stack backtrace on any fatal exception.  Dr. Mingw's catchsegv has additional features:
+Dr. Mingw also includes a Windows replica of GLIBC's `catchsegv` utility, which enables you to run a program, dumping a stack backtrace on any fatal exception.  Dr. Mingw's catchsegv has additional features:
 
 * will collect and dump all `OutputDebugString` messages to stderr
 
