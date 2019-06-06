@@ -313,7 +313,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
          * address.  This could be the next statement, or sometimes (for
          * no-return functions) a completely different function, so nudge the
          * address by one byte to ensure we get the information about the
-         * calling statment itself.
+         * calling statement itself.
          */
         nudge = -1;
     }

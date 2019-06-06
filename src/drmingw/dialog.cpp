@@ -86,7 +86,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
             SendDlgItemMessage(hwnd, IDC_MESSAGE, EM_SETBKGNDCOLOR, FALSE, dwColor);
 
             // We used to use GetStockObject(ANSI_FIXED_FONT), but it's known
-            // to lead to unreliable results, particularly on Russion locales
+            // to lead to unreliable results, particularly on Russian locales
             // or high-DPI displays, so now we match Notepad's default font.
             LOGFONTA lf = {
                 10,                      // lfHeight

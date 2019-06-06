@@ -50,7 +50,7 @@ To resolve the addresses it's necessary to compile the application with debuggin
 
 ## Command Line Options
 
-The following table describes the Dr. Mingw command-line options.  All comand-line options are case-sensitive.
+The following table describes the Dr. Mingw command-line options.  All command-line options are case-sensitive.
 
 | Short          | Long                   | Action |
 | -------------- | ---------------------- | ------ |
