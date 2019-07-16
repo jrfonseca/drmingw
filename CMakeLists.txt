@@ -42,7 +42,7 @@ add_subdirectory (thirdparty/zlib)
 
 # Find dlltool
 get_filename_component (GCC_NAME ${CMAKE_C_COMPILER} NAME)
-string (REPLACE gcc dlltool DLLTOOL_NAME ${GCC_NAME})
+string (REGEX REPLACE g?cc dlltool DLLTOOL_NAME ${GCC_NAME})
 find_program (DLLTOOL NAMES ${DLLTOOL_NAME})
 if (DLLTOOL)
     message (STATUS "Found dlltool: ${DLLTOOL}")
