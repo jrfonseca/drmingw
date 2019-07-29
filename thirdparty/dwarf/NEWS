@@ -1,3 +1,74 @@
+January 15, 2019
+  All references to C data types spelled *int16* *int32* or
+  *int64* have been removed.  Dwarf_Unsigned is used instead.
+  This simplifies builds in certain environments.
+December 05, 2018
+  Many new producer functions provided. Now no matter
+  what producer task is to be done there is a version
+  that returns DW_DLV_OK/DW_DLV_ERROR and no ugly
+  casting of return values is needed to check for success/failure.
+  All the old interfaces continue to work.
+  One can switch from
+    Dwarf_P_Attribute dwarf_add_AT_name(Dwarf_P_Die die,
+    char*        name,
+    Dwarf_Error* error);
+    (requires a cast to check return code DW_DLV_BADADDR)
+  to
+    int dwarf_add_AT_comp_dir_a(Dwarf_P_Die ownerdie,
+    char*             current_working_directory,
+    Dwarf_P_Attribute * outattr,
+    Dwarf_Error*    error);
+    (no cast,type safe)
+  for example.
+  The libdwarf2p.1.mm document table-of-contents
+  lists only the latest functions, but all the documentation
+  of all the earlier versions remain in the document as
+  subsections.
+October 24, 2018
+  Now supports reading MacOS dSYM object files. 
+May 17, 2017
+  Now supports some COMDAT groups as well as split-dwarf.
+  Some new functions added so consumer code can know
+  what the sections and groups contain.
+  Some compilers emit groups findable only with relocation
+  data: libdwarf does not understand those groups.
+April 02, 2017
+  The consumer code now reads DWARF5 split-dwarf sections.
+  The functions dwarf_init_b() and dwarf_elf_init_b()
+  and dwarf_object_init_b() have a groupnumber argument
+  added.  For non-split-dwarf objects the original
+  dwarf_init() and dwarf_elf_init() and 
+  dwarf_object_init() functions continue to work properly.
+September 11, 2016
+  The producer code is getting a new batch of functions.
+
+  For each existing producer call returning
+  a value other than DW_DLV_OK/DW_DLV_ERROR/DW_DLV_NO_ENTRY
+  a new function returning one of those three codes with
+  a pointer argument added to return the actual desired
+  value (that used to be the 'return').
+  The existing calls require the caller to do ugly casting
+  to determine whether the call did its work or got an error.
+  The new calls have type-safe interfaces that separate
+  the desired result from the error-indication.
+  So producer calls look more like consumer calls.
+ 
+  The existing historical producer interfaces will remain 
+  unchanged and will continue to be supported. The
+  existing interfaces will simply call the new interfaces
+  so there is no code duplication: Old and new use the same
+  implementation.
+
+  Source and binary compatibility is retained, but
+  users of the producer code can, when they wish, 
+  partially or fully convert to the new interfaces.
+
+  This work will be ongoing and gradual, not 'all at once'.
+  
+August 27, 2016
+  Now the producer is capable of producing .debug_str strings.
+  Strings are never duplicated in .debug_str.
+  See dwarf_pro_set_default_string_form() in libdwarf2p.1.pdf
 May 23, 2016
   When building a shared-library the soname is set
   in the dynamic section "libdwarf.so.1".

@@ -1,41 +1,52 @@
 /*
   Copyright (C) 2000-2005 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2011  David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2019  David Anderson. All Rights Reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License
-  as published by the Free Software Foundation.
+  This program is free software; you can redistribute it
+  and/or modify it under the terms of version 2.1 of the
+  GNU Lesser General Public License as published by the Free
+  Software Foundation.
 
   This program is distributed in the hope that it would be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-  Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement
-  or the like.  Any license provided herein, whether implied or
-  otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with
-  other software, or any other product whatsoever.
+  Further, this software is distributed without any warranty
+  that it is free of the rightful claim of any third person
+  regarding infringement or the like.  Any license provided
+  herein, whether implied or otherwise, applies only to this
+  software file.  Patent licenses, if any, provided herein
+  do not apply to combinations of this program with other
+  software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this program; if not, write the Free Software
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
-  USA.
+  You should have received a copy of the GNU Lesser General
+  Public License along with this program; if not, write the
+  Free Software Foundation, Inc., 51 Franklin Street - Fifth
+  Floor, Boston MA 02110-1301, USA.
 
 */
 
 #undef  DEBUG
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <sys/types.h>
 
 #include <stdlib.h>
 #include <stdio.h>
+#ifdef HAVE_STDINT_H
+#include <stdint.h> /* For uintptr_t */
+#endif /* HAVE_STDINT_H */
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif /* HAVE_INTTYPES_H */
 
+#include "dwarf_incl.h"
+#include "dwarf_error.h"
+#include "dwarf_alloc.h"
 /*  These files are included to get the sizes
     of structs for malloc.
 */
+#include "dwarf_util.h"
 #include "dwarf_line.h"
 #include "dwarf_global.h"
 #include "dwarf_arange.h"
@@ -52,6 +63,9 @@
 #include "dwarf_gdbindex.h"
 #include "dwarf_xu_index.h"
 #include "dwarf_macro5.h"
+#include "dwarf_dnames.h"
+#include "dwarf_dsc.h"
+#include "dwarf_str_offsets.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -150,7 +164,7 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
     /* 20 DW_DLA_CIE */
     {sizeof(struct Dwarf_Cie_s),MULTIPLY_NO,  0, 0},
 
-    {sizeof(struct Dwarf_Fde_s),MULTIPLY_NO,  0, 
+    {sizeof(struct Dwarf_Fde_s),MULTIPLY_NO,  0,
         _dwarf_fde_destructor},/* 21 DW_DLA_FDE */
     {sizeof(Dwarf_Loc),MULTIPLY_CT, 0, 0},          /* 22 DW_DLA_LOC_BLOCK */
     {sizeof(Dwarf_Frame_Op),MULTIPLY_CT, 0, 0},     /* 23 DW_DLA_FRAME_BLOCK */
@@ -265,6 +279,14 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
 
     /* 61 DW_DLA_CHAIN_2 */
     {sizeof(struct Dwarf_Chain_o),MULTIPLY_NO, 0, 0},
+    /* 62 DW_DLA_DSC_HEAD 0x3e */
+    {sizeof(struct Dwarf_Dsc_Head_s),MULTIPLY_NO, 0,
+        _dwarf_dsc_destructor},
+    /* 63 DW_DLA_DNAMES_HEAD 0x3f */
+    {sizeof(struct Dwarf_Dnames_Head_s),MULTIPLY_NO, 0,
+        _dwarf_debugnames_destructor},
+    /* 64 DW_DLA_STR_OFFSETS 0x40 */
+    {sizeof(struct Dwarf_Str_Offsets_Table_s),MULTIPLY_NO, 0,0},
 };
 
 /*  We are simply using the incoming pointer as the key-pointer.
@@ -273,7 +295,7 @@ struct ial_s alloc_instance_basics[ALLOC_AREA_INDEX_TABLE_MAX] = {
 static DW_TSHASHTYPE
 simple_value_hashfunc(const void *keyp)
 {
-    DW_TSHASHTYPE up = (DW_TSHASHTYPE)keyp;
+    DW_TSHASHTYPE up = (DW_TSHASHTYPE)(uintptr_t)keyp;
     return up;
 }
 /*  We did alloc something but not a fixed-length thing.
@@ -312,8 +334,8 @@ tdestroy_free_node(void *nodep)
 static int
 simple_compare_function(const void *l, const void *r)
 {
-    DW_TSHASHTYPE lp = (DW_TSHASHTYPE)l;
-    DW_TSHASHTYPE rp = (DW_TSHASHTYPE)r;
+    DW_TSHASHTYPE lp = (DW_TSHASHTYPE)(uintptr_t)l;
+    DW_TSHASHTYPE rp = (DW_TSHASHTYPE)(uintptr_t)r;
     if(lp < rp) {
         return -1;
     }
@@ -472,6 +494,44 @@ dwarf_dealloc(Dwarf_Debug dbg,
     if (space == NULL) {
         return;
     }
+    if (dbg) {
+        /*  If it's a string in debug_info etc doing
+            (char *)space - DW_RESERVE is totally bogus. */
+        if (alloc_type == DW_DLA_STRING &&
+            string_is_in_debug_section(dbg,space)) {
+            /*  A string pointer may point into .debug_info or
+                .debug_string etc.
+                So must not be freed.  And strings have no need of a
+                specialdestructor().
+                Mostly a historical mistake here. */
+            return;
+        }
+        /*  Otherwise it might be allocated string so it is ok
+            do the (char *)space - DW_RESERVE  */
+    } else {
+        /*  App error, or an app that failed to succeed in a
+            dwarf_init() call. */
+        return;
+    }
+    if (alloc_type == DW_DLA_ERROR) {
+        Dwarf_Error ep = (Dwarf_Error)space;
+        if (ep->er_static_alloc == DE_STATIC) {
+            /*  This is special, malloc arena
+                was exhausted or a NULL dbg
+                was used for the error because the real
+                dbg was unavailable. There is nothing to delete, really.
+                Set er_errval to signal that the space was dealloc'd. */
+            _dwarf_failsafe_error.er_errval = DW_DLE_FAILSAFE_ERRVAL;
+            return;
+        }
+        if (ep->er_static_alloc == DE_MALLOC) {
+            /*  This is special, we had no arena
+                so just malloc'd a Dwarf_Error_s. */
+            free(space);
+            return;
+        }
+        /* Was normal alloc, use normal dealloc. */
+    }
     type = alloc_type;
     malloc_addr = (char *)space - DW_RESERVE;
     r =(struct reserve_data_s *)malloc_addr;
@@ -480,34 +540,11 @@ dwarf_dealloc(Dwarf_Debug dbg,
             to crash. */
         return;
     }
-    if (alloc_type == DW_DLA_ERROR) {
-        Dwarf_Error ep = (Dwarf_Error)space;
-        if (ep->er_static_alloc) {
-            /*  This is special, malloc arena
-                was exhausted and there is nothing to delete, really.
-                Set er_errval to signal that the space was dealloc'd. */
-            ep->er_errval = DW_DLE_FAILSAFE_ERRVAL;
-            return;
-        }
-    }
-    if (dbg == NULL) {
-        /*  App error, or an app that failed to succeed in a
-            dwarf_init() call. */
-        return;
-    }
     if (type >= ALLOC_AREA_INDEX_TABLE_MAX) {
         /* internal or user app error */
         return;
     }
 
-
-    if (type == DW_DLA_STRING && string_is_in_debug_section(dbg,space)) {
-        /*  A string pointer may point into .debug_info or .debug_string etc.
-            So must not be freed.  And strings have no need of a
-            specialdestructor().
-            Mostly a historical mistake here. */
-        return;
-    }
 
     if (alloc_instance_basics[type].specialdestructor) {
         alloc_instance_basics[type].specialdestructor(space);
@@ -622,7 +659,10 @@ _dwarf_free_all_of_one_debug(Dwarf_Debug dbg)
         dwarf_xu_header_free(dbg->de_tu_hashindex_data);
         dbg->de_tu_hashindex_data = 0;
     }
-
+    if( dbg->de_printf_callback_null_device_handle) {
+        fclose(dbg->de_printf_callback_null_device_handle);
+        dbg->de_printf_callback_null_device_handle = 0;
+    }
     freecontextlist(dbg,&dbg->de_info_reading);
     freecontextlist(dbg,&dbg->de_types_reading);
 
@@ -660,6 +700,7 @@ _dwarf_free_all_of_one_debug(Dwarf_Debug dbg)
         free(dbg->de_printf_callback.dp_buffer);
     }
 
+    _dwarf_destroy_group_map(dbg);
     dwarf_tdestroy(dbg->de_alloc_tree,tdestroy_free_node);
     dbg->de_alloc_tree = 0;
     if (dbg->de_tied_data.td_tied_search) {
@@ -682,12 +723,15 @@ _dwarf_free_all_of_one_debug(Dwarf_Debug dbg)
 struct Dwarf_Error_s *
 _dwarf_special_no_dbg_error_malloc(void)
 {
+    Dwarf_Error e = 0;
     /* The union unused things are to guarantee proper alignment */
-    char *mem = malloc(sizeof(struct Dwarf_Error_s));
+    Dwarf_Unsigned len = sizeof(struct Dwarf_Error_s);
+    char *mem = (char *)malloc(len);
     if (mem == 0) {
         return 0;
     }
-    memset(mem, 0, sizeof(struct Dwarf_Error_s));
-    return (struct Dwarf_Error_s *) mem;
+    memset(mem, 0, len);
+    e = (Dwarf_Error)mem;
+    e->er_static_alloc = DE_MALLOC;
+    return e;
 }
-

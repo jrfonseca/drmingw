@@ -28,7 +28,9 @@
 #include "config.h"
 #include "libdwarfdefs.h"
 #include <string.h>
-#include "pro_incl.h"
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "pro_encode_nm.h"
 
 #define MORE_BYTES      0x80
 #define DATA_MASK       0x7f
@@ -64,7 +66,7 @@ _dwarf_pro_encode_leb128_nm(Dwarf_Unsigned val, int *nbytes,
         *a = uc;
         a++;
     } while (val);
-    *nbytes = a - space;
+    *nbytes = (int)(a - space);
     return DW_DLV_OK;
 }
 
@@ -103,6 +105,6 @@ _dwarf_pro_encode_signed_leb128_nm(Dwarf_Signed value, int *nbytes,
         *str = byte;
         str++;
     } while (more);
-    *nbytes = str - space;
+    *nbytes = (int)(str - space);
     return DW_DLV_OK;
 }

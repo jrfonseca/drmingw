@@ -146,4 +146,3 @@ struct Dwarf_Loc_Head_c_s {
 
 int _dwarf_loc_block_sanity_check(Dwarf_Debug dbg,
     Dwarf_Block_c *loc_block,Dwarf_Error*error);
-

@@ -2,7 +2,7 @@
 
   Copyright (C) 2000,2002,2004 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright 2002-2010 Sun Microsystems, Inc. All rights reserved.
-  Portions Copyright 2011-2014 David Anderson. All Rights Reserved.
+  Portions Copyright 2011-2017 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -26,32 +26,19 @@
 
 */
 
-
-#include <stddef.h>
-
-/*
-    Sgidefs included to define __uint32_t,
-    a guaranteed 4-byte quantity.
-*/
 #include "libdwarfdefs.h"
 
 #define true                    1
 #define false                   0
 
+/*  The DISTINGUISHED VALUE is 4 byte value defined by DWARF
+    since DWARF3. */
+#define DISTINGUISHED_VALUE_ARRAY(x)  unsigned char x[4] = { 0xff,0xff,0xff,0xff }
+#define DISTINGUISHED_VALUE 0xffffffff /* 64bit extension flag */
+
 /* to identify a cie */
 #define DW_CIE_ID          ~(0x0)
 #define DW_CIE_VERSION     1
-
-/*Dwarf_Word  is unsigned word usable for index, count in memory */
-/*Dwarf_Sword is   signed word usable for index, count in memory */
-/* The are 32 or 64 bits depending if 64 bit longs or not, which
-** fits the  ILP32 and LP64 models
-** These work equally well with ILP64.
-*/
-
-typedef unsigned long Dwarf_Word;
-typedef long Dwarf_Sword;
-
 
 typedef signed char Dwarf_Sbyte;
 typedef unsigned char Dwarf_Ubyte;
@@ -64,11 +51,9 @@ typedef signed short Dwarf_Shalf;
 #define  PRO_VERSION_MAGIC 0xdead1
 
 
-/* these 2 are fixed sizes which must not vary with the
-** ILP32/LP64 model. These two stay at 32 bit.
-*/
-typedef __uint32_t Dwarf_ufixed;
-typedef __int32_t Dwarf_sfixed;
+#define DWARF_HALF_SIZE 2
+#define DWARF_32BIT_SIZE 4
+#define DWARF_64BIT_SIZE 8
 
 /*
     producer:
@@ -80,14 +65,8 @@ typedef struct Dwarf_P_Section_Data_s *Dwarf_P_Section_Data;
 
 /*
     producer:
-    This struct is used to hold entries in the include directories
-    part of statement prologue. Definition in pro_line.h
-*/
-typedef struct Dwarf_P_Inc_Dir_s *Dwarf_P_Inc_Dir;
-
-/*
-    producer:
-    This struct holds file entries for the statement prologue.
+    This struct holds file entries or
+    include file entries for the statement prologue.
     Defined in pro_line.h
 */
 typedef struct Dwarf_P_F_Entry_s *Dwarf_P_F_Entry;
@@ -114,6 +93,7 @@ typedef struct Dwarf_P_Simple_name_header_s *Dwarf_P_Simple_name_header;
 typedef struct Dwarf_P_Arange_s *Dwarf_P_Arange;
 typedef struct Dwarf_P_Per_Reloc_Sect_s *Dwarf_P_Per_Reloc_Sect;
 typedef struct Dwarf_P_Per_Sect_String_Attrs_s *Dwarf_P_Per_Sect_String_Attrs;
+typedef struct Dwarf_P_Dnames_s *Dwarf_P_Dnames;
 
 /* Defined to get at the elf section numbers and section name
    indices in symtab for the dwarf sections
@@ -126,20 +106,37 @@ typedef struct Dwarf_P_Per_Sect_String_Attrs_s *Dwarf_P_Per_Sect_String_Attrs;
 #define         DEBUG_FRAME     3
 #define         DEBUG_ARANGES   4
 #define         DEBUG_PUBNAMES  5
-#define         DEBUG_STR       6
-#define         DEBUG_FUNCNAMES 7
-#define         DEBUG_TYPENAMES 8
-#define         DEBUG_VARNAMES  9
-#define         DEBUG_WEAKNAMES 10
-#define         DEBUG_MACINFO   11
-#define         DEBUG_LOC   12
-#define         DEBUG_RANGES 13
-#define         DEBUG_TYPES 14
-#define         DEBUG_PUBTYPES 15
+#define         DEBUG_FUNCNAMES 6
+#define         DEBUG_TYPENAMES 7
+#define         DEBUG_VARNAMES  8
+#define         DEBUG_WEAKNAMES 9
+#define         DEBUG_MACINFO   10 /* DWARF 2,3,4 only */
+#define         DEBUG_LOC       11
+#define         DEBUG_RANGES    12
+#define         DEBUG_TYPES     13
+#define         DEBUG_PUBTYPES  14
+#define         DEBUG_NAMES     15 /* DWARF5. aka dnames */
+#define         DEBUG_STR       16
+#define         DEBUG_LINE_STR  17
+#define         DEBUG_MACRO     18 /* DWARF 5. */
+#define         DEBUG_LOCLISTS  19 /* DWARF 5. */
+#define         DEBUG_RNGLISTS  20 /* DWARF 5. */
 
 /* Maximum number of debug_* sections not including the relocations */
-#define         NUM_DEBUG_SECTIONS      16
+#define         NUM_DEBUG_SECTIONS      21
 
+/*  The FORM codes available are defined in DWARF5
+    on page 158, DW_LNCT_path  */
+struct Dwarf_P_Line_format_s {
+    /* DW_LNCT_path etc. */
+    unsigned def_content_type;
+
+    /* DW_FORM_string or DW_FORM_strp or DW_FORM_strp
+        or DW_FORM_strp_sup or for dwo, some others. */
+    unsigned def_form_code;
+};
+
+#define DW_LINE_FORMATS_MAX 6
 /*  Describes the data needed to generate line table header info
     so we can vary the init at runtime. */
 struct Dwarf_P_Line_Inits_s {
@@ -149,8 +146,7 @@ struct Dwarf_P_Line_Inits_s {
     /* Size of the smallest instruction, in bytes. */
     unsigned pi_minimum_instruction_length;
 
-    /* Make this >1 for VLIW machines. */
-    unsigned pi_maximum_operations_per_instruction;
+
 
     /*  Normally opcode_base is determined by pi_version, but we
         allow manual setting here so we can generate data like
@@ -161,13 +157,25 @@ struct Dwarf_P_Line_Inits_s {
 
     int      pi_line_base;   /* For line table header. */
     int      pi_line_range;  /* For line table header. */
+
+    /* Make this >1 for VLIW machines.  DWARF4,DWARF5 */
+    unsigned pi_maximum_operations_per_instruction;
+
+    /* DWARF 5 */
+    unsigned pi_address_size;
+    unsigned pi_segment_size;
+    unsigned pi_directory_entry_format_count;
+    struct Dwarf_P_Line_format_s pi_incformats[DW_LINE_FORMATS_MAX];
+
+    unsigned pi_file_entry_format_count;
+    struct Dwarf_P_Line_format_s pi_fileformats[DW_LINE_FORMATS_MAX];
 };
 
 
 struct Dwarf_P_Die_s {
     Dwarf_Unsigned di_offset; /* offset in debug info */
     char *di_abbrev;  /* abbreviation */
-    Dwarf_Word di_abbrev_nbytes; /* # of bytes in abbrev */
+    Dwarf_Unsigned di_abbrev_nbytes; /* # of bytes in abbrev */
     Dwarf_Tag di_tag;
     Dwarf_P_Die di_parent; /* parent of current die */
     Dwarf_P_Die di_child; /* first child */
@@ -194,13 +202,17 @@ struct Dwarf_P_Attribute_s {
     Dwarf_Unsigned ar_rel_symidx; /* when attribute has a
         relocatable value, holds
         index of symbol in SYMTAB */
+    Dwarf_Unsigned ar_debug_str_offset; /* Offset in .debug_str
+        if non-zero. Zero offset never assigned a string. */
     Dwarf_Ubyte ar_rel_type;  /* relocation type */
-    Dwarf_Word ar_rel_offset; /* Offset of relocation within block */
+    Dwarf_Unsigned ar_rel_offset; /* Offset of relocation within block */
     char ar_reloc_len; /* Number of bytes that relocation
         applies to. 4 or 8. Unused and may
         be 0 if if ar_rel_type is
         R_MIPS_NONE */
     Dwarf_P_Attribute ar_next;
+    /*  set if form = DW_FORM_implicit_const; */
+    Dwarf_Signed  ar_implicit_const;
 };
 
 /* A block of .debug_macinfo data: this forms a series of blocks.
@@ -335,6 +347,37 @@ struct Dwarf_P_Per_Sect_String_Attrs_s {
     Dwarf_P_String_Attr sect_sa_list;
 };
 
+struct Dwarf_P_debug_str_entry_s {
+    Dwarf_P_Debug  dse_dbg;
+    /*  Name used initially with tfind. */
+    char *dse_name;
+
+    Dwarf_Unsigned dse_slen; /* includes space for NUL terminator */
+
+    /*  See dse_has_table_offset below. */
+    Dwarf_Unsigned dse_table_offset;
+
+    /*  For tsearch a hash table exists and we have a table offset.
+        dse_dbg->de_debug_str->ds_data + dse_table_offset
+        points to the string iff dse_has_table_offset != 0. */
+    unsigned char  dse_has_table_offset;
+};
+
+struct Dwarf_P_Str_stats_s {
+    Dwarf_Unsigned ps_strp_count_debug_str;
+    Dwarf_Unsigned ps_strp_len_debug_str;
+    Dwarf_Unsigned ps_strp_len_debug_line_str;
+    Dwarf_Unsigned ps_strp_reused_count;
+    Dwarf_Unsigned ps_strp_reused_len;
+};
+
+struct Dwarf_P_Stats_s {
+    Dwarf_Unsigned ps_str_count;
+    Dwarf_Unsigned ps_str_total_length;
+    struct Dwarf_P_Str_stats_s ps_strp;
+    struct Dwarf_P_Str_stats_s ps_line_strp;
+};
+
 /* Fields used by producer */
 struct Dwarf_P_Debug_s {
     /*  Used to catch dso passing dbg to another DSO with incompatible
@@ -357,15 +400,28 @@ struct Dwarf_P_Debug_s {
     /*  Flags from producer_init call */
     Dwarf_Unsigned de_flags;
 
-    /*  This holds information on debug section stream output, including
-        the stream data */
+    /*  This holds information on debug info section
+        stream output, including the stream data */
     Dwarf_P_Section_Data de_debug_sects;
+
+    /*  Defaults set as DW_FORM_string,
+        meaning not using .debug_str by default.
+        This intended for the .debug_info section. */
+    int de_debug_default_str_form;
+
+    /* If form DW_FORM_strp */
+    Dwarf_P_Section_Data de_debug_str;
+    void *de_debug_str_hashtab; /* for tsearch */
+
+    /* .debug_line_str section data if form DW_FORM_line_strp */
+    Dwarf_P_Section_Data de_debug_line_str;
+    void *de_debug_line_str_hashtab; /* for tsearch */
 
     /*  Pointer to the 'current active' section */
     Dwarf_P_Section_Data de_current_active_section;
 
     /*  Number of debug data streams globs. */
-    Dwarf_Word de_n_debug_sect;
+    Dwarf_Unsigned de_n_debug_sect;
 
     /*  File entry information, null terminated singly-linked list */
     Dwarf_P_F_Entry de_file_entries;
@@ -373,8 +429,8 @@ struct Dwarf_P_Debug_s {
     Dwarf_Unsigned de_n_file_entries;
 
     /*  Has the directories used to search for source files */
-    Dwarf_P_Inc_Dir de_inc_dirs;
-    Dwarf_P_Inc_Dir de_last_inc_dir;
+    Dwarf_P_F_Entry de_inc_dirs;
+    Dwarf_P_F_Entry de_last_inc_dir;
     Dwarf_Unsigned de_n_inc_dirs;
 
     /*  Has all the line number info for the stmt program */
@@ -394,13 +450,15 @@ struct Dwarf_P_Debug_s {
     /* First die, leads to all others */
     Dwarf_P_Die de_dies;
 
-    /* Pointer to list of strings */
-    char *de_strings;
-
     /* Pointer to chain of aranges */
     Dwarf_P_Arange de_arange;
     Dwarf_P_Arange de_last_arange;
-    Dwarf_Sword de_arange_count;
+    Dwarf_Signed de_arange_count;
+
+    /*  debug_names  de_dnames is base of dnames info
+        before disk form */
+    Dwarf_P_Dnames de_dnames;
+    Dwarf_P_Section_Data de_dnames_sect;
 
     /* macinfo controls. */
     /* first points to beginning of the list during creation */
@@ -418,18 +476,20 @@ struct Dwarf_P_Debug_s {
         de_simple_name_headers[dwarf_snk_entrycount];
 
     /*  Relocation data. not all sections will actally have relocation
-        info, of course */
+        info, of course.  de_reloc_sect, de_elf_sects, and de_sect_name_idx
+        arrays are exactly in parallel. Not every de_elf_sect has
+        any relocations for it, of course. */
     struct Dwarf_P_Per_Reloc_Sect_s de_reloc_sect[NUM_DEBUG_SECTIONS];
     int de_reloc_next_to_return; /* iterator on reloc sections
         (SYMBOLIC output) */
 
-    /* used in remembering sections */
+    /*  Used in remembering sections. See de_reloc_sect above.  */
     int de_elf_sects[NUM_DEBUG_SECTIONS];  /* elf sect number of
         the section itself, DEBUG_LINE for example */
 
-    Dwarf_Unsigned de_sect_name_idx[NUM_DEBUG_SECTIONS]; /* section
-        name index or handle for the name of the symbol for
+    /*  Section name index or handle for the name of the symbol for
         DEBUG_LINE for example */
+    Dwarf_Unsigned de_sect_name_idx[NUM_DEBUG_SECTIONS];
 
     int de_offset_reloc; /* offset reloc type, R_MIPS_32 for
         example. Specific to the ABI being
@@ -455,6 +515,9 @@ struct Dwarf_P_Debug_s {
         macro at run time MIPS -n32
         4, -64 is 8.  */
 
+    /*  Added April 19, 2017.  For DWARF5 */
+    unsigned char de_segment_selector_size;
+
     unsigned char de_relocation_record_size; /* reloc record size
         varies by ABI and
         relocation-output
@@ -465,17 +528,18 @@ struct Dwarf_P_Debug_s {
         offsets using dwarf2-99
         extension proposal */
 
-    int de_output_version; /* 2,3,4, or 5. The version number
-        of the output. (not necessarily that of each section). */
+    unsigned char de_output_version; /* 2,3,4, or 5. The version number
+        of the output. (not necessarily that of each section,
+        which depends on the base version). */
 
     int de_ar_data_attribute_form; /* data8, data4 abi &version dependent */
     int de_ar_ref_attr_form; /* ref8 ref4 , abi dependent */
 
     /* simple name relocations */
-    _dwarf_pro_reloc_name_func_ptr de_reloc_name;
+    _dwarf_pro_reloc_name_func_ptr de_relocate_by_name_symbol;
 
     /* relocations for a length, requiring a pair of symbols */
-    _dwarf_pro_reloc_length_func_ptr de_reloc_pair;
+    _dwarf_pro_reloc_length_func_ptr de_relocate_pair_by_symbol;
 
     _dwarf_pro_transform_relocs_func_ptr de_transform_relocs_to_disk;
 
@@ -484,7 +548,7 @@ struct Dwarf_P_Debug_s {
     unsigned long de_compose_used_len;
 
     unsigned char de_same_endian;
-    void *(*de_copy_word) (void *, const void *, size_t);
+    void (*de_copy_word) (void *, const void *, unsigned long);
 
     /*  Add new fields at the END of this struct to preserve some hope
         of sensible behavior on dbg passing between DSOs linked with
@@ -496,18 +560,32 @@ struct Dwarf_P_Debug_s {
     int de_sect_sa_next_to_return;  /* Iterator on sring attrib sects */
     /* String attributes data of each section. */
     struct Dwarf_P_Per_Sect_String_Attrs_s de_sect_string_attr[NUM_DEBUG_SECTIONS];
-    /* Hold data needed to init new line output flexibly. */
+
+    /* Hold data needed to init line output flexibly. */
     struct Dwarf_P_Line_Inits_s de_line_inits;
+
+    struct Dwarf_P_Stats_s de_stats;
 };
 
 #define CURRENT_VERSION_STAMP   2
 
-Dwarf_Unsigned _dwarf_add_simple_name_entry(Dwarf_P_Debug dbg,
+int _dwarf_add_simple_name_entry(Dwarf_P_Debug dbg,
     Dwarf_P_Die die,
     char *entry_name,
     enum dwarf_sn_kind
     entrykind,
     Dwarf_Error * error);
 
+enum dwarf_which_hash {
+    _dwarf_hash_debug_str,
+    _dwarf_hash_debug_line_str,
+    _dwarf_hash_debug_str_sup
+};
 
-#define DISTINGUISHED_VALUE 0xffffffff /* 64bit extension flag */
+int
+_dwarf_insert_or_find_in_debug_str(Dwarf_P_Debug dbg,
+    char *name,
+    enum  dwarf_which_hash,
+    unsigned slen, /* includes space for trailing NUL */
+    Dwarf_Unsigned *offset_in_debug_str,
+    Dwarf_Error *error);

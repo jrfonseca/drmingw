@@ -33,6 +33,11 @@
 #include <elfaccess.h>
 #endif
 #include "pro_incl.h"
+#include <stddef.h>
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "pro_opaque.h"
+#include "pro_error.h"
 #include "pro_section.h"
 
 
@@ -45,16 +50,54 @@ dwarf_add_pubname(Dwarf_P_Debug dbg,
     Dwarf_P_Die die,
     char *pubname_name, Dwarf_Error * error)
 {
-    return
-        _dwarf_add_simple_name_entry(dbg, die, pubname_name,
-            dwarf_snk_pubname, error);
+    int res = 0;
+
+    res =  _dwarf_add_simple_name_entry(dbg, die, pubname_name,
+        dwarf_snk_pubname, error);
+    if (res != DW_DLV_OK) {
+        return 0;
+    }
+    return 1;
 }
+
+int
+dwarf_add_pubname_a(Dwarf_P_Debug dbg,
+    Dwarf_P_Die die,
+    char *pubname_name, Dwarf_Error * error)
+{
+    int res = 0;
+
+    res = _dwarf_add_simple_name_entry(dbg, die,
+        pubname_name,
+        dwarf_snk_pubname, error);
+    return res;
+}
+
+
+
 Dwarf_Unsigned
 dwarf_add_pubtype(Dwarf_P_Debug dbg,
     Dwarf_P_Die die,
     char *pubtype_name, Dwarf_Error * error)
 {
-    return
-        _dwarf_add_simple_name_entry(dbg, die, pubtype_name,
-            dwarf_snk_pubtype, error);
+    int res  = 0;
+
+    res = _dwarf_add_simple_name_entry(dbg, die, pubtype_name,
+        dwarf_snk_pubtype, error);
+    if (res != DW_DLV_OK) {
+        return 0;
+    }
+    return 1;
+}
+int
+dwarf_add_pubtype_a(Dwarf_P_Debug dbg,
+    Dwarf_P_Die die,
+    char *pubtype_name,
+    Dwarf_Error * error)
+{
+    int res = 0;
+
+    res =    _dwarf_add_simple_name_entry(dbg, die, pubtype_name,
+        dwarf_snk_pubtype, error);
+    return res;
 }

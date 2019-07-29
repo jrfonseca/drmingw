@@ -1,7 +1,6 @@
 /*
-
   Copyright (C) 2000,2004 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright 2011 David Anderson.  All Rights Reserved.
+  Portions Copyright 2011-2019 David Anderson.  All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -30,6 +29,13 @@
 #include <stdio.h>
 #include <string.h>
 #include "pro_incl.h"
+#include <stddef.h>
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "pro_opaque.h"
+#include "pro_error.h"
+#include "pro_encode_nm.h"
+#include "pro_alloc.h"
 #include "pro_section.h"
 #include "pro_macinfo.h"
 
@@ -338,16 +344,16 @@ dwarf_end_macro_file(Dwarf_P_Debug dbg, Dwarf_Error * error)
     length_est = COMMAND_LEN;
     res = libdwarf_compose_begin(dbg, DW_MACINFO_end_file, length_est,
         &compose_error_type);
-    if (res != DW_DLV_OK) {
-        _dwarf_p_error(NULL, error, compose_error_type);
+    if (res == DW_DLV_ERROR) {
+        _dwarf_p_error(dbg, error, compose_error_type);
         return (DW_DLV_ERROR);
     }
     res = libdwarf_compose_complete(dbg, &compose_error_type);
-    if (res != DW_DLV_OK) {
-        _dwarf_p_error(NULL, error, compose_error_type);
-        return (DW_DLV_ERROR);
+    if (res == DW_DLV_ERROR) {
+        _dwarf_p_error(dbg, error, compose_error_type);
+        return res;
     }
-    return DW_DLV_OK;
+    return res;
 }
 
 int
@@ -387,10 +393,6 @@ dwarf_vendor_ext(Dwarf_P_Debug dbg,
     }
     libdwarf_compose_add_string(dbg, string, len);
     libdwarf_compose_complete(dbg, &compose_error_type);
-    if (res != DW_DLV_OK) {
-        _dwarf_p_error(NULL, error, compose_error_type);
-        return (DW_DLV_ERROR);
-    }
     return DW_DLV_OK;
 }
 
@@ -398,6 +400,7 @@ dwarf_vendor_ext(Dwarf_P_Debug dbg,
 
 int
 _dwarf_pro_transform_macro_info_to_disk(Dwarf_P_Debug dbg,
+    Dwarf_Signed *nbufs,
     Dwarf_Error * error)
 {
     /* Total num of bytes in .debug_macinfo section. */
@@ -427,10 +430,6 @@ _dwarf_pro_transform_macro_info_to_disk(Dwarf_P_Debug dbg,
 
     GET_CHUNK(dbg, dbg->de_elf_sects[DEBUG_MACINFO],
         macinfo, (unsigned long) mac_num_bytes, error);
-    if (macinfo == NULL) {
-        _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-        return (0);
-    }
 
     macinfo_ptr = macinfo;
     m_prev = 0;
@@ -453,5 +452,6 @@ _dwarf_pro_transform_macro_info_to_disk(Dwarf_P_Debug dbg,
     dbg->de_first_macinfo = NULL;
     dbg->de_current_macinfo = NULL;
 
-    return (int) dbg->de_n_debug_sect;
+    *nbufs = dbg->de_n_debug_sect;
+    return DW_DLV_OK;
 }

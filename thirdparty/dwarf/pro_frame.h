@@ -1,6 +1,7 @@
 /*
 
   Copyright (C) 2000,2004 Silicon Graphics, Inc.  All Rights Reserved.
+  Portions Copyright (C) 2017 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -40,9 +41,6 @@ struct Dwarf_P_Frame_Pgm_s {
     Dwarf_Ubyte dfp_opcode; /* opcode - includes reg # */
     char *dfp_args;	 /* operands */
     int dfp_nbytes;	 /* number of bytes in args */
-#if 0
-    Dwarf_Unsigned dfp_sym_index; /* 0 unless reloc needed */
-#endif
     Dwarf_P_Frame_Pgm dfp_next;
 };
 
@@ -52,7 +50,7 @@ struct Dwarf_P_Frame_Pgm_s {
     from user program, and later to transform to disk form
 */
 struct Dwarf_P_Cie_s {
-    Dwarf_Ubyte cie_version;
+    Dwarf_Half cie_version;
 
     /*  augmentation. The string is an strdup() copy
         and on freeing the Dwarf_P_Cie the string must be freed. */
@@ -77,7 +75,7 @@ struct Dwarf_P_Fde_s {
     Dwarf_P_Die fde_die;
 
     /* index to asso. cie */
-    Dwarf_Word fde_cie;
+    Dwarf_Unsigned fde_cie;
 
     /*  Address of first location of the code this frame applies to If
         fde_end_symbol non-zero, this represents the offset from the

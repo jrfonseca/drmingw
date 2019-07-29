@@ -25,8 +25,6 @@
 */
 
 
-
-
 int _dwarf_pro_reloc_name_stream64(Dwarf_P_Debug dbg,
     int base_sec_index,
     Dwarf_Unsigned offset,/* r_offset of reloc */

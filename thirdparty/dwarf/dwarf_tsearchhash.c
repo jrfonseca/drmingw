@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2014, David Anderson
+/* Copyright (c) 2013-2019, David Anderson
 All rights reserved.
 
 Redistribution and use in source and binary forms, with
@@ -59,16 +59,33 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include "config.h"
-#include "dwarf_incl.h"
+#ifdef HAVE_UNUSED_ATTRIBUTE
+#define  UNUSEDARG __attribute__ ((unused))
+#else
+#define  UNUSEDARG
+#endif
 #include "stdlib.h" /* for free() etc */
 #include <stdio.h>  /* for printf() */
+#ifdef HAVE_STDINT_H
+#include <stdint.h> /* for uintptr_t */
+#endif /* HAVE_STDINT_H */
+/*  This must match the types and print options
+    found in libdwarf.h.  */
+#define Dwarf_Unsigned unsigned long long
+#if defined(_WIN32) && defined(HAVE_NONSTANDARD_PRINTF_64_FORMAT)
+#define DW_PR_DUx "I64x"
+#define DW_PR_DUu "I64u"
+#else
+#define DW_PR_DUx "llx"
+#define DW_PR_DUu "llu"
+#endif /* DW_PR defines */
 #include "dwarf_tsearch.h"
 
 /*  A table of primes used to size  and resize the hash table.
     From public sources of prime numbers, arbitrarily chosen
     to approximately double in size at each step.
 */
-static unsigned long long primes[] =
+static unsigned long primes[] =
 {
 #if 0 /* for testing only */
 5,11, 17,23, 31, 47, 53,
@@ -170,7 +187,7 @@ dwarf_initialize_search_hash( void **treeptr,
     DW_TSHASHTYPE(*hashfunc)(const void *key),
     unsigned long size_estimate)
 {
-    unsigned long prime_to_use =primes[0];
+    unsigned long prime_to_use = primes[0];
     unsigned entry_index = 0;
     unsigned k = 0;
     struct hs_base *base = 0;
@@ -200,6 +217,7 @@ dwarf_initialize_search_hash( void **treeptr,
     base->allowed_fill_ = calculate_allowed_fill(allowed_fill_percent,
         prime_to_use);
     if( base->allowed_fill_< (base->tablesize_/2)) {
+        free(base);
         /* Oops. We are in trouble. Coding mistake here.  */
         return NULL;
     }
@@ -218,6 +236,8 @@ dwarf_initialize_search_hash( void **treeptr,
 }
 
 
+/*  We don't really care whether hashpos or chainpos
+    are 32 or 64 bits. 32 suffices. */
 static void print_entry(struct ts_entry *t,const char *descr,
     char *(* keyprint)(const void *),
     unsigned long hashpos,
@@ -229,10 +249,12 @@ static void print_entry(struct ts_entry *t,const char *descr,
     }
     v = keyprint(t->keyptr);
     printf(
-        "[%4lu.%02lu] 0x%08lx <keyptr 0x%08lx> <key %s> %s\n",
+        "[%4lu.%02lu] 0x%08" DW_PR_DUx
+        " <keyptr 0x%08" DW_PR_DUx
+        "> <key %s> %s\n",
         hashpos,chainpos,
-        (unsigned long)t,
-        (unsigned long)t->keyptr,
+        (Dwarf_Unsigned)(uintptr_t)t,
+        (Dwarf_Unsigned)(uintptr_t)t->keyptr,
         v,
         descr);
 }
@@ -249,11 +271,14 @@ dumptree_inner(const struct hs_base *h,
     unsigned long hashused = 0;
     unsigned long maxchainlength = 0;
     unsigned long chainsgt1 = 0;
-    printf("dumptree head ptr : 0x%08lx size %lu entries %lu allowed %lu %s\n",
-        (unsigned long)h,
-        (unsigned long)h->tablesize_,
-        (unsigned long)h->record_count_,
-        (unsigned long)h->allowed_fill_,
+    printf("dumptree head ptr : 0x%08" DW_PR_DUx
+        " size %"    DW_PR_DUu
+        " entries %" DW_PR_DUu
+        " allowed %" DW_PR_DUu " %s\n",
+        (Dwarf_Unsigned)(uintptr_t)h,
+        (Dwarf_Unsigned)h->tablesize_,
+        (Dwarf_Unsigned)h->record_count_,
+        (Dwarf_Unsigned)h->allowed_fill_,
         descr);
     for(  ; ix < tsize; ix++,p++) {
         unsigned long chainlength = 0;
@@ -592,7 +617,7 @@ static void
 dwarf_twalk_inner(const struct hs_base *h,
     struct ts_entry *p,
     void (*action)(const void *nodep, const DW_VISIT which,
-    UNUSEDARG const int depth),
+        UNUSEDARG const int depth),
     UNUSEDARG unsigned level)
 {
     unsigned long ix = 0;
@@ -611,7 +636,7 @@ dwarf_twalk_inner(const struct hs_base *h,
 void
 dwarf_twalk(const void *rootp,
     void (*action)(const void *nodep, const DW_VISIT which,
-    UNUSEDARG const int depth))
+        UNUSEDARG const int depth))
 {
     const struct hs_base *head = (const struct hs_base *)rootp;
     struct ts_entry *root = 0;
@@ -673,6 +698,3 @@ dwarf_tdestroy(void *rootp, void (*free_node)(void *nodep))
     free(root);
     free(head);
 }
-
-
-

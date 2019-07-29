@@ -1,7 +1,6 @@
 /*
-
   Copyright (C) 2000-2005 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2009-2011 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2009-2018 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -26,9 +25,12 @@
 */
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <stdio.h>
+#include "dwarf_incl.h"
 #include "dwarf_abbrev.h"
+#include "dwarf_alloc.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
 
 /*  This is used to print a .debug_abbrev section without
     knowing about the DIEs that use the abbrevs.
@@ -111,7 +113,7 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
 
     DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp,
         dbg,error,abbrev_section_end);
-    ret_abbrev->dab_code = (Dwarf_Word) utmp;
+    ret_abbrev->dab_code = utmp;
     if (ret_abbrev->dab_code == 0) {
         *returned_abbrev = ret_abbrev;
         *abbr_count = 0;
@@ -124,6 +126,10 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
     DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp,
         dbg,error,abbrev_section_end);
     ret_abbrev->dab_tag = utmp;
+    if (abbrev_ptr >= abbrev_section_end) {
+        _dwarf_error(dbg, error, DW_DLE_ABBREV_DECODE_ERROR);
+        return DW_DLV_ERROR;
+    }
     ret_abbrev->dab_has_child = *(abbrev_ptr++);
     ret_abbrev->dab_abbrev_ptr = abbrev_ptr;
 
@@ -137,8 +143,14 @@ dwarf_get_abbrev(Dwarf_Debug dbg,
             dbg,error,abbrev_section_end);
         attr_form = (Dwarf_Half) utmp2;
         if (!_dwarf_valid_form_we_know(dbg,attr_form,attr)) {
-            _dwarf_error(NULL, error, DW_DLE_UNKNOWN_FORM);
+            _dwarf_error(dbg, error, DW_DLE_UNKNOWN_FORM);
             return (DW_DLV_ERROR);
+        }
+        if (attr_form ==  DW_FORM_implicit_const) {
+            UNUSEDARG Dwarf_Signed implicit_const = 0;
+            /* The value is here, not in a DIE. */
+            DECODE_LEB128_SWORD_CK(abbrev_ptr, implicit_const,
+                dbg,error,abbrev_section_end);
         }
         if (attr != 0) {
             labbr_count++;
@@ -254,6 +266,12 @@ dwarf_get_abbrev_entry(Dwarf_Abbrev abbrev,
         DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp4,abbrev->dab_dbg,
             error,abbrev_end);
         attr_form = (Dwarf_Half) utmp4;
+        if (attr_form ==  DW_FORM_implicit_const) {
+            UNUSEDARG Dwarf_Signed implicit_const;
+            /* The value is here, not in a DIE. */
+            DECODE_LEB128_SWORD_CK( abbrev_ptr, implicit_const,
+                abbrev->dab_dbg,error,abbrev_end);
+        }
     }
 
     if (abbrev_ptr >= abbrev_end) {
@@ -281,7 +299,9 @@ dwarf_get_abbrev_entry(Dwarf_Abbrev abbrev,
     or .debug_types need to be initialized to anything specific.
     Any garbage bytes may cause trouble.  Not all compilers/linkers
     leave unreferenced garbage bytes in .debug_abbrev, so this may
-    work for most objects. */
+    work for most objects.
+    In case of error could return a bogus value, there is
+    no documented way to detect error. */
 int
 dwarf_get_abbrev_count(Dwarf_Debug dbg)
 {
@@ -291,7 +311,7 @@ dwarf_get_abbrev_count(Dwarf_Debug dbg)
     Dwarf_Unsigned attr_count = 0;
     Dwarf_Unsigned abbrev_count = 0;
     int abres = DW_DLV_OK;
-    Dwarf_Error err;
+    Dwarf_Error err = 0;
 
     while ((abres = dwarf_get_abbrev(dbg, offset, &ab,
         &length, &attr_count,
@@ -301,6 +321,9 @@ dwarf_get_abbrev_count(Dwarf_Debug dbg)
         offset += length;
         dwarf_dealloc(dbg, ab, DW_DLA_ABBREV);
     }
+    if (err) {
+        dwarf_dealloc(dbg,err,DW_DLA_ERROR);
+        err = 0;
+    }
     return abbrev_count;
 }
-

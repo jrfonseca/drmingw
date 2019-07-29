@@ -1,34 +1,46 @@
 /*
   Copyright (C) 2000-2004 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2015 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2018 David Anderson. All Rights Reserved.
   Portions Copyright (C) 2010-2012 SN Systems Ltd. All Rights Reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License
-  as published by the Free Software Foundation.
+  This program is free software; you can redistribute it
+  and/or modify it under the terms of version 2.1 of the
+  GNU Lesser General Public License as published by the Free
+  Software Foundation.
 
-  This program is distributed in the hope that it would be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  This program is distributed in the hope that it would be
+  useful, but WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  PURPOSE.
 
-  Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement
-  or the like.  Any license provided herein, whether implied or
-  otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with
-  other software, or any other product whatsoever.
+  Further, this software is distributed without any warranty
+  that it is free of the rightful claim of any third person
+  regarding infringement or the like.  Any license provided
+  herein, whether implied or otherwise, applies only to this
+  software file.  Patent licenses, if any, provided herein
+  do not apply to combinations of this program with other
+  software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this program; if not, write the Free Software
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
-  USA.
+  You should have received a copy of the GNU Lesser General
+  Public License along with this program; if not, write the
+  Free Software Foundation, Inc., 51 Franklin Street - Fifth
+  Floor, Boston MA 02110-1301, USA.
 
 */
 
 #include "config.h"
-#include "dwarf_incl.h"
-#include "dwarf_loc.h"
 #include <stdio.h> /* for debugging only. */
+#ifdef HAVE_STDINT_H
+#include <stdint.h> /* For uintptr_t */
+#endif /* HAVE_STDINT_H */
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif /* HAVE_INTTYPES_H */
+#include "dwarf_incl.h"
+#include "dwarf_alloc.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
+#include "dwarf_loc.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -126,14 +138,18 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
     Dwarf_Unsigned operand2 = 0;
     Dwarf_Unsigned operand3 = 0;
     Dwarf_Small atom = 0;
-    Dwarf_Word leb128_length = 0;
+    Dwarf_Unsigned leb128_length = 0;
 
+    if (offset > loc_block->bl_len) {
+        _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
+        return DW_DLV_ERROR;
+    }
     loc_len = loc_block->bl_len;
-    loc_ptr = (Dwarf_Small*)loc_block->bl_data + offset;
-
     if (offset == loc_len) {
         return DW_DLV_NO_ENTRY;
     }
+
+    loc_ptr = (Dwarf_Small*)loc_block->bl_data + offset;
     if ((loc_ptr+1) > section_end) {
         _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
         return DW_DLV_ERROR;
@@ -143,6 +159,7 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
     curr_loc->lr_opnumber = opnumber;
     curr_loc->lr_offset = offset;
 
+    /*  loc_ptr is ok to deref, see loc_ptr+1 test just above. */
     atom = *(Dwarf_Small *) loc_ptr;
     loc_ptr++;
     offset++;
@@ -233,6 +250,10 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         break;
 
     case DW_OP_const1u:
+        if (loc_ptr >= section_end) {
+            _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
+            return DW_DLV_ERROR;
+        }
         operand1 = *(Dwarf_Small *) loc_ptr;
         loc_ptr = loc_ptr + 1;
         if (loc_ptr > section_end) {
@@ -243,6 +264,10 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         break;
 
     case DW_OP_const1s:
+        if (loc_ptr >= section_end) {
+            _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
+            return DW_DLV_ERROR;
+        }
         operand1 = *(Dwarf_Sbyte *) loc_ptr;
         SIGN_EXTEND(operand1,1);
         loc_ptr = loc_ptr + 1;
@@ -368,6 +393,10 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         break;
 
     case DW_OP_pick:
+        if (loc_ptr >= section_end) {
+            _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
+            return DW_DLV_ERROR;
+        }
         operand1 = *(Dwarf_Small *) loc_ptr;
         loc_ptr = loc_ptr + 1;
         if (loc_ptr > section_end) {
@@ -384,6 +413,10 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         break;
 
     case DW_OP_deref_size:
+        if (loc_ptr >= section_end) {
+            _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
+            return DW_DLV_ERROR;
+        }
         operand1 = *(Dwarf_Small *) loc_ptr;
         loc_ptr = loc_ptr + 1;
         if (loc_ptr > section_end) {
@@ -397,6 +430,10 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         break;
 
     case DW_OP_xderef_type:        /* DWARF5 */
+        if (loc_ptr >= section_end) {
+            _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
+            return DW_DLV_ERROR;
+        }
         operand1 = *(Dwarf_Small *) loc_ptr;
         loc_ptr = loc_ptr + 1;
         if (loc_ptr > section_end) {
@@ -411,6 +448,10 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         break;
 
     case DW_OP_xderef_size:
+        if (loc_ptr >= section_end) {
+            _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
+            return DW_DLV_ERROR;
+        }
         operand1 = *(Dwarf_Small *) loc_ptr;
         loc_ptr = loc_ptr + 1;
         if (loc_ptr > section_end) {
@@ -516,6 +557,10 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         break;
     case DW_OP_deref_type:     /* DWARF5 */
     case DW_OP_GNU_deref_type: /* 0xf6 */
+        if (loc_ptr >= section_end) {
+            _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
+            return DW_DLV_ERROR;
+        }
         operand1 = *(Dwarf_Small *) loc_ptr;
         loc_ptr = loc_ptr + 1;
         if (loc_ptr > section_end) {
@@ -541,7 +586,7 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         /*  This using the second operand as a pointer
             is quite ugly. */
         /*  This gets an ugly compiler warning. Sorry. */
-        operand2 = (Dwarf_Unsigned)loc_ptr;
+        operand2 = (Dwarf_Unsigned)(uintptr_t)loc_ptr;
         offset = offset + operand1;
         loc_ptr = loc_ptr + operand1;
         if (loc_ptr > section_end) {
@@ -625,7 +670,7 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         /*  This using the second operand as a pointer
             is quite ugly. */
         /*  This gets an ugly compiler warning. Sorry. */
-        operand2 = (Dwarf_Unsigned)loc_ptr;
+        operand2 = (Dwarf_Unsigned)(uintptr_t)loc_ptr;
         offset = offset + operand1;
         loc_ptr = loc_ptr + operand1;
         if (loc_ptr > section_end) {
@@ -649,7 +694,7 @@ _dwarf_read_loc_expr_op(Dwarf_Debug dbg,
         /*  Operand 3 points to a value in the block of size
             just gotten as operand2. */
         /*  This gets an ugly compiler warning. Sorry. */
-        operand3 = (Dwarf_Unsigned) loc_ptr;
+        operand3 = (Dwarf_Unsigned)(uintptr_t)loc_ptr;
         loc_ptr = loc_ptr + operand2;
         if (loc_ptr > section_end) {
             _dwarf_error(dbg,error,DW_DLE_LOCEXPR_OFF_SECTION_END);
@@ -893,7 +938,8 @@ _dwarf_read_loc_section(Dwarf_Debug dbg,
     Dwarf_Error * error)
 {
     Dwarf_Small *beg = dbg->de_debug_loc.dss_data + sec_offset;
-    Dwarf_Small *loc_section_end = beg + dbg->de_debug_loc.dss_size;
+    Dwarf_Small *loc_section_end =
+        dbg->de_debug_loc.dss_data + dbg->de_debug_loc.dss_size;
 
     /*  start_addr and end_addr are actually offsets
         of the applicable base address of the CU.
@@ -902,7 +948,7 @@ _dwarf_read_loc_section(Dwarf_Debug dbg,
     Dwarf_Addr end_addr = 0;
     Dwarf_Half exprblock_size = 0;
     Dwarf_Unsigned exprblock_off =
-        2 * address_size + sizeof(Dwarf_Half);
+        2 * address_size + DWARF_HALF_SIZE;
 
     if (sec_offset >= dbg->de_debug_loc.dss_size) {
         /* We're at the end. No more present. */
@@ -925,17 +971,21 @@ _dwarf_read_loc_section(Dwarf_Debug dbg,
         /*  If start_addr and end_addr are 0, it's the end and no
             exprblock_size field follows. */
         exprblock_size = 0;
-        exprblock_off -= sizeof(Dwarf_Half);
+        exprblock_off -= DWARF_HALF_SIZE;
     } else if (start_addr == MAX_ADDR) {
         /*  End address is a base address, no exprblock_size field here
             either */
         exprblock_size = 0;
-        exprblock_off -= sizeof(Dwarf_Half);
+        exprblock_off -=  DWARF_HALF_SIZE;
     } else {
         READ_UNALIGNED_CK(dbg, exprblock_size, Dwarf_Half,
-            beg + 2 * address_size, sizeof(Dwarf_Half),
+            beg + 2 * address_size, DWARF_HALF_SIZE,
             error,loc_section_end);
         /* exprblock_size can be zero, means no expression */
+        if ( exprblock_size >= dbg->de_debug_loc.dss_size) {
+            _dwarf_error(NULL, error, DW_DLE_DEBUG_LOC_SECTION_SHORT);
+            return DW_DLV_ERROR;
+        }
         if ((sec_offset +exprblock_off + exprblock_size) >
             dbg->de_debug_loc.dss_size) {
             _dwarf_error(NULL, error, DW_DLE_DEBUG_LOC_SECTION_SHORT);
@@ -1026,14 +1076,16 @@ _dwarf_setup_loc(Dwarf_Attribute attr,
 static int
 _dwarf_get_loclist_header_start(Dwarf_Debug dbg,
     Dwarf_Attribute attr,
-    Dwarf_Unsigned * loclist_offset,
+    Dwarf_Unsigned * loclist_offset_out,
     Dwarf_Error * error)
 {
-    int blkres = dwarf_global_formref(attr, loclist_offset, error);
+    Dwarf_Unsigned loc_sec_size = 0;
+    Dwarf_Unsigned loclist_offset = 0;
+
+    int blkres = dwarf_global_formref(attr, &loclist_offset, error);
     if (blkres != DW_DLV_OK) {
         return (blkres);
     }
-
     if (!dbg->de_debug_loc.dss_data) {
         int secload = _dwarf_load_section(dbg, &dbg->de_debug_loc,error);
         if (secload != DW_DLV_OK) {
@@ -1043,17 +1095,32 @@ _dwarf_get_loclist_header_start(Dwarf_Debug dbg,
             return (DW_DLV_NO_ENTRY);
         }
     }
+    loc_sec_size = dbg->de_debug_loc.dss_size;
+    if (loclist_offset >= loc_sec_size) {
+        _dwarf_error(dbg, error, DW_DLE_LOCLIST_OFFSET_BAD);
+        return DW_DLV_ERROR;
+    }
+
     {
         int fisres = 0;
         Dwarf_Unsigned fissoff = 0;
         Dwarf_Unsigned size = 0;
-        fisres = _dwarf_get_fission_addition_die(attr->ar_die, DW_SECT_LOC,
+        fisres = _dwarf_get_fission_addition_die(attr->ar_die, DW_SECT_LOCLISTS,
             &fissoff, &size,error);
         if(fisres != DW_DLV_OK) {
             return fisres;
         }
-        *loclist_offset += fissoff;
+        if (fissoff >= loc_sec_size) {
+            _dwarf_error(dbg, error, DW_DLE_LOCLIST_OFFSET_BAD);
+            return DW_DLV_ERROR;
+        }
+        loclist_offset += fissoff;
+        if  (loclist_offset >= loc_sec_size) {
+            _dwarf_error(dbg, error, DW_DLE_LOCLIST_OFFSET_BAD);
+            return DW_DLV_ERROR;
+        }
     }
+    *loclist_offset_out = loclist_offset;
     return DW_DLV_OK;
 }
 
@@ -1103,8 +1170,6 @@ context_is_cu_not_tu(Dwarf_CU_Context context,
     DWARF4 with location extensions.
 
     Does not work for .debug_loc.dwo
-
-    Use dwarf_get_loclist_b() and associated functions.
 */
 int
 dwarf_loclist_n(Dwarf_Attribute attr,
@@ -1193,8 +1258,6 @@ dwarf_loclist_n(Dwarf_Attribute attr,
             return (DW_DLV_ERROR);
         }
 
-        loc_section_end = dbg->de_debug_loc.dss_data+
-            dbg->de_debug_loc.dss_size;
         for (lli = 0; lli < loclist_count; ++lli) {
             int lres = 0;
 
@@ -1627,4 +1690,4 @@ dwarf_get_loclist_entry(Dwarf_Debug dbg,
 }
 
 /* Bring in the code for the October 2015 interfaces. */
-#include "dwarf_loc2.c"
+#include "dwarf_loc2.h"

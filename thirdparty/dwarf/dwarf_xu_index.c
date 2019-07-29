@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2014-2015 David Anderson. All Rights Reserved.
+  Copyright (C) 2014-2019 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -36,9 +36,13 @@
 
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "dwarf_incl.h"
+#include "dwarf_alloc.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
 #include "dwarf_xu_index.h"
 
 #define  HASHSIGNATURELEN 8
@@ -46,6 +50,9 @@
 
 #define TRUE 1
 #define FALSE 0
+
+/* zerohashkey used as all-zero-bits for comparison. */
+static Dwarf_Sig8 zerohashkey;
 
 int
 dwarf_get_xu_index_header(Dwarf_Debug dbg,
@@ -116,7 +123,6 @@ dwarf_get_xu_index_header(Dwarf_Debug dbg,
     READ_UNALIGNED_CK(dbg,num_slots, Dwarf_Unsigned,
         data,datalen32,
         error,section_end);
-    data += datalen32;
     hash_tab_offset = datalen32*4;
     indexes_tab_offset = hash_tab_offset + (num_slots * HASHSIGNATURELEN);
     /*  Look for corrupt section data. */
@@ -159,7 +165,11 @@ dwarf_get_xu_index_header(Dwarf_Debug dbg,
         _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
         return (DW_DLV_ERROR);
     }
-    strcpy(indexptr->gx_type,section_type);
+    /*  Only "cu" or "tu" allowed, that is checked above.
+        But for safety we just copy the allowed bytes*/
+    indexptr->gx_type[0] = section_type[0];
+    indexptr->gx_type[1] = section_type[1];
+    indexptr->gx_type[2] = 0;
     indexptr->gx_dbg = dbg;
     indexptr->gx_section_length = sect->dss_size;
     indexptr->gx_section_data   = sect->dss_data;
@@ -236,7 +246,6 @@ int dwarf_get_xu_hash_entry(Dwarf_Xu_Index_Header xuhdr,
 
     indexentry = indextab + (index * LEN32BIT);
     memcpy(hash_value,&hashval,sizeof(hashval));
-
     READ_UNALIGNED_CK(dbg,indexval,Dwarf_Unsigned, indexentry,
         LEN32BIT,
         err,section_end);
@@ -258,8 +267,8 @@ static const char * dwp_secnames[] = {
 "DW_SECT_LINE"        /* 4 */ /*".debug_line.dwo"*/,
 "DW_SECT_LOC"         /* 5 */ /*".debug_loc.dwo"*/,
 "DW_SECT_STR_OFFSETS" /* 6 */ /*".debug_str_offsets.dwo"*/,
-"DW_SECT_MACINFO"     /* 7 */ /*".debug_macinfo.dwo"*/,
-"DW_SECT_MACRO"       /* 8 */ /*".debug_macro.dwo"*/,
+"DW_SECT_MACRO"       /* 7 */ /*".debug_macro.dwo"*/,
+"DW_SECT_RNGLISTS"       /* 8 */ /*".debug_rnglists.dwo"*/,
 "No name > 8",
 };
 
@@ -290,7 +299,7 @@ dwarf_get_xu_section_names(Dwarf_Xu_Index_Header xuhdr,
     READ_UNALIGNED_CK(dbg,sec_num,Dwarf_Unsigned, nameloc,
         LEN32BIT,
         err,section_end);
-    if (sec_num > DW_SECT_MACRO) {
+    if (sec_num > DW_SECT_RNGLISTS) {
         _dwarf_error(dbg, err, DW_DLE_XU_NAME_COL_ERROR);
         return DW_DLV_ERROR;
     }
@@ -358,8 +367,6 @@ dwarf_get_xu_section_offset(Dwarf_Xu_Index_Header xuhdr,
     return DW_DLV_OK;
 }
 
-/* zerohashkey used as all-zero-bits for comparison. */
-static Dwarf_Sig8 zerohashkey;
 
 static int
 _dwarf_search_fission_for_key(UNUSEDARG Dwarf_Debug dbg,
@@ -623,5 +630,3 @@ dwarf_xu_header_free(Dwarf_Xu_Index_Header indexptr)
         dwarf_dealloc(dbg,indexptr,DW_DLA_XU_INDEX);
     }
 }
-
-

@@ -1,7 +1,6 @@
 /*
-
   Copyright (C) 2000,2004 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright 2011  David Anderson. All Rights Reserved.
+  Portions Copyright 2011-2019 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -33,9 +32,16 @@
 #include <elfaccess.h>
 #endif
 #include "pro_incl.h"
+#include <stddef.h>
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "pro_opaque.h"
+#include "pro_error.h"
+#include "pro_alloc.h"
 #include "pro_section.h"
 #include "pro_types.h"
 
+#define SIZEOFT32 4
 
 /*
     This function adds another type name to the
@@ -45,11 +51,30 @@
 Dwarf_Unsigned
 dwarf_add_typename(Dwarf_P_Debug dbg,
     Dwarf_P_Die die,
-    char *type_name, Dwarf_Error * error)
+    char *type_name,
+    Dwarf_Error * error)
 {
-    return
-        _dwarf_add_simple_name_entry(dbg, die, type_name,
-            dwarf_snk_typename, error);
+    int res = 0;
+
+    res = _dwarf_add_simple_name_entry(dbg, die, type_name,
+        dwarf_snk_typename, error);
+    if (res != DW_DLV_OK) {
+        return 0;
+    }
+    return 1;
+
+}
+int
+dwarf_add_typename_a(Dwarf_P_Debug dbg,
+    Dwarf_P_Die die,
+    char *type_name,
+    Dwarf_Error * error)
+{
+    int res = 0;
+
+    res = _dwarf_add_simple_name_entry(dbg, die, type_name,
+        dwarf_snk_typename, error);
+    return res;
 }
 
 /*
@@ -59,7 +84,7 @@ dwarf_add_typename(Dwarf_P_Debug dbg,
   See enum dwarf_sn_kind in pro_opaque.h
 
 */
-Dwarf_Unsigned
+int
 _dwarf_add_simple_name_entry(Dwarf_P_Debug dbg,
     Dwarf_P_Die die,
     char *entry_name,
@@ -73,12 +98,12 @@ _dwarf_add_simple_name_entry(Dwarf_P_Debug dbg,
 
     if (dbg == NULL) {
         _dwarf_p_error(NULL, error, DW_DLE_DBG_NULL);
-        return (0);
+        return DW_DLV_ERROR;
     }
 
     if (die == NULL) {
         _dwarf_p_error(NULL, error, DW_DLE_DIE_NULL);
-        return (0);
+        return DW_DLV_ERROR;
     }
 
 
@@ -87,13 +112,13 @@ _dwarf_add_simple_name_entry(Dwarf_P_Debug dbg,
             sizeof(struct Dwarf_P_Simple_nameentry_s));
     if (nameentry == NULL) {
         _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-        return (0);
+        return DW_DLV_ERROR;
     }
 
     name = _dwarf_p_get_alloc(dbg, strlen(entry_name) + 1);
     if (name == NULL) {
         _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-        return (0);
+        return DW_DLV_ERROR;
     }
     strcpy(name, entry_name);
 
@@ -112,7 +137,7 @@ _dwarf_add_simple_name_entry(Dwarf_P_Debug dbg,
     hdr->sn_count++;
     hdr->sn_net_len += uword_size + nameentry->sne_name_len + 1;
 
-    return (1);
+    return DW_DLV_OK;
 }
 
 
@@ -131,6 +156,7 @@ int
 _dwarf_transform_simplename_to_disk(Dwarf_P_Debug dbg,
     enum dwarf_sn_kind entrykind,
     int section_index, /* in de_elf_sects etc */
+    Dwarf_Signed *nbufs,
     Dwarf_Error * error)
 {
 
@@ -174,14 +200,13 @@ _dwarf_transform_simplename_to_disk(Dwarf_P_Debug dbg,
     /* Size of the .debug_typenames (or similar) section header. */
     stream_bytes_count = extension_size + uword_size +  /* Size of
         length field. */
-        sizeof(Dwarf_Half) +    /* Size of version field. */
+        DWARF_HALF_SIZE +    /* Size of version field. */
         uword_size +            /* Size of .debug_info offset. */
         uword_size;             /* Size of .debug_names. */
 
 
 
     nameentry_original = hdr->sn_head;
-    nameentry = nameentry_original;
     /* add in the content size */
     stream_bytes_count += hdr->sn_net_len;
 
@@ -191,17 +216,13 @@ _dwarf_transform_simplename_to_disk(Dwarf_P_Debug dbg,
     /* Now we know how long the entire section is */
     GET_CHUNK(dbg, dbg->de_elf_sects[section_index],
         stream_bytes, (unsigned long) stream_bytes_count, error);
-    if (stream_bytes == NULL) {
-        _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-        return (0);
-    }
     cur_stream_bytes_ptr = stream_bytes;
 
     if (extension_size) {
-        Dwarf_Unsigned x = DISTINGUISHED_VALUE;
+        DISTINGUISHED_VALUE_ARRAY(v4);
 
         WRITE_UNALIGNED(dbg, cur_stream_bytes_ptr,
-            (const void *) &x, sizeof(x), extension_size);
+            (const void *)&v4[0],SIZEOFT32 , extension_size);
         cur_stream_bytes_ptr += extension_size;
 
     }
@@ -218,8 +239,8 @@ _dwarf_transform_simplename_to_disk(Dwarf_P_Debug dbg,
 
         WRITE_UNALIGNED(dbg, cur_stream_bytes_ptr,
             (const void *) &verstamp,
-            sizeof(verstamp), sizeof(Dwarf_Half));
-        cur_stream_bytes_ptr += sizeof(Dwarf_Half);
+            sizeof(verstamp), DWARF_HALF_SIZE);
+        cur_stream_bytes_ptr += DWARF_HALF_SIZE;
     }
 
     /* Write the offset of the compile-unit. */
@@ -230,10 +251,10 @@ _dwarf_transform_simplename_to_disk(Dwarf_P_Debug dbg,
 
     /* now create the relocation for the compile_unit offset */
     {
-        int res = dbg->de_reloc_name(dbg,
+        int res = dbg->de_relocate_by_name_symbol(dbg,
             section_index,
             extension_size + uword_size +
-            sizeof(Dwarf_Half) /* r_offset */ ,
+            DWARF_HALF_SIZE /* r_offset */ ,
             /* debug_info section name symbol */
             dbg->de_sect_name_idx[DEBUG_INFO],
             dwarf_drt_data_reloc,
@@ -241,7 +262,7 @@ _dwarf_transform_simplename_to_disk(Dwarf_P_Debug dbg,
 
         if (res != DW_DLV_OK) {
             _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-            return (0);
+            return DW_DLV_ERROR;
         }
     }
 
@@ -270,5 +291,6 @@ _dwarf_transform_simplename_to_disk(Dwarf_P_Debug dbg,
     WRITE_UNALIGNED(dbg, cur_stream_bytes_ptr,
         (const void *) &big_zero,
         sizeof(big_zero), uword_size);
-    return (int) dbg->de_n_debug_sect;
+    *nbufs =  dbg->de_n_debug_sect;
+    return DW_DLV_OK;
 }

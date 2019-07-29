@@ -1,7 +1,6 @@
 /*
-
   Copyright (C) 2000,2002,2004 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2016 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2018 David Anderson. All Rights Reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
@@ -27,8 +26,11 @@
 */
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <stdio.h>
+#include "dwarf_incl.h"
+#include "dwarf_alloc.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
 #include "dwarf_die_deliv.h"
 
 #define TRUE 1
@@ -58,6 +60,22 @@ int dwarf_get_offset_size(Dwarf_Debug dbg,
     *offset_size = dbg->de_length_size;
     return DW_DLV_OK;
 }
+
+#if 0
+static void
+dump_bytes(char * msg,Dwarf_Small * start, long len)
+{
+    Dwarf_Small *end = start + len;
+    Dwarf_Small *cur = start;
+
+    printf("%s ",msg);
+    for (; cur < end; cur++) {
+        printf("%02x ", *cur);
+    }
+    printf("\n");
+}
+#endif
+
 
 
 /* This is normally reliable.
@@ -201,7 +219,7 @@ dwarf_offset_list(Dwarf_Debug dbg,
     Dwarf_Die sib_die = 0;
     Dwarf_Die cur_die = 0;
     Dwarf_Off cur_off = 0;
-    Dwarf_Word off_count = 0;
+    Dwarf_Unsigned off_count = 0;
     int res = 0;
 
     /* Temporary counter. */
@@ -303,8 +321,8 @@ dwarf_attrlist(Dwarf_Die die,
     Dwarf_Attribute ** attrbuf,
     Dwarf_Signed * attrcnt, Dwarf_Error * error)
 {
-    Dwarf_Word attr_count = 0;
-    Dwarf_Word i = 0;
+    Dwarf_Unsigned attr_count = 0;
+    Dwarf_Unsigned i = 0;
     Dwarf_Half attr = 0;
     Dwarf_Half attr_form = 0;
     Dwarf_Byte_Ptr abbrev_ptr = 0;
@@ -333,7 +351,7 @@ dwarf_attrlist(Dwarf_Die die,
         return lres;
     }
     if (lres == DW_DLV_NO_ENTRY) {
-        _dwarf_error(dbg, error, DW_DLE_DIE_BAD);
+        _dwarf_error(dbg, error, DW_DLE_ABBREV_MISSING);
         return DW_DLV_ERROR;
     }
 
@@ -343,14 +361,26 @@ dwarf_attrlist(Dwarf_Die die,
 
     info_ptr = die->di_debug_ptr;
     SKIP_LEB128_WORD_CK(info_ptr,dbg,error,die_info_end);
+    if (info_ptr >= die_info_end) {
+        /* Stepped off the end SKIPping the leb  */
+        _dwarf_error(dbg, error, DW_DLE_DIE_BAD);
+        return DW_DLV_ERROR;
+    }
 
     do {
         Dwarf_Unsigned utmp2;
+        Dwarf_Signed implicit_const = 0;
 
         DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp2,dbg,error,abbrev_end);
         attr = (Dwarf_Half) utmp2;
         DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp2,dbg,error,abbrev_end);
         attr_form = (Dwarf_Half) utmp2;
+        if (attr_form == DW_FORM_implicit_const) {
+            /* The value is here, not in a DIE. */
+            DECODE_LEB128_SWORD_CK(abbrev_ptr, implicit_const,
+                dbg,error,abbrev_end);
+        }
+
         if (!_dwarf_valid_form_we_know(dbg,attr_form,attr)) {
             _dwarf_error(dbg, error, DW_DLE_UNKNOWN_FORM);
             return DW_DLV_ERROR;
@@ -361,7 +391,7 @@ dwarf_attrlist(Dwarf_Die die,
                 (Dwarf_Attribute) _dwarf_get_alloc(dbg, DW_DLA_ATTR, 1);
             if (new_attr == NULL) {
                 _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
-                return (DW_DLV_ERROR);
+                return DW_DLV_ERROR;
             }
 
             new_attr->ar_attribute = attr;
@@ -369,24 +399,42 @@ dwarf_attrlist(Dwarf_Die die,
             new_attr->ar_attribute_form = attr_form;
             if (attr_form == DW_FORM_indirect) {
                 Dwarf_Unsigned utmp6;
+                if (_dwarf_reference_outside_section(die,
+                    (Dwarf_Small*) info_ptr,
+                    ((Dwarf_Small*) info_ptr )+1)) {
+                    _dwarf_error(dbg, error,DW_DLE_ATTR_OUTSIDE_SECTION);
+                    return DW_DLV_ERROR;
+                }
 
                 /* DECODE_LEB128_UWORD does info_ptr update */
                 DECODE_LEB128_UWORD_CK(info_ptr, utmp6,dbg,error,die_info_end);
                 attr_form = (Dwarf_Half) utmp6;
                 new_attr->ar_attribute_form = attr_form;
             }
-            if (_dwarf_reference_outside_section(die,
+            /*  Here the final address must be *inside* the
+                section, as we will read from there, and read
+                at least one byte, we think.
+                We do not want info_ptr to point past end so
+                we add 1 to the end-pointer.  */
+            if ( attr_form != DW_FORM_implicit_const &&
+                _dwarf_reference_outside_section(die,
                 (Dwarf_Small*) info_ptr,
-                (Dwarf_Small*) info_ptr)) {
+                ((Dwarf_Small*) info_ptr )+1)) {
                 _dwarf_error(dbg, error,DW_DLE_ATTR_OUTSIDE_SECTION);
                 return DW_DLV_ERROR;
             }
             new_attr->ar_cu_context = die->di_cu_context;
             new_attr->ar_debug_ptr = info_ptr;
             new_attr->ar_die = die;
-            {
+            if (attr_form == DW_FORM_implicit_const) {
+                /*  The value is here, not in a DIE.
+                    Do not increment info_ptr */
+                new_attr->ar_implicit_const = implicit_const;
+            } else {
                 Dwarf_Unsigned sov = 0;
-                int res = _dwarf_get_size_of_val(dbg,
+                int res = 0;
+
+                res = _dwarf_get_size_of_val(dbg,
                     attr_form,
                     die->di_cu_context->cc_version_stamp,
                     die->di_cu_context->cc_address_size,
@@ -442,6 +490,11 @@ dwarf_attrlist(Dwarf_Die die,
     the given die in the .debug_info section.  The form
     is returned in *attr_form.
 
+    If the attr_form is DW_FORM_implicit_const
+    (known signed, so most callers)
+    that is fine, but in that case we do not
+    need to actually set the *ptr_to_value.
+
     Returns NULL on error, or if attr is not found.
     However, *attr_form is 0 on error, and positive
     otherwise.
@@ -451,6 +504,7 @@ _dwarf_get_value_ptr(Dwarf_Die die,
     Dwarf_Half attr,
     Dwarf_Half * attr_form,
     Dwarf_Byte_Ptr * ptr_to_value,
+    Dwarf_Signed *implicit_const_out,
     Dwarf_Error *error)
 {
     Dwarf_Byte_Ptr abbrev_ptr = 0;
@@ -487,17 +541,21 @@ _dwarf_get_value_ptr(Dwarf_Die die,
     abbrev_end = _dwarf_calculate_abbrev_section_end_ptr(context);
 
     info_ptr = die->di_debug_ptr;
+    /* This ensures and checks die_info_end >= info_ptr */
     SKIP_LEB128_WORD_CK(info_ptr,dbg,error,die_info_end);
 
     do {
-        Dwarf_Unsigned utmp3 = 0;
+        Dwarf_Unsigned formtmp3 = 0;
+        Dwarf_Unsigned atmp3 = 0;
         Dwarf_Unsigned value_size=0;
+        Dwarf_Signed implicit_const = 0;
         int res = 0;
 
-        DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp3,dbg,error,abbrev_end);
-        curr_attr = (Dwarf_Half) utmp3;
-        DECODE_LEB128_UWORD_CK(abbrev_ptr, utmp3,dbg,error,abbrev_end);
-        curr_attr_form = (Dwarf_Half) utmp3;
+        DECODE_LEB128_UWORD_CK(abbrev_ptr, atmp3,dbg,error,abbrev_end);
+        curr_attr = (Dwarf_Half) atmp3;
+        DECODE_LEB128_UWORD_CK(abbrev_ptr,formtmp3,
+            dbg,error,abbrev_end);
+        curr_attr_form = (Dwarf_Half) formtmp3;
         if (curr_attr_form == DW_FORM_indirect) {
             Dwarf_Unsigned utmp6;
 
@@ -505,13 +563,19 @@ _dwarf_get_value_ptr(Dwarf_Die die,
             DECODE_LEB128_UWORD_CK(info_ptr, utmp6,dbg,error,die_info_end);
             curr_attr_form = (Dwarf_Half) utmp6;
         }
-
+        if (curr_attr_form == DW_FORM_implicit_const) {
+            /* The value is here, not in a DIE. */
+            DECODE_LEB128_SWORD_CK(abbrev_ptr, implicit_const,
+                dbg,error,abbrev_end);
+        }
         if (curr_attr == attr) {
             *attr_form = curr_attr_form;
+            if(implicit_const_out) {
+                *implicit_const_out = implicit_const;
+            }
             *ptr_to_value = info_ptr;
             return DW_DLV_OK;
         }
-
         res = _dwarf_get_size_of_val(dbg,
             curr_attr_form,
             die->di_cu_context->cc_version_stamp,
@@ -524,11 +588,17 @@ _dwarf_get_value_ptr(Dwarf_Die die,
         if (res != DW_DLV_OK) {
             return res;
         }
-        if ((info_ptr + value_size) > die_info_end) {
-            /*  Something badly wrong. We point past end
-                of debug_info or debug_types . */
-            _dwarf_error(dbg,error,DW_DLE_DIE_ABBREV_BAD);
-            return DW_DLV_ERROR;
+        {
+            /* ptrdiff_t is signed type, so use DW signed type */
+            Dwarf_Signed len = die_info_end - info_ptr;
+            if (len < 0 || (value_size > ((Dwarf_Unsigned)len))) {
+                /*  Something badly wrong. We point past end
+                    of debug_info or debug_types or a
+                    section is unreasonably sized or we are
+                    pointing to two different sections? */
+                _dwarf_error(dbg,error,DW_DLE_DIE_ABBREV_BAD);
+                return DW_DLV_ERROR;
+            }
         }
         info_ptr+= value_size;
     } while (curr_attr != 0 || curr_attr_form != 0);
@@ -578,10 +648,12 @@ dwarf_hasattr(Dwarf_Die die,
     Dwarf_Half attr_form = 0;
     Dwarf_Byte_Ptr info_ptr = 0;
     int res = 0;
+    Dwarf_Signed implicit_const;
 
     CHECK_DIE(die, DW_DLV_ERROR);
 
-    res = _dwarf_get_value_ptr(die, attr, &attr_form,&info_ptr,error);
+    res = _dwarf_get_value_ptr(die, attr, &attr_form,&info_ptr,
+        &implicit_const,error);
     if(res == DW_DLV_ERROR) {
         return res;
     }
@@ -603,18 +675,19 @@ dwarf_attr(Dwarf_Die die,
     Dwarf_Byte_Ptr info_ptr = 0;
     Dwarf_Debug dbg = 0;
     int res = 0;
+    Dwarf_Signed implicit_const = 0;
 
     CHECK_DIE(die, DW_DLV_ERROR);
     dbg = die->di_cu_context->cc_dbg;
 
-    res = _dwarf_get_value_ptr(die, attr, &attr_form,&info_ptr,error);
+    res = _dwarf_get_value_ptr(die, attr, &attr_form,&info_ptr,
+        &implicit_const,error);
     if(res == DW_DLV_ERROR) {
         return res;
     }
     if(res == DW_DLV_NO_ENTRY) {
         return res;
     }
-
 
     attrib = (Dwarf_Attribute) _dwarf_get_alloc(dbg, DW_DLA_ATTR, 1);
     if (attrib == NULL) {
@@ -626,6 +699,10 @@ dwarf_attr(Dwarf_Die die,
     attrib->ar_attribute_form = attr_form;
     attrib->ar_attribute_form_direct = attr_form;
     attrib->ar_cu_context = die->di_cu_context;
+
+    /*  Only nonzero if DW_FORM_implicit_const */
+    attrib->ar_implicit_const = implicit_const;
+    /*  Only nonnull if not DW_FORM_implicit_const */
     attrib->ar_debug_ptr = info_ptr;
     attrib->ar_die = die;
     *ret_attr = (attrib);
@@ -679,7 +756,7 @@ _dwarf_extract_address_from_debug_addr(Dwarf_Debug dbg,
         but with a base. */
     sectionsize = dbg->de_debug_addr.dss_size;
     sectionend = sectionstart + sectionsize;
-    if ((addr_offset + context->cc_address_size) > sectionsize) {
+    if (addr_offset > (sectionsize - context->cc_address_size)) {
         _dwarf_error(dbg, error, DW_DLE_ATTR_FORM_SIZE_BAD);
         return (DW_DLV_ERROR);
     }
@@ -806,7 +883,8 @@ dwarf_lowpc(Dwarf_Die die,
     dbg = context->cc_dbg;
     address_size = context->cc_address_size;
     offset_size = context->cc_length_size;
-    res = _dwarf_get_value_ptr(die, DW_AT_low_pc, &attr_form,&info_ptr,error);
+    res = _dwarf_get_value_ptr(die, DW_AT_low_pc,
+        &attr_form,&info_ptr,0,error);
     if(res == DW_DLV_ERROR) {
         return res;
     }
@@ -818,7 +896,7 @@ dwarf_lowpc(Dwarf_Die die,
         offset_size,attr_form);
     if (class != DW_FORM_CLASS_ADDRESS) {
         /* Not the correct form for DW_AT_low_pc */
-        _dwarf_error(dbg, error, DW_DLE_DIE_BAD);
+        _dwarf_error(dbg, error, DW_DLE_LOWPC_WRONG_CLASS);
         return (DW_DLV_ERROR);
     }
 
@@ -863,7 +941,7 @@ dwarf_highpc(Dwarf_Die die,
     if (form != DW_FORM_addr) {
         /* Not the correct form for DWARF2/3 DW_AT_high_pc */
         Dwarf_Debug dbg = die->di_cu_context->cc_dbg;
-        _dwarf_error(dbg, error, DW_DLE_DIE_BAD);
+        _dwarf_error(dbg, error, DW_DLE_HIGHPC_WRONG_FORM);
         return (DW_DLV_ERROR);
     }
     return (DW_DLV_OK);
@@ -884,6 +962,7 @@ dwarf_dietype_offset(Dwarf_Die die,
     res = dwarf_attr(die,DW_AT_type,&attr,error);
     if (res == DW_DLV_OK) {
         res = dwarf_global_formref(attr,&offset,error);
+        dwarf_dealloc(die->di_cu_context->cc_dbg,attr,DW_DLA_ATTR);
     }
     *return_off = offset;
     return res;
@@ -899,7 +978,6 @@ _dwarf_get_string_base_attr_value(Dwarf_Debug dbg,
 {
     int res = 0;
     Dwarf_Die cudie = 0;
-    Dwarf_Small *cu_die_dataptr = 0;
     Dwarf_Unsigned cu_die_offset = 0;
     Dwarf_Attribute myattr = 0;
 
@@ -909,12 +987,6 @@ _dwarf_get_string_base_attr_value(Dwarf_Debug dbg,
     }
     cu_die_offset = context->cc_cu_die_global_sec_offset;
     context->cc_cu_die_offset_present  = TRUE;
-    if(!cu_die_dataptr) {
-        _dwarf_error(dbg, error,
-            DW_DLE_DEBUG_CU_UNAVAILABLE_FOR_FORM);
-        return (DW_DLV_ERROR);
-
-    }
     res = dwarf_offdie_b(dbg,cu_die_offset,
         context->cc_is_info,
         &cudie,
@@ -930,7 +1002,14 @@ _dwarf_get_string_base_attr_value(Dwarf_Debug dbg,
     }
     if (res == DW_DLV_OK) {
         Dwarf_Unsigned val = 0;
-        res = dwarf_formudata(myattr,&val,error);
+        /* Expect DW_FORM_sec_offset */
+        if (myattr->ar_attribute_form != DW_FORM_sec_offset) {
+            dwarf_dealloc(dbg,myattr,DW_DLA_ATTR);
+            dwarf_dealloc(dbg,cudie,DW_DLA_DIE);
+            _dwarf_error(dbg, error,DW_DLE_STR_OFFSETS_BASE_WRONG_FORM);
+            return (DW_DLV_ERROR);
+        }
+        res = dwarf_global_formref(myattr,&val,error);
         dwarf_dealloc(dbg,myattr,DW_DLA_ATTR);
         dwarf_dealloc(dbg,cudie,DW_DLA_DIE);
         if(res != DW_DLV_OK) {
@@ -1073,7 +1152,7 @@ _dwarf_get_ranges_base_attr_value(Dwarf_Debug dbg,
     if(res != DW_DLV_OK) {
         return res;
     }
-    res = dwarf_attr(cudie,DW_AT_ranges_base,
+    res = dwarf_attr(cudie,DW_AT_rnglists_base,
         &myattr,error);
     if(res == DW_DLV_ERROR) {
         dwarf_dealloc(dbg,cudie,DW_DLA_DIE);
@@ -1093,7 +1172,7 @@ _dwarf_get_ranges_base_attr_value(Dwarf_Debug dbg,
     /* NO ENTRY, try the other attr. */
     res = dwarf_attr(cudie,DW_AT_GNU_ranges_base, &myattr,error);
     if(res == DW_DLV_NO_ENTRY) {
-        res = dwarf_attr(cudie,DW_AT_ranges_base, &myattr,error);
+        res = dwarf_attr(cudie,DW_AT_rnglists_base, &myattr,error);
         if (res == DW_DLV_NO_ENTRY) {
             /*  A .o or execeutable skeleton  needs
                 a base , but a .dwo does not.
@@ -1153,14 +1232,16 @@ dwarf_highpc_b(Dwarf_Die die,
     dbg = die->di_cu_context->cc_dbg;
     address_size = die->di_cu_context->cc_address_size;
 
-    res = _dwarf_get_value_ptr(die, DW_AT_high_pc, &attr_form,&info_ptr,error);
+    res = _dwarf_get_value_ptr(die, DW_AT_high_pc,
+        &attr_form,&info_ptr,0,error);
     if(res == DW_DLV_ERROR) {
         return res;
     }
     if(res == DW_DLV_NO_ENTRY) {
         return res;
     }
-    die_info_end = _dwarf_calculate_info_section_end_ptr(die->di_cu_context);
+    die_info_end = _dwarf_calculate_info_section_end_ptr(
+        die->di_cu_context);
 
     version = die->di_cu_context->cc_version_stamp;
     offset_size = die->di_cu_context->cc_length_size;
@@ -1216,8 +1297,13 @@ dwarf_highpc_b(Dwarf_Die die,
                 }
             }
             *return_value = addr_out;
-            *return_form = attr_form;
-            *return_class = class;
+            /*  Allow null args starting 22 April 2019. */
+            if (return_form) {
+                *return_form = attr_form;
+            }
+            if (return_class) {
+                *return_class = class;
+            }
             return (DW_DLV_OK);
         }
 
@@ -1232,12 +1318,13 @@ dwarf_highpc_b(Dwarf_Die die,
             &v,error);
         if(res3 != DW_DLV_OK) {
             Dwarf_Byte_Ptr info_ptr2 = 0;
+
             res3 = _dwarf_get_value_ptr(die, DW_AT_high_pc,
-                &attr_form,&info_ptr2,error);
+                &attr_form,&info_ptr2,0,error);
             if(res3 == DW_DLV_ERROR) {
                 return res3;
             }
-            if(res == DW_DLV_NO_ENTRY) {
+            if(res3 == DW_DLV_NO_ENTRY) {
                 return res3;
             }
             if (attr_form == DW_FORM_sdata) {
@@ -1249,16 +1336,21 @@ dwarf_highpc_b(Dwarf_Die die,
                     dbg,error,die_info_end);
                 *return_value = (Dwarf_Unsigned)sval;
             } else {
-                _dwarf_error(dbg, error, DW_DLE_DIE_BAD);
-                return (DW_DLV_ERROR);
+                _dwarf_error(dbg, error, DW_DLE_HIGHPC_WRONG_FORM);
+                return DW_DLV_ERROR;
             }
         } else {
             *return_value = v;
         }
     }
-    *return_form = attr_form;
-    *return_class = class;
-    return (DW_DLV_OK);
+    /*  Allow null args starting 22 April 2019. */
+    if (return_form) {
+        *return_form = attr_form;
+    }
+    if (return_class) {
+        *return_class = class;
+    }
+    return DW_DLV_OK;
 }
 
 /* The dbg and context here are a file with DW_FORM_addrx
@@ -1399,13 +1491,16 @@ _dwarf_die_attr_unsigned_constant(Dwarf_Die die,
     die_info_end = _dwarf_calculate_info_section_end_ptr(die->di_cu_context);
     dbg = die->di_cu_context->cc_dbg;
     res = _dwarf_get_value_ptr(die,attr,&attr_form,
-        &info_ptr,error);
+        &info_ptr,0,error);
     if(res != DW_DLV_OK) {
         return res;
     }
     switch (attr_form) {
     case DW_FORM_data1:
-        *return_val = (*(Dwarf_Small *) info_ptr);
+        READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
+            info_ptr, sizeof(Dwarf_Small),
+            error,die_info_end);
+        *return_val = ret_value;
         return (DW_DLV_OK);
 
     case DW_FORM_data2:
@@ -1417,14 +1512,14 @@ _dwarf_die_attr_unsigned_constant(Dwarf_Die die,
 
     case DW_FORM_data4:
         READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
-            info_ptr, sizeof(Dwarf_sfixed),
+            info_ptr, DWARF_32BIT_SIZE,
             error,die_info_end);
         *return_val = ret_value;
         return (DW_DLV_OK);
 
     case DW_FORM_data8:
         READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
-            info_ptr, sizeof(Dwarf_Unsigned),
+            info_ptr, DWARF_64BIT_SIZE,
             error,die_info_end);
         *return_val = ret_value;
         return (DW_DLV_OK);
@@ -1551,15 +1646,32 @@ dwarf_die_abbrev_children_flag(Dwarf_Die die,Dwarf_Half *ab_has_child)
 
 /* Helper function for finding form class. */
 static enum Dwarf_Form_Class
-dw_get_special_offset(Dwarf_Half attrnum)
+dw_get_special_offset(Dwarf_Half attrnum,
+    Dwarf_Half dwversion)
 {
     switch (attrnum) {
     case DW_AT_stmt_list:
         return DW_FORM_CLASS_LINEPTR;
-    case DW_AT_macro_info:
+    case DW_AT_macro_info: /* DWARF2-DWARF4 */
         return DW_FORM_CLASS_MACPTR;
-    case DW_AT_ranges:
-        return DW_FORM_CLASS_RANGELISTPTR;
+    case DW_AT_start_scope:
+    case DW_AT_ranges: {
+        if (dwversion <= 4) {
+            return DW_FORM_CLASS_RANGELISTPTR;
+        }
+        return DW_FORM_CLASS_RNGLIST;
+        }
+    case DW_AT_rnglists_base: /* DWARF5 */
+        return DW_FORM_CLASS_RNGLISTSPTR;
+    case DW_AT_macros:        /* DWARF5 */
+        return DW_FORM_CLASS_MACROPTR;
+    case DW_AT_loclists_base: /* DWARF5 */
+        return DW_FORM_CLASS_LOCLISTSPTR;
+    case DW_AT_addr_base:     /* DWARF5 */
+        return DW_FORM_CLASS_ADDRPTR;
+    case DW_AT_str_offsets_base: /* DWARF5 */
+        return DW_FORM_CLASS_STROFFSETSPTR;
+
     case DW_AT_location:
     case DW_AT_string_length:
     case DW_AT_return_addr:
@@ -1568,8 +1680,12 @@ dw_get_special_offset(Dwarf_Half attrnum)
     case DW_AT_segment:
     case DW_AT_static_link:
     case DW_AT_use_location:
-    case DW_AT_vtable_elem_location:
-        return DW_FORM_CLASS_LOCLISTPTR;
+    case DW_AT_vtable_elem_location: {
+        if (dwversion <= 4) {
+            return DW_FORM_CLASS_LOCLISTPTR;
+        }
+        return DW_FORM_CLASS_LOCLIST;
+        }
     case DW_AT_sibling:
     case DW_AT_byte_size :
     case DW_AT_bit_offset :
@@ -1617,13 +1733,13 @@ dwarf_get_form_class(
     Dwarf_Half form)
 {
     switch (form) {
-    case  DW_FORM_addr: return DW_FORM_CLASS_ADDRESS;
-
+    case  DW_FORM_addr:  return DW_FORM_CLASS_ADDRESS;
     case  DW_FORM_data2:  return DW_FORM_CLASS_CONSTANT;
 
     case  DW_FORM_data4:
         if (dwversion <= 3 && offset_size == 4) {
-            enum Dwarf_Form_Class class = dw_get_special_offset(attrnum);
+            enum Dwarf_Form_Class class = dw_get_special_offset(attrnum,
+                dwversion);
             if (class != DW_FORM_CLASS_UNKNOWN) {
                 return class;
             }
@@ -1631,16 +1747,17 @@ dwarf_get_form_class(
         return DW_FORM_CLASS_CONSTANT;
     case  DW_FORM_data8:
         if (dwversion <= 3 && offset_size == 8) {
-            enum Dwarf_Form_Class class = dw_get_special_offset(attrnum);
+            enum Dwarf_Form_Class class = dw_get_special_offset(attrnum,
+                dwversion);
             if (class != DW_FORM_CLASS_UNKNOWN) {
                 return class;
             }
         }
         return DW_FORM_CLASS_CONSTANT;
-
     case  DW_FORM_sec_offset:
         {
-            enum Dwarf_Form_Class class = dw_get_special_offset(attrnum);
+            enum Dwarf_Form_Class class = dw_get_special_offset(attrnum,
+                dwversion);
             if (class != DW_FORM_CLASS_UNKNOWN) {
                 return class;
             }
@@ -1656,6 +1773,7 @@ dwarf_get_form_class(
     case  DW_FORM_block2: return DW_FORM_CLASS_BLOCK;
     case  DW_FORM_block4: return DW_FORM_CLASS_BLOCK;
 
+    case  DW_FORM_data16:  return DW_FORM_CLASS_CONSTANT;
     case  DW_FORM_data1:  return DW_FORM_CLASS_CONSTANT;
     case  DW_FORM_sdata:  return DW_FORM_CLASS_CONSTANT;
     case  DW_FORM_udata:  return DW_FORM_CLASS_CONSTANT;
@@ -1675,12 +1793,16 @@ dwarf_get_form_class(
 
     case  DW_FORM_addrx:           return DW_FORM_CLASS_ADDRESS; /* DWARF5 */
     case  DW_FORM_GNU_addr_index:  return DW_FORM_CLASS_ADDRESS;
-    case  DW_FORM_strx:            return DW_FORM_CLASS_STRING; /* DWARF5 */
+    case  DW_FORM_strx:            return DW_FORM_CLASS_STRING;  /* DWARF5 */
     case  DW_FORM_GNU_str_index:   return DW_FORM_CLASS_STRING;
+
+    case  DW_FORM_rnglistx:     return DW_FORM_CLASS_RNGLIST;    /* DWARF5 */
+    case  DW_FORM_loclistx:     return DW_FORM_CLASS_LOCLIST;    /* DWARF5 */
 
     case  DW_FORM_GNU_ref_alt:  return DW_FORM_CLASS_REFERENCE;
     case  DW_FORM_GNU_strp_alt: return DW_FORM_CLASS_STRING;
-    case  DW_FORM_strp_sup:     return DW_FORM_CLASS_STRING; /* DWARF5 */
+    case  DW_FORM_strp_sup:     return DW_FORM_CLASS_STRING;    /* DWARF5 */
+    case  DW_FORM_implicit_const: return DW_FORM_CLASS_CONSTANT; /* DWARF5 */
 
     case  DW_FORM_indirect:
     default:
@@ -1766,7 +1888,3 @@ _dwarf_calculate_abbrev_section_end_ptr(Dwarf_CU_Context context)
     abbrev_end = abbrev_start + sec->dss_size;
     return abbrev_end;
 }
-
-
-
-

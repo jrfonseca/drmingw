@@ -48,17 +48,20 @@ typedef struct Dwarf_Global_Context_s *Dwarf_Global_Context;
 */
 struct Dwarf_Global_Context_s {
 
-    /*  Length in .debug_pubnames (etc) of a set of names for a
-        compilation-unit. Dwarf_Word pu_length; The value is not made
-        available outside libdwarf and not used inside, so no need to
-        record it. */
-
     /*  For this context, size of a length. 4 or 8 */
     unsigned char pu_length_size;
+
+    /* Size of the pubnames data for the CU */
+    unsigned char pu_length;
 
     /*  For this CU, size of the extension 0 except for dwarf2 extension
         64bit, in which case is 4. */
     unsigned char pu_extension_size;
+
+    Dwarf_Half pu_version; /* 2,3, or 4 */
+
+    /*  offset in pubnames of the  pu header. */
+    Dwarf_Off      pu_pub_offset;
 
     /*  Offset into .debug_info of the compilation-unit header (not DIE)
         for this set of pubnames. */
@@ -83,6 +86,7 @@ struct Dwarf_Global_s {
 
     /* Context for this pubname. */
     Dwarf_Global_Context gl_context;
+
 };
 
 int _dwarf_internal_get_pubnames_like_data(Dwarf_Debug dbg,
@@ -114,4 +118,3 @@ void _dwarf_fix_up_offset_irix(Dwarf_Debug dbg,
 #else  /* ! __sgi */
 #define FIX_UP_OFFSET_IRIX_BUG(ldbg,var,name)
 #endif  /* __sgi */
-

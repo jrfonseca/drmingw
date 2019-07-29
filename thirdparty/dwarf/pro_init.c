@@ -1,29 +1,31 @@
 /*
-
   Copyright (C) 2000,2004 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright 2002-2010 Sun Microsystems, Inc. All rights reserved.
-  Portions Copyright 2008-2014 David Anderson, Inc. All rights reserved.
+  Portions Copyright 2008-2017 David Anderson, Inc. All rights reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License
-  as published by the Free Software Foundation.
+  This program is free software; you can redistribute it
+  and/or modify it under the terms of version 2.1 of the
+  GNU Lesser General Public License as published by the Free
+  Software Foundation.
 
-  This program is distributed in the hope that it would be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  This program is distributed in the hope that it would be
+  useful, but WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  PURPOSE.
 
-  Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement
-  or the like.  Any license provided herein, whether implied or
-  otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with
-  other software, or any other product whatsoever.
+  Further, this software is distributed without any warranty
+  that it is free of the rightful claim of any third person
+  regarding infringement or the like.  Any license provided
+  herein, whether implied or otherwise, applies only to this
+  software file.  Patent licenses, if any, provided herein
+  do not apply to combinations of this program with other
+  software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this program; if not, write the Free Software
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
-  USA.
+  You should have received a copy of the GNU Lesser General
+  Public License along with this program; if not, write the
+  Free Software Foundation, Inc., 51 Franklin Street - Fifth
+  Floor, Boston MA 02110-1301, USA.
 
 */
 
@@ -31,11 +33,26 @@
 #include "libdwarfdefs.h"
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
+#ifdef HAVE_STDINT_H
+#include <stdint.h> /* For uintptr_t */
+#endif /* HAVE_STDINT_H */
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif /* HAVE_INTTYPES_H */
 #include "pro_incl.h"
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "pro_opaque.h"
+#include "pro_error.h"
+#include "pro_encode_nm.h"
+#include "pro_alloc.h"
 #include "pro_line.h"
+#include "memcpy_swap.h"
 #include "pro_section.h"        /* for MAGIC_SECT_NO */
 #include "pro_reloc_symbolic.h"
 #include "pro_reloc_stream.h"
+#include "dwarf_tsearch.h"
 
 #define IS_64BITPTR(dbg) ((dbg)->de_flags & DW_DLC_POINTER64 ? 1 : 0)
 #define ISA_IA64(dbg) ((dbg)->de_flags & DW_DLC_ISA_IA64 ? 1 : 0)
@@ -92,8 +109,6 @@ static int common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags,
     const char *abiname, const char *dwarf_version,
     int *error_ret);
 
-void *_dwarf_memcpy_swap_bytes(void *s1, const void *s2, size_t len);
-
 /*  This function sets up a new dwarf producing region.
     flags: Indicates type of access method, one of DW_DLC* macros
     func(): Used to create a new object file, a call back function
@@ -103,6 +118,12 @@ void *_dwarf_memcpy_swap_bytes(void *s1, const void *s2, size_t len);
     /*  We want the following to have an elf section number that matches
         'nothing' */
 static struct Dwarf_P_Section_Data_s init_sect = {
+    MAGIC_SECT_NO, 0, 0, 0, 0
+};
+static struct Dwarf_P_Section_Data_s init_sect_debug_str = {
+    MAGIC_SECT_NO, 0, 0, 0, 0
+};
+static struct Dwarf_P_Section_Data_s init_sect_debug_line_str = {
     MAGIC_SECT_NO, 0, 0, 0, 0
 };
 
@@ -161,10 +182,23 @@ dwarf_producer_init(Dwarf_Unsigned flags,
     dbg->de_user_data = user_data;
     res = common_init(dbg, flags,isa_name,dwarf_version,&err_ret);
     if (res != DW_DLV_OK) {
-        DWARF_P_DBG_ERROR(dbg, err_ret,
-            DW_DLV_ERROR);
+        DWARF_P_DBG_ERROR(dbg, err_ret, DW_DLV_ERROR);
     }
     *dbg_returned = dbg;
+    return DW_DLV_OK;
+}
+
+int
+dwarf_pro_set_default_string_form(Dwarf_P_Debug dbg,
+   int form,
+   UNUSEDARG Dwarf_Error * error)
+{
+    if (form != DW_FORM_string &&
+        form != DW_FORM_strp) {
+        _dwarf_p_error(dbg, error, DW_DLE_BAD_STRING_FORM);
+        return DW_DLV_ERROR;
+    }
+    dbg->de_debug_default_str_form = form;
     return DW_DLV_OK;
 }
 
@@ -174,6 +208,9 @@ set_reloc_numbers(Dwarf_P_Debug dbg,
     const char *abiname)
 {
     struct isa_relocs_s *isap = 0;
+    if (!abiname) {
+        return DW_DLV_NO_ENTRY;
+    }
     for(isap = &isa_relocs[0];  ;isap++) {
         if (!isap->name_) {
             /* No more names known. Never found the one we wanted. */
@@ -199,6 +236,45 @@ set_reloc_numbers(Dwarf_P_Debug dbg,
     /* UNREACHED */
 }
 
+/*  This is the Daniel J Bernstein hash function
+    originally posted to Usenet news.
+    http://en.wikipedia.org/wiki/List_of_hash_functions or
+    http://stackoverflow.com/questions/10696223/reason-for-5381-number-in-djb-hash-function).
+    See Also DWARF5 Section 7.33
+*/
+static DW_TSHASHTYPE
+_dwarf_string_hashfunc(const char *str)
+{
+    DW_TSHASHTYPE up = 0;
+    DW_TSHASHTYPE hash = 5381;
+    int c  = 0;
+
+    /*  Extra parens suppress warning about assign in test. */
+    while ((c = *str++)) {
+        hash = hash * 33 + c ;
+    }
+    up = hash;
+    return up;
+}
+static DW_TSHASHTYPE
+key_simple_string_hashfunc(const void *keyp)
+{
+    struct Dwarf_P_debug_str_entry_s* mt =
+        (struct Dwarf_P_debug_str_entry_s*) keyp;
+    const char *str = 0;
+
+    if (mt->dse_has_table_offset) {
+        /*  ASSERT: mt->dse_dbg->de_debug_str->ds_data not zero. */
+        str = (const char *)mt->dse_dbg->de_debug_str->ds_data +
+            mt->dse_table_offset;
+    } else {
+        /*  ASSERT: dse_name != 0 */
+        str = (const char *)mt->dse_name;
+    }
+    return _dwarf_string_hashfunc(str);
+}
+
+
 static int
 common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
     const char *dwarf_version,
@@ -210,9 +286,10 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
     dbg->de_version_magic_number = PRO_VERSION_MAGIC;
     dbg->de_n_debug_sect = 0;
     dbg->de_debug_sects = &init_sect;
+    dbg->de_debug_str = &init_sect_debug_str;
+    dbg->de_debug_line_str = &init_sect_debug_line_str;
     dbg->de_current_active_section = &init_sect;
     dbg->de_flags = flags;
-    _dwarf_init_default_line_header_vals(dbg);
 
 
     if(dbg->de_flags & DW_DLC_POINTER64) {
@@ -222,14 +299,16 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
         dbg->de_pointer_size = 4;
     }
     if(dbg->de_flags & DW_DLC_OFFSET64) {
+        /* Standard DWARF 64bit offset, length field 12 bytes */
         dbg->de_offset_size = 8;
-        dbg->de_64bit_extension = 0;
+        dbg->de_64bit_extension = 1;
     } else {
         if(dbg->de_flags & DW_DLC_IRIX_OFFSET64) {
             dbg->de_offset_size = 8;
-            dbg->de_64bit_extension = 1;
+            dbg->de_64bit_extension = 0;
         } else {
-            /* offset size 4 assumed. */
+            /*  offset size 4 assumed, it is
+                by far the most frequent case.. */
             dbg->de_offset_size = 4;
             dbg->de_64bit_extension = 0;
         }
@@ -249,35 +328,49 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
         *err_ret = DW_DLE_BAD_ABINAME;
         return DW_DLV_ERROR;
     }
-    if(!dwarf_version) {
-        dbg->de_output_version = 2;
-    } else if (!strcmp(dwarf_version,"V2")) {
-        dbg->de_output_version = 2;
-    } else if (!strcmp(dwarf_version,"V3")) {
-        dbg->de_output_version = 3;
-    } else if (!strcmp(dwarf_version,"V4")) {
-        dbg->de_output_version = 4;
-    } else if (!strcmp(dwarf_version,"V5")) {
-        dbg->de_output_version = 5;
-    } else {
-        /* The default. */
-        dbg->de_output_version = 2;
+    dbg->de_output_version = 2;
+    if(dwarf_version) {
+        if (!strcmp(dwarf_version,"V2")) {
+            dbg->de_output_version = 2;
+        } else if (!strcmp(dwarf_version,"V3")) {
+            dbg->de_output_version = 3;
+        } else if (!strcmp(dwarf_version,"V4")) {
+            dbg->de_output_version = 4;
+        } else if (!strcmp(dwarf_version,"V5")) {
+            dbg->de_output_version = 5;
+        } else {
+            *err_ret = DW_DLE_VERSION_STAMP_ERROR;
+            return DW_DLV_ERROR;
+        }
     }
-
     if (flags & DW_DLC_SYMBOLIC_RELOCATIONS) {
         dbg->de_relocation_record_size =
             sizeof(struct Dwarf_Relocation_Data_s);
     } else {
         /*  This is only going to work when the HOST == TARGET,
             surely? */
+#ifdef DWARF_WITH_LIBELF
 #if HAVE_ELF64_GETEHDR
         dbg->de_relocation_record_size =
             ((dbg->de_pointer_size == 8)? sizeof(REL64) : sizeof(REL32));
 #else
         dbg->de_relocation_record_size = sizeof(REL32);
 #endif
+#else /* DWARF_WITH_LIBELF */
+        *err_ret = DW_DLE_NO_STREAM_RELOC_SUPPORT;
+        return DW_DLV_ERROR;
+#endif /* DWARF_WITH_LIBELF */
+
 
     }
+    _dwarf_init_default_line_header_vals(dbg);
+
+    /* For .debug_str creation. */
+    dwarf_initialize_search_hash(&dbg->de_debug_str_hashtab,
+        key_simple_string_hashfunc,0);
+    dbg->de_debug_default_str_form = DW_FORM_string;
+    dwarf_initialize_search_hash(&dbg->de_debug_line_str_hashtab,
+        key_simple_string_hashfunc,0);
 
     /* FIXME: conditional on the DWARF version target,
         dbg->de_output_version. */
@@ -290,18 +383,27 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
     }
 
     if (flags & DW_DLC_SYMBOLIC_RELOCATIONS) {
-        dbg->de_reloc_name = _dwarf_pro_reloc_name_symbolic;
-        dbg->de_reloc_pair = _dwarf_pro_reloc_length_symbolic;
+        dbg->de_relocate_by_name_symbol =
+            _dwarf_pro_reloc_name_symbolic;
+        dbg->de_relocate_pair_by_symbol =
+            _dwarf_pro_reloc_length_symbolic;
         dbg->de_transform_relocs_to_disk =
             _dwarf_symbolic_relocs_to_disk;
     } else {
+#ifdef DWARF_WITH_LIBELF
         if (IS_64BITPTR(dbg)) {
-            dbg->de_reloc_name = _dwarf_pro_reloc_name_stream64;
+            dbg->de_relocate_by_name_symbol =
+                _dwarf_pro_reloc_name_stream64;
         } else {
-            dbg->de_reloc_name = _dwarf_pro_reloc_name_stream32;
+            dbg->de_relocate_by_name_symbol =
+                _dwarf_pro_reloc_name_stream32;
         }
-        dbg->de_reloc_pair = 0;
+        dbg->de_relocate_pair_by_symbol = 0;
         dbg->de_transform_relocs_to_disk = _dwarf_stream_relocs_to_disk;
+#else /* DWARF_WITH_LIBELF */
+        *err_ret = DW_DLE_NO_STREAM_RELOC_SUPPORT;
+        return DW_DLV_ERROR;
+#endif /* DWARF_WITH_LIBELF */
     }
     for (k = 0; k < NUM_DEBUG_SECTIONS; ++k) {
 
@@ -311,7 +413,7 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
     }
     /* First assume host, target same endianness */
     dbg->de_same_endian = 1;
-    dbg->de_copy_word = memcpy;
+    dbg->de_copy_word =  _dwarf_memcpy_noswap_bytes;
 #ifdef WORDS_BIGENDIAN
     /* host is big endian, so what endian is target? */
     if (flags & DW_DLC_TARGET_LITTLEENDIAN) {

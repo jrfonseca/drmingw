@@ -28,10 +28,13 @@
 
 
 void _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error,
-    Dwarf_Sword errval);
+    Dwarf_Signed errval);
 
+#define DE_STANDARD 0 /* Normal alloc attached to dbg. */
+#define DE_STATIC 1   /* Using global static var */
+#define DE_MALLOC 2   /* Using malloc space */
 struct Dwarf_Error_s {
-    Dwarf_Sword er_errval;
+    Dwarf_Signed er_errval;
 
     /*  If non-zero the Dwarf_Error_s struct is not malloc'd.
         To aid when malloc returns NULL.
@@ -49,5 +52,3 @@ struct Dwarf_Error_s {
 };
 
 extern struct Dwarf_Error_s _dwarf_failsafe_error;
-
-

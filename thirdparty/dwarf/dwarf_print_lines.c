@@ -1,6 +1,6 @@
 /*
   Copyright (C) 2000,2002,2004,2005,2006 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2013 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2018 David Anderson. All Rights Reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
@@ -26,10 +26,14 @@
 */
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
+#include "dwarf_incl.h"
+#include "dwarf_alloc.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
 #include "dwarf_line.h"
 
 #define PRINTING_DETAILS 1
@@ -167,8 +171,9 @@ print_line_detail(
 }
 
 
-#include "dwarf_line_table_reader_common.c"
+#include "dwarf_line_table_reader_common.h"
 
+/* Not yet implemented, at least not usefully. FIXME */
 void
 _dwarf_print_line_context_record(UNUSEDARG Dwarf_Debug dbg,
     UNUSEDARG Dwarf_Line_Context line_context)
@@ -204,8 +209,8 @@ _dwarf_internal_printlines(Dwarf_Die die,
         attribute. */
     Dwarf_Unsigned line_offset = 0;
 
-    Dwarf_Sword i=0;
-    Dwarf_Word u=0;
+    Dwarf_Signed i=0;
+    Dwarf_Unsigned u=0;
 
     /*  These variables are used to decode leb128 numbers. Leb128_num
         holds the decoded number, and leb128_length is its length in
@@ -431,16 +436,22 @@ _dwarf_internal_printlines(Dwarf_Die die,
             Dwarf_Unsigned tlm2 = 0;
             Dwarf_Unsigned di = 0;
             Dwarf_Unsigned fl = 0;
+            unsigned filenum = 0;
 
             fe = fe2;
             tlm2 = fe->fi_time_last_mod;
             di = fe->fi_dir_index;
             fl = fe->fi_file_length;
+            filenum = fiu+1; /* Assuming DWARF2,3,4 */
+            if (line_context->lc_version_number == DW_LINE_VERSION5) {
+                /* index starts 0 for DWARF5, show 0 base. */
+                filenum = fiu;
+            }
 
             dwarf_printf(dbg,
                 "  file[%u]  %s (file-number: %u) \n",
                 (unsigned) fiu, (char *) fe->fi_file_name,
-                (unsigned)(fiu+1));
+                (unsigned)(filenum));
             dwarf_printf(dbg,
                 "    dir index %d\n", (int) di);
             {
@@ -454,6 +465,16 @@ _dwarf_internal_printlines(Dwarf_Die die,
             dwarf_printf(dbg,
                 "    file length %ld 0x%lx\n",
                 (long) fl, (unsigned long) fl);
+            if (fe->fi_md5_present) {
+                char *c = (char *)&fe->fi_md5_value;
+                char *end = c+sizeof(fe->fi_md5_value);
+                dwarf_printf(dbg, "    file md5 value 0x");
+                while(c < end) {
+                    dwarf_printf(dbg,"%02x",0xff&*c);
+                    ++c;
+                }
+                dwarf_printf(dbg,"\n");
+            }
         }
     }
 
@@ -596,9 +617,6 @@ dwarf_print_lines(Dwarf_Die die, Dwarf_Error * error,int *error_count)
     int res = _dwarf_internal_printlines(die, error,
         error_count,
         only_line_header);
-    if (res != DW_DLV_OK) {
-        return res;
-    }
     return res;
 }
 int
@@ -610,9 +628,6 @@ _dwarf_print_lines(Dwarf_Die die, Dwarf_Error * error)
         &err_count,
         only_line_header);
     /* No way to get error count back in this interface */
-    if (res != DW_DLV_OK) {
-        return res;
-    }
     return res;
 }
 
@@ -630,5 +645,3 @@ dwarf_check_lineheader(Dwarf_Die die, int *err_count_out)
         only_line_header);
     return;
 }
-
-

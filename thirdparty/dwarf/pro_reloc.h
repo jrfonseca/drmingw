@@ -24,11 +24,8 @@
 
 */
 
-
-
-
-int _dwarf_pro_pre_alloc_n_reloc_slots(Dwarf_P_Debug dbg,
-    int rel_sec_index,
+int _dwarf_pro_pre_alloc_specific_reloc_slots(Dwarf_P_Debug dbg,
+    Dwarf_P_Per_Reloc_Sect p_reloc,
     Dwarf_Unsigned newslots);
 
 int _dwarf_pro_alloc_reloc_slots(Dwarf_P_Debug dbg, int rel_sec_index);

@@ -28,8 +28,9 @@
 /* Reads DWARF3 .debug_pubtypes section. */
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <stdio.h>
+#include "dwarf_incl.h"
+#include "dwarf_error.h"
 #include "dwarf_types.h"
 #include "dwarf_global.h"
 

@@ -8,6 +8,16 @@ To build  both, type
         ./configure --enable-shared 
         make
 
+April 16, 2017: Some people have had build problems, getting
+errors like:
+"dwarf_elf_access.c:238:21: warning: assignment makes 
+pointer from integer without a cast [enabled by default]
+     if ((ehdr_ident = elf_getident(elf, NULL)) == NULL) {"
+That suggests that the libelf headers needed are missing.
+On Ubuntu the command 'sudo apt-get install libelf-dev'
+should solve this problem.
+
+
 January 30, 2013: libdwarf.h is no longer in the distribution,
 but libdwarf.h.in is identical to libdwarf.h.  'configure'
 copies libdwarf.h.in to libdwarf.h and whether libelf.h defines

@@ -1,6 +1,5 @@
 /*
-
-  Copyright (C) 2010-2012 David Anderson. All Rights Reserved.
+  Copyright (C) 2010-2018 David Anderson. All Rights Reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
@@ -225,4 +224,3 @@ dwarf_harmless_cleanout(struct Dwarf_Harmless_s *dhp)
     dhp->dh_errors = 0;
     dhp->dh_maxcount = 0;
 }
-

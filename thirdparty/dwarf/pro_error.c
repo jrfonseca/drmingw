@@ -27,15 +27,19 @@
 
 #include "config.h"
 #include "libdwarfdefs.h"
-#ifdef HAVE_ELF_H
-#include <elf.h>
-#endif
 
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include "pro_incl.h"
+#include <stddef.h>
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "pro_opaque.h"
+#include "pro_error.h"
+#include "pro_alloc.h"
+
 
 extern char *_dwarf_errmsgs[];
 
@@ -53,14 +57,13 @@ extern char *_dwarf_errmsgs[];
 */
 void
 _dwarf_p_error(Dwarf_P_Debug dbg,
-    Dwarf_Error * error, Dwarf_Word errval)
+    Dwarf_Error * error, Dwarf_Unsigned errval)
 {
     Dwarf_Error errptr;
 
     if (errval > DW_DLE_LAST) {
         /*  We do not expect to ever see such an error number,
             DW_DLE_LO_USER is not used. */
-        /*  The 'standard' typedef for Dwarf_Word is "unsigned long". */
         fprintf(stderr,"ERROR VALUE: %lu - %s\n",
             (unsigned long) errval, "this error value is unknown to libdwarf.");
     }
@@ -74,7 +77,7 @@ _dwarf_p_error(Dwarf_P_Debug dbg,
                 "Could not allocate Dwarf_Error structure\n");
             abort();
         }
-        errptr->er_errval = (Dwarf_Sword) errval;
+        errptr->er_errval = (Dwarf_Signed) errval;
         *error = errptr;
         return;
     }
@@ -87,7 +90,7 @@ _dwarf_p_error(Dwarf_P_Debug dbg,
                 "Could not allocate Dwarf_Error structure\n");
             abort();
         }
-        errptr->er_errval = (Dwarf_Sword) errval;
+        errptr->er_errval = (Dwarf_Signed) errval;
         dbg->de_errhand(errptr, dbg->de_errarg);
         return;
     }

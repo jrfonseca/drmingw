@@ -38,8 +38,11 @@ struct Dwarf_P_Abbrev_s {
     Dwarf_Unsigned abb_idx;   /* index of abbreviation */
     Dwarf_Tag abb_tag; 	      /* tag of die */
     Dwarf_Ubyte abb_children; /* if children are present */
-    Dwarf_ufixed *abb_attrs;  /* holds names of attrs */
-    Dwarf_ufixed *abb_forms;  /* forms of attributes */
+    Dwarf_Unsigned *abb_attrs;  /* holds names of attrs */
+    Dwarf_Unsigned *abb_forms;  /* forms of attributes */
+
+    /* 0 but if DW_FORM_implicit_value is value */
+    Dwarf_Signed *abb_implicits;
     int abb_n_attr;           /* num of attrs = # of forms */
     Dwarf_P_Abbrev abb_next;
 };
@@ -53,7 +56,16 @@ int _dwarf_pro_add_AT_stmt_list(Dwarf_P_Debug dbg,
     Dwarf_P_Die first_die,
     Dwarf_Error * error);
 
+
 int _dwarf_pro_add_AT_macro_info(Dwarf_P_Debug dbg,
     Dwarf_P_Die first_die,
     Dwarf_Unsigned offset,
     Dwarf_Error * error);
+
+int _dwarf_pro_set_string_attr(Dwarf_P_Attribute new_attr,
+    Dwarf_P_Debug dbg,
+    char *name,
+    Dwarf_Error *error);
+
+/* adds an attribute to a die */
+void _dwarf_pro_add_at_to_die(Dwarf_P_Die die, Dwarf_P_Attribute attr);

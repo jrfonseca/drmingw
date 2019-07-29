@@ -35,4 +35,4 @@ struct Dwarf_Error_s * _dwarf_special_no_dbg_error_malloc(void);
 /*  ALLOC_AREA_INDEX_TABLE_MAX is the size of the
     struct ial_s index_into_allocated array in dwarf_alloc.c
 */
-#define ALLOC_AREA_INDEX_TABLE_MAX 62
+#define ALLOC_AREA_INDEX_TABLE_MAX 65

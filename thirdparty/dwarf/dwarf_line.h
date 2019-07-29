@@ -59,13 +59,16 @@ struct Dwarf_File_Entry_s {
 
     /*  Index into the list of directories of the directory in which
         this file exits. */
-    Dwarf_Word fi_dir_index;
+    Dwarf_Unsigned fi_dir_index;
 
     /* Time of last modification of the file. */
     Dwarf_Unsigned fi_time_last_mod;
 
     /* Length in bytes of the file. */
     Dwarf_Unsigned fi_file_length;
+
+    Dwarf_Form_Data16   fi_md5_value;
+    char                fi_md5_present;
 };
 
 /*  Part of two-level line tables support. */
@@ -161,7 +164,10 @@ struct Dwarf_Line_Context_s {
     Dwarf_File_Entry lc_last_entry;
     /*  Count of number of source files for this set of Dwarf_Line
         structures. */
-    Dwarf_Word lc_file_entry_count;
+    Dwarf_Unsigned lc_file_entry_count;
+    /*  Values Easing the process of indexing through lc_file_entries. */
+    Dwarf_Unsigned lc_file_entry_baseindex;
+    Dwarf_Unsigned lc_file_entry_endindex;
 
 
     /*  Points to the portion of .debug_line section that
@@ -170,7 +176,7 @@ struct Dwarf_Line_Context_s {
         An array of pointers to strings.  */
     Dwarf_Small **lc_include_directories;
     /*  Count of the number of included directories. */
-    Dwarf_Word lc_include_directories_count;
+    Dwarf_Unsigned lc_include_directories_count;
 
 
     /*  Points to an array of subprogram entries.
@@ -180,10 +186,10 @@ struct Dwarf_Line_Context_s {
 
     /*  Count of the number of subprogram entries
         With Two level line tables this may be non-zero. */
-    Dwarf_Word lc_subprogs_count;
+    Dwarf_Unsigned lc_subprogs_count;
 
     /*  Count of the number of lines for this cu. */
-    Dwarf_Word lc_line_count;
+    Dwarf_Unsigned lc_line_count;
 
     /*  Points to name of compilation directory.
         That string is in a .debug section so
@@ -217,9 +223,9 @@ struct Dwarf_Line_Context_s {
     but preceded by lr_.  */
 struct Dwarf_Line_Registers_s {
     Dwarf_Addr lr_address;        /* DWARF2 */
-    Dwarf_Word lr_file ;          /* DWARF2 */
-    Dwarf_Word lr_line ;          /* DWARF2 */
-    Dwarf_Word lr_column ;        /* DWARF2 */
+    Dwarf_Unsigned lr_file ;          /* DWARF2 */
+    Dwarf_Unsigned lr_line ;          /* DWARF2 */
+    Dwarf_Unsigned lr_column ;        /* DWARF2 */
     Dwarf_Bool lr_is_stmt;        /* DWARF2 */
     Dwarf_Bool lr_basic_block;    /* DWARF2 */
     Dwarf_Bool lr_end_sequence;   /* DWARF2 */
@@ -232,7 +238,9 @@ struct Dwarf_Line_Registers_s {
     Dwarf_Unsigned lr_subprogram;     /* EXPERIMENTAL */
 };
 typedef struct Dwarf_Line_Registers_s *Dwarf_Line_Registers;
-void _dwarf_set_line_table_regs_default_values(Dwarf_Line_Registers regs,
+void _dwarf_set_line_table_regs_default_values(
+    Dwarf_Line_Registers regs,
+    unsigned lineversion,
     Dwarf_Bool is_stmt);
 
 
@@ -261,13 +269,13 @@ struct Dwarf_Line_s {
                 li_file is a number 1-N, indexing into a conceptual
                 source file table as described in dwarf2/3 spec line
                 table doc. (see Dwarf_File_Entry lc_file_entries; and
-                Dwarf_Word lc_file_entry_count;) */
-            Dwarf_Word li_file;
+                Dwarf_Unsigned lc_file_entry_count;) */
+            Dwarf_Unsigned li_file;
 
             /*  In single-level table is line number in source file. 1-N
                 In logicals table is not used.
                 In actuals table is index into logicals table.  1-N*/
-            Dwarf_Word li_line;
+            Dwarf_Unsigned li_line;
 
             Dwarf_Half li_column; /* source file column number  1-N */
             Dwarf_Small li_isa;   /* New as of DWARF4. */
@@ -389,23 +397,6 @@ int _dwarf_internal_srclines(Dwarf_Die die,
 */
 
 #define MAX_LINE_OP_CODE  255
-
-
-# if 0
-/*  The following structs (Line_Table_File_Entry_s,Dwarf_Line_Context_s)
-    and functions allow refactoring common code into a single
-    reader routine.
-*/
-Not used once Prefix struct folded into line context struct.
-/* There can be zero of more of these needed for 1 line prologue. */
-struct Line_Table_File_Entry_s {
-    Dwarf_Small *lte_filename;
-    Dwarf_Unsigned lte_directory_index;
-    Dwarf_Unsigned lte_last_modification_time;
-    Dwarf_Unsigned lte_length_of_file;
-};
-#endif
-
 
 /* Operand counts per standard operand.
    The initial zero is for DW_LNS_copy.

@@ -27,12 +27,9 @@
 
 /* Definition of sizes of types. Independent of
    target or host, these are. */
-#define sizeof_sbyte(dbg) sizeof(Dwarf_Sbyte)
-#define sizeof_ubyte(dbg) sizeof(Dwarf_Ubyte)
-#define sizeof_uhalf(dbg) sizeof(Dwarf_Half)
+#define sizeof_ubyte(dbg) 1
+#define sizeof_uhalf(dbg) DWARF_HALF_SIZE
 
 /* Computes amount of padding necessary to align n to a k-boundary. */
 /* Important: Assumes n, k both GREATER than zero. */
 #define PADDING(n, k) ( (k)-1 - ((n)-1)%(k) )
-
-

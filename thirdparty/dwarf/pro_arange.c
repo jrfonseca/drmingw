@@ -1,7 +1,7 @@
 /*
 
   Copyright (C) 2000,2004 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright 2011 David Anderson.  All Rights Reserved.
+  Portions Copyright 2011-2019 David Anderson.  All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -33,11 +33,18 @@
 #include <elfaccess.h>
 #endif
 #include "pro_incl.h"
+#include <stddef.h>
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "pro_opaque.h"
+#include "pro_error.h"
+#include "pro_alloc.h"
 #include "pro_arange.h"
 #include "pro_section.h"
 #include "pro_reloc.h"
 
 
+#define SIZEOFT32 4
 
 /*  This function adds another address range
     to the list of address ranges for the
@@ -49,36 +56,63 @@ dwarf_add_arange(Dwarf_P_Debug dbg,
     Dwarf_Unsigned length,
     Dwarf_Signed symbol_index, Dwarf_Error * error)
 {
-    return dwarf_add_arange_b(dbg, begin_address, length, symbol_index,
+    int res = 0;
+
+    res = dwarf_add_arange_b(dbg, begin_address, length, symbol_index,
         /* end_symbol_index */ 0,
         /* offset_from_end_sym */ 0,
         error);
+    if (res != DW_DLV_OK) {
+        return 0;
+    }
+    return 1;
+
 }
 
 /*  This function adds another address range
     to the list of address ranges for the
-    given Dwarf_P_Debug.  It returns 0 on error,
-    and 1 otherwise.  */
+    given Dwarf_P_Debug.  It returns DW_DLV_ERROR on error,
+    and DW_DLV_OK otherwise.  */
 Dwarf_Unsigned
 dwarf_add_arange_b(Dwarf_P_Debug dbg,
     Dwarf_Addr begin_address,
     Dwarf_Unsigned length,
     Dwarf_Unsigned symbol_index,
     Dwarf_Unsigned end_symbol_index,
-    Dwarf_Addr offset_from_end_sym, Dwarf_Error * error)
+    Dwarf_Addr offset_from_end_sym,
+    Dwarf_Error * error)
+{
+    int res = 0;
+
+    res = dwarf_add_arange_c(dbg,begin_address,length,
+        symbol_index, end_symbol_index,
+        offset_from_end_sym,error);
+    if (res != DW_DLV_OK) {
+        return 0;
+    }
+    return 1;
+}
+int
+dwarf_add_arange_c(Dwarf_P_Debug dbg,
+    Dwarf_Addr begin_address,
+    Dwarf_Unsigned length,
+    Dwarf_Unsigned symbol_index,
+    Dwarf_Unsigned end_symbol_index,
+    Dwarf_Addr offset_from_end_sym,
+    Dwarf_Error * error)
 {
     Dwarf_P_Arange arange;
 
     if (dbg == NULL) {
         _dwarf_p_error(NULL, error, DW_DLE_DBG_NULL);
-        return (0);
+        return DW_DLV_ERROR;
     }
 
     arange = (Dwarf_P_Arange)
         _dwarf_p_get_alloc(dbg, sizeof(struct Dwarf_P_Arange_s));
     if (arange == NULL) {
         _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-        return (0);
+        return DW_DLV_ERROR;
     }
 
     arange->ag_begin_address = begin_address;
@@ -94,13 +128,13 @@ dwarf_add_arange_b(Dwarf_P_Debug dbg,
         dbg->de_last_arange = arange;
     }
     dbg->de_arange_count++;
-
-    return (1);
+    return DW_DLV_OK;
 }
 
 
 int
-_dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
+_dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg,
+    Dwarf_Signed *nbufs, Dwarf_Error * error)
 {
     /* Total num of bytes in .debug_aranges section. */
     Dwarf_Unsigned arange_num_bytes = 0;
@@ -125,8 +159,11 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
     const Dwarf_Signed big_zero = 0;
 
     int extension_word_size = dbg->de_64bit_extension ? 4 : 0;
-    int uword_size = dbg->de_offset_size;
+    int offset_size = dbg->de_offset_size;
     int upointer_size = dbg->de_pointer_size;
+
+    /*  All dwarf versions so far use 2 here. */
+    Dwarf_Half version = 2;
     int res = 0;
 
 
@@ -134,9 +171,9 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
 
     /* Size of the .debug_aranges section header. */
     arange_num_bytes = extension_word_size +
-        uword_size +       /* Size of length field.  */
-        sizeof(Dwarf_Half) +    /* Size of version field. */
-        uword_size +            /* Size of .debug_info offset. */
+        offset_size +       /* Size of length field.  */
+        DWARF_HALF_SIZE +    /* Size of version field. */
+        offset_size +            /* Size of .debug_info offset. */
         sizeof(Dwarf_Small) +   /* Size of address size field. */
         sizeof(Dwarf_Small);    /* Size of segment size field. */
 
@@ -154,71 +191,76 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
     GET_CHUNK(dbg, dbg->de_elf_sects[DEBUG_ARANGES],
         arange, (unsigned long) arange_num_bytes, error);
     arange_ptr = arange;
-    if (arange == NULL) {
-        _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-        return (0);
-    }
     if (extension_word_size) {
-        Dwarf_Word x = DISTINGUISHED_VALUE;
-
+        DISTINGUISHED_VALUE_ARRAY(v4);
         WRITE_UNALIGNED(dbg, (void *) arange_ptr,
-            (const void *) &x,
-            sizeof(x), extension_word_size);
+            (const void *)&v4[0] ,
+            SIZEOFT32, extension_word_size);
         arange_ptr += extension_word_size;
     }
 
     /* Write the total length of .debug_aranges section. */
-    adjusted_length = arange_num_bytes - uword_size
+    adjusted_length = arange_num_bytes - offset_size
         - extension_word_size;
     {
         Dwarf_Unsigned du = adjusted_length;
 
         WRITE_UNALIGNED(dbg, (void *) arange_ptr,
-            (const void *) &du, sizeof(du), uword_size);
-        arange_ptr += uword_size;
+            (const void *) &du, sizeof(du), offset_size);
+        arange_ptr += offset_size;
     }
 
     /* Write the version as 2 bytes. */
     {
-        Dwarf_Half verstamp = CURRENT_VERSION_STAMP;
+        Dwarf_Half verstamp = version;
 
         WRITE_UNALIGNED(dbg, (void *) arange_ptr,
             (const void *) &verstamp,
-            sizeof(verstamp), sizeof(Dwarf_Half));
-        arange_ptr += sizeof(Dwarf_Half);
+            sizeof(verstamp), DWARF_HALF_SIZE);
+        arange_ptr += DWARF_HALF_SIZE;
     }
 
 
     /* Write the .debug_info offset.  This is always 0. */
     WRITE_UNALIGNED(dbg, (void *) arange_ptr,
         (const void *) &big_zero,
-        sizeof(big_zero), uword_size);
-    arange_ptr += uword_size;
+        sizeof(big_zero), offset_size);
+    arange_ptr += offset_size;
 
     {
         unsigned long count = dbg->de_arange_count + 1;
         int res2 = 0;
+        Dwarf_P_Per_Reloc_Sect p_reloc =
+            &dbg->de_reloc_sect[DEBUG_ARANGES];
 
-        if (dbg->de_reloc_pair) {
+        if (dbg->de_relocate_pair_by_symbol) {
             count = (3 * dbg->de_arange_count) + 1;
         }
         /*  The following is a small optimization: not needed for
-            correctness */
-        res2 = _dwarf_pro_pre_alloc_n_reloc_slots(dbg,
-            DEBUG_ARANGES, count);
+            correctness.  Does nothing if
+            preloc->pr_first_block is non-null */
+        res2 = _dwarf_pro_pre_alloc_specific_reloc_slots(dbg,
+            p_reloc, count);
         if (res2 != DW_DLV_OK) {
             _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-            return (0);
+            return DW_DLV_ERROR;
         }
     }
 
     /* reloc for .debug_info */
-    res = dbg->de_reloc_name(dbg,
+    res = dbg->de_relocate_by_name_symbol(dbg,
         DEBUG_ARANGES,
         extension_word_size +
-        uword_size + sizeof(Dwarf_Half),
+        offset_size + DWARF_HALF_SIZE,
         dbg->de_sect_name_idx[DEBUG_INFO],
-        dwarf_drt_data_reloc, uword_size);
+        dwarf_drt_data_reloc, offset_size);
+    if (res == DW_DLV_NO_ENTRY) {
+        return res;
+    }
+    if (res == DW_DLV_ERROR) {
+        _dwarf_p_error(dbg, error,DW_DLE_RELOCS_ERROR);
+        return res;
+    }
 
     /* Write the size of addresses. */
     *arange_ptr = dbg->de_pointer_size;
@@ -244,13 +286,13 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
         given_arange = given_arange->ag_next) {
 
         /* Write relocation record for beginning of address range. */
-        res = dbg->de_reloc_name(dbg, DEBUG_ARANGES,
+        res = dbg->de_relocate_by_name_symbol(dbg, DEBUG_ARANGES,
             arange_ptr - arange,       /* r_offset */
             (long) given_arange->ag_symbol_index,
             dwarf_drt_data_reloc, upointer_size);
         if (res != DW_DLV_OK) {
             _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-            return (0);
+            return DW_DLV_ERROR;
         }
 
         /* Copy beginning address of range. */
@@ -260,7 +302,7 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
             upointer_size);
         arange_ptr += upointer_size;
 
-        if (dbg->de_reloc_pair &&
+        if (dbg->de_relocate_pair_by_symbol &&
             given_arange->ag_end_symbol_index != 0 &&
             given_arange->ag_length == 0) {
             /*  symbolic reloc, need reloc for length What if we really
@@ -268,7 +310,8 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
                 'if'. */
             Dwarf_Unsigned val;
 
-            res = dbg->de_reloc_pair(dbg, DEBUG_ARANGES,
+            res = dbg->de_relocate_pair_by_symbol(dbg,
+                DEBUG_ARANGES,
                 arange_ptr - arange,   /* r_offset */
                 given_arange->ag_symbol_index,
                 given_arange->ag_end_symbol_index,
@@ -276,7 +319,7 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
                 upointer_size);
             if (res != DW_DLV_OK) {
                 _dwarf_p_error(dbg, error, DW_DLE_ALLOC_FAIL);
-                return (0);
+                return DW_DLV_ERROR;
             }
 
             /*  arange pre-calc so assem text can do .word end - begin
@@ -306,5 +349,6 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg, Dwarf_Error * error)
     WRITE_UNALIGNED(dbg, (void *) arange_ptr,
         (const void *) &big_zero,
         sizeof(big_zero), upointer_size);
-    return (int) dbg->de_n_debug_sect;
+    *nbufs =  dbg->de_n_debug_sect;
+    return DW_DLV_OK;
 }

@@ -1,7 +1,6 @@
 /*
-
   Copyright (C) 2000-2004 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2009-2011 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2009-2018 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -27,6 +26,8 @@
 
 #include "config.h"
 #include "dwarf_incl.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
 
 int
 dwarf_get_str(Dwarf_Debug dbg,
@@ -70,7 +71,8 @@ dwarf_get_str(Dwarf_Debug dbg,
     begin = (char *)secptr + offset;
     end =   (char *)secptr + dbg->de_debug_str.dss_size;
 
-    res = _dwarf_check_string_valid(dbg,secptr,begin,end,error);
+    res = _dwarf_check_string_valid(dbg,secptr,begin,end,
+        DW_DLE_DEBUG_STR_OFFSET_BAD,error);
     if (res != DW_DLV_OK) {
         return res;
     }
@@ -79,4 +81,3 @@ dwarf_get_str(Dwarf_Debug dbg,
     *returned_str_len = strlen(*string);
     return DW_DLV_OK;
 }
-

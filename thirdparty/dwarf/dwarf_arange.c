@@ -1,7 +1,7 @@
 /*
 
   Copyright (C) 2000-2004 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2012 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2018 David Anderson. All Rights Reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
 
@@ -28,8 +28,11 @@
 */
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <stdio.h>
+#include "dwarf_incl.h"
+#include "dwarf_alloc.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
 #include "dwarf_arange.h"
 #include "dwarf_global.h"  /* for _dwarf_fixup_* */
 
@@ -99,6 +102,10 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
 
 
         header_ptr = arange_ptr;
+        if (header_ptr >= arange_end_section) {
+            _dwarf_error(dbg, error,DW_DLE_ARANGES_HEADER_ERROR);
+            return DW_DLV_ERROR;
+        }
         /* READ_AREA_LENGTH updates arange_ptr for consumed bytes */
         READ_AREA_LENGTH_CK(dbg, area_length, Dwarf_Unsigned,
             arange_ptr, local_length_size,
@@ -107,6 +114,11 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
             arange_end_section);
         /*  arange_ptr has been incremented appropriately past
             the length field by READ_AREA_LENGTH. */
+
+        if (area_length >  dbg->de_debug_aranges.dss_size) {
+            _dwarf_error(dbg, error,DW_DLE_ARANGES_HEADER_ERROR);
+            return DW_DLV_ERROR;
+        }
         if ((area_length + local_length_size + local_extension_size) >
             dbg->de_debug_aranges.dss_size) {
             _dwarf_error(dbg, error, DW_DLE_ARANGES_HEADER_ERROR);
@@ -114,11 +126,26 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
         }
 
         end_this_arange = arange_ptr + area_length;
+        if (end_this_arange > arange_end_section) {
+            _dwarf_error(dbg, error,DW_DLE_ARANGES_HEADER_ERROR);
+            return DW_DLV_ERROR;
+        }
+        if (!area_length) {
+            /*  We read 4 bytes of zero, so area-length zero.
+                Keep scanning. First seen Nov 27, 2018
+                in GNU-cc in windows dll. */
+            continue;
+        }
 
         READ_UNALIGNED_CK(dbg, version, Dwarf_Half,
-            arange_ptr, sizeof(Dwarf_Half),
+            arange_ptr, DWARF_HALF_SIZE,
             error,end_this_arange);
-        arange_ptr += sizeof(Dwarf_Half);
+
+        arange_ptr += DWARF_HALF_SIZE;
+        if (arange_ptr >= end_this_arange) {
+            _dwarf_error(dbg, error, DW_DLE_ARANGES_HEADER_ERROR);
+            return DW_DLV_ERROR;
+        }
         if (version != DW_ARANGES_VERSION2) {
             _dwarf_error(dbg, error, DW_DLE_VERSION_STAMP_ERROR);
             return (DW_DLV_ERROR);
@@ -128,6 +155,10 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
             arange_ptr, local_length_size,
             error,end_this_arange);
         arange_ptr += local_length_size;
+        if (arange_ptr >= end_this_arange) {
+            _dwarf_error(dbg, error, DW_DLE_ARANGES_HEADER_ERROR);
+            return DW_DLV_ERROR;
+        }
         /* This applies to debug_info only, not to debug_types. */
         if (info_offset >= dbg->de_debug_info.dss_size) {
             FIX_UP_OFFSET_IRIX_BUG(dbg, info_offset,
@@ -144,14 +175,17 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
             return DW_DLV_ERROR;
         }
         if (address_size  ==  0) {
-            _dwarf_error(dbg, error, DW_DLE_ADDRESS_SIZE_ERROR);
+            _dwarf_error(dbg, error, DW_DLE_ADDRESS_SIZE_ZERO);
             return DW_DLV_ERROR;
         }
         /*  It is not an error if the sizes differ.
             Unusual, but not an error. */
         arange_ptr = arange_ptr + sizeof(Dwarf_Small);
-        if (arange_ptr > end_this_arange) {
+
+        /*  The following deref means we better check the pointer for off-end. */
+        if (arange_ptr >= end_this_arange) {
             _dwarf_error(dbg, error, DW_DLE_ARANGE_OFFSET_BAD);
+            return DW_DLV_ERROR;
         }
 
         /*  Even DWARF2 had a segment_size field here, meaning
@@ -163,8 +197,11 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
             return (DW_DLV_ERROR);
         }
         arange_ptr = arange_ptr + sizeof(Dwarf_Small);
+
+        /* Code below will check for == end_this_arange as appropriate. */
         if (arange_ptr > end_this_arange) {
             _dwarf_error(dbg, error, DW_DLE_ARANGE_OFFSET_BAD);
+            return (DW_DLV_ERROR);
         }
 
         range_entry_size = 2*address_size + segment_size;
@@ -174,18 +211,24 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
         if (remainder != 0) {
             arange_ptr = arange_ptr + (2 * address_size) - remainder;
         }
-        if (arange_ptr > end_this_arange) {
-            _dwarf_error(dbg, error, DW_DLE_ARANGE_OFFSET_BAD);
-        }
+
         do {
             Dwarf_Addr range_address = 0;
             Dwarf_Unsigned segment_selector = 0;
             Dwarf_Unsigned range_length = 0;
             /*  For segmented address spaces, the first field to
                 read is a segment selector (new in DWARF4).
-                Surprising since the segment_size was always there
+                The version number DID NOT CHANGE from 2, which
+                is quite surprising.
+                Also surprising since the segment_size
+                was always there
                 in the table header! */
-            if ((version  >= 4) && (segment_size != 0)) {
+            /*  We want to test cu_version here but
+                currently with no way to do that.
+                So we just hope no one using
+                segment_selectors, really. FIXME */
+            if (segment_size) {
+                /*  Only applies if cu_version >= 4. */
                 READ_UNALIGNED_CK(dbg, segment_selector, Dwarf_Unsigned,
                     arange_ptr, segment_size,
                     error,end_this_arange);
@@ -254,7 +297,10 @@ dwarf_get_aranges_list(Dwarf_Debug dbg,
             char buf[200];
             Dwarf_Unsigned pad_count = arange_ptr - end_this_arange;
             Dwarf_Unsigned offset = arange_ptr - arange_ptr_start;
-            snprintf(buf,sizeof(buf),"DW_DLE_ARANGE_LENGTH_BAD."
+
+            /* Safe. Length strictly limited. */
+            sprintf(buf,
+                "DW_DLE_ARANGE_LENGTH_BAD."
                 " 0x%" DW_PR_XZEROS DW_PR_DUx
                 " pad bytes at offset 0x%" DW_PR_XZEROS DW_PR_DUx
                 " in .debug_aranges",
@@ -311,6 +357,12 @@ dwarf_get_aranges(Dwarf_Debug dbg,
     }
 
     res = _dwarf_load_section(dbg, &dbg->de_debug_aranges, error);
+    if (res != DW_DLV_OK) {
+        return res;
+    }
+    /*  aranges points in to info, so if info needs expanding
+        we have to load it. */
+    res = _dwarf_load_debug_info(dbg, error);
     if (res != DW_DLV_OK) {
         return res;
     }
@@ -385,12 +437,16 @@ _dwarf_get_aranges_addr_offsets(Dwarf_Debug dbg,
     if (res != DW_DLV_OK) {
         return res;
     }
-
+    /*  aranges points in to info, so if info needs expanding
+        we have to load it. */
+    res = _dwarf_load_debug_info(dbg, error);
+    if (res != DW_DLV_OK) {
+        return res;
+    }
     res = dwarf_get_aranges_list(dbg,&head_chain,&arange_count,error);
     if (res != DW_DLV_OK) {
         return res;
     }
-
     arange_addrs = (Dwarf_Addr *)
         _dwarf_get_alloc(dbg, DW_DLA_ADDR, arange_count);
     if (arange_addrs == NULL) {

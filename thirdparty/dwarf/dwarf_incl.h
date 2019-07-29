@@ -31,31 +31,22 @@
 #define DWARF_INCL_H
 #if (!defined(HAVE_RAW_LIBELF_OK) && defined(HAVE_LIBELF_OFF64_OK) )
 /* At a certain point libelf.h requires _GNU_SOURCE.
-   here we assume the criteria in configure determine that
+   here we assume the criteria in configure determined that
    usefully.
 */
 #define _GNU_SOURCE 1
 #endif
 
-#ifdef HAVE_STDAFX_H /* Windows specific. */
+/* Windows specific header files */
+#if defined(_WIN32) && defined(HAVE_STDAFX_H)
 #include "stdafx.h"
 #endif /* HAVE_STDAFX_H */
 
 #include "libdwarfdefs.h"
-#include <string.h>
-
-#ifdef HAVE_ELF_H
-#include <elf.h>
-#endif
-
-#include <limits.h>
-#include <dwarf.h>
-#include <libdwarf.h>
-
+#include <string.h>  /* strcpy() strlen() */
+#include <stddef.h>
+#include "dwarf.h"
+#include "libdwarf.h"
 #include "dwarf_base_types.h"
-#include "dwarf_alloc.h"
-#include "dwarf_xu_index.h"
 #include "dwarf_opaque.h"
-#include "dwarf_error.h"
-#include "dwarf_util.h"
 #endif /* DWARF_INCL_H */

@@ -1,6 +1,6 @@
 /*
 
-  Copyright (C) 2014-2014 David Anderson. All Rights Reserved.
+  Copyright (C) 2014-2019 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -25,9 +25,13 @@
 */
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "dwarf_incl.h"
+#include "dwarf_alloc.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
+#include "memcpy_swap.h"
 #include "dwarf_gdbindex.h"
 
 #define TRUE 1
@@ -60,7 +64,7 @@
 
 
 struct gi_fileheader_s {
-    gdbindex_offset_type headerval[6];
+    char gfs [4][6];
 };
 
 struct dwarf_64bitpair {
@@ -107,13 +111,13 @@ set_base(Dwarf_Debug dbg,
         }
         /* entry length includes pad. */
         hdr->dg_entry_length = 2*sizeof(gdbindex_64) +
-            sizeof(gdbindex_offset_type);
+            DWARF_32BIT_SIZE;
         count = end - start;
         count = count / hdr->dg_entry_length;
         hdr->dg_count = count;
         /*  The dg_fieldlen is a fake, the fields are not
             all the same length. */
-        hdr->dg_fieldlen = sizeof(gdbindex_offset_type);
+        hdr->dg_fieldlen = DWARF_32BIT_SIZE;
         hdr->dg_type = type;
     }
     return DW_DLV_OK;
@@ -148,7 +152,8 @@ dwarf_gdbindex_header(Dwarf_Debug dbg,
         }
     }
 
-    if (dbg->de_debug_gdbindex.dss_size < sizeof(struct gi_fileheader_s) ) {
+    if (dbg->de_debug_gdbindex.dss_size <
+        sizeof(struct gi_fileheader_s) ) {
         _dwarf_error(dbg, error, DW_DLE_ERRONEOUS_GDB_INDEX_SECTION);
         return (DW_DLV_ERROR);
     }
@@ -165,22 +170,22 @@ dwarf_gdbindex_header(Dwarf_Debug dbg,
     indexptr->gi_section_length = dbg->de_debug_gdbindex.dss_size;
     READ_GDBINDEX(indexptr->gi_version ,Dwarf_Unsigned,
         dbg->de_debug_gdbindex.dss_data,
-        sizeof(gdbindex_offset_type));
+        DWARF_32BIT_SIZE);
     READ_GDBINDEX(indexptr->gi_cu_list_offset ,Dwarf_Unsigned,
-        dbg->de_debug_gdbindex.dss_data + sizeof(gdbindex_offset_type),
-        sizeof(gdbindex_offset_type));
+        dbg->de_debug_gdbindex.dss_data + DWARF_32BIT_SIZE,
+        DWARF_32BIT_SIZE);
     READ_GDBINDEX(indexptr->gi_types_cu_list_offset ,Dwarf_Unsigned,
-        dbg->de_debug_gdbindex.dss_data + 2*sizeof(gdbindex_offset_type),
-        sizeof(gdbindex_offset_type));
+        dbg->de_debug_gdbindex.dss_data + 2*DWARF_32BIT_SIZE,
+        DWARF_32BIT_SIZE);
     READ_GDBINDEX(indexptr->gi_address_area_offset ,Dwarf_Unsigned,
-        dbg->de_debug_gdbindex.dss_data + 3*sizeof(gdbindex_offset_type),
-        sizeof(gdbindex_offset_type));
+        dbg->de_debug_gdbindex.dss_data + 3*DWARF_32BIT_SIZE,
+        DWARF_32BIT_SIZE);
     READ_GDBINDEX(indexptr->gi_symbol_table_offset ,Dwarf_Unsigned,
-        dbg->de_debug_gdbindex.dss_data + 4*sizeof(gdbindex_offset_type),
-        sizeof(gdbindex_offset_type));
+        dbg->de_debug_gdbindex.dss_data + 4*DWARF_32BIT_SIZE,
+        DWARF_32BIT_SIZE);
     READ_GDBINDEX(indexptr->gi_constant_pool_offset ,Dwarf_Unsigned,
-        dbg->de_debug_gdbindex.dss_data + 5*sizeof(gdbindex_offset_type),
-        sizeof(gdbindex_offset_type));
+        dbg->de_debug_gdbindex.dss_data + 5*DWARF_32BIT_SIZE,
+        DWARF_32BIT_SIZE);
 
     res = set_base(dbg,&indexptr->gi_culisthdr,
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_cu_list_offset,
@@ -188,37 +193,51 @@ dwarf_gdbindex_header(Dwarf_Debug dbg,
         2*sizeof(gdbindex_64),
         sizeof(gdbindex_64),
         git_std,error);
+    if (res == DW_DLV_ERROR) {
+        return res;
+    }
     res = set_base(dbg,&indexptr->gi_typesculisthdr,
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_types_cu_list_offset,
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_address_area_offset,
         3*sizeof(gdbindex_64),
         sizeof(gdbindex_64),
         git_std,error);
+    if (res == DW_DLV_ERROR) {
+        return res;
+    }
     res = set_base(dbg,&indexptr->gi_addressareahdr,
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_address_area_offset,
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_symbol_table_offset,
         3*sizeof(gdbindex_64),
         sizeof(gdbindex_64),
         git_address,error);
+    if (res == DW_DLV_ERROR) {
+        return res;
+    }
     res = set_base(dbg,&indexptr->gi_symboltablehdr,
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_symbol_table_offset,
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_constant_pool_offset,
-        2*sizeof(gdbindex_offset_type),
-        sizeof(gdbindex_offset_type),
+        2*DWARF_32BIT_SIZE,
+        DWARF_32BIT_SIZE,
         git_std,error);
+    if (res == DW_DLV_ERROR) {
+        return res;
+    }
     res = set_base(dbg,&indexptr->gi_cuvectorhdr,
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_constant_pool_offset,
         /*  There is no real single vector size.
             but we'll use the entire rest as if there was. */
         dbg->de_debug_gdbindex.dss_data + indexptr->gi_section_length,
-        sizeof(gdbindex_offset_type),
-        sizeof(gdbindex_offset_type),
+        DWARF_32BIT_SIZE,
+        DWARF_32BIT_SIZE,
         git_cuvec,error);
+    if (res == DW_DLV_ERROR) {
+        return res;
+    }
 
     /* Really just pointing to constant pool area. */
     indexptr->gi_string_pool = dbg->de_debug_gdbindex.dss_data +
         indexptr->gi_constant_pool_offset;
-
     *gdbindexptr          = indexptr;
     *version              = indexptr->gi_version;
     *cu_list_offset       = indexptr->gi_cu_list_offset;
@@ -229,7 +248,6 @@ dwarf_gdbindex_header(Dwarf_Debug dbg,
     *section_size         = indexptr->gi_section_length;
     *unused_reserved = 0;
     *section_name  =        dbg->de_debug_gdbindex.dss_name;
-
     return DW_DLV_OK;
 
 
@@ -364,7 +382,7 @@ dwarf_gdbindex_addressarea_entry(
         sizeof(gdbindex_64));
     READ_GDBINDEX(cuindex ,Dwarf_Unsigned,
         base+ (2*sizeof(gdbindex_64)),
-        sizeof(gdbindex_offset_type));
+        DWARF_32BIT_SIZE);
     *low_address = lowaddr;
     *high_address = highaddr;
     *cu_index = cuindex;

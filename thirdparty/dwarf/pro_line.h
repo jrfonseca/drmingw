@@ -2,6 +2,7 @@
 
   Copyright (C) 2000,2004 Silicon Graphics, Inc.  All Rights Reserved.
   Portions Copyright 2007-2010 Sun Microsystems, Inc. All rights reserved.
+  Portions Copyright 2017  David Anderson  All rights reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -45,22 +46,26 @@
 #define MAX_OPCODE   255
 
 
-/*  This struct is used to hold entries in the include directories
-    part of statement prologue.  */
-struct Dwarf_P_Inc_Dir_s {
-    char *did_name; /* name of directory */
-    Dwarf_P_Inc_Dir did_next;
-};
 
-
-/* This struct holds file entries for the statement prologue.
+/* This struct holds file or include_dir
+   entries for the statement prologue.
    Defined in pro_line.h */
 struct Dwarf_P_F_Entry_s {
     char *dfe_name;
+    Dwarf_P_F_Entry dfe_next;
+
+    /* DWARF 2,3,4, files only not inc dirs */
     char *dfe_args;  /* has dir index, time of modification,
         length in bytes. Encodes as leb128 */
     int dfe_nbytes; /* number of bytes in args */
-    Dwarf_P_F_Entry dfe_next;
+
+    /*  Dwarf5 Use or not depends on file_name_entry_format
+        actually used.  */
+    unsigned dfe_index;
+    Dwarf_Unsigned dfe_timestamp;
+    unsigned dfe_size;
+    unsigned char dfe_md5[16];
+
 };
 
 
@@ -73,13 +78,13 @@ struct Dwarf_P_Line_s {
     Dwarf_Addr dpl_address;
 
     /* file index, index into file entry */
-    Dwarf_Word dpl_file;
+    Dwarf_Unsigned dpl_file;
 
     /* line number */
-    Dwarf_Word dpl_line;
+    Dwarf_Unsigned dpl_line;
 
     /* column number */
-    Dwarf_Word dpl_column;
+    Dwarf_Unsigned dpl_column;
 
     /* whether its a beginning of a stmt */
     Dwarf_Ubyte dpl_is_stmt;

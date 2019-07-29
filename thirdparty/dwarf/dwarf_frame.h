@@ -408,7 +408,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
     Dwarf_Cie cie,
     Dwarf_Debug dbg,
     Dwarf_Half reg_num_of_cfa,
-    Dwarf_Sword * returned_count,
+    Dwarf_Signed * returned_count,
     Dwarf_Bool  * has_more_rows,
     Dwarf_Addr  * subsequent_pc,
     Dwarf_Error * error);

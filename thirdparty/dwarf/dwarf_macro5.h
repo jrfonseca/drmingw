@@ -62,7 +62,7 @@ struct Dwarf_Macro_Operator_s {
 /*  Could be reordered to be most space efficient.
     That might be a little harder to read.  Hmm. */
 struct Dwarf_Macro_Context_s {
-    Dwarf_Word     mc_sentinel;
+    Dwarf_Unsigned     mc_sentinel;
     Dwarf_Half     mc_version_number;
 
     /* Section_offset in .debug_macro of macro header */

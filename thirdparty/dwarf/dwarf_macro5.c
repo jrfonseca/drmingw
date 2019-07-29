@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015-2016 David Anderson. All Rights Reserved.
+  Copyright (C) 2015-2019 David Anderson. All Rights Reserved.
 
   This program is free software; you can redistribute it and/or modify it
   under the terms of version 2.1 of the GNU Lesser General Public License
@@ -24,19 +24,18 @@
 */
 
 #include "config.h"
-#include "dwarf_incl.h"
 #include <stdio.h>
 #include <limits.h>
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
+
+#include "dwarf_incl.h"
+#include "dwarf_alloc.h"
+#include "dwarf_error.h"
+#include "dwarf_util.h"
 #include "dwarf_macro5.h"
 
-# if 0
-#define LEFTPAREN '('
-#define RIGHTPAREN ')'
-#define SPACE ' '
-#endif
 #define TRUE 1
 #define FALSE 0
 
@@ -50,23 +49,6 @@ static const Dwarf_Small dwarf_udata_strp_form[]    = {DW_FORM_udata,DW_FORM_str
 static const Dwarf_Small dwarf_udata_strp_sup_form[] = {DW_FORM_udata,DW_FORM_strp_sup};
 static const Dwarf_Small dwarf_secoffset_form[]     = {DW_FORM_sec_offset};
 static const Dwarf_Small dwarf_udata_strx_form[]    = {DW_FORM_udata,DW_FORM_strx};
-
-#if 0
-/* We do not presently use this here. It's a view of DW2 macros. */
-struct Dwarf_Macro_Forms_s dw2formsarray[] = {
-    {0,0,0},
-    {DW_MACINFO_define,2,dwarf_udata_string_form},
-    {DW_MACINFO_undef,2,dwarf_udata_string_form},
-    {DW_MACINFO_start_file,2,dwarf_udata_udata_form},
-    {DW_MACINFO_end_file,0,0},
-    {DW_MACINFO_vendor_ext,2,dwarf_udata_string_form},
-};
-
-/* Represents original DWARF 2,3,4 macro info */
-static const struct Dwarf_Macro_OperationsList_s dwarf_default_macinfo_opslist= {
-6, dw2formsarray
-};
-#endif
 
 struct Dwarf_Macro_Forms_s dw5formsarray[] = {
     {0,0,0},
@@ -145,7 +127,7 @@ _dwarf_skim_forms(Dwarf_Debug dbg,
     Dwarf_Unsigned ret_value = 0;
     Dwarf_Unsigned length;
     Dwarf_Small *mdata = mdata_start;
-    Dwarf_Word leb128_length = 0;
+    Dwarf_Unsigned leb128_length = 0;
 
     for( ; i < formcount; ++i) {
         curform = forms[i];
@@ -164,17 +146,17 @@ _dwarf_skim_forms(Dwarf_Debug dbg,
             break;
         case DW_FORM_block2:
             READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
-                mdata, sizeof(Dwarf_Half),
+                mdata, DWARF_HALF_SIZE,
                 error,section_end);
-            v = ret_value + sizeof(Dwarf_Half);
+            v = ret_value + DWARF_HALF_SIZE;
             totallen += v;
             mdata += v;
             break;
         case DW_FORM_block4:
             READ_UNALIGNED_CK(dbg, ret_value, Dwarf_Unsigned,
-                mdata, sizeof(Dwarf_ufixed),
+                mdata, DWARF_32BIT_SIZE,
                 error,section_end);
-            v = ret_value + sizeof(Dwarf_ufixed);
+            v = ret_value + DWARF_32BIT_SIZE;
             totallen += v;
             mdata += v;
             break;
@@ -203,10 +185,17 @@ _dwarf_skim_forms(Dwarf_Debug dbg,
             totallen += v;
             mdata += v;
             break;
-        case DW_FORM_string:
+        case DW_FORM_string: {
+            int res = _dwarf_check_string_valid(dbg,
+                mdata,mdata, section_end,
+                DW_DLE_MACRO_STRING_BAD,error);
+            if(res != DW_DLV_OK) {
+                return res;
+            }
             v = strlen((char *) mdata) + 1;
             totallen += v;
             mdata += v;
+            }
             break;
         case DW_FORM_block:
             DECODE_LEB128_UWORD_LEN_CK(mdata,length,leb128_length,
@@ -259,7 +248,7 @@ _dwarf_skim_forms(Dwarf_Debug dbg,
     return DW_DLV_OK;
 }
 
-#if 0
+#if 0 /* FOR DEBUGGING */
 static void
 dump_bytes(Dwarf_Small * start, long len)
 {
@@ -277,7 +266,23 @@ dump_bytes(Dwarf_Small * start, long len)
     }
     printf("\n");
 }
-#endif
+Dwarf_Bool
+is_defundef(unsigned op)
+{
+    switch(op){
+    case DW_MACRO_define:
+    case DW_MACRO_undef:
+    case DW_MACRO_define_strp:
+    case DW_MACRO_undef_strp:
+    case DW_MACRO_define_strx:
+    case DW_MACRO_undef_strx:
+    case DW_MACRO_define_sup:
+    case DW_MACRO_undef_sup:
+        return TRUE;
+    }
+    return FALSE;
+}
+#endif /* FOR DEBUGGING */
 
 
 /*  On first call (for this macro_context),
@@ -318,18 +323,9 @@ _dwarf_get_macro_ops_count_internal(Dwarf_Macro_Context macro_context,
     while (mdata < section_end) {
         Dwarf_Small op = 0;
 
-        if (mdata >= section_end)  {
-            _dwarf_error(dbg, error, DW_DLE_MACRO_PAST_END);
-            return DW_DLV_ERROR;
-        }
         op = *mdata;
         ++opcount;
         ++mdata;
-        /*  Here so we would set it for the zero op,
-            though that is kind of redundant since
-            the curopsentry starts out zero-d.
-            if (build_ops_array)
-                curopsentry->mo_opcode = op;  */
         if (!op) {
             Dwarf_Unsigned opslen = 0;
             /*  End of ops, this is terminator, count the ending 0
@@ -371,7 +367,9 @@ _dwarf_get_macro_ops_count_internal(Dwarf_Macro_Context macro_context,
             _dwarf_error(dbg, error, DW_DLE_MACRO_PAST_END);
             return DW_DLV_ERROR;
         }
-        curopsentry++;
+        if (build_ops_array) {
+            curopsentry++;
+        }
     }
     _dwarf_error(dbg, error, DW_DLE_MACRO_PAST_END);
     return DW_DLV_ERROR;
@@ -419,24 +417,6 @@ dwarf_get_macro_op(Dwarf_Macro_Context macro_context,
     return DW_DLV_OK;
 }
 
-#if 0
-Dwarf_Bool
-is_defundef(unsigned op)
-{
-    switch(op){
-    case DW_MACRO_define:
-    case DW_MACRO_undef:
-    case DW_MACRO_define_strp:
-    case DW_MACRO_undef_strp:
-    case DW_MACRO_define_strx:
-    case DW_MACRO_undef_strx:
-    case DW_MACRO_define_sup:
-    case DW_MACRO_undef_sup:
-        return TRUE;
-    }
-    return FALSE;
-}
-#endif
 
 /*  Here a DW_DLV_NO_ENTRY return means the macro operator
     is not a def/undef operator. */
@@ -491,7 +471,8 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
             dbg, error,endptr);
         content = (const char *)mdata;
         res = _dwarf_check_string_valid(dbg,
-            startptr,mdata, endptr, error);
+            startptr,mdata, endptr,
+            DW_DLE_MACRO_STRING_BAD,error);
         if(res != DW_DLV_OK) {
             return res;
         }
@@ -515,7 +496,6 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
         READ_UNALIGNED_CK(dbg,stringoffset,Dwarf_Unsigned,
             mdata,macro_context->mc_offset_size,
             error,endptr);
-        mdata += macro_context->mc_offset_size;
         res = _dwarf_extract_local_debug_str_string_given_offset(dbg,
             form1,
             stringoffset,
@@ -526,8 +506,8 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
         *offset = stringoffset;
         *forms_count = lformscount;
         if (res == DW_DLV_ERROR) {
-            return res;
             *macro_string = "<Error: getting local .debug_str>";
+            return res;
         } else if (res == DW_DLV_NO_ENTRY) {
             *macro_string = "<Error: NO_ENTRY on .debug_string (strp)>";
         } else {
@@ -557,6 +537,7 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
         /* Redoes the index-getting. Gets offset. */
         ress = _dwarf_extract_string_offset_via_str_offsets(dbg,
             mdata_copy,
+            endptr,
             DW_AT_macros, /*arbitrary, unused by called routine. */
             form1,
             macro_context->mc_cu_context,
@@ -565,7 +546,7 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
         if (ress  == DW_DLV_ERROR) {
             return ress;
         }
-        if (res == DW_DLV_OK) {
+        if (ress == DW_DLV_OK) {
             char *localstr = 0;
 
             *index = stringindex;
@@ -603,7 +584,6 @@ dwarf_get_macro_defundef(Dwarf_Macro_Context macro_context,
         READ_UNALIGNED_CK(dbg,supoffset,Dwarf_Unsigned,
             mdata,macro_context->mc_offset_size,
             error,endptr);
-        mdata += macro_context->mc_offset_size;
         *line_number = linenum;
         *index = 0;
         *offset = supoffset;
@@ -1172,7 +1152,7 @@ _dwarf_internal_macro_context(Dwarf_Die die,
     }
     lres = _dwarf_internal_get_die_comp_dir(die, &comp_dir,
         &comp_name,error);
-    if (resattr == DW_DLV_ERROR) {
+    if (lres == DW_DLV_ERROR) {
         Dwarf_Signed i = 0;
         for (i = 0; i < srcfiles_count; ++i) {
             if(srcfiles[i]) {
@@ -1294,7 +1274,7 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
         return DW_DLV_ERROR;
     }
 
-    if ((section_base + sizeof(Dwarf_Half) + sizeof(Dwarf_Small)) >                     section_end ) {
+    if ((section_base + DWARF_HALF_SIZE + sizeof(Dwarf_Small)) >                     section_end ) {
         dealloc_macro_srcfiles(srcfiles,srcfilescount);
         _dwarf_error(dbg, error, DW_DLE_MACRO_OFFSET_BAD);
         return DW_DLV_ERROR;
@@ -1305,8 +1285,8 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
     macro_context->mc_cu_context =  cu_context;
 
     READ_UNALIGNED_CK(dbg,version, Dwarf_Half,
-        macro_data,sizeof(Dwarf_Half),error,section_end);
-    macro_data += sizeof(Dwarf_Half);
+        macro_data, DWARF_HALF_SIZE,error,section_end);
+    macro_data +=  DWARF_HALF_SIZE;
     READ_UNALIGNED_CK(dbg,flags, Dwarf_Small,
         macro_data,sizeof(Dwarf_Small),error,section_end);
     macro_data += sizeof(Dwarf_Small);

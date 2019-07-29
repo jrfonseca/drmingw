@@ -33,6 +33,11 @@
 #include <elfaccess.h>
 #endif
 #include "pro_incl.h"
+#include <stddef.h>
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "pro_opaque.h"
+#include "pro_error.h"
 #include "pro_section.h"
 
 /*
@@ -44,9 +49,22 @@ Dwarf_Unsigned
 dwarf_add_varname(Dwarf_P_Debug dbg,
     Dwarf_P_Die die, char *var_name, Dwarf_Error * error)
 {
-    return
-        _dwarf_add_simple_name_entry(dbg, die, var_name,
-            dwarf_snk_varname, error);
+    int res = 0;
+    res = _dwarf_add_simple_name_entry(dbg, die, var_name,
+        dwarf_snk_varname, error);
+    if (res != DW_DLV_OK) {
+        return 0;
+    }
+    return 1;
+}
 
 
+int
+dwarf_add_varname_a(Dwarf_P_Debug dbg,
+    Dwarf_P_Die die, char *var_name, Dwarf_Error * error)
+{
+    int res = 0;
+    res = _dwarf_add_simple_name_entry(dbg, die, var_name,
+        dwarf_snk_varname, error);
+    return res;
 }
