@@ -20,57 +20,30 @@ environment:
     secure: QOuiktPDkbsZmX/lOynJrOrrpR09k8C14rSPRjGnohwrgc4Ee97qjoEQpODFb1ZK
   CTEST_OUTPUT_ON_FAILURE: 1
   matrix:
-  - MINGW_DIR: mingw64
-    MINGW_URL: https://downloads.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/7.3.0/threads-win32/seh/x86_64-7.3.0-release-win32-seh-rt_v5-rev0.7z
-    MINGW_ARCHIVE: x86_64-7.3.0-release-win32-seh-rt_v5-rev0.7z
-    WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\10\Debuggers\x64'
-  - MINGW_DIR: mingw32
-    MINGW_URL: https://downloads.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/7.3.0/threads-win32/dwarf/i686-7.3.0-release-win32-dwarf-rt_v5-rev0.7z
-    MINGW_ARCHIVE: i686-7.3.0-release-win32-dwarf-rt_v5-rev0.7z
-    WINDBG_DIR: '%ProgramFiles(x86)%\Windows Kits\10\Debuggers\x86'
+  - MINGW_TARGET: mingw64
+  - MINGW_TARGET: mingw32
 
 install:
 - set Path=C:\Python36;%Path%
-- if not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
-- 7z x -y "%MINGW_ARCHIVE%" > nul
 - python -m ensurepip
 - python -m pip install cpp-coveralls==0.4.2
 # CMake refuses to generate MinGW Makefiles if sh.exe is in the Path
 - ps: Get-Command sh.exe -All | Remove-Item
 
 before_build:
-- set Path=%CD%\%MINGW_DIR%\bin;%Path%
-- g++ --version
-- mingw32-make --version
-- cmake --version
-- echo NUMBER_OF_PROCESSORS=%NUMBER_OF_PROCESSORS%
-- ps: (Get-Item "${Env:WINDBG_DIR}\dbghelp.dll").VersionInfo
-- if "%APPVEYOR_REPO_TAG%"=="true" (set CMAKE_BUILD_TYPE=Release) else (set CMAKE_BUILD_TYPE=Debug)
 - set ENABLE_COVERAGE=yes
 - if "%APPVEYOR_REPO_TAG%"=="true" set ENABLE_COVERAGE=no
-- if NOT "%MINGW_DIR%"=="mingw64" set ENABLE_COVERAGE=no
-- cmake -H. -Bbuild\mingw -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=%CMAKE_BUILD_TYPE% -DENABLE_COVERAGE=%ENABLE_COVERAGE% -DWINDBG_DIR="%WINDBG_DIR%"
+- if NOT "%MINGW_TARGET%"=="mingw64" set ENABLE_COVERAGE=no
 
 build_script:
-- cmake --build build\mingw --use-stderr --target all -- -j%NUMBER_OF_PROCESSORS%
-
-after_build:
-- set Path=%WINDBG_DIR%;%Path%
-- cmake --build build\mingw --use-stderr --target test
-- cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 16 2019" -A Win32 -DCMAKE_SYSTEM_VERSION=10.0.16299.0
-- cmake --build build\msvc32 --config Debug -- /verbosity:minimal /maxcpucount
-- if "%MINGW_DIR%"=="mingw64" cmake -Htests\apps -Bbuild\msvc64 -G "Visual Studio 16 2019" -A x64 -DCMAKE_SYSTEM_VERSION=10.0.16299.0
-- if "%MINGW_DIR%"=="mingw64" cmake --build build\msvc64 --config Debug -- /verbosity:minimal /maxcpucount
-- if "%MINGW_DIR%"=="mingw32" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug
-- if "%MINGW_DIR%"=="mingw64" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug build\msvc64\Debug
-- cmake --build build\mingw --use-stderr --target package
+- powershell -NoProfile -ExecutionPolicy Bypass -file build.ps1 -buildRoot %CD%\build -target %MINGW_TARGET%
 
 on_success:
 - if "%COVERALLS_REPO_TOKEN%"=="" set ENABLE_COVERAGE=no
 - if "%ENABLE_COVERAGE%"=="yes" C:\Python36\Scripts\coveralls --include src --gcov-options="-lp"
 
 artifacts:
-- path: build\mingw\drmingw-*.7z
+- path: build\mingw??\drmingw-*.7z
 
 deploy:
   provider: GitHub
