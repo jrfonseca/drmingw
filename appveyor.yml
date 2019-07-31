@@ -34,7 +34,7 @@ install:
 - if not exist "%MINGW_ARCHIVE%" appveyor DownloadFile "%MINGW_URL%" -FileName "%MINGW_ARCHIVE%"
 - 7z x -y "%MINGW_ARCHIVE%" > nul
 - python -m ensurepip
-- python -m pip install cpp-coveralls==0.4.1
+- python -m pip install cpp-coveralls==0.4.2
 # CMake refuses to generate MinGW Makefiles if sh.exe is in the Path
 - ps: Get-Command sh.exe -All | Remove-Item
 
