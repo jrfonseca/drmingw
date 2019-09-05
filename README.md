@@ -85,7 +85,7 @@ If you deploy ExcHndl together your own programs you can have almost the same ex
 
 You can use ExcHndl by:
 
-  * including `exchndl.dll`, `mgwhelp.dll`, `dbghelp.dll`, `symsrv.dll`, and `symsrv.yes` with your application binaries
+  * including `exchndl.dll`, `mgwhelp.dll`, `dbghelp.dll`, `dbgcore.dll`, `symsrv.dll`, and `symsrv.yes` with your application binaries
 
   * pass `-lexchndl` to GNU LD when linking your program
 
