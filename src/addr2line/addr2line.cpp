@@ -45,6 +45,7 @@ usage(const char *argv0)
             "\n"
             "options:\n"
             "  -C             demangle C++ function names\n"
+            "  -D             enables debugging output (for debugging addr2line itself)\n"
             "  -e EXECUTABLE  specify the EXE/DLL\n"
             "  -f             show functions\n"
             "  -H             displays command line help text\n"
