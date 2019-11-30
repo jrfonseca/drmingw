@@ -82,7 +82,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
 # Adjust warnings
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror=implicit-function-declaration -Werror=missing-prototypes")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror=missing-prototypes")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 # Disable strict aliasing rules
 add_compiler_flags (-fno-strict-aliasing)
