@@ -18,6 +18,7 @@
 
 
 #include "tap.h"
+#include "apps/wine.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -194,7 +195,10 @@ main(int argc, char **argv)
         checkCaller(hProcess, "main", __FILE__, __LINE__); LINE_BARRIER
 
         // Test DbgHelp fallback
-        checkExport(hProcess, "kernel32", "Sleep");
+        // XXX: Doesn't work reliably on Wine
+        if (!insideWine()) {
+            checkExport(hProcess, "kernel32", "Sleep");
+        }
 
         ok = SymCleanup(hProcess);
         test_line(ok, "SymCleanup()");
