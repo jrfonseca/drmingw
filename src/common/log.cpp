@@ -32,6 +32,7 @@
 #include "paths.h"
 #include "symbols.h"
 #include "log.h"
+#include "wine.h"
 
 
 #ifndef STATUS_CPP_EH_EXCEPTION
@@ -152,18 +153,6 @@ dumpContext(
         }
     }
     lprintf("\n\n");
-}
-
-
-// http://wiki.winehq.org/DeveloperFaq#detect-wine
-static inline BOOL
-isInsideWine(void)
-{
-    HMODULE hNtDll = GetModuleHandleA("ntdll");
-    if (!hNtDll) {
-        return FALSE;
-    }
-    return GetProcAddress(hNtDll, "wine_get_version") != NULL;
 }
 
 

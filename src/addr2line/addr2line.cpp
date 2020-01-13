@@ -35,6 +35,7 @@
 #include <getopt.h>
 
 #include "symbols.h"
+#include "wine.h"
 
 
 static void
@@ -124,7 +125,9 @@ main(int argc, char **argv)
     // Load the module
     HMODULE hModule = nullptr;
 #ifdef _WIN64
-    hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
+    if (!isInsideWine()) {
+        hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
+    }
 #endif
     if (!hModule) {
         hModule = LoadLibraryExA(szModule, NULL, DONT_RESOLVE_DLL_REFERENCES);
