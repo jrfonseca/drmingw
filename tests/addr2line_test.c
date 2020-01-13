@@ -19,26 +19,32 @@
 
 #include "tap.h"
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 
 #include <windows.h>
 
 
+static void
+Foo(void)
+{
+}
+
+
 int
 main(int argc, char **argv)
 {
-    const char *szModuleName = "kernel32.dll";
-    const char *szSymbolName = "Sleep";
+    const char *szSymbolName = "Foo";
     bool ok;
 
-    HMODULE hModule = GetModuleHandleA(szModuleName);
-    PVOID pvSymbol = (PVOID)GetProcAddress(hModule, szSymbolName);
+    HMODULE hModule = GetModuleHandleA(NULL);
+    assert(hModule != NULL);
 
-    DWORD64 dwSymbolOffset = (DWORD64)(UINT_PTR)pvSymbol - (DWORD64)(UINT_PTR)hModule;
+    DWORD64 dwSymbolOffset = (DWORD64)(UINT_PTR)&Foo - (DWORD64)(UINT_PTR)hModule;
 
     char szCommand[1024];
-    _snprintf(szCommand, sizeof szCommand, "addr2line.exe -e %s -f 0x%I64x", szModuleName, dwSymbolOffset);
+    _snprintf(szCommand, sizeof szCommand, "addr2line.exe -e %s -f 0x%I64x", argv[0], dwSymbolOffset);
 
     FILE *fp = _popen(szCommand, "rt");
     ok = fp != NULL;
