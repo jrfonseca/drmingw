@@ -13,7 +13,7 @@ cache:
 - i686-7.3.0-release-win32-dwarf-rt_v5-rev0.7z
 
 # https://www.appveyor.com/docs/build-environment/#build-worker-images
-image: Visual Studio 2017
+image: Visual Studio 2019
 
 environment:
   COVERALLS_REPO_TOKEN:
@@ -57,9 +57,9 @@ build_script:
 after_build:
 - set Path=%WINDBG_DIR%;%Path%
 - cmake --build build\mingw --use-stderr --target test
-- cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 15 2017" -DCMAKE_SYSTEM_VERSION=10.0.16299.0
+- cmake -Htests\apps -Bbuild\msvc32 -G "Visual Studio 16 2019" -A Win32 -DCMAKE_SYSTEM_VERSION=10.0.16299.0
 - cmake --build build\msvc32 --config Debug -- /verbosity:minimal /maxcpucount
-- if "%MINGW_DIR%"=="mingw64" cmake -Htests\apps -Bbuild\msvc64 -G "Visual Studio 15 2017 Win64" -DCMAKE_SYSTEM_VERSION=10.0.16299.0
+- if "%MINGW_DIR%"=="mingw64" cmake -Htests\apps -Bbuild\msvc64 -G "Visual Studio 16 2019" -A x64 -DCMAKE_SYSTEM_VERSION=10.0.16299.0
 - if "%MINGW_DIR%"=="mingw64" cmake --build build\msvc64 --config Debug -- /verbosity:minimal /maxcpucount
 - if "%MINGW_DIR%"=="mingw32" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug
 - if "%MINGW_DIR%"=="mingw64" python tests\apps\test.py build\mingw\bin\catchsegv.exe build\msvc32\Debug build\msvc64\Debug
