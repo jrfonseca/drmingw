@@ -229,6 +229,11 @@ if (PYTHONINTERP_FOUND)
     add_dependencies (check catchsegv)
     add_test (
         NAME test_catchsegv
-        COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/apps/test.py $<TARGET_FILE:catchsegv> ${CMAKE_CURRENT_BINARY_DIR}/apps
+        COMMAND
+            ${PYTHON_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/apps/test.py
+            -w "${WINE_PROGRAM}"
+            $<TARGET_FILE:catchsegv>
+            ${CMAKE_CURRENT_BINARY_DIR}/apps
     )
 endif ()

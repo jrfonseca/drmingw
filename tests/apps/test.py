@@ -109,7 +109,7 @@ def test(args):
     ]
 
     if sys.platform != 'win32':
-        cmd = ['wine'] + cmd
+        cmd = [options.wine] + cmd
         if options.verbose:
             os.environ['WINEDEBUG'] = '+debugstr'
 
@@ -205,6 +205,10 @@ def test(args):
 
 def main():
     optparser = optparse.OptionParser( usage="%prog [options] [path/to/catchsegv.exe] [path/to/test/apps] ..")
+    optparser.add_option(
+        '-w', '--wine', metavar='WINE_PROGRAM',
+        type="string", dest="wine",
+        default = 'wine')
     optparser.add_option(
         '-R', '--regex', metavar='REGEX',
         type="string", dest="regex",
