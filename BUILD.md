@@ -16,7 +16,7 @@ Recommended:
  * [Debugging Tools for Windows](https://msdn.microsoft.com/en-us/library/windows/hardware/ff551063.aspx)
    for the latest version of `dbghelp.dll`, `dbgcore.dll`, and `symsrv.dll` DLLs.
 
- * [Python 2.x](https://www.python.org/downloads/) for running some of the tests.
+ * [Python 3.x](https://www.python.org/downloads/) for running some of the tests.
 
 
 ## Cross-compilation toolchain
@@ -35,9 +35,9 @@ It is also possible to build with a native MinGW toolchain, by doing:
 
 These instructions have been tested with the following MinGW-w64 toolchains:
 
- * [32-bits](http://sourceforge.net/projects/mingwbuilds/files/host-windows/releases/4.8.1/32-bit/threads-win32/dwarf/x32-4.8.1-release-win32-dwarf-rev5.7z/download)
+ * [32-bits](https://downloads.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/7.3.0/threads-win32/dwarf/i686-7.3.0-release-win32-dwarf-rt_v5-rev0.7z)
 
- * [64-bits](http://sourceforge.net/projects/mingwbuilds/files/host-windows/releases/4.8.1/64-bit/threads-win32/seh/x64-4.8.1-release-win32-seh-rev5.7z/download)
+ * [64-bits](https://downloads.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/7.3.0/threads-win32/seh/x86_64-7.3.0-release-win32-seh-rt_v5-rev0.7z)
 
 but in theory it should work with any flavour of MinGW-w64 native toolchain,
 provided that it includes a native `mingw32-make.exe`.
