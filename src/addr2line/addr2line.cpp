@@ -125,9 +125,9 @@ main(int argc, char **argv)
     // Load the module
     HMODULE hModule = nullptr;
 #ifdef _WIN64
-    if (!isInsideWine()) {
-        hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
-    }
+    // XXX: The GetModuleFileName function does not retrieve the path for
+    // modules that were loaded using the LOAD_LIBRARY_AS_DATAFILE flag
+    hModule = LoadLibraryExA(szModule, NULL, LOAD_LIBRARY_AS_DATAFILE);
 #endif
     if (!hModule) {
         hModule = LoadLibraryExA(szModule, NULL, DONT_RESOLVE_DLL_REFERENCES);
@@ -136,6 +136,11 @@ main(int argc, char **argv)
         fprintf(stderr, "error: failed to load %s\n", szModule);
         return EXIT_FAILURE;
     }
+
+    // Handles for modules loaded with DATAFILE/IMAGE_RESOURCE flags have lower
+    // bits set
+    DWORD64 BaseOfDll = (DWORD64)(UINT_PTR)hModule;
+    BaseOfDll &= ~DWORD64(3);
 
     DWORD dwSymOptions = SymGetOptions();
 
@@ -158,7 +163,7 @@ main(int argc, char **argv)
         SymRegisterCallback64(hProcess, &callback, 0);
     }
 
-    dwRet = SymLoadModuleEx(hProcess, NULL, szModule, NULL, (DWORD64)(UINT_PTR)hModule, 0, NULL, 0);
+    dwRet = SymLoadModuleEx(hProcess, NULL, szModule, NULL, BaseOfDll, 0, NULL, 0);
     if (!dwRet) {
         fprintf(stderr, "warning: failed to load module symbols\n");
     }
@@ -177,7 +182,7 @@ main(int argc, char **argv)
             dwRelAddr = atol(arg);
         }
 
-        UINT_PTR dwAddr = (UINT_PTR)hModule + dwRelAddr;
+        UINT_PTR dwAddr = BaseOfDll + dwRelAddr;
 
         if (functions) {
             struct {
