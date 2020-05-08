@@ -221,16 +221,23 @@ add_test (
 #
 
 add_subdirectory (apps)
-find_package (PythonInterp)
-if (PYTHONINTERP_FOUND)
-    if (NOT PYTHON_VERSION_MAJOR EQUAL 3)
-        message (FATAL_ERROR "Python 3.x required and requested, but Python ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR} found.")
+if (CMAKE_VERSION VERSION_LESS 3.12)
+    find_package (PythonInterp 3)
+    if (PYTHONINTERP_FOUND)
+        if (NOT PYTHON_VERSION_MAJOR EQUAL 3)
+            message (FATAL_ERROR "Python 3.x required and requested, but Python ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR} found.")
+        endif ()
+        set (Python3_EXECUTABLE "${PYTHON_EXECUTABLE}")
     endif ()
+else ()
+    find_package (Python3)
+endif ()
+if (Python3_EXECUTABLE)
     add_dependencies (check catchsegv)
     add_test (
         NAME test_catchsegv
         COMMAND
-            ${PYTHON_EXECUTABLE}
+            ${Python3_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/apps/test.py
             -w "${WINE_PROGRAM}"
             $<TARGET_FILE:catchsegv>
