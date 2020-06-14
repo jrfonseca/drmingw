@@ -37,9 +37,6 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h> /* For uintptr_t */
 #endif /* HAVE_STDINT_H */
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif /* HAVE_INTTYPES_H */
 #include "pro_incl.h"
 #include "dwarf.h"
 #include "libdwarf.h"
@@ -53,6 +50,7 @@
 #include "pro_reloc_symbolic.h"
 #include "pro_reloc_stream.h"
 #include "dwarf_tsearch.h"
+#include "dwarfstring.h"
 
 #define IS_64BITPTR(dbg) ((dbg)->de_flags & DW_DLC_POINTER64 ? 1 : 0)
 #define ISA_IA64(dbg) ((dbg)->de_flags & DW_DLC_ISA_IA64 ? 1 : 0)
@@ -63,6 +61,13 @@ struct isa_relocs_s {
    int         reloc64_;
    int         segrel_; /* only used if IRIX */
 };
+
+#ifndef TRUE
+#define TRUE 1
+#endif /*TRUE*/
+#ifndef FALSE
+#define FALSE 0
+#endif /*FALSE*/
 
 /*  Some of these may be the wrong relocation for DWARF
     relocations. FIXME. Most will be unusable without
@@ -107,6 +112,7 @@ static struct isa_relocs_s isa_relocs[] = {
 
 static int common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags,
     const char *abiname, const char *dwarf_version,
+    const char *extrainfo,
     int *error_ret);
 
 /*  This function sets up a new dwarf producing region.
@@ -157,7 +163,7 @@ dwarf_producer_init(Dwarf_Unsigned flags,
     void * user_data,
     const char *isa_name, /* See isa_reloc_s. */
     const char *dwarf_version, /* V2 V3 V4 or V5. */
-    UNUSEDARG const char *extra, /* Extra input strings, comma separated. */
+    const char *extra, /* Extra input strings, comma separated. */
     Dwarf_P_Debug *dbg_returned,
     Dwarf_Error * error)
 {
@@ -180,7 +186,8 @@ dwarf_producer_init(Dwarf_Unsigned flags,
     dbg->de_errhand = errhand;
     dbg->de_errarg = errarg;
     dbg->de_user_data = user_data;
-    res = common_init(dbg, flags,isa_name,dwarf_version,&err_ret);
+    res = common_init(dbg, flags,isa_name,dwarf_version,
+        extra,&err_ret);
     if (res != DW_DLV_OK) {
         DWARF_P_DBG_ERROR(dbg, err_ret, DW_DLV_ERROR);
     }
@@ -222,7 +229,7 @@ set_reloc_numbers(Dwarf_P_Debug dbg,
             } else {
                 dbg->de_ptr_reloc = isap->reloc64_;
             }
-            if (dbg->de_offset_size == 4) {
+            if (dbg->de_dwarf_offset_size == 4) {
                 dbg->de_offset_reloc = isap->reloc32_;
             } else {
                 dbg->de_offset_reloc = isap->reloc64_;
@@ -276,8 +283,11 @@ key_simple_string_hashfunc(const void *keyp)
 
 
 static int
-common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
+common_init(Dwarf_P_Debug dbg,
+    Dwarf_Unsigned flags,
+    const char *abiname,
     const char *dwarf_version,
+    const char *extra,
     int *err_ret)
 {
     unsigned int k = 0;
@@ -292,27 +302,37 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
     dbg->de_flags = flags;
 
 
+    /* DW_DLC_POINTER32 assumed. */
+    dbg->de_pointer_size = 4;
+    /* Standard DWARF 64bit offset, length field 12 bytes */
+    dbg->de_dwarf_offset_size = 4;
+    dbg->de_elf_offset_size = 4;
+    dbg->de_64bit_extension = 0;
+
+    dbg->de_big_endian = (dbg->de_flags&DW_DLC_TARGET_BIGENDIAN)?
+        TRUE:FALSE;
+    /*  DW_DLC_POINTER64 is identical to DW_DLC_SIZE_64 */
     if(dbg->de_flags & DW_DLC_POINTER64) {
         dbg->de_pointer_size = 8;
-    } else {
-        /* DW_DLC_POINTER32 assumed. */
-        dbg->de_pointer_size = 4;
     }
     if(dbg->de_flags & DW_DLC_OFFSET64) {
-        /* Standard DWARF 64bit offset, length field 12 bytes */
-        dbg->de_offset_size = 8;
-        dbg->de_64bit_extension = 1;
+        dbg->de_pointer_size = 8;
+        dbg->de_dwarf_offset_size = 4;
+        dbg->de_64bit_extension = 0;
+        /*  When dwarf_offset_size == 8 then for
+            standard dwarf set
+            de_64bit_extension to 1. */
+        dbg->de_elf_offset_size = 8;
     } else {
         if(dbg->de_flags & DW_DLC_IRIX_OFFSET64) {
-            dbg->de_offset_size = 8;
+            dbg->de_pointer_size = 8;
+            dbg->de_big_endian = TRUE;
+            dbg->de_dwarf_offset_size = 8;
             dbg->de_64bit_extension = 0;
-        } else {
-            /*  offset size 4 assumed, it is
-                by far the most frequent case.. */
-            dbg->de_offset_size = 4;
-            dbg->de_64bit_extension = 0;
+            dbg->de_elf_offset_size = 8;
         }
     }
+
     if(abiname && (!strcmp(abiname,"irix"))) {
         dbg->de_irix_exc_augmentation = 1;
     } else {
@@ -343,6 +363,12 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
             return DW_DLV_ERROR;
         }
     }
+    _dwarf_init_default_line_header_vals(dbg);
+    res = _dwarf_log_extra_flagstrings(dbg,extra,err_ret);
+    if (res == DW_DLV_ERROR) {
+        return res;
+    }
+
     if (flags & DW_DLC_SYMBOLIC_RELOCATIONS) {
         dbg->de_relocation_record_size =
             sizeof(struct Dwarf_Relocation_Data_s);
@@ -352,7 +378,8 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
 #ifdef DWARF_WITH_LIBELF
 #if HAVE_ELF64_GETEHDR
         dbg->de_relocation_record_size =
-            ((dbg->de_pointer_size == 8)? sizeof(REL64) : sizeof(REL32));
+            ((dbg->de_pointer_size == 8)?
+            sizeof(REL64) : sizeof(REL32));
 #else
         dbg->de_relocation_record_size = sizeof(REL32);
 #endif
@@ -360,10 +387,7 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
         *err_ret = DW_DLE_NO_STREAM_RELOC_SUPPORT;
         return DW_DLV_ERROR;
 #endif /* DWARF_WITH_LIBELF */
-
-
     }
-    _dwarf_init_default_line_header_vals(dbg);
 
     /* For .debug_str creation. */
     dwarf_initialize_search_hash(&dbg->de_debug_str_hashtab,
@@ -372,13 +396,19 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
     dwarf_initialize_search_hash(&dbg->de_debug_line_str_hashtab,
         key_simple_string_hashfunc,0);
 
-    /* FIXME: conditional on the DWARF version target,
-        dbg->de_output_version. */
-    if (dbg->de_offset_size == 8) {
-        dbg->de_ar_data_attribute_form = DW_FORM_data8;
+    if (dbg->de_dwarf_offset_size == 8) {
+        if (dbg->de_output_version <= 3) {
+            dbg->de_ar_data_attribute_form = DW_FORM_data8;
+        } else {
+            dbg->de_ar_data_attribute_form = DW_FORM_sec_offset;
+        }
         dbg->de_ar_ref_attr_form = DW_FORM_ref8;
     } else {
-        dbg->de_ar_data_attribute_form = DW_FORM_data4;
+        if (dbg->de_output_version <= 3) {
+            dbg->de_ar_data_attribute_form = DW_FORM_data4;
+        } else {
+            dbg->de_ar_data_attribute_form = DW_FORM_sec_offset;
+        }
         dbg->de_ar_ref_attr_form = DW_FORM_ref4;
     }
 
@@ -411,7 +441,7 @@ common_init(Dwarf_P_Debug dbg, Dwarf_Unsigned flags, const char *abiname,
 
         prel->pr_slots_per_block_to_alloc = DEFAULT_SLOTS_PER_BLOCK;
     }
-    /* First assume host, target same endianness */
+    /* First assume host, target same endianness  FIXME */
     dbg->de_same_endian = 1;
     dbg->de_copy_word =  _dwarf_memcpy_noswap_bytes;
 #ifdef WORDS_BIGENDIAN

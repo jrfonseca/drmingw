@@ -29,7 +29,10 @@
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif /* HAVE_STDLIB_H */
-
+#ifdef HAVE_MALLOC_H
+/* Useful include for some Windows compilers. */
+#include <malloc.h>
+#endif /* HAVE_MALLOC_H */
 #include "dwarf_incl.h"
 #include "dwarf_alloc.h"
 #include "dwarf_error.h"
@@ -137,7 +140,8 @@ _dwarf_skim_forms(Dwarf_Debug dbg,
         }
         switch(curform) {
         default:
-            _dwarf_error(dbg,error,DW_DLE_DEBUG_FORM_HANDLING_INCOMPLETE);
+            _dwarf_error(dbg,error,
+                DW_DLE_DEBUG_FORM_HANDLING_INCOMPLETE);
             return DW_DLV_ERROR;
         case DW_FORM_block1:
             v =  *(Dwarf_Small *) mdata;
@@ -1069,11 +1073,24 @@ translate_srcfiles_to_srcfiles2(char **srcfiles,
             return DW_DLV_ERROR;
         }
         strcpy(newstr,ostr);
-        srcfiles[i] = 0;
         srcfiles2[i] = newstr;
     }
     return DW_DLV_OK;
 }
+
+static void
+drop_srcfiles(Dwarf_Debug dbg,char ** srcfiles,
+    Dwarf_Signed srcfiles_count)
+{
+    Dwarf_Signed i = 0;
+    for (i = 0; i < srcfiles_count; ++i) {
+        if(srcfiles[i]) {
+            dwarf_dealloc(dbg, srcfiles[i], DW_DLA_STRING);
+        }
+    }
+    dwarf_dealloc(dbg, srcfiles, DW_DLA_LIST);
+}
+
 
 static int
 _dwarf_internal_macro_context(Dwarf_Die die,
@@ -1096,6 +1113,7 @@ _dwarf_internal_macro_context(Dwarf_Die die,
     Dwarf_Unsigned macro_offset = 0;
     Dwarf_Attribute macro_attr = 0;
     Dwarf_Signed srcfiles_count = 0;
+    Dwarf_Signed srcfiles2_count = 0;
     char ** srcfiles = 0;
 
     /*  srcfiles uses dwarf_get_alloc for strings
@@ -1141,6 +1159,7 @@ _dwarf_internal_macro_context(Dwarf_Die die,
     if (!offset_specified) {
         lres = dwarf_global_formref(macro_attr, &macro_offset, error);
         if (lres != DW_DLV_OK) {
+            dwarf_dealloc(dbg,macro_attr,DW_DLA_ATTR);
             return lres;
         }
     } else {
@@ -1148,18 +1167,16 @@ _dwarf_internal_macro_context(Dwarf_Die die,
     }
     lres = dwarf_srcfiles(die,&srcfiles,&srcfiles_count, error);
     if (lres == DW_DLV_ERROR) {
+        dwarf_dealloc(dbg,macro_attr,DW_DLA_ATTR);
         return lres;
     }
     lres = _dwarf_internal_get_die_comp_dir(die, &comp_dir,
         &comp_name,error);
     if (lres == DW_DLV_ERROR) {
-        Dwarf_Signed i = 0;
-        for (i = 0; i < srcfiles_count; ++i) {
-            if(srcfiles[i]) {
-                dwarf_dealloc(dbg, srcfiles[i], DW_DLA_STRING);
-            }
-        }
-        dwarf_dealloc(dbg, srcfiles, DW_DLA_LIST);
+        drop_srcfiles(dbg,srcfiles,srcfiles_count);
+        srcfiles = 0;
+        srcfiles_count = 0;
+        dwarf_dealloc(dbg,macro_attr,DW_DLA_ATTR);
         srcfiles = 0;
         return lres;
     }
@@ -1173,38 +1190,37 @@ _dwarf_internal_macro_context(Dwarf_Die die,
     if (srcfiles_count > 0) {
         srcfiles2 = (char **) calloc(srcfiles_count, sizeof(char *));
         if (!srcfiles2) {
+            dwarf_dealloc(dbg,macro_attr,DW_DLA_ATTR);
+            drop_srcfiles(dbg,srcfiles,srcfiles_count);
             _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
             return (DW_DLV_ERROR);
         }
         lres  = translate_srcfiles_to_srcfiles2(srcfiles,
             srcfiles_count,srcfiles2);
-        {
-            Dwarf_Signed i = 0;
-            for (i = 0; i < srcfiles_count; ++i) {
-                if(srcfiles[i]) {
-                    dwarf_dealloc(dbg, srcfiles[i], DW_DLA_STRING);
-                    srcfiles[i] = 0;
-                }
-            }
-            dwarf_dealloc(dbg, srcfiles, DW_DLA_LIST);
-            srcfiles = 0;
-        }
-        if (lres == DW_DLV_OK) {
-            srcfiles = 0;
-        } else {
-            dealloc_macro_srcfiles(srcfiles2, srcfiles_count);
+        drop_srcfiles(dbg,srcfiles,srcfiles_count);
+        srcfiles2_count = srcfiles_count;
+        srcfiles = 0;
+        srcfiles_count = 0;
+        if (lres != DW_DLV_OK) {
+            dwarf_dealloc(dbg,macro_attr,DW_DLA_ATTR);
+            dealloc_macro_srcfiles(srcfiles2, srcfiles2_count);
             _dwarf_error(dbg, error, DW_DLE_ALLOC_FAIL);
             return lres;
         }
+    } else {
+        drop_srcfiles(dbg,srcfiles,srcfiles_count);
+        srcfiles = 0;
+        srcfiles_count = 0;
     }
 
+    dwarf_dealloc(dbg,macro_attr,DW_DLA_ATTR);
     /*  NO ENTRY or OK we accept, though NO ENTRY means there
         are no source files available. */
     lres = _dwarf_internal_macro_context_by_offset(dbg,
         macro_offset,version_out,macro_context_out,
         macro_ops_count_out,
         macro_ops_data_length,
-        srcfiles2,srcfiles_count,
+        srcfiles2,srcfiles2_count,
         comp_dir,
         comp_name,
         cu_context,
@@ -1230,8 +1246,8 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
     Dwarf_Unsigned line_table_offset = 0;
     Dwarf_Small * macro_header = 0;
     Dwarf_Small * macro_data = 0;
-    Dwarf_Half version = 0;
-    Dwarf_Small flags = 0;
+    Dwarf_Unsigned version = 0;
+    Dwarf_Unsigned flags = 0;
     Dwarf_Small offset_size = 4;
     Dwarf_Unsigned cur_offset = 0;
     Dwarf_Unsigned section_size = 0;
@@ -1276,6 +1292,7 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
 
     if ((section_base + DWARF_HALF_SIZE + sizeof(Dwarf_Small)) >                     section_end ) {
         dealloc_macro_srcfiles(srcfiles,srcfilescount);
+        dwarf_dealloc_macro_context(macro_context);
         _dwarf_error(dbg, error, DW_DLE_MACRO_OFFSET_BAD);
         return DW_DLV_ERROR;
     }
@@ -1284,11 +1301,21 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
     macro_context->mc_srcfiles_count = srcfilescount;
     macro_context->mc_cu_context =  cu_context;
 
-    READ_UNALIGNED_CK(dbg,version, Dwarf_Half,
-        macro_data, DWARF_HALF_SIZE,error,section_end);
+    res = _dwarf_read_unaligned_ck_wrapper(dbg,
+        &version,macro_data,DWARF_HALF_SIZE,section_end,
+        error);
+    if (res != DW_DLV_OK) {
+        dwarf_dealloc_macro_context(macro_context);
+        return res;
+    }
     macro_data +=  DWARF_HALF_SIZE;
-    READ_UNALIGNED_CK(dbg,flags, Dwarf_Small,
-        macro_data,sizeof(Dwarf_Small),error,section_end);
+    res = _dwarf_read_unaligned_ck_wrapper(dbg,
+        &flags,macro_data,sizeof(Dwarf_Small),section_end,
+        error);
+    if (res != DW_DLV_OK) {
+        dwarf_dealloc_macro_context(macro_context);
+        return res;
+    }
     macro_data += sizeof(Dwarf_Small);
 
     macro_context->mc_at_comp_dir = comp_dir;
@@ -1313,8 +1340,14 @@ _dwarf_internal_macro_context_by_offset(Dwarf_Debug dbg,
             _dwarf_error(dbg, error, DW_DLE_MACRO_OFFSET_BAD);
             return (DW_DLV_ERROR);
         }
-        READ_UNALIGNED_CK(dbg,line_table_offset,Dwarf_Unsigned,
-            macro_data,offset_size,error,section_end);
+        res = _dwarf_read_unaligned_ck_wrapper(dbg,
+            &line_table_offset,macro_data,
+            offset_size,section_end,
+            error);
+        if (res != DW_DLV_OK) {
+            dwarf_dealloc_macro_context(macro_context);
+            return res;
+        }
         macro_data += offset_size;
         macro_context->mc_debug_line_offset = line_table_offset;
     }
@@ -1496,7 +1529,13 @@ int dwarf_get_macro_section_name(Dwarf_Debug dbg,
 void
 dwarf_dealloc_macro_context(Dwarf_Macro_Context mc)
 {
-    Dwarf_Debug dbg = mc->mc_dbg;
+    Dwarf_Debug dbg = 0;
+
+    if (!mc) {
+        return;
+    }
+    dbg = mc->mc_dbg;
+    /* See _dwarf_macro_destructor() here */
     dwarf_dealloc(dbg,mc,DW_DLA_MACRO_CONTEXT);
 }
 

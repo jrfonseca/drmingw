@@ -66,6 +66,9 @@ extern "C" {
 #ifndef SHT_RELA
 #define SHT_RELA 4
 #endif
+#ifndef SHT_REL
+#define SHT_REL 9
+#endif
 
 #ifndef DW_GROUPNUMBER_BASE
 #define DW_GROUPNUMBER_BASE 1
@@ -754,6 +757,9 @@ extern "C" {
 #ifndef DT_RELA
 #define DT_RELA 7
 #endif
+#ifndef DT_REL
+#define DT_REL 17
+#endif
 #ifndef DT_RELASZ
 #define DT_RELASZ 8
 #endif
@@ -990,6 +996,9 @@ extern "C" {
 #ifndef R_386_32
 #define R_386_32                               1
 #endif /* R_386_32 */
+#ifndef R_386_PC32
+#define R_386_PC32                             2
+#endif /* R_386_PC32 */
 #ifndef R_386_TLS_DTPOFF32
 #define R_386_TLS_DTPOFF32                     36
 #endif /* R_386_TLS_DTPOFF32 */

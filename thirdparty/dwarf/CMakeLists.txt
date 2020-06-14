@@ -21,11 +21,13 @@ add_library (dwarf STATIC
     dwarf_loc.c
     dwarf_macro.c
     dwarf_macro5.c
+    dwarf_names.c
     dwarf_print_lines.c
     dwarf_pubtypes.c
     dwarf_query.c
     dwarf_ranges.c
-    dwarf_string.c
+	dwarf_rnglists.c
+    dwarfstring.c
     dwarf_stubs.c
     dwarf_tied.c
     dwarf_tsearchhash.c

@@ -46,7 +46,9 @@
     */
 
 #include <stdio.h>
-#include <stdlib.h> /* For exit() */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 #include <string.h> /* For strchr */
 #include "dwgetopt.h"
 

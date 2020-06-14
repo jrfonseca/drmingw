@@ -27,13 +27,16 @@
 
 #include "config.h"
 #include <stdio.h>
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 #include "dwarf_incl.h"
 #include "dwarf_alloc.h"
 #include "dwarf_error.h"
 #include "dwarf_util.h"
 #include "dwarf_global.h"
 #include "dwarf_dnames.h"
+#include "dwarfstring.h"
 
 #define FALSE 0
 #define TRUE  1
@@ -1310,7 +1313,23 @@ int dwarf_debugnames_entrypool_values(Dwarf_Dnames_Head dn,
         }
         /*  There is some mistake/omission in our code here or in
             the data. */
-        _dwarf_error(dbg,error,DW_DLE_DEBUG_NAMES_UNHANDLED_FORM);
+        {
+        dwarfstring m;
+        const char *name = "<unknown form>";
+
+        dwarfstring_constructor(&m);
+        dwarfstring_append_printf_u(&m,
+            "DW_DLE_DEBUG_NAMES_UNHANDLED_FORM: Form 0x%x",
+            form);
+        dwarf_get_FORM_name(form,&name);
+        dwarfstring_append_printf_s(&m,
+            " %s is not currently supported in .debug_names ",
+            (char *)name);
+        _dwarf_error_string(dbg,error,
+            DW_DLE_DEBUG_NAMES_UNHANDLED_FORM,
+            dwarfstring_string(&m));
+        dwarfstring_destructor(&m);
+        }
         return DW_DLV_ERROR;
     }
     *offset_of_next_entrypool = pooloffset;

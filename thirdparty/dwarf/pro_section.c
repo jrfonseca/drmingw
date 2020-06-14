@@ -32,15 +32,23 @@
 #include "config.h"
 #include "libdwarfdefs.h"
 #include <stdio.h>
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif /* HAVE_STRING_H */
 #ifdef   HAVE_ELFACCESS_H
 #include <elfaccess.h>
 #endif
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
-#include "pro_incl.h"
+#ifdef HAVE_MALLOC_H
+/* Useful include for some Windows compilers. */
+#include <malloc.h>
+#endif /* HAVE_MALLOC_H */
+#ifdef HAVE_STDDEF_H
 #include <stddef.h>
+#endif /* HAVE_STDDEF_H */
+#include "pro_incl.h"
 #include "dwarf.h"
 #include "libdwarf.h"
 #include "pro_opaque.h"
@@ -87,7 +95,7 @@
         }                                   \
         sbyte = sizeof(s) - l;              \
         p = (const char *)(&s);             \
-        memcpy(t,(const void *)(p+sbyte),l);\
+        dbg->de_copy_word(t,(const void *)(p+sbyte),l);\
     } while (0)
 #else /* LITTLEENDIAN */
 #define ASNOUT(t,s,l)                       \
@@ -98,7 +106,7 @@
             return DW_DLV_ERROR;            \
         }                                   \
         p = (const char *)(&s);             \
-        memcpy(t,(const void *)p,l);        \
+        dbg->de_copy_word(t,(const void *)p,l); \
     } while (0)
 #endif /* ENDIANNESS */
 
@@ -293,7 +301,10 @@ _dwarf_pro_get_opc(
         return OPC_INCS_ZERO;
     }
     if (line_adv >= line_base && line_adv < line_base + line_range) {
-        int opc = (line_adv - line_base) + (factored_adv * line_range) +
+        int opc = 0;
+
+        opc = (line_adv - line_base) +
+            (factored_adv * line_range) +
             inits->pi_opcode_base;
         if (opc > 255) {
             return OPC_OUT_OF_RANGE;
@@ -912,7 +923,7 @@ determine_file_content_size(Dwarf_P_Debug dbg,
     int res              = 0;
     Dwarf_Unsigned offset_size = 0;
 
-    offset_size = dbg->de_offset_size;
+    offset_size = dbg->de_dwarf_offset_size;
     res = pretend_write_uval(format_count,dbg,
         &count_len,error);
     if(res != DW_DLV_OK) {
@@ -1180,7 +1191,7 @@ calculate_size_of_line_header5(Dwarf_P_Debug dbg,
     Dwarf_Error *error)
 {
     unsigned prolog_size = 0;
-    int offset_size = dbg->de_offset_size;
+    int offset_size = dbg->de_dwarf_offset_size;
     int extension_size = dbg->de_64bit_extension ? 4 : 0;
     int res = 0;
 
@@ -1267,7 +1278,7 @@ calculate_size_of_line_header4(Dwarf_P_Debug dbg,
     Dwarf_P_F_Entry curdir = 0;
     Dwarf_P_F_Entry curentry = 0;
     unsigned prolog_size = 0;
-    int offset_size = dbg->de_offset_size;
+    int offset_size = dbg->de_dwarf_offset_size;
     int extension_size = dbg->de_64bit_extension ? 4 : 0;
 
     prolog_size += OFFSET_PLUS_EXTENSION_SIZE +
@@ -1278,7 +1289,7 @@ calculate_size_of_line_header4(Dwarf_P_Debug dbg,
         sizeof_ubyte(dbg) +  /* linebase */
         sizeof_ubyte(dbg) +  /* linerange */
         sizeof_ubyte(dbg);   /* opcode base */
-    if (inits->pi_version == DW_LINE_VERSION4) {
+    if (inits->pi_linetable_version == DW_LINE_VERSION4) {
         /* For maximum_operations_per_instruction. */
         prolog_size += sizeof_ubyte(dbg);
     }
@@ -1339,7 +1350,7 @@ _dwarf_pro_generate_debugline(Dwarf_P_Debug dbg,
     Dwarf_Half dh = 0;
     int res = 0;
     Dwarf_Half version = dbg->de_output_version;
-    int offset_size = dbg->de_offset_size;
+    int offset_size = dbg->de_dwarf_offset_size;
     Dwarf_Ubyte extension_size = dbg->de_64bit_extension ? 4 : 0;
     Dwarf_Ubyte address_size = dbg->de_pointer_size;
 
@@ -1383,7 +1394,7 @@ _dwarf_pro_generate_debugline(Dwarf_P_Debug dbg,
         sizeof(du), offset_size);
     data += offset_size;
 
-    dh =  inits->pi_version;
+    dh =  inits->pi_linetable_version;
     WRITE_UNALIGNED(dbg, (void *) data, (const void *) &dh,
         sizeof(dh), DWARF_HALF_SIZE);
     data +=  DWARF_HALF_SIZE;
@@ -1416,7 +1427,8 @@ _dwarf_pro_generate_debugline(Dwarf_P_Debug dbg,
         sizeof(db), sizeof(Dwarf_Ubyte));
     data += sizeof(Dwarf_Ubyte);
 
-    if (inits->pi_version == 4 || inits->pi_version == 5) {
+    if (inits->pi_linetable_version == 4 ||
+        inits->pi_linetable_version == 5) {
         db =  inits->pi_maximum_operations_per_instruction;
         WRITE_UNALIGNED(dbg, (void *) data, (const void *) &db,
             sizeof(db), sizeof(Dwarf_Ubyte));
@@ -1932,7 +1944,7 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg,
     long *cie_offs = 0;   /* Holds byte offsets for links to fde's */
     unsigned long cie_length = 0;
     int cie_no = 0;
-    Dwarf_Ubyte offset_size = dbg->de_offset_size;
+    Dwarf_Ubyte offset_size = dbg->de_dwarf_offset_size;
     Dwarf_Ubyte extension_size = dbg->de_64bit_extension ? 4 : 0;
     Dwarf_Ubyte address_size = dbg->de_pointer_size;
     Dwarf_Unsigned cur_off = 0; /* current offset of written data, held
@@ -2294,7 +2306,6 @@ _dwarf_pro_generate_debugframe(Dwarf_P_Debug dbg,
                     sizeof(val), address_size);
                 data += address_size;
             } else {
-
                 du = curfde->fde_addr_range;
                 WRITE_UNALIGNED(dbg, (void *) data,
                     (const void *) &du,
@@ -2769,7 +2780,7 @@ generate_debuginfo_header_2(Dwarf_P_Debug dbg,
 {
     unsigned abbrev_offset = 0;
     unsigned char * data = 0;
-    int offset_size = dbg->de_offset_size;
+    int offset_size = dbg->de_dwarf_offset_size;
     int elfsectno_of_debug_info = dbg->de_elf_sects[DEBUG_INFO];
     int cu_header_size = 0;
     Dwarf_Unsigned du = 0;
@@ -2839,7 +2850,7 @@ generate_debuginfo_header_5(Dwarf_P_Debug dbg,
     Dwarf_Ubyte     address_size,
     Dwarf_Error    *error)
 {
-    int offset_size = dbg->de_offset_size;
+    int offset_size = dbg->de_dwarf_offset_size;
     unsigned abbrev_offset = 0;
     unsigned char * data = 0;
     int elfsectno_of_debug_info = dbg->de_elf_sects[DEBUG_INFO];
@@ -3063,7 +3074,7 @@ _dwarf_pro_generate_debuginfo(Dwarf_P_Debug dbg,
     unsigned string_attr_offset = 0;
     Dwarf_Small *abbr_off_ptr = 0;
 
-    int offset_size = dbg->de_offset_size;
+    int offset_size = dbg->de_dwarf_offset_size;
     /*  extension_size is oddly names. The standard calls
         for a 64bit offset to have a 4 byte 0xffff
         while original IRIX64 did not.

@@ -32,6 +32,7 @@
 #include "dwarf_alloc.h"
 #include "dwarf_error.h"
 #include "dwarf_util.h"
+#include "dwarfstring.h"
 #include "dwarf_str_offsets.h"
 
 #define TRUE 1
@@ -207,6 +208,24 @@ find_next_str_offsets_tab(Dwarf_Str_Offsets_Table sot,
     DW_DLV_ERROR  if such garbage exists.
 */
 
+static int
+is_all_zeroes(Dwarf_Small*start,
+    Dwarf_Small*end)
+{
+    if (start >= end) {
+        /*  We should not get here, this is just
+            a defensive test. */
+        return TRUE;
+    }
+    for( ; start < end; ++start) {
+        if (!*start) {
+            /* There is some garbage here. */
+            return FALSE;
+        }
+    }
+    /* All just zero bytes. */
+    return TRUE;
+}
 
 int
 dwarf_next_str_offsets_table(Dwarf_Str_Offsets_Table sot,
@@ -256,14 +275,50 @@ dwarf_next_str_offsets_table(Dwarf_Str_Offsets_Table sot,
         if (table_start_ptr == sot->so_section_end_ptr) {
             /* At end of section. Done. */
             return DW_DLV_NO_ENTRY;
+        } else {
+            /* bogus table offset. */
+            ptrdiff_t len = table_start_ptr -
+                sot->so_section_end_ptr;
+            dwarfstring m;
+
+            dwarfstring_constructor(&m);
+            dwarfstring_append_printf_i(&m,
+                "DW_DLE_STR_OFFSETS_EXTRA_BYTES: "
+                "Table Offset is %"   DW_PR_DSd
+                " bytes past end of section",len);
+            _dwarf_error_string(sot->so_dbg,error,
+                DW_DLE_STR_OFFSETS_EXTRA_BYTES,
+                dwarfstring_string(&m));
+            dwarfstring_destructor(&m);
         }
     }
 
-    if ((table_start_ptr + MIN_HEADER_LENGTH) > sot->so_section_end_ptr) {
-        /*  We have some nonsense non-zero extra bytes!
-            Should we generate error? Or ignore? */
-        _dwarf_error(sot->so_dbg,error,
-            DW_DLE_STR_OFFSETS_EXTRA_BYTES);
+    if ((table_start_ptr + MIN_HEADER_LENGTH) >
+        sot->so_section_end_ptr) {
+
+        /*  We have a too-short section it appears.
+            Should we generate error? Or ignore?
+            As of March 10 2020 we check for garbage
+            bytes in-section. */
+        ptrdiff_t len = 0;
+        dwarfstring m;
+
+        if (is_all_zeroes(table_start_ptr,sot->so_section_end_ptr)){
+            return DW_DLV_NO_ENTRY;
+        }
+        len = sot->so_section_end_ptr -
+            table_start_ptr;
+        dwarfstring_constructor(&m);
+        dwarfstring_append_printf_i(&m,
+            "DW_DLE_STR_OFFSETS_EXTRA_BYTES: "
+            "Table Offset plus a minimal header is %"
+            DW_PR_DSd
+            " bytes past end of section"
+            " and some bytes in-section are non-zero",len);
+        _dwarf_error_string(sot->so_dbg,error,
+            DW_DLE_STR_OFFSETS_EXTRA_BYTES,
+            dwarfstring_string(&m));
+        dwarfstring_destructor(&m);
         return DW_DLV_ERROR;
     }
     READ_AREA_LENGTH_CK(sot->so_dbg,length,Dwarf_Unsigned,

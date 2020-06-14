@@ -159,7 +159,7 @@ _dwarf_transform_arange_to_disk(Dwarf_P_Debug dbg,
     const Dwarf_Signed big_zero = 0;
 
     int extension_word_size = dbg->de_64bit_extension ? 4 : 0;
-    int offset_size = dbg->de_offset_size;
+    int offset_size = dbg->de_dwarf_offset_size;
     int upointer_size = dbg->de_pointer_size;
 
     /*  All dwarf versions so far use 2 here. */

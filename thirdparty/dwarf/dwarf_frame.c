@@ -30,13 +30,12 @@
 
 #include "config.h"
 #include <stdio.h>
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 #ifdef HAVE_STDINT_H
 #include <stdint.h> /* For uintptr_t */
 #endif /* HAVE_STDINT_H */
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif /* HAVE_INTTYPES_H */
 #include "dwarf_incl.h"
 #include "dwarf_alloc.h"
 #include "dwarf_error.h"
@@ -238,14 +237,14 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
         return DW_DLV_ERROR
 
     /*  Sweeps the frame instructions. */
-    Dwarf_Small *instr_ptr;
+    Dwarf_Small *instr_ptr = 0;
 
     /*  Register numbers not limited to just 255, thus not using
         Dwarf_Small.  */
     typedef unsigned reg_num_type;
 
-    Dwarf_Unsigned factored_N_value;
-    Dwarf_Signed signed_factored_N_value;
+    Dwarf_Unsigned factored_N_value = 0;
+    Dwarf_Signed signed_factored_N_value = 0;
     Dwarf_Addr current_loc = initial_loc;       /* code location/
         pc-value corresponding to the frame instructions.
         Starts at zero when the caller has no value to pass in. */
@@ -268,7 +267,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
 
     /*  Used by the DW_FRAME_advance_loc instr */
     /*  to hold the increment in pc value.  */
-    Dwarf_Addr adv_pc;
+    Dwarf_Addr adv_pc = 0;
 
     Dwarf_Half address_size = (cie)? cie->ci_address_size:
         dbg->de_pointer_size;
@@ -279,13 +278,13 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
     /*  These contain the current fields of the current frame
         instruction. */
     Dwarf_Small fp_base_op = 0;
-    Dwarf_Small fp_extended_op;
-    reg_num_type fp_register;
+    Dwarf_Small fp_extended_op = 0;
+    reg_num_type fp_register = 0;
 
     /*  The value in fp_offset may be signed, though we call it
         unsigned. This works ok for 2-s complement arithmetic. */
-    Dwarf_Unsigned fp_offset;
-    Dwarf_Off fp_instr_offset;
+    Dwarf_Unsigned fp_offset = 0;
+    Dwarf_Off fp_instr_offset = 0;
 
     /*  Stack_table points to the row (Dwarf_Frame ie) being pushed or
         popped by a remember or restore instruction. Top_stack points to
@@ -300,11 +299,11 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
         used to deallocate the structs used to form the chain.
         Head_instr_block points to a contiguous list of pointers to the
         Dwarf_Frame_Op structs executed. */
-    Dwarf_Frame_Op *curr_instr;
-    Dwarf_Chain curr_instr_item, dealloc_instr_item;
+    Dwarf_Frame_Op *curr_instr = 0;
+    Dwarf_Chain curr_instr_item = 0;
     Dwarf_Chain head_instr_chain = NULL;
     Dwarf_Chain tail_instr_chain = NULL;
-    Dwarf_Frame_Op *head_instr_block;
+    Dwarf_Frame_Op *head_instr_block = 0;
 
     /*  These are the alignment_factors taken from the Cie provided.
         When no input Cie is provided they are set to 1, because only
@@ -318,7 +317,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
         is returned because the Cie did not have a valid augmentation. */
     Dwarf_Bool need_augmentation = false;
 
-    Dwarf_Unsigned i;
+    Dwarf_Unsigned i = 0;
 
     /*  Initialize first row from associated Cie. Using temp regs
         explicity */
@@ -576,7 +575,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
 
         case DW_CFA_offset_extended:
             {
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -602,7 +601,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
 
         case DW_CFA_restore_extended:
             {
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -625,7 +624,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
 
         case DW_CFA_undefined:
             {
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -644,7 +643,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
 
         case DW_CFA_same_value:
             {
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -728,7 +727,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
 
         case DW_CFA_def_cfa:
             {
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -754,7 +753,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
 
         case DW_CFA_def_cfa_register:
             {
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -853,7 +852,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
                     number. The second is a signed factored offset.
                     Identical to DW_CFA_offset_extended except the
                     second operand is signed */
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -934,7 +933,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
                     Makes the register be a val_offset(N) rule with N =
                     factored_offset*data_alignment_factor. */
 
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -965,7 +964,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
                     number. The second is a factored signed offset.
                     Makes the register be a val_offset(N) rule with N =
                     factored_offset*data_alignment_factor. */
-                Dwarf_Unsigned lreg;
+                Dwarf_Unsigned lreg = 0;
 
                 DECODE_LEB128_UWORD_CK(instr_ptr, lreg,
                     dbg,error,final_instr_ptr);
@@ -1077,6 +1076,7 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
             }
 
             curr_instr_item->ch_item = curr_instr;
+            curr_instr_item->ch_itemtype = DW_DLA_FRAME_OP;
             if (head_instr_chain == NULL)
                 head_instr_chain = tail_instr_chain = curr_instr_item;
             else {
@@ -1147,13 +1147,17 @@ _dwarf_exec_frame_instr(Dwarf_Bool make_instr,
             deallocate the structs that chain the Dwarf_Frame_Op's. */
         curr_instr_item = head_instr_chain;
         for (i = 0; i < instr_count; i++) {
-            *(head_instr_block + i) =
-                *(Dwarf_Frame_Op *) curr_instr_item->ch_item;
-            dealloc_instr_item = curr_instr_item;
+            void *item = curr_instr_item->ch_item;
+            int itemtype = curr_instr_item->ch_itemtype;
+            Dwarf_Chain prev_instr =  0;
+
+            /* This copies the structs, not pointers */
+            *(head_instr_block + i) = *(Dwarf_Frame_Op *)item;
+            prev_instr = curr_instr_item; 
             curr_instr_item = curr_instr_item->ch_next;
-            dwarf_dealloc(dbg, dealloc_instr_item->ch_item,
-                DW_DLA_FRAME_OP);
-            dwarf_dealloc(dbg, dealloc_instr_item, DW_DLA_CHAIN);
+            /*  Now the pointed-to are space to dealloc */
+            dwarf_dealloc(dbg, item, itemtype);
+            dwarf_dealloc(dbg, prev_instr, DW_DLA_CHAIN);
         }
         *ret_frame_instr = head_instr_block;
         *returned_count = (Dwarf_Signed) instr_count;
@@ -2160,8 +2164,10 @@ dwarf_get_fde_info_for_cfa_reg3_b(Dwarf_Fde fde,
         table_real_data_size, error);
     if (res != DW_DLV_OK)
         return res;
-    res = _dwarf_get_fde_info_for_a_pc_row(fde, pc_requested, &fde_table,
-        dbg->de_frame_cfa_col_number,has_more_rows,subsequent_pc,error);
+    res = _dwarf_get_fde_info_for_a_pc_row(fde, pc_requested,
+        &fde_table,
+        dbg->de_frame_cfa_col_number,has_more_rows,
+        subsequent_pc,error);
     if (res != DW_DLV_OK) {
         dwarf_free_fde_table(&fde_table);
         return res;

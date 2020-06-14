@@ -24,12 +24,15 @@
 
 */
 
+#include "config.h"
 #ifdef _WIN32
 #define _CRT_SECURE_NO_WARNINGS
 #endif /* _WIN32 */
 
 #include <stdio.h>
-#include <stdlib.h>  /* For exit() declaration etc. */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 #include <errno.h>   /* For errno declaration. */
 #include <ctype.h>
 #include <string.h>

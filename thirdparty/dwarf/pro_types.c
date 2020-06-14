@@ -27,12 +27,16 @@
 #include "config.h"
 #include "libdwarfdefs.h"
 #include <stdio.h>
+#ifdef HAVE_STRING_H
 #include <string.h>
+#endif /* HAVE_STRING_H */
 #ifdef HAVE_ELFACCESS_H
 #include <elfaccess.h>
 #endif
 #include "pro_incl.h"
+#ifdef HAVE_STDDEF_H
 #include <stddef.h>
+#endif /* HAVE_STDDEF_H */
 #include "dwarf.h"
 #include "libdwarf.h"
 #include "pro_opaque.h"
@@ -125,7 +129,7 @@ _dwarf_add_simple_name_entry(Dwarf_P_Debug dbg,
     nameentry->sne_die = die;
     nameentry->sne_name = name;
     nameentry->sne_name_len = strlen(name);
-    uword_size = dbg->de_offset_size;
+    uword_size = dbg->de_dwarf_offset_size;
 
     hdr = &dbg->de_simple_name_headers[entrykind];
     if (hdr->sn_head == NULL)
@@ -177,7 +181,7 @@ _dwarf_transform_simplename_to_disk(Dwarf_P_Debug dbg,
     Dwarf_Unsigned adjusted_length; /* count excluding length field */
 
 
-    int uword_size = dbg->de_offset_size;
+    int uword_size = dbg->de_dwarf_offset_size;
     int extension_size = dbg->de_64bit_extension ? 4 : 0;
 
     Dwarf_P_Simple_name_header hdr;

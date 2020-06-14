@@ -451,7 +451,7 @@ dwarf_get_loclist_c(Dwarf_Attribute attr,
         ((cuvstamp == DW_CU_VERSION4 || cuvstamp == DW_CU_VERSION5) &&
         form == DW_FORM_sec_offset)) {
         /* Here we have a loclist to deal with. */
-        setup_res = context_is_cu_not_tu(cucontext,&is_cu,error);
+        setup_res = context_is_cu_not_tu(cucontext,&is_cu);
         if(setup_res != DW_DLV_OK) {
             return setup_res;
         }

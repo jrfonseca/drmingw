@@ -25,16 +25,23 @@
 
 */
 
-
+#ifndef DWARF_ERROR_H
+#define DWARF_ERROR_H
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
 void _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error,
     Dwarf_Signed errval);
+void _dwarf_error_string(Dwarf_Debug dbg, Dwarf_Error * error,
+    Dwarf_Signed errval, char *msg);
 
 #define DE_STANDARD 0 /* Normal alloc attached to dbg. */
 #define DE_STATIC 1   /* Using global static var */
 #define DE_MALLOC 2   /* Using malloc space */
 struct Dwarf_Error_s {
     Dwarf_Signed er_errval;
+    void       * er_msg;
 
     /*  If non-zero the Dwarf_Error_s struct is not malloc'd.
         To aid when malloc returns NULL.
@@ -50,5 +57,9 @@ struct Dwarf_Error_s {
     */
     int er_static_alloc;
 };
-
 extern struct Dwarf_Error_s _dwarf_failsafe_error;
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+#endif /* DWARF_ERROR_H */

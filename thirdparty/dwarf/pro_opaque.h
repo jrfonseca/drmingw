@@ -140,13 +140,11 @@ struct Dwarf_P_Line_format_s {
 /*  Describes the data needed to generate line table header info
     so we can vary the init at runtime. */
 struct Dwarf_P_Line_Inits_s {
-    unsigned pi_version; /* line table version number */
+    unsigned pi_linetable_version; /* line table version number */
     unsigned pi_default_is_stmt; /* default value for is_stmt */
 
     /* Size of the smallest instruction, in bytes. */
     unsigned pi_minimum_instruction_length;
-
-
 
     /*  Normally opcode_base is determined by pi_version, but we
         allow manual setting here so we can generate data like
@@ -161,7 +159,8 @@ struct Dwarf_P_Line_Inits_s {
     /* Make this >1 for VLIW machines.  DWARF4,DWARF5 */
     unsigned pi_maximum_operations_per_instruction;
 
-    /* DWARF 5 */
+    /* DWARF 5  */
+    unsigned pi_segment_selector_size;
     unsigned pi_address_size;
     unsigned pi_segment_size;
     unsigned pi_directory_entry_format_count;
@@ -505,15 +504,9 @@ struct Dwarf_P_Debug_s {
         that producing an IRIX exception-table offset in a CIE header
         is allowed (depending on the augmentation string). */
 
-    unsigned char de_offset_size;  /* section offset. Here to
-        avoid test of abi in macro
-        at run time MIPS -n32 4,
-        -64 8.  */
-
-    unsigned char de_pointer_size; /* size of pointer in target.
-        Here to avoid test of abi in
-        macro at run time MIPS -n32
-        4, -64 is 8.  */
+    unsigned char de_dwarf_offset_size; /* dwarf  offset size. */
+    unsigned char de_elf_offset_size;  /* object section offset size. */
+    unsigned char de_pointer_size; /* size of address in target. */
 
     /*  Added April 19, 2017.  For DWARF5 */
     unsigned char de_segment_selector_size;
@@ -531,6 +524,9 @@ struct Dwarf_P_Debug_s {
     unsigned char de_output_version; /* 2,3,4, or 5. The version number
         of the output. (not necessarily that of each section,
         which depends on the base version). */
+
+    /*  Defaults will be mostly useless, but such do exist */
+    unsigned       de_big_endian; /* if 0 target is little-endian */
 
     int de_ar_data_attribute_form; /* data8, data4 abi &version dependent */
     int de_ar_ref_attr_form; /* ref8 ref4 , abi dependent */
@@ -589,3 +585,7 @@ _dwarf_insert_or_find_in_debug_str(Dwarf_P_Debug dbg,
     unsigned slen, /* includes space for trailing NUL */
     Dwarf_Unsigned *offset_in_debug_str,
     Dwarf_Error *error);
+
+int _dwarf_log_extra_flagstrings(Dwarf_P_Debug dbg,
+  const char *extra,
+  int *err);

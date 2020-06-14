@@ -68,7 +68,10 @@ struct Dwarf_File_Entry_s {
     Dwarf_Unsigned fi_file_length;
 
     Dwarf_Form_Data16   fi_md5_value;
-    char                fi_md5_present;
+    char           fi_dir_index_present;
+    char           fi_time_last_mod_present;
+    char           fi_file_length_present;
+    char           fi_md5_present;
 };
 
 /*  Part of two-level line tables support. */
@@ -80,6 +83,11 @@ struct Dwarf_Subprog_Entry_s {
 
 typedef struct Dwarf_Subprog_Entry_s *Dwarf_Subprog_Entry;
 
+
+struct Dwarf_Unsigned_Pair_s {
+    Dwarf_Unsigned  up_first;
+    Dwarf_Unsigned  up_second;
+};
 
 /*
     This structure provides the context in which the fields of
@@ -101,28 +109,33 @@ struct Dwarf_Line_Context_s {
         Otherwise this is 0.  */
     unsigned char lc_new_style_access;
 
+    Dwarf_Unsigned lc_unit_length; /* all versions */
+
     /* The section offset (in .debug_line
         or .debug_line.dwo of the line table */
     Dwarf_Unsigned lc_section_offset;
 
     /*  2 for DWARF2, 3 for DWARF3, 4 for DWARF4, 5 for DWARF5.
         0xf006 for experimental two-level line tables. */
-    Dwarf_Half lc_version_number;
+    Dwarf_Half lc_version_number; /* all versions */
 
     /* Total length of the line data for this CU */
-    Dwarf_Unsigned lc_total_length;
+    Dwarf_Unsigned lc_total_length; /* all versions */
 
     /* Length of the initial length field itself. */
-    Dwarf_Half lc_length_field_length;
+    Dwarf_Half lc_length_field_length; /* all versions */
 
     /* address size and segment sizefields new in DWARF5 header.  */
-    Dwarf_Small lc_address_size;
-    Dwarf_Small lc_segment_selector_size;
+    Dwarf_Small lc_address_size; /* DWARF5 */
+    Dwarf_Small lc_segment_selector_size; /* DWARF5 */
+
+    Dwarf_Unsigned lc_header_length; /* all versions */
 
     Dwarf_Unsigned lc_prologue_length;
     Dwarf_Unsigned lc_actuals_table_offset;
     Dwarf_Unsigned lc_logicals_table_offset;
-    Dwarf_Small lc_minimum_instruction_length;
+    Dwarf_Small lc_minimum_instruction_length;  /* all versions */
+    Dwarf_Ubyte lc_maximum_ops_per_instruction; /*DWARF5*/
 
     /*  Start and end of this CU line area. pf_line_ptr_start +
         pf_total_length + pf_length_field_length == pf_line_ptr_end.
@@ -135,16 +148,15 @@ struct Dwarf_Line_Context_s {
     /* Used to check that decoding of the line prologue is done right. */
     Dwarf_Small *lc_line_prologue_start;
 
-    Dwarf_Small lc_default_is_stmt;
-    Dwarf_Ubyte lc_maximum_ops_per_instruction; /*DWARF5*/
-    Dwarf_Sbyte lc_line_base;
-    Dwarf_Small lc_line_range;
+    Dwarf_Small lc_default_is_stmt; /* all versions */
+    Dwarf_Sbyte lc_line_base;  /* all versions */
+    Dwarf_Small lc_line_range;  /* all versions */
 
     /* Highest std opcode (+1).  */
-    Dwarf_Small lc_opcode_base;
+    Dwarf_Small lc_opcode_base; /* all versions */
     /*  pf_opcode_base -1 entries (each a count, normally the value of
         each entry is 0 or 1). */
-    Dwarf_Small *lc_opcode_length_table;
+    Dwarf_Small *lc_opcode_length_table; /* all versions */
 
     /*  The number to treat as standard ops. This is a special
         accomodation of gcc using the new standard opcodes but not
@@ -152,31 +164,56 @@ struct Dwarf_Line_Context_s {
         for the user to understand as dwarf3 when 'it looks ok'. */
     Dwarf_Small lc_std_op_count;
 
+    /* ======== includes =========*/
+    /*  Points to the portion of .debug_line section that
+        contains a list of strings naming the included
+        directories.  Do not free().
+        No free even DWARF5?
+        An array of pointers to strings.  */
+    /*  DWARF 2,3,4: does not name the current dir of the compilation.
+        DWARF5: Initial entry is the dir of the compilation. */
+    Dwarf_Small **lc_include_directories;
+    /*  Count of the number of included directories. */
+    Dwarf_Unsigned lc_include_directories_count;
+
+    /* count of uleb pairs */
+    Dwarf_Unsigned lc_directory_entry_format_count; /* DWARF5 */
+
+    Dwarf_Unsigned lc_directory_entry_values_count; /* DWARF5 */
+    /*  This must be freed,malloc space, an array of the
+        values of each entry. */
+    struct Dwarf_Unsigned_Pair_s * lc_directory_format_values; /* DWARF5 */
+
+    /* ======== end includes =========*/
+
+    /* ======== file names =========*/
+
+    Dwarf_Unsigned lc_file_name_format_count; /* DWARF5 */
+    Dwarf_Unsigned * lc_file_name_format; /* DWARF5 */
+    Dwarf_Unsigned lc_file_entry_values_count; /* DWARF5 */
+    /*  This must be freed,malloc space, an array of the
+        values of each entry. */
+    struct Dwarf_Unsigned_Pair_s * lc_file_format_values; /* DWARF5 */
+
     /*  Points to a singly-linked list of entries providing info
         about source files
         for the current set of Dwarf_Line structures.
-        The initial  entry on the list is 'file 1' per DWARF rules.
+        The initial  entry on the list is 'file 1' per DWARF2,3,4 rules.
         And so on.  lc_last_entry points at the last entry
         in the list (so we can easily expand the list).
         It's a list (not a table) since we may encounter
-        DW_LNE_define_file entries. */
+        DW_LNE_define_file entries.
+        For Dwarf5 the initial entry is 'file 0'
+        and must match the CU-DIE DW_AT_name string. */
     Dwarf_File_Entry lc_file_entries;
     Dwarf_File_Entry lc_last_entry;
     /*  Count of number of source files for this set of Dwarf_Line
         structures. */
-    Dwarf_Unsigned lc_file_entry_count;
+    Dwarf_Unsigned lc_file_entry_count; /* all versions */
     /*  Values Easing the process of indexing through lc_file_entries. */
     Dwarf_Unsigned lc_file_entry_baseindex;
     Dwarf_Unsigned lc_file_entry_endindex;
-
-
-    /*  Points to the portion of .debug_line section that
-        contains a list of strings naming the included
-        directories.  Do not free().
-        An array of pointers to strings.  */
-    Dwarf_Small **lc_include_directories;
-    /*  Count of the number of included directories. */
-    Dwarf_Unsigned lc_include_directories_count;
+    /* ======== end file names =========*/
 
 
     /*  Points to an array of subprogram entries.
@@ -192,8 +229,9 @@ struct Dwarf_Line_Context_s {
     Dwarf_Unsigned lc_line_count;
 
     /*  Points to name of compilation directory.
-        That string is in a .debug section so
-        do not free this. */
+        That string is in a .debug section  (DWARF 2,3,4)
+        so do not free this. For DWARF5 must be the same
+        as lc_include_directories[0] */
     Dwarf_Small *lc_compilation_directory;
 
     Dwarf_Debug lc_dbg;

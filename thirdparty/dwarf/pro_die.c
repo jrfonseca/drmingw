@@ -33,14 +33,15 @@
 #include "libdwarfdefs.h"
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
-#include <stdlib.h>
-#endif
+#include <stdlib.h> /* for exit(), C89 malloc */
+#endif /* HAVE_STDLIB_H */
+#ifdef HAVE_MALLOC_H
+/* Useful include for some Windows compilers. */
+#include <malloc.h>
+#endif /* HAVE_MALLOC_H */
 #ifdef HAVE_STDINT_H
 #include <stdint.h> /* For uintptr_t */
 #endif /* HAVE_STDINT_H */
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif /* HAVE_INTTYPES_H */
 #include <string.h>
 #include <stddef.h>
 #include "pro_incl.h"
@@ -324,7 +325,7 @@ _dwarf_pro_add_AT_stmt_list(Dwarf_P_Debug dbg,
     Dwarf_P_Die first_die, Dwarf_Error * error)
 {
     Dwarf_P_Attribute new_attr;
-    int uwordb_size = dbg->de_offset_size;
+    int uwordb_size = dbg->de_dwarf_offset_size;
 
     /* Add AT_stmt_list attribute */
     new_attr = (Dwarf_P_Attribute)
@@ -619,7 +620,7 @@ int _dwarf_pro_set_string_attr(Dwarf_P_Attribute new_attr,
     unsigned slen = strlen(name)+1;
 
     if (form == DW_FORM_string ||
-        slen <= dbg->de_offset_size) {
+        slen <= dbg->de_dwarf_offset_size) {
         new_attr->ar_nbytes = slen;
         new_attr->ar_next = 0;
 
@@ -639,7 +640,7 @@ int _dwarf_pro_set_string_attr(Dwarf_P_Attribute new_attr,
         return DW_DLV_OK;
     }
     if (form == DW_FORM_strp) {
-        int uwordb_size = dbg->de_offset_size;
+        int uwordb_size = dbg->de_dwarf_offset_size;
         Dwarf_Unsigned offset_in_debug_str = 0;
         int res = 0;
 
@@ -795,7 +796,7 @@ _dwarf_pro_add_AT_fde(Dwarf_P_Debug dbg,
     Dwarf_Unsigned offset, Dwarf_Error * error)
 {
     Dwarf_P_Attribute new_attr;
-    int uwordb_size = dbg->de_offset_size;
+    int uwordb_size = dbg->de_dwarf_offset_size;
 
     if (die == NULL) {
         DWARF_P_DBG_ERROR(NULL, DW_DLE_DIE_NULL, DW_DLV_ERROR);
@@ -835,7 +836,7 @@ _dwarf_pro_add_AT_macro_info(Dwarf_P_Debug dbg,
     Dwarf_Unsigned offset, Dwarf_Error * error)
 {
     Dwarf_P_Attribute new_attr;
-    int uwordb_size = dbg->de_offset_size;
+    int uwordb_size = dbg->de_dwarf_offset_size;
 
     if (die == NULL) {
         DWARF_P_DBG_ERROR(NULL, DW_DLE_DIE_NULL, DW_DLV_ERROR);

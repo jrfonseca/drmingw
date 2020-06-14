@@ -6,25 +6,28 @@
   Portions Copyright 2008-2010 Arxan Technologies, Inc. All rights reserved.
   Portions Copyright 2010-2012 SN Systems Ltd. All rights reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License
-  as published by the Free Software Foundation.
+  This program is free software; you can redistribute it
+  and/or modify it under the terms of version 2.1 of the
+  GNU Lesser General Public License as published by the Free
+  Software Foundation.
 
-  This program is distributed in the hope that it would be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  This program is distributed in the hope that it would be
+  useful, but WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  PURPOSE.
 
-  Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement
-  or the like.  Any license provided herein, whether implied or
-  otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with
-  other software, or any other product whatsoever.
+  Further, this software is distributed without any warranty
+  that it is free of the rightful claim of any third person
+  regarding infringement or the like.  Any license provided
+  herein, whether implied or otherwise, applies only to this
+  software file.  Patent licenses, if any, provided herein
+  do not apply to combinations of this program with other
+  software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this program; if not, write the Free Software
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
-  USA.
+  You should have received a copy of the GNU Lesser General
+  Public License along with this program; if not, write the
+  Free Software Foundation, Inc., 51 Franklin Street - Fifth
+  Floor, Boston MA 02110-1301, USA.
 
 */
 
@@ -214,10 +217,13 @@ typedef struct {
         where loc-expr begins*/
 } Dwarf_Locdesc;
 
-/*  First appears in DWARF3.
+/*  First appears in DWARF3, and only ranges entries exist.
     The dwr_addr1/addr2 data is either an offset (DW_RANGES_ENTRY)
     or an address (dwr_addr2 in DW_RANGES_ADDRESS_SELECTION) or
     both are zero (DW_RANGES_END).
+    For DWARF5 each table starts with a header
+    followed by range list entries defined
+    as here.
 */
 enum Dwarf_Ranges_Entry_Type { DW_RANGES_ENTRY,
     DW_RANGES_ADDRESS_SELECTION,
@@ -545,13 +551,15 @@ typedef struct Dwarf_Cie_s*        Dwarf_Cie;
 typedef struct Dwarf_Arange_s*     Dwarf_Arange;
 typedef struct Dwarf_Gdbindex_s*   Dwarf_Gdbindex;
 struct Dwarf_Xu_Index_Header_s;
-typedef struct Dwarf_Xu_Index_Header_s* Dwarf_Xu_Index_Header;
+typedef struct Dwarf_Xu_Index_Header_s  *Dwarf_Xu_Index_Header;
 struct Dwarf_Line_Context_s;
-typedef struct Dwarf_Line_Context_s *Dwarf_Line_Context;
+typedef struct Dwarf_Line_Context_s     *Dwarf_Line_Context;
 struct Dwarf_Macro_Context_s;
-typedef struct Dwarf_Macro_Context_s *Dwarf_Macro_Context;
+typedef struct Dwarf_Macro_Context_s    *Dwarf_Macro_Context;
 struct Dwarf_Dnames_Head_s;
-typedef struct Dwarf_Dnames_Head_s* Dwarf_Dnames_Head;
+typedef struct Dwarf_Dnames_Head_s      *Dwarf_Dnames_Head;
+struct Dwarf_Rnglists_Context_s;
+typedef struct Dwarf_Rnglists_Context_s *Dwarf_Rnglists_Context;
 
 
 
@@ -826,8 +834,8 @@ struct Dwarf_Obj_Access_Interface_s {
 #define DW_DLA_ADDR            0x1c     /* Dwarf_Addr sized entries */
 #define DW_DLA_RANGES          0x1d     /* Dwarf_Ranges */
 
-/* 0x1e (30) to 0x36 (54) reserved for internal to libdwarf types. */
-
+/* 0x1e (30) to 0x35 (53) reserved for internal to libdwarf types. */
+#define DW_DLA_RNGLISTS_HEAD   0x36     /* .debug_rnglists DW5 */
 #define DW_DLA_GDBINDEX        0x37     /* Dwarf_Gdbindex */
 #define DW_DLA_XU_INDEX        0x38     /* Dwarf_Xu_Index_Header */
 #define DW_DLA_LOC_BLOCK_C     0x39     /* Dwarf_Loc_c*/
@@ -865,9 +873,20 @@ struct Dwarf_Obj_Access_Interface_s {
     These names still work.
     Newer names below.
 */
-#define DW_DLC_SIZE_64              0x40000000 /* 64-bit address-size target */
-#define DW_DLC_SIZE_32              0x20000000 /* 32-bit address-size target */
-#define DW_DLC_OFFSET_SIZE_64       0x10000000 /* 64-bit offset-size DWARF */
+/* 64-bit address-size target */
+#define DW_DLC_SIZE_64              0x40000000
+
+/* 32-bit address-size target */
+#define DW_DLC_SIZE_32              0x20000000
+
+/* 64-bit offset-size DWARF offsets (else 32bit) */
+#define DW_DLC_OFFSET_SIZE_64       0x10000000
+
+/* 32-bit offset-size ELF object (ELFCLASS32) */
+#define DW_DLC_ELF_OFFSET_SIZE_32   0x00400000
+
+/* 64-bit offset-size ELF object (ELFCLASS64)  */
+#define DW_DLC_ELF_OFFSET_SIZE_64   0x00020000
 
 /* dwarf_producer_init* access flag modifiers
    Some new April 2014.
@@ -878,13 +897,23 @@ struct Dwarf_Obj_Access_Interface_s {
 /* Old style Elf binary relocation (.rel) records. The default. */
 #define DW_DLC_STREAM_RELOCATIONS   0x02000000
 
-#define DW_DLC_OFFSET32             0x00010000 /* use 32-bit sec offsets */
-/* The following 3 are new sensible names. Old names above with same values. */
-#define DW_DLC_OFFSET64             0x10000000 /* use 64-bit sec offsets */
-#define DW_DLC_POINTER32            0x20000000 /* use 4 for address_size */
-#define DW_DLC_POINTER64            0x40000000 /* use 8 for address_size */
+/* use 32-bit  sec  offsets */
+#define DW_DLC_OFFSET32             0x00010000
+
+/* The following 3 are new sensible names.
+Old names above with same values. */
+/* use 64-bit sec offsets in ELF */
+#define DW_DLC_OFFSET64             0x10000000
+
+/* use 4 for address_size */
+#define DW_DLC_POINTER32            0x20000000
+
+/* use 8 for address_size */
+#define DW_DLC_POINTER64            0x40000000
+
 /* Special for IRIX only */
-#define DW_DLC_IRIX_OFFSET64        0x00200000 /* use non-std IRIX 64bitoffset headers  */
+/* use Elf 64bit offset headers and non-std IRIX 64bitoffset headers */
+#define DW_DLC_IRIX_OFFSET64        0x00200000
 
 /*  Usable with assembly output because it is up to the producer to
     deal with locations in whatever manner the calling producer
@@ -1358,9 +1387,30 @@ struct Dwarf_Obj_Access_Interface_s {
 #define DW_DLE_READ_OFF_END                    445
 #define DW_DLE_ELF_SECTION_ERROR               446
 #define DW_DLE_ELF_STRING_SECTION_ERROR        447
+#define DW_DLE_MIXING_SPLIT_DWARF_VERSIONS     448
+#define DW_DLE_TAG_CORRUPT                     449
+#define DW_DLE_FORM_CORRUPT                    450
+#define DW_DLE_ATTR_CORRUPT                    451
+#define DW_DLE_ABBREV_ATTR_DUPLICATION         452
+#define DW_DLE_DWP_SIGNATURE_MISMATCH          453
+#define DW_DLE_CU_UT_TYPE_VALUE                454
+#define DW_DLE_DUPLICATE_GNU_DEBUGLINK         455
+#define DW_DLE_CORRUPT_GNU_DEBUGLINK           456
+#define DW_DLE_CORRUPT_NOTE_GNU_DEBUGID        457
+#define DW_DLE_CORRUPT_GNU_DEBUGID_SIZE        458
+#define DW_DLE_CORRUPT_GNU_DEBUGID_STRING      459
+#define DW_DLE_HEX_STRING_ERROR                460
+#define DW_DLE_DECIMAL_STRING_ERROR            461
+#define DW_DLE_PRO_INIT_EXTRAS_UNKNOWN         462
+#define DW_DLE_PRO_INIT_EXTRAS_ERR             463
+#define DW_DLE_NULL_ARGS_DWARF_ADD_PATH        464
+#define DW_DLE_DWARF_INIT_DBG_NULL             465
+#define DW_DLE_ELF_RELOC_SECTION_ERROR         466
+#define DW_DLE_USER_DECLARED_ERROR             467
+#define DW_DLE_RNGLISTS_ERROR                  468
 
-    /* LAST MUST EQUAL LAST ERROR NUMBER */   
-#define DW_DLE_LAST        447
+    /* LAST MUST EQUAL LAST ERROR NUMBER */
+#define DW_DLE_LAST        468
 
 #define DW_DLE_LO_USER     0x10000
 
@@ -1515,6 +1565,15 @@ int dwarf_elf_init(dwarf_elf_handle /*elf*/,
     Dwarf_Debug*      /*dbg*/,
     Dwarf_Error*      /*error*/);
 
+/*  New September 2019.
+    When using dwarf_elf_init[_b]() we still want the file path
+    in the record. So we add it after the init phase.
+    Path is needed for buildid and debuglink to fully work.
+*/
+int  dwarf_add_file_path(Dwarf_Debug /*dbg*/,
+    const char * /*file_name*/,
+    Dwarf_Error*      /*error*/);
+
 /* Undocumented function for memory allocator. */
 void dwarf_print_memory_stats(Dwarf_Debug  /*dbg*/);
 
@@ -1550,6 +1609,10 @@ int dwarf_get_tied_dbg(Dwarf_Debug /*dbg*/,
 
 int dwarf_object_finish(Dwarf_Debug /*dbg*/,
     Dwarf_Error* /*error*/);
+
+/*  Returns the version string. Example: "20190922"
+    which is in ISO date format. */
+const char * dwarf_package_version(void);
 
 /*  Section name access.  Because sections might
     now end with .dwo or be .zdebug  or might not.
@@ -1705,6 +1768,10 @@ int dwarf_debug_addr_index_to_addr(Dwarf_Die /*die*/,
     Dwarf_Unsigned  /*index*/,
     Dwarf_Addr    * /*return_addr*/,
     Dwarf_Error   * /*error*/);
+/*  Reading a CU DIE with DW_AT_low_pc an indexed value
+    can be problematic as that interacts with DW_AT_addr_base
+    in that DIE. Here is a test readers may find useful */
+Dwarf_Bool dwarf_addr_form_is_indexed(int form);
 
 
 /*  dwarf_CU_dieoffset_given_die returns
@@ -1950,7 +2017,6 @@ int dwarf_whatform(Dwarf_Attribute /*attr*/,
 int dwarf_whatform_direct(Dwarf_Attribute /*attr*/,
     Dwarf_Half *     /*returned_initial_form*/,
     Dwarf_Error*     /*error*/);
-
 int dwarf_whatattr(Dwarf_Attribute /*attr*/,
     Dwarf_Half *     /*returned_attr_num*/,
     Dwarf_Error*     /*error*/);
@@ -2482,15 +2548,58 @@ int dwarf_debugnames_entrypool_values(Dwarf_Dnames_Head /*dn*/,
 
 /* end of .debug_names interfaces. */
 
+/*  New October 2019.  Access to the GNU section named
+    .gnu_debuglink  and/or the section .note.gnu.build-id.
+    See
+    https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+    The dbg argument provides data access and relies on
+    fields de_path,de_debuglink_globals, de_debuglink_globals_length
+    If no debuglink then name_returned,crc_returned and
+    debuglink_path_returned will get set 0 through the pointers.
+    If no .note.gnu.build-id then  buildid_length_returned,
+    and buildid_returned will be set 0 through the pointers.
+    See libdwarf2.1.mm for additional important details.
+    see dwarf_add_file_path()
+    and dwarf_add_debuglink_global_path().
+*/
+
+int dwarf_gnu_debuglink(Dwarf_Debug /*dbg*/,
+    char     **  /*name_returned*/,
+    unsigned char **  /*crc_returned from the debuglink section*/,
+    char     **  /*debuglink_path_returned*/,
+    unsigned *   /*debuglink_path_count_returned*/,
+    unsigned *   /*buildid_type_returned */,
+    char     **  /*buildid_owner_name_returned*/,
+    unsigned char ** /*buildid_returned*/,
+    unsigned *   /*buildid_length_returned*/,
+    char     *** /*paths_returned*/,
+    unsigned *   /*paths_length_returned*/,
+    Dwarf_Error* /*error*/);
+
+/* See
+   https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+   and dwarf_gnu_debuglink()
+   pathname is a path-prefix to be added to a list of path-prefixes,
+   The default "/usr/lib/debug" is built-in and is the first
+   such in the list held in dbg.
+   The path prefix should start with / .
+   It can just end or end with / , either choice will work.
+*/
+int dwarf_add_debuglink_global_path(Dwarf_Debug /*dbg*/,
+    const char *pathname,
+    Dwarf_Error* /*error*/);
+
 
 /*  global name space operations (.debug_pubnames access)
- *  The pubnames and similar sections are rarely used. Few compilers
+    The pubnames and similar sections are rarely used. Few compilers
     emit them. They are DWARF 2,3,4 only., not DWARF 5.  */
 
-/*  New March 2019. Mostly special for dwarfdump. */
+/*  New March 2019. Special for dwarfdump.
+    Sets a flag in the dbg. Always returns DW_DLV_OK
+    and (as of March 2020) never touches error */
 int dwarf_return_empty_pubnames(Dwarf_Debug /*dbg*/,
     int /* flag */,
-    Dwarf_Error*     /*error*/);
+    Dwarf_Error* /*error*/);
 
 int dwarf_get_globals(Dwarf_Debug /*dbg*/,
     Dwarf_Global**   /*globals*/,
@@ -2720,6 +2829,7 @@ int dwarf_get_abbrev_tag(Dwarf_Abbrev /*abbrev*/,
 int dwarf_get_abbrev_code(Dwarf_Abbrev /*abbrev*/,
     Dwarf_Unsigned*  /*return_code_number*/,
     Dwarf_Error*     /*error*/);
+
 /* See comments in dwarf_abbrev.c. Not an entirely safe function. */
 int dwarf_get_abbrev_count(Dwarf_Debug /*dbg*/);
 
@@ -2727,6 +2837,23 @@ int dwarf_get_abbrev_children_flag(Dwarf_Abbrev /*abbrev*/,
     Dwarf_Signed*    /*return_flag*/,
     Dwarf_Error*     /*error*/);
 
+/*  New August 2019.
+    Most uses will call with filter_outliers non-zero.
+    In that case impossible values return DW_DLV_ERROR.
+    Those doing extra things (like dwarfdump) will
+    call with filter_outliers zero to get the raw data
+    (effectively); */
+int dwarf_get_abbrev_entry_b(Dwarf_Abbrev abbrev,
+    Dwarf_Unsigned indx,
+    Dwarf_Bool     filter_outliers,
+    Dwarf_Unsigned * returned_attr_num,
+    Dwarf_Unsigned * returned_form,
+    Dwarf_Signed   * returned_implict_const,
+    Dwarf_Off      * offset,
+    Dwarf_Error    * error);
+
+/*  Obsolete because it cannot return the
+    DW_FORM_implicit_const value. */
 int dwarf_get_abbrev_entry(Dwarf_Abbrev /*abbrev*/,
     Dwarf_Signed     /*index*/,
     Dwarf_Half  *    /*returned_attr_num*/,
@@ -3159,8 +3286,15 @@ dwarf_register_printf_callback(Dwarf_Debug /*dbg*/,
     about some compiler errors we detect.
     We return the count of detected errors through the
     pointer.
+
+    Use dwarf_check_lineheader_b() (new 14 April 2020)
+    in place of dwarf_check_lineheader().
 */
-void dwarf_check_lineheader(Dwarf_Die /*cu_die*/,int *errcount_out);
+int dwarf_check_lineheader_b(Dwarf_Die /*cu_die*/,
+    int * /*errcount_out*/,
+    Dwarf_Error * /*error*/);
+void dwarf_check_lineheader(Dwarf_Die /*cu_die*/,
+    int * /*errcount_out*/);
 
 /*  dwarf_ld_sort_lines helps SGI IRIX ld
     rearrange lines in .debug_line in a .o created with a text
@@ -3465,9 +3599,11 @@ int dwarf_get_debugfission_for_key(Dwarf_Debug /*dbg*/,
 
 /*  Utility operations */
 Dwarf_Unsigned dwarf_errno(Dwarf_Error     /*error*/);
-
 char* dwarf_errmsg(Dwarf_Error    /*error*/);
 char* dwarf_errmsg_by_number(Dwarf_Unsigned /* errornum */);
+void  dwarf_error_creation(Dwarf_Debug /*dbg*/ ,
+    Dwarf_Error * /*error*/, char * /*errmsg*/);
+
 
 /*  stringcheck zero is default and means do all
     string length validity checks.
@@ -3502,6 +3638,11 @@ Dwarf_Ptr dwarf_seterrarg(Dwarf_Debug /*dbg*/, Dwarf_Ptr /*errarg*/);
 
 void dwarf_dealloc(Dwarf_Debug /*dbg*/, void* /*space*/,
     Dwarf_Unsigned /*type*/);
+/*  These convenience functions allow type checking at the call,
+    whereas dwarf_dealloc itself uses void * so ... easy to misuse. */ 
+void dwarf_dealloc_error(Dwarf_Debug /*dbg*/, Dwarf_Error /*err*/);
+void dwarf_dealloc_die( Dwarf_Die /*die*/);
+void dwarf_dealloc_attribute(Dwarf_Attribute /*attr*/);
 
 
 /* DWARF Producer Interface */
@@ -4234,7 +4375,7 @@ void dwarf_dealloc_compressed_block(
     void *
 );
 
-/*  Call this passing in return value from 
+/*  Call this passing in return value from
     dwarf_uncompress_integer_block()
     to free the space the decompression allocated. */
 void dwarf_dealloc_uncompressed_block(
@@ -4242,13 +4383,13 @@ void dwarf_dealloc_uncompressed_block(
     void *
 );
 
-/*  dwarf_compress_integer_block_a( new 11 February 2019. 
+/*  dwarf_compress_integer_block_a( new 11 February 2019.
     Like the earlier version this turns an array of signed
     integers into a block of sleb values (and if the
     values are small enough it might be a compression!
     Or it could be an expansion...). Return DW_DLV_OK
     on success. Supercedes dwarf_compress_integer_block():
-    as no ugly cast needed to know if 
+    as no ugly cast needed to know if
     dwarf_compress_integer_block_a() succeeds or not. */
 int
 dwarf_compress_integer_block_a(
@@ -4274,7 +4415,7 @@ void * dwarf_compress_integer_block(
     from the block of sleb numbers.
     This interface supercedes
     dwarf_uncompress_integer_block(). No ugly
-    cast needed to know if 
+    cast needed to know if
     dwarf_uncompress_integer_block_a() succeeds or not. */
 int
 dwarf_uncompress_integer_block_a(Dwarf_Debug /*dbg*/,
@@ -4294,7 +4435,7 @@ dwarf_uncompress_integer_block_a(Dwarf_Debug /*dbg*/,
     Size of integer units must be 32 (32 bits each) at this time.
     Number of bytes in block is a byte count (not array count).
     Returns number of units in output block (ie, number of elements
-    of the array that the return value points to) thru the 
+    of the array that the return value points to) thru the
     argument.  */
 void * dwarf_uncompress_integer_block(
     Dwarf_Debug,      /*dbg */
@@ -4615,8 +4756,10 @@ Dwarf_Half dwarf_set_frame_rule_inital_value(Dwarf_Debug /*dbg*/,
     to tailor handling of pseudo-registers needed to turn
     frame operation references into simpler forms and to
     reflect ABI specific data.  Of course altering libdwarf.h
-    and dwarf.h allow the same capabilities, but such header changes
-    do not let one change these values at runtime. */
+    and dwarf.h allow the same capabilities, but header changes
+    in the distribution would require you re-integrate your
+    libdwarf.h changes into the distributed libdwarf.h ...
+    so use the following functions instead.*/
 Dwarf_Half dwarf_set_frame_rule_initial_value(Dwarf_Debug /*dbg*/,
     Dwarf_Half /*value*/);
 Dwarf_Half dwarf_set_frame_rule_table_size(Dwarf_Debug /*dbg*/,
@@ -4653,6 +4796,149 @@ int dwarf_get_ranges_a(Dwarf_Debug /*dbg*/,
 void dwarf_ranges_dealloc(Dwarf_Debug /*dbg*/,
     Dwarf_Ranges * /*rangesbuf*/,
     Dwarf_Signed /*rangecount*/);
+
+/* ======= START .debug_rnglists interfaces.  New May 2020 */
+struct Dwarf_Rnglists_Entry_s;
+typedef struct Dwarf_Rnglists_Entry_s * Dwarf_Rnglists_Entry;
+struct Dwarf_Rnglists_Head_s;
+typedef struct Dwarf_Rnglists_Head_s * Dwarf_Rnglists_Head;
+
+/*  For DWARF5 DW_AT_ranges: DW_FORM_sec_offset DW_FORM_rnglistx */
+int dwarf_rnglists_get_rle_head(Dwarf_Attribute       /*attr*/,
+    Dwarf_Half            /*theform*/,
+    Dwarf_Unsigned        /*index_or_offset_value*/,
+    Dwarf_Rnglists_Head * /*head_out*/,
+    Dwarf_Unsigned *      /*count_of_entries_in_head*/,
+    Dwarf_Unsigned *      /*global_offset_of_rle_set*/,
+    Dwarf_Error    *      /*error*/);
+
+/*  Get the rnglist entries details */
+int dwarf_get_rnglists_entry_fields(Dwarf_Rnglists_Head /*head*/,
+    Dwarf_Unsigned   /*entrynum*/,
+    unsigned       * /*entrylen*/,
+    unsigned       * /*code*/,
+    Dwarf_Unsigned * /*raw1*/,
+    Dwarf_Unsigned * /*raw2*/,
+    Dwarf_Unsigned * /*cooked1*/,
+    Dwarf_Unsigned * /*cooked2*/,
+    Dwarf_Error    * /*error*/);
+
+int dwarf_dealloc_rnglists_head(Dwarf_Rnglists_Head );
+
+/*  Loads all the rnglists headers and
+    returns DW_DLV_NO_ENTRY if the section
+    is missing or empty.
+    Intended to be done quite early and
+    it is automatically
+    done if .debug_info is loaded.
+    Doing it more than once is never necessary
+    or harmful. There is no deallocation call
+    made visible, deallocation happens
+    when dwarf_finish() is called.
+    With DW_DLV_OK it returns the number of
+    rnglists headers in the section through
+    rnglists_count. */
+int dwarf_load_rnglists(Dwarf_Debug /*dbg*/,
+    Dwarf_Unsigned * /*rnglists_count*/,
+    Dwarf_Error * /*err*/);
+
+/*  Retrieve the offset from the context-index'th
+    rangelists context  and the offsetentry_index
+    element of the array of offsets.
+    If an index is too large to be correct
+    this returns DW_DLV_NO_ENTRY.
+    If all is correct it returns DW_DLV_OK and
+    sets *offset_value_out to the offset of
+    the range list from the base of the offset
+    array, and *global_offset_value_out is set
+    to the .debug_rnglists section offset of
+    the range list. */
+int dwarf_get_rnglist_offset_index_value(Dwarf_Debug /*dbg*/,
+    Dwarf_Unsigned   /*context_index*/,
+    Dwarf_Unsigned   /*offsetentry_index*/,
+    Dwarf_Unsigned * /*offset_value_out*/,
+    Dwarf_Unsigned * /*global_offset_value_out*/,
+    Dwarf_Error * /*error*/);
+
+
+/*  Used by dwarfdump to print basic data from the
+    data generated to look at a specific rangelist 
+    as returned by  dwarf_rnglists_index_get_rle_head() 
+    or dwarf_rnglists_offset_get_rle_head. */
+int dwarf_get_rnglist_head_basics(Dwarf_Rnglists_Head /*head*/,
+    Dwarf_Unsigned * /*rle_count*/,
+    Dwarf_Unsigned * /*rnglists_version*/,
+    Dwarf_Unsigned * /*rnglists_index_returned*/,
+    Dwarf_Unsigned * /*bytes_total_in_rle*/,
+    unsigned * /*offset_size*/,
+    unsigned * /*address_size*/,
+    unsigned * /*segment_selector_size*/,
+    Dwarf_Unsigned * /*overall offset_of_this_context*/,
+    Dwarf_Unsigned * /*total_length of this context*/,
+    Dwarf_Bool     * /*rnglists_base_present*/,
+    Dwarf_Unsigned * /*rnglists_base*/,
+    Dwarf_Bool     * /*rnglists_base_address_present*/,
+    Dwarf_Unsigned * /*rnglists_base_address*/,
+    Dwarf_Bool     * /*rnglists_debug_addr_base_present*/,
+    Dwarf_Unsigned * /*rnglists_debug_addr_base*/,
+    Dwarf_Error    * /*error*/);
+
+/*  Enables printing of details about the Range List Table
+    Headers, one header per call. Index starting at 0.
+    Returns DW_DLV_NO_ENTRY if index is too high for the table.
+    A .debug_rnglists section may contain any number
+    of Range List Table Headers with their details.  */
+int dwarf_get_rnglist_context_basics(Dwarf_Debug  /*dbg*/,
+    Dwarf_Unsigned  /*index*/,
+    Dwarf_Unsigned * /*header_offset*/,
+    Dwarf_Small  *   /*offset_size*/,
+    Dwarf_Small  *   /*extension_size*/,
+    unsigned     *   /*version*/, /* 5 */
+    Dwarf_Small  *   /*address_size*/,
+    Dwarf_Small  *   /*segment_selector_size*/,
+    Dwarf_Unsigned * /*offset_entry_count*/,
+    Dwarf_Unsigned * /*offset_of_offset_array*/,
+    Dwarf_Unsigned * /*offset_of_first_rangeentry*/,
+    Dwarf_Unsigned * /*offset_past_last_rangeentry*/,
+    Dwarf_Error *    /*err*/);
+
+/*  entry offset is offset_of_first_rangeentry.
+    Stop when the returned *next_entry_offset
+    is == offset_past_last_rangentry (from
+    dwarf_get_rnglist_context_plus).
+    This only makes sense within those ranges.
+    This retrieves raw detail from the section,
+    no base values or anything are added.
+    So this returns raw individual entries
+    for a single rnglist header, meaning a
+    a single Dwarf_Rnglists_Context.
+
+    This interface assumes there is no
+    segment selector. */
+int dwarf_get_rnglist_raw_entry_detail(Dwarf_Debug  /*dbg*/,
+    Dwarf_Unsigned  /*entry_offset*/,
+    Dwarf_Unsigned * /*entry_kind*/,
+    Dwarf_Unsigned * /*entry_operand1*/,
+    Dwarf_Unsigned * /*entry_operand2*/,
+    Dwarf_Unsigned *  /*next_entry_offset*/,
+    Dwarf_Error * /*err*/);
+
+/*  If no error, returns DW_DLV_OK and sets
+    the entry length,kind, and operands through
+    the pointers. If any missing operands assign
+    zero back through tye operand pointers. */
+
+int dwarf_get_rnglist_rle( Dwarf_Debug /*dbg*/,
+    Dwarf_Unsigned /*contextnumber*/,
+    Dwarf_Unsigned /*entry_offset*/,
+    Dwarf_Unsigned /*endoffset*/,
+    unsigned       * /*entrylen*/,
+    unsigned       * /*entry_kind*/,
+    Dwarf_Unsigned * /*entry_operand1*/,
+    Dwarf_Unsigned * /*entry_operand2*/,
+    Dwarf_Error * /*err*/);
+
+/* ======= END .debug_rnglists interfaces.  */
 
 /*  New April 2018.
     Allows applications to print the .debug_str_offsets
@@ -4959,6 +5245,12 @@ int dwarf_pro_get_string_stats(Dwarf_P_Debug /*dbg*/,
 #define DW_ENDIAN_BIG      1
 #define DW_ENDIAN_LITTLE   2
 #endif /* DW_ENDIAN_UNKNOWN */
+
+/*  Defined March 7 2020. Allows a caller to
+    avoid most tracking by the de_alloc_tree hash
+    table if called with v of zero.
+    Returns the value the flag was before this call. */
+int dwarf_set_de_alloc_flag(int v);
 
 int dwarf_object_detector_path(const char  *path,
     char *outpath,

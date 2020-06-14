@@ -1,26 +1,29 @@
 /*
   Copyright (C) 2000-2005 Silicon Graphics, Inc. All Rights Reserved.
-  Portions Copyright (C) 2008-2018 David Anderson.  All Rights Reserved.
+  Portions Copyright (C) 2008-2020 David Anderson.  All Rights Reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License
-  as published by the Free Software Foundation.
+  This program is free software; you can redistribute it
+  and/or modify it under the terms of version 2.1 of the
+  GNU Lesser General Public License as published by the Free
+  Software Foundation.
 
-  This program is distributed in the hope that it would be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  This program is distributed in the hope that it would be
+  useful, but WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  PURPOSE.
 
-  Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement
-  or the like.  Any license provided herein, whether implied or
-  otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with
-  other software, or any other product whatsoever.
+  Further, this software is distributed without any warranty
+  that it is free of the rightful claim of any third person
+  regarding infringement or the like.  Any license provided
+  herein, whether implied or otherwise, applies only to this
+  software file.  Patent licenses, if any, provided herein
+  do not apply to combinations of this program with other
+  software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this program; if not, write the Free Software
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
-  USA.
+  You should have received a copy of the GNU Lesser General
+  Public License along with this program; if not, write the
+  Free Software Foundation, Inc., 51 Franklin Street - Fifth
+  Floor, Boston MA 02110-1301, USA.
 
 */
 #ifndef DWARF_ERRMSG_LIST_H
@@ -356,7 +359,7 @@ const char *_dwarf_errmsgs[] = {
     "DW_DLE_FISSION_INDEX_WRONG(282)",
     "DW_DLE_FISSION_VERSION_ERROR(283)",
     "DW_DLE_NEXT_DIE_LOW_ERROR(284) corrupted DIE tree",
-    "DW_DLE_CU_UT_TYPE_ERROR(285) not a valid DW_UT_* value",
+    "DW_DLE_CU_UT_TYPE_ERROR(285) bad DW_UT_* value, corrupt DWARF5",
     "DW_DLE_NO_SUCH_SIGNATURE_FOUND(286) CU signature not in the index",
     "DW_DLE_SIGNATURE_SECTION_NUMBER_WRONG(287) libdwarf software error",
     "DW_DLE_ATTR_FORM_NOT_DATA8(288) wanted an 8 byte signature",
@@ -426,7 +429,7 @@ const char *_dwarf_errmsgs[] = {
     "DW_DLE_DEBUGSTR_UNEXPECTED_REL(352) string relocation will be wrong.",
     "DW_DLE_DISCR_ARRAY_ERROR(353) Internal error in dwarf_discr_list()",
     "DW_DLE_LEB_OUT_ERROR(354) Insufficient buffer to turn integer to leb",
-    "DW_DLE_SIBLING_LIST_IMPROPER(355) Corrupt dwarf",
+    "DW_DLE_SIBLING_LIST_IMPROPER(355) Runs off end of section. Corrupt dwarf",
     "DW_DLE_LOCLIST_OFFSET_BAD(356) Corrupt dwarf",
     "DW_DLE_LINE_TABLE_BAD(357) Corrupt line table",
     "DW_DLE_DEBUG_LOClISTS_DUPLICATE(358)",
@@ -479,7 +482,7 @@ const char *_dwarf_errmsgs[] = {
     "DW_DLE_STR_OFFSETS_ARRAY_SIZE(405) Not a multiple of entry size",
     "DW_DLE_STR_OFFSETS_VERSION_WRONG(406) Must be 5 ",
     "DW_DLE_STR_OFFSETS_ARRAY_INDEX_WRONG(407) Requested outside bound",
-    "DW_DLE_STR_OFFSETS_EXTRA_BYTES(408) Unused non-zero bytes end section",
+    "DW_DLE_STR_OFFSETS_EXTRA_BYTES(408) .debug_str_offsets section problem",
     "DW_DLE_DUP_ATTR_ON_DIE(409) Compiler error, object improper DWARF",
     "DW_DLE_SECTION_NAME_BIG(410) Caller provided insufficient room for section name",
     "DW_DLE_FILE_UNAVAILABLE(411). Unable find/read object file",
@@ -519,5 +522,26 @@ const char *_dwarf_errmsgs[] = {
     "DW_DLE_READ_OFF_END(445) Corrupt Elf. A read would read past end of object",
     "DW_DLE_ELF_SECTION_ERROR(446) Section offset or size is too large. Corrupt elf object.",
     "DW_DLE_ELF_STRING_SECTION_ERROR(447) String section missing. Corrupt Elf",
+    "DW_DLE_MIXING_SPLIT_DWARF_VERSIONS(448) DWARF5 header signature and DWARF4 DW_AT_[GNU]_dwo_id present in one CU header/die. Corrupt Dwarf.",
+    "DW_DLE_TAG_CORRUPT(449) DW_TAG outside allowed range. Corrupt DWARF.",
+    "DW_DLE_FORM_CORRUPT(450) DW_FORM unknown, too large a value. Corrupt DWARF?",
+    "DW_DLE_ATTR_CORRUPT(451) DW_AT outside allowed range. Corrupt DWARF.",
+    "DW_DLE_ABBREV_ATTR_DUPLICATION(452) Abbreviation list corruption.",
+    "DW_DLE_DWP_SIGNATURE_MISMATCH(453) Impossible signature mismatch. Corrupted Dwarf?",
+    "DW_DLE_CU_UT_TYPE_VALUE(454) Internal libdwarf data corruption",
+    "DW_DLE_DUPLICATE_GNU_DEBUGLINK(455) Duplicated section .gnu_debuglink",
+    "DW_DLE_CORRUPT_GNU_DEBUGLINK(456) Section length wrong",
+    "DW_DLE_CORRUPT_NOTE_GNU_DEBUGID(457) Data corruption in .note.gnu.debugid section",
+    "DW_DLE_CORRUPT_GNU_DEBUGID_SIZE(458) Section .note.gnu.debugid size incorrect",
+    "DW_DLE_CORRUPT_GNU_DEBUGID_STRING(459) Section .note.gnu.debugid ownder string not terminated properly",
+    "DW_DLE_HEX_STRING_ERROR(460).  dwarf_producer_init() extras string has a bad hex string",
+    "DW_DLE_DECIMAL_STRING_ERROR(461) dwarf_producer_init() extras string has a bad decimal string",
+    "DW_DLE_PRO_INIT_EXTRAS_UNKNOWN(462) dwarf_producer_init() extras string has an unknown string",
+    "DW_DLE_PRO_INIT_EXTRAS_ERR(463) dwarf_producer_init() extras string has an unexpected space character",
+    "DW_DLE_NULL_ARGS_DWARF_ADD_PATH(464) either Dwarf_Debug or file_path argument to dwarf_add_file_path is NULL.",
+    "DW_DLE_DWARF_INIT_DBG_NULL(465) a dwarf_init*() call the return-dbg argument is null",
+    "DW_DLE_ELF_RELOC_SECTION_ERROR(466) A relocation section header link field is incorrect.",
+    "DW_DLE_USER_DECLARED_ERROR(467) library user created this.",
+    "DW_DLE_RNGLISTS_ERROR(468) Corrupt dwarf. Incorrupt rnglists code",
 };
 #endif /* DWARF_ERRMSG_LIST_H */

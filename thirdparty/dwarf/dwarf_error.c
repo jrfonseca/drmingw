@@ -29,10 +29,12 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-
+#endif /* HAVE_STDLIB_H */
 #include "dwarf_incl.h"
 #include "dwarf_alloc.h"
+#include "dwarfstring.h"
 #include "dwarf_error.h"
 
 /* Array to hold string representation of errors. Any time a
@@ -59,17 +61,50 @@
     The failsafe means we will not abort due to
     a Dwarf_Error struct creation.
 */
+
+/*  The user provides an explanatory string, the error
+    number itself explains little.
+    This prepends DW_DLE_USER_DECLARED_ERROR to the
+    caller-provided string.
+    New in April, 2020 .  Used by dwarfdump in a few
+    circumstances. */
 void
-_dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Signed errval)
+dwarf_error_creation(Dwarf_Debug dbg,
+    Dwarf_Error *err,
+    char *errmsg)
+{
+    dwarfstring m;
+    if(!dbg) {
+        return;
+    }
+    dwarfstring_constructor(&m);
+    dwarfstring_append(&m,"DW_DLE_USER_DECLARED_ERROR: ");
+    dwarfstring_append(&m,errmsg);
+    _dwarf_error_string(dbg,err,
+        DW_DLE_USER_DECLARED_ERROR,
+        dwarfstring_string(&m));
+    dwarfstring_destructor(&m);
+}
+
+
+void
+_dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error,
+    Dwarf_Signed errval)
+{
+    _dwarf_error_string(dbg,error,errval,0);
+}
+void
+_dwarf_error_string(Dwarf_Debug dbg, Dwarf_Error * error,
+    Dwarf_Signed errval,char *msg)
 {
     Dwarf_Error errptr;
 
     /*  Allow NULL dbg on entry, since sometimes that can happen and we
         want to report the upper-level error, not this one. */
-    if (error != NULL) {
+    if (error) {
         /*  If dbg is NULL, use the alternate error struct. However,
             this will overwrite the earlier error. */
-        if (dbg != NULL) {
+        if (dbg) {
             errptr =
                 (Dwarf_Error) _dwarf_get_alloc(dbg, DW_DLA_ERROR, 1);
             if (!errptr) {
@@ -79,7 +114,8 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Signed errval)
                 errptr->er_static_alloc = DE_STANDARD;
             }
         } else {
-            /*  We have no dbg to work with. dwarf_init failed. We hack
+            /*  We have no dbg to work with. dwarf_init
+                failed. We hack
                 up a special area. */
             errptr = _dwarf_special_no_dbg_error_malloc();
             if (!errptr) {
@@ -90,6 +126,19 @@ _dwarf_error(Dwarf_Debug dbg, Dwarf_Error * error, Dwarf_Signed errval)
             }
         }
         errptr->er_errval = errval;
+        if (msg) {
+            dwarfstring *em = 0;
+
+#ifdef DEBUG
+printf("libdwarfdetector ALLOC creating error string %s errval %ld errptr 0x%lx \n",msg,(long)errval,(unsigned long)errptr);
+#endif
+            em = (dwarfstring *)calloc(1,sizeof(dwarfstring));
+            if (em) {
+                dwarfstring_constructor(em);
+                dwarfstring_append(em,msg);
+                errptr->er_msg = (void*)em;
+            }
+        }
         *error = errptr;
         return;
     }
@@ -140,6 +189,9 @@ dwarf_errmsg(Dwarf_Error error)
 {
     if (!error) {
         return "Dwarf_Error is NULL";
+    }
+    if (error->er_msg) {
+        return dwarfstring_string(error->er_msg);
     }
     return  dwarf_errmsg_by_number(error->er_errval);
 }

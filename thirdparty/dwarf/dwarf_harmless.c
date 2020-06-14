@@ -53,7 +53,13 @@
 #include "config.h"
 #include "dwarf_incl.h"
 #include <stdio.h>
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
+#ifdef HAVE_MALLOC_H
+/* Useful include for some Windows compilers. */
+#include <malloc.h>
+#endif /* HAVE_MALLOC_H */
 #include "dwarf_frame.h"
 #include "dwarf_harmless.h"
 

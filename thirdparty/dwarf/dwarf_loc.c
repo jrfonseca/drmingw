@@ -33,9 +33,6 @@
 #ifdef HAVE_STDINT_H
 #include <stdint.h> /* For uintptr_t */
 #endif /* HAVE_STDINT_H */
-#ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
-#endif /* HAVE_INTTYPES_H */
 #include "dwarf_incl.h"
 #include "dwarf_alloc.h"
 #include "dwarf_error.h"
@@ -983,12 +980,12 @@ _dwarf_read_loc_section(Dwarf_Debug dbg,
             error,loc_section_end);
         /* exprblock_size can be zero, means no expression */
         if ( exprblock_size >= dbg->de_debug_loc.dss_size) {
-            _dwarf_error(NULL, error, DW_DLE_DEBUG_LOC_SECTION_SHORT);
+            _dwarf_error(dbg, error, DW_DLE_DEBUG_LOC_SECTION_SHORT);
             return DW_DLV_ERROR;
         }
         if ((sec_offset +exprblock_off + exprblock_size) >
             dbg->de_debug_loc.dss_size) {
-            _dwarf_error(NULL, error, DW_DLE_DEBUG_LOC_SECTION_SHORT);
+            _dwarf_error(dbg, error, DW_DLE_DEBUG_LOC_SECTION_SHORT);
             return DW_DLV_ERROR;
         }
     }
@@ -999,7 +996,8 @@ _dwarf_read_loc_section(Dwarf_Debug dbg,
     return_block->bl_from_loclist = 1;
     return_block->bl_data = beg + exprblock_off;
     return_block->bl_section_offset =
-        ((Dwarf_Small *) return_block->bl_data) - dbg->de_debug_loc.dss_data;
+        ((Dwarf_Small *) return_block->bl_data) -
+        dbg->de_debug_loc.dss_data;
     return DW_DLV_OK;
 }
 
@@ -1046,7 +1044,7 @@ _dwarf_setup_loc(Dwarf_Attribute attr,
     Dwarf_Half form = 0;
     int blkres = DW_DLV_ERROR;
 
-    if (attr == NULL) {
+    if (!attr) {
         _dwarf_error(NULL, error, DW_DLE_ATTR_NULL);
         return (DW_DLV_ERROR);
     }
@@ -1141,25 +1139,16 @@ _dwarf_cleanup_llbuf(Dwarf_Debug dbg, Dwarf_Locdesc ** llbuf, int count)
 
 static int
 context_is_cu_not_tu(Dwarf_CU_Context context,
-    Dwarf_Bool *r,Dwarf_Error *err)
+    Dwarf_Bool *r)
 {
-    Dwarf_Debug dbg = 0;
-    if(context->cc_unit_type == DW_UT_type) {
+    int ut = context->cc_unit_type;
+
+    if (ut == DW_UT_type || ut == DW_UT_split_type ) {
         *r =FALSE;
         return DW_DLV_OK;
     }
-    if(context->cc_unit_type == DW_UT_compile) {
-        *r = TRUE;
-        return DW_DLV_OK;
-    }
-    if(context->cc_unit_type == DW_UT_partial) {
-        *r = TRUE;
-        return DW_DLV_OK;
-    }
-    /* This should be impossible */
-    dbg = context->cc_dbg;
-    _dwarf_error(dbg,err, DW_DLE_NO_TIED_FILE_AVAILABLE);
-    return DW_DLV_ERROR;
+    *r = TRUE;
+    return DW_DLV_OK;
 }
 
 /*  Handles simple location entries and loclists.
@@ -1231,7 +1220,7 @@ dwarf_loclist_n(Dwarf_Attribute attr,
         int loclist_count = 0;
         int lli = 0;
 
-        setup_res = context_is_cu_not_tu(cucontext,&is_cu,error);
+        setup_res = context_is_cu_not_tu(cucontext,&is_cu);
         if(setup_res != DW_DLV_OK) {
             return setup_res;
         }
