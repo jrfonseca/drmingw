@@ -38,9 +38,9 @@
 typedef struct Dwarf_P_Frame_Pgm_s *Dwarf_P_Frame_Pgm;
 
 struct Dwarf_P_Frame_Pgm_s {
-    Dwarf_Ubyte dfp_opcode; /* opcode - includes reg # */
-    char *dfp_args;	 /* operands */
-    int dfp_nbytes;	 /* number of bytes in args */
+    Dwarf_Ubyte    dfp_opcode; /* opcode - includes reg # */
+    char *         dfp_args;	 /* operands */
+    Dwarf_Unsigned dfp_nbytes;	 /* number of bytes in args */
     Dwarf_P_Frame_Pgm dfp_next;
 };
 
@@ -92,10 +92,10 @@ struct Dwarf_P_Fde_s {
     Dwarf_P_Frame_Pgm fde_inst;
 
     /* number of instructions in fde */
-    long fde_n_inst;
+    Dwarf_Signed fde_n_inst;
 
     /* number of bytes of inst in fde */
-    long fde_n_bytes;
+    Dwarf_Signed fde_n_bytes;
 
     /* offset into exception table for this function. */
     Dwarf_Signed fde_offset_into_exception_tables;

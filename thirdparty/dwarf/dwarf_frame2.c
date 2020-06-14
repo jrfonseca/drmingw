@@ -1,27 +1,30 @@
 /*
   Copyright (C) 2000-2006 Silicon Graphics, Inc.  All Rights Reserved.
-  Portions Copyright (C) 2007-2019 David Anderson. All Rights Reserved.
+  Portions Copyright (C) 2007-2020 David Anderson. All Rights Reserved.
   Portions Copyright (C) 2010-2012 SN Systems Ltd. All Rights Reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License
-  as published by the Free Software Foundation.
+  This program is free software; you can redistribute it
+  and/or modify it under the terms of version 2.1 of the
+  GNU Lesser General Public License as published by the Free
+  Software Foundation.
 
-  This program is distributed in the hope that it would be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  This program is distributed in the hope that it would be
+  useful, but WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  PURPOSE.
 
-  Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement
-  or the like.  Any license provided herein, whether implied or
-  otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with
-  other software, or any other product whatsoever.
+  Further, this software is distributed without any warranty
+  that it is free of the rightful claim of any third person
+  regarding infringement or the like.  Any license provided
+  herein, whether implied or otherwise, applies only to this
+  software file.  Patent licenses, if any, provided herein
+  do not apply to combinations of this program with other
+  software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this program; if not, write the Free Software
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
-  USA.
+  You should have received a copy of the GNU Lesser General
+  Public License along with this program; if not, write the
+  Free Software Foundation, Inc., 51 Franklin Street - Fifth
+  Floor, Boston MA 02110-1301, USA.
 
 */
 
@@ -30,13 +33,16 @@
 
 #include "config.h"
 #include <stdio.h>
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
 #include "dwarf_incl.h"
 #include "dwarf_alloc.h"
 #include "dwarf_error.h"
 #include "dwarf_util.h"
 #include "dwarf_frame.h"
 #include "dwarf_arange.h" /* using Arange as a way to build a list */
+#include "dwarfstring.h"
 
 /*  For a little information about .eh_frame see
     https://stackoverflow.com/questions/14091231/what-do-the-eh-frame-and-eh-frame-hdr-sections-store-exactly
@@ -139,8 +145,6 @@ qsort_compare(const void *elem1, const void *elem2)
     return 0;
 }
 
-
-
 /*  Adds 'newone' to the end of the list starting at 'head'
     and makes the new one 'cur'rent. */
 static void
@@ -202,31 +206,41 @@ validate_length(Dwarf_Debug dbg,
     }
     mod = total_len % address_size;
     if (mod != 0) {
-        static char msg[DW_HARMLESS_ERROR_MSG_STRING_SIZE];
+        dwarfstring  harm;
         Dwarf_Unsigned sectionoffset = ciefde_start - section_ptr;
 
+        dwarfstring_constructor(&harm);
         if (!cieorfde || (strlen(cieorfde) > 3)) {
             /*  Coding error or memory corruption? */
             cieorfde = "ERROR!";
         }
-
-        sprintf(msg,
+        dwarfstring_append_printf_u(&harm,
             "DW_DLE_DEBUG_FRAME_LENGTH_NOT_MULTIPLE"
-            " len=0x%" DW_PR_XZEROS DW_PR_DUx
-            ", len size=0x%"  DW_PR_XZEROS DW_PR_DUx
-            ", extn size=0x%" DW_PR_XZEROS DW_PR_DUx
-            ", totl length=0x%" DW_PR_XZEROS DW_PR_DUx
-            ", addr size=0x%" DW_PR_XZEROS DW_PR_DUx
-            ", mod=0x%" DW_PR_XZEROS DW_PR_DUx " must be zero"
-            " in %s"
+            " len=0x%" DW_PR_XZEROS DW_PR_DUx,
+            length);
+        dwarfstring_append_printf_u(&harm,
+            ", len size=0x%"  DW_PR_XZEROS DW_PR_DUx,
+            length_size);
+        dwarfstring_append_printf_u(&harm,
+            ", extn size=0x%" DW_PR_XZEROS DW_PR_DUx,
+            extension_size);
+        dwarfstring_append_printf_u(&harm,
+            ", totl length=0x%" DW_PR_XZEROS DW_PR_DUx,
+            total_len);
+        dwarfstring_append_printf_u(&harm,
+            ", addr size=0x%" DW_PR_XZEROS DW_PR_DUx,
+            address_size);
+        dwarfstring_append_printf_u(&harm,
+            ", mod=0x%" DW_PR_XZEROS DW_PR_DUx " must be zero",
+            mod);
+        dwarfstring_append_printf_s(&harm,
+            " in %s",(char *)cieorfde);
+        dwarfstring_append_printf_u(&harm,
             ", offset 0x%" DW_PR_XZEROS DW_PR_DUx ".",
-            length,
-            length_size,
-            extension_size,
-            total_len,address_size, mod,
-            cieorfde,
             sectionoffset);
-        dwarf_insert_harmless_error(dbg,msg);
+        dwarf_insert_harmless_error(dbg,
+            dwarfstring_string(&harm));
+        dwarfstring_destructor(&harm);
     }
     return;
 }
@@ -369,11 +383,13 @@ _dwarf_get_fde_list_internal(Dwarf_Debug dbg, Dwarf_Cie ** cie_data,
             section_index,
             section_length, &prefix, error);
         if (res == DW_DLV_ERROR) {
-            dealloc_fde_cie_list_internal(head_fde_ptr, head_cie_ptr);
+            dealloc_fde_cie_list_internal(head_fde_ptr,
+                head_cie_ptr);
             return res;
         }
-        if (res == DW_DLV_NO_ENTRY)
+        if (res == DW_DLV_NO_ENTRY) {
             break;
+        }
         frame_ptr = prefix.cf_addr_after_prefix;
         if (frame_ptr >= section_ptr_end) {
             dealloc_fde_cie_list_internal(head_fde_ptr, head_cie_ptr);
@@ -484,6 +500,8 @@ _dwarf_get_fde_list_internal(Dwarf_Debug dbg, Dwarf_Cie ** cie_data,
                 &fde_ptr_to_use,
                 error);
             if (resf == DW_DLV_ERROR) {
+                dealloc_fde_cie_list_internal(head_fde_ptr,
+                    head_cie_ptr);
                 return resf;
             } else if (resf == DW_DLV_NO_ENTRY) {
                 /* impossible. */
@@ -503,6 +521,8 @@ _dwarf_get_fde_list_internal(Dwarf_Debug dbg, Dwarf_Cie ** cie_data,
                     really 4, as in DWARF{2,3} where we have
                     no FDE address_size) we emit an error.
                     This error means things will not go well. */
+                dealloc_fde_cie_list_internal(head_fde_ptr,
+                    head_cie_ptr);
                 _dwarf_error(dbg,error,
                     DW_DLE_DEBUG_FRAME_POSSIBLE_ADDRESS_BOTCH);
                 return DW_DLV_ERROR;
@@ -657,7 +677,10 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
     }
     frame_ptr = frame_ptr + strlen((char *) frame_ptr) + 1;
     if (frame_ptr  >= section_ptr_end) {
-        _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+        _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+            "DW_DLE_DEBUG_FRAME_LENGTH_BAD: following any "
+            "augmentation field we have run off the end of the section "
+            "with the CIE incomplete.  Corrupt Dwarf");
         return DW_DLV_ERROR;
     }
     augt = _dwarf_get_augmentation_type(dbg,
@@ -667,7 +690,10 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
         UNUSEDARG Dwarf_Unsigned exception_table_addr;
 
         if ((frame_ptr+local_length_size)  >= section_ptr_end) {
-            _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+            _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+                "DW_DLE_DEBUG_FRAME_LENGTH_BAD: following "
+                "type field we have run off the end of the section "
+                "with the CIE incomplete.  Corrupt Dwarf");
             return DW_DLV_ERROR;
         }
         /* this is per egcs-1.1.2 as on RH 6.0 */
@@ -682,20 +708,30 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
 
         if (version == DW_CIE_VERSION4) {
             if ((frame_ptr+2)  >= section_ptr_end) {
-                _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+                _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+                    "DW_DLE_DEBUG_FRAME_LENGTH_BAD: "
+                    "We would run off the end of the section "
+                    "in a DWARF4 cie header.  Corrupt Dwarf");
                 return DW_DLV_ERROR;
             }
             address_size = *((unsigned char *)frame_ptr);
             if (address_size  <  1) {
-                _dwarf_error(dbg, error, DW_DLE_ADDRESS_SIZE_ZERO);
+                _dwarf_error_string(dbg, error, DW_DLE_ADDRESS_SIZE_ZERO,
+                    "DW_DLE_ADDRESS_SIZE_ZERO: bad addres size "
+                    "for a DWARF4 cie header");
                 return (DW_DLV_ERROR);
             }
             if (address_size  > sizeof(Dwarf_Addr)) {
-                _dwarf_error(dbg, error, DW_DLE_ADDRESS_SIZE_ERROR);
-                return (DW_DLV_ERROR);
+                _dwarf_create_address_size_dwarf_error(dbg,
+                    error,address_size,
+                    DW_DLE_ADDRESS_SIZE_ERROR,
+                    "DW_DLE_ADDRESS_SIZE_ERROR..:");
+                return DW_DLV_ERROR;
             }
             if ((frame_ptr+2)  >= section_ptr_end) {
-                _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+                _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+                    "DW_DLE_DEBUG_FRAME_LENGTH_BAD: Running off the end "
+                    " of a CIE header. Corrupt DWARF4");
                 return DW_DLV_ERROR;
             }
             ++frame_ptr;
@@ -709,7 +745,10 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
 
         /* Not a great test. But the DECODE* do checking so ok.  */
         if ((frame_ptr+2)  >= section_ptr_end) {
-            _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+            _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+                "DW_DLE_DEBUG_FRAME_LENGTH_BAD: Running off the end "
+                " of a CIE header before the code alignment value "
+                "read. Corrupt DWARF");
             return DW_DLV_ERROR;
         }
         DECODE_LEB128_UWORD_CK(frame_ptr, lreg,dbg,error,section_ptr_end);
@@ -722,7 +761,11 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
         frame_ptr = frame_ptr + leb128_length;
         /* Not a great test. FIXME */
         if ((frame_ptr+1)  >= section_ptr_end) {
-            _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+            _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+                "DW_DLE_DEBUG_FRAME_LENGTH_BAD: Running off the end "
+                "of a CIE header before the return address register "
+                "number read. Corrupt DWARF");
+
             return DW_DLV_ERROR;
         }
         res = _dwarf_get_return_address_reg(frame_ptr, version,
@@ -736,7 +779,10 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
         }
         frame_ptr += size;
         if ((frame_ptr)  > section_ptr_end) {
-            _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+            _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+                "DW_DLE_DEBUG_FRAME_LENGTH_BAD: Past the end "
+                "of a CIE header before reading the augmentation string."
+                " Corrupt DWARF");
             return DW_DLV_ERROR;
         }
     }
@@ -786,7 +832,11 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
 
         /* Not a great test. FIXME */
         if ((frame_ptr+1)  > section_ptr_end) {
-            _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+            _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+                "DW_DLE_AUG_DATA_LENGTH_BAD: The "
+                "gcc .eh_frame augmentation data "
+                "cannot be read. Out of room in the section."
+                " Corrupt DWARF.");
             return DW_DLV_ERROR;
         }
         DECODE_LEB128_UWORD_CK(frame_ptr, adlen,
@@ -797,8 +847,18 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
             Dwarf_Small *cie_aug_data_end = cie_aug_data+adlen;
             if (cie_aug_data_end < cie_aug_data ||
                 cie_aug_data_end > section_ptr_end) {
-                /* Bad adlen */
-                _dwarf_error(dbg, error, DW_DLE_AUG_DATA_LENGTH_BAD);
+                dwarfstring m;
+
+                dwarfstring_constructor(&m);
+                dwarfstring_append_printf_u(&m,
+                    "DW_DLE_AUG_DATA_LENGTH_BAD: The "
+                    "gcc .eh_frame augmentation data "
+                    "length of %" DW_PR_DUu " is too long to"
+                    " fit in the section.",adlen);
+                _dwarf_error_string(dbg, error,
+                    DW_DLE_AUG_DATA_LENGTH_BAD,
+                    dwarfstring_string(&m));
+                dwarfstring_destructor(&m);
                 return DW_DLV_ERROR;
             }
         }
@@ -835,7 +895,10 @@ dwarf_create_cie_from_after_start(Dwarf_Debug dbg,
             previous version and I am leaving them the same way. */
         }
         if ((frame_ptr)  > section_ptr_end) {
-            _dwarf_error(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+            _dwarf_error_string(dbg, error, DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+                "DW_DLE_DEBUG_FRAME_LENGTH_BAD: "
+                "Reading an unknown type of augmentation string "
+                "run off the end of the section. Corrupt DWARF.");
             return DW_DLV_ERROR;
         }
         break;
@@ -989,8 +1052,18 @@ dwarf_create_fde_from_after_start(Dwarf_Debug dbg,
             if (adlen) {
                 if (frame_ptr < fde_aug_data ||
                     frame_ptr >= section_ptr_end ) {
-                    /* Bad adlen */
-                    _dwarf_error(dbg, error, DW_DLE_AUG_DATA_LENGTH_BAD);
+                    dwarfstring m;
+
+                    dwarfstring_constructor(&m);
+                    dwarfstring_append_printf_u(&m,
+                        "DW_DLE_AUG_DATA_LENGTH_BAD: The "
+                        "gcc .eh_frame augmentation data "
+                        "length of %" DW_PR_DUu " is too long to"
+                        " fit in the section.",adlen);
+                    _dwarf_error_string(dbg, error,
+                        DW_DLE_AUG_DATA_LENGTH_BAD,
+                        dwarfstring_string(&m));
+                    dwarfstring_destructor(&m);
                     return DW_DLV_ERROR;
                 }
             }
@@ -1154,7 +1227,19 @@ dwarf_read_cie_fde_prefix(Dwarf_Debug dbg,
     Dwarf_Small *section_end = section_ptr_in + section_length_in;
 
     if(section_end < (frame_ptr +4)) {
-        _dwarf_error(dbg,error,DW_DLE_DEBUG_FRAME_LENGTH_BAD);
+        dwarfstring m;
+        unsigned u = (unsigned long)(frame_ptr+4) -
+            (unsigned long)section_end;
+
+        dwarfstring_constructor(&m);
+        dwarfstring_append_printf_u(&m,
+            "DW_DLE_DEBUG_FRAME_LENGTH_BAD: "
+            "Reading the cie/fde prefix would "
+            "put us %u bytes past the end of the "
+            "frame section.  Corrupt Dwarf.",u);
+        _dwarf_error_string(dbg,error,DW_DLE_DEBUG_FRAME_LENGTH_BAD,
+            dwarfstring_string(&m));
+        dwarfstring_destructor(&m);
         return DW_DLV_ERROR;
     }
     /* READ_AREA_LENGTH updates frame_ptr for consumed bytes */
@@ -1701,7 +1786,8 @@ get_gcc_eh_augmentation(Dwarf_Debug dbg, Dwarf_Small * frame_ptr,
     /*  FIXME: This could run  too far. */
     /* for (; *suffix; ++suffix) if we think we can do something  */
     if (*suffix) {
-        /*  We have no idea what this is as yet. Some extensions beyond
+        /*  We have no idea what this is as yet.
+            Some extensions beyond
             dwarf exist which we do not yet handle. */
         _dwarf_error(dbg, error, DW_DLE_FRAME_AUGMENTATION_UNKNOWN);
         return DW_DLV_ERROR;
@@ -1731,15 +1817,18 @@ dwarf_fde_cie_list_dealloc(Dwarf_Debug dbg,
     for (i = 0; i < cie_element_count; ++i) {
         Dwarf_Frame frame = cie_data[i]->ci_initial_table;
 
-        if (frame)
+        if (frame) {
             dwarf_dealloc(dbg, frame, DW_DLA_FRAME);
+        }
         dwarf_dealloc(dbg, cie_data[i], DW_DLA_CIE);
     }
     for (i = 0; i < fde_element_count; ++i) {
         dwarf_dealloc(dbg, fde_data[i], DW_DLA_FDE);
     }
-    if (cie_data)
+    if (cie_data) {
         dwarf_dealloc(dbg, cie_data, DW_DLA_LIST);
-    if (fde_data)
+    }
+    if (fde_data) {
         dwarf_dealloc(dbg, fde_data, DW_DLA_LIST);
+    }
 }

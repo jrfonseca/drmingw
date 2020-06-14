@@ -31,14 +31,20 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <string.h>
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-
+#endif /* HAVE_STDLIB_H */
+#ifdef HAVE_MALLOC_H
+/* Useful include for some Windows compilers. */
+#include <malloc.h>
+#endif /* HAVE_MALLOC_H */
 #include "dwarf_incl.h"
 #include "dwarf_alloc.h"
 #include "dwarf_error.h"
 #include "dwarf_util.h"
 #include "memcpy_swap.h"
 #include "dwarf_harmless.h"
+#include "dwarfstring.h"
 
 /* For consistency, use the HAVE_LIBELF_H symbol */
 #ifdef HAVE_LIBELF_H
@@ -66,6 +72,9 @@
 #ifndef SHT_RELA
 #define SHT_RELA 4
 #endif
+#ifndef SHT_REL
+#define SHT_REL 9
+# endif
 /*  For COMDAT GROUPS. Guarantees we can compile. We hope. */
 #ifndef SHT_GROUP
 #define SHT_GROUP 17
@@ -218,9 +227,9 @@ get_basic_section_data(Dwarf_Debug dbg,
 
 
 static void
-add_rela_data_to_secdata( struct Dwarf_Section_s *secdata,
+add_relx_data_to_secdata( struct Dwarf_Section_s *secdata,
     struct Dwarf_Obj_Access_Section_s *doas,
-    Dwarf_Half section_index)
+    Dwarf_Half section_index,int is_rela)
 {
     secdata->dss_reloc_index = section_index;
     secdata->dss_reloc_size = doas->size;
@@ -228,6 +237,7 @@ add_rela_data_to_secdata( struct Dwarf_Section_s *secdata,
     secdata->dss_reloc_addr = doas->addr;
     secdata->dss_reloc_symtab = doas->link;
     secdata->dss_reloc_link = doas->link;
+    secdata->dss_is_rela = is_rela;
 }
 
 
@@ -679,6 +689,20 @@ enter_section_in_de_debug_sections_array(Dwarf_Debug dbg,
         &dbg->de_debug_tu_index,
         DW_DLE_DUPLICATE_TU_INDEX,0,
         FALSE,err);
+
+    /* GNU added this. It is not part of DWARF */
+    SET_UP_SECTION(dbg,scn_name,".gnu_debuglink",
+        DW_GROUPNUMBER_DWO,
+        &dbg->de_gnu_debuglink,
+        DW_DLE_DUPLICATE_GNU_DEBUGLINK,0,
+        FALSE,err);
+
+    /* GNU added this. It is not part of DWARF */
+    SET_UP_SECTION(dbg,scn_name,".note.gnu.build-id",
+        DW_GROUPNUMBER_DWO,
+        &dbg->de_note_gnu_buildid,
+        DW_DLE_DUPLICATE_GNU_DEBUGLINK,0,
+        FALSE,err);
     return DW_DLV_NO_ENTRY;
 }
 static int
@@ -715,29 +739,120 @@ is_section_name_known_already(Dwarf_Debug dbg, const char *scn_name)
     This does not allow for section-groups in object files,
     for which many .debug_info (and other DWARF) sections may exist.
 
-    We process. .rela (SHT_RELA) but not .rel (SHT_REL)
+    We process. .rela (SHT_RELA) and .rel (SHT_REL)
     sections because with .rela the referencing section
     offset value is zero whereas with .rel the
     referencing section value is already correct for
     the object itself.  In other words, we do it because
     of the definition of .rela relocations in Elf.
+
+    However!  In some cases clang emits  a .rel section (at least
+    for .rel.debug_info) where symtab entries have an st_value
+    that must be treated like an addend: the compiler did not
+    bother to backpatch the DWARF information for these.
 */
 
 
+/*  These help us ignore some sections that are
+    irrelevant to libdwarf.  Maybe should use a hash
+    table instead of sequential search? */
+int
+_dwarf_ignorethissection(const char *scn_name) {
+    if(!strcmp(scn_name,".bss")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".comment")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".sbss")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".jcr")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".init")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".fini_array")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".fini")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".fini_array")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".interp")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".text")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".rela.text")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".rel.text")) {
+        return TRUE;
+    }
+
+    if(!strcmp(scn_name,".plt")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".rela.plt")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".rel.plt")) {
+        return TRUE;
+    }
+
+    if(!strcmp(scn_name,".data")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".rel.data")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".rela.data")) {
+        return TRUE;
+    }
+
+    if(!strcmp(scn_name,".got")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".rela.got")) {
+        return TRUE;
+    }
+    if(!strcmp(scn_name,".rel.got")) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
 /*  For an object file with an incorrect rela section name,
     readelf prints correct debug information,
     as the tool takes the section type instead
     of the section name. So check the
     section name but test section type. */
 static int
-is_a_rela_section(const char *scn_name,int type)
+is_a_relx_section(const char *scn_name,int type,int *is_rela)
 {
     if(startswith(scn_name,".rela.")) {
+
+        *is_rela = TRUE;
+        return TRUE;
+    }
+    if(startswith(scn_name,".rel.")) {
+        *is_rela = FALSE;
         return TRUE;
     }
     if (type == SHT_RELA) {
+        *is_rela = TRUE;
         return TRUE;
     }
+    if (type == SHT_REL) {
+        *is_rela = FALSE;
+        return TRUE;
+    }
+    *is_rela = FALSE;
     return FALSE;
 }
 
@@ -755,13 +870,16 @@ is_a_special_section_semi_dwarf(const char *scn_name)
 }
 
 static int
-this_section_dwarf_relevant(const char *scn_name,int type)
+this_section_dwarf_relevant(const char *scn_name,int type, int *is_rela)
 {
     /* A small helper function for _dwarf_setup(). */
     if (startswith(scn_name, ".zdebug_") ||
         startswith(scn_name, ".debug_")) {
         /* standard debug */
         return TRUE;
+    }
+    if (_dwarf_ignorethissection(scn_name)) {
+        return FALSE;
     }
     /* Now check if a special section could be
         in a section_group, but though seems unlikely. */
@@ -770,13 +888,23 @@ this_section_dwarf_relevant(const char *scn_name,int type)
             it is harmless to consider it such. */
         return TRUE;
     }
+    if (!strcmp(scn_name, ".gnu_debuglink")) {
+        /*  This is not a group or DWARF related file, but
+            it is useful for split dwarf. */
+        return TRUE;
+    }
+    if (!strcmp(scn_name, ".note.gnu.build-id")) {
+        /*  This is not a group or DWARF related file, but
+            it is useful for split dwarf. */
+        return TRUE;
+    }
     if(!strcmp(scn_name, ".gdb_index")) {
         return TRUE;
     }
     if(is_a_special_section_semi_dwarf(scn_name)) {
         return TRUE;
     }
-    if(is_a_rela_section(scn_name,type)) {
+    if(is_a_relx_section(scn_name,type,is_rela)) {
         return TRUE;
     }
     /*  All sorts of sections are of no interest: .text
@@ -912,6 +1040,7 @@ insert_sht_list_in_group_map(Dwarf_Debug dbg,
                 struct Dwarf_Obj_Access_Section_s doasx;
                 int resx = DW_DLV_ERROR;
                 int err = 0;
+                int is_rela = FALSE;
 
                 memset(&doasx,0,sizeof(doasx));
                 resx = obj->methods->get_section_info(obj->object,
@@ -928,7 +1057,7 @@ insert_sht_list_in_group_map(Dwarf_Debug dbg,
                     return resx;
                 }
                 if (!this_section_dwarf_relevant(doasx.name,
-                    doasx.type) ) {
+                    doasx.type,&is_rela) ) {
                     continue;
                 }
                 data += DWARF_32BIT_SIZE;
@@ -1005,6 +1134,7 @@ determine_target_group(Dwarf_Unsigned section_count,
         const char *scn_name = 0;
         unsigned groupnumber = 0;
         unsigned mapgroupnumber = 0;
+        int is_rela = FALSE;
 
         memset(&doas,0,sizeof(doas));
         res = obj->methods->get_section_info(obj->object,
@@ -1042,7 +1172,7 @@ determine_target_group(Dwarf_Unsigned section_count,
             continue;
         }
         scn_name = doas.name;
-        if (!this_section_dwarf_relevant(scn_name,doas.type) ) {
+        if (!this_section_dwarf_relevant(scn_name,doas.type,&is_rela) ) {
             continue;
         }
 
@@ -1075,25 +1205,7 @@ determine_target_group(Dwarf_Unsigned section_count,
                 groupnumber = DW_GROUPNUMBER_BASE;
             }
         }
-        if (is_a_rela_section(scn_name,doas.type)) {
-            unsigned linkgroup = 0;
-            res = _dwarf_section_get_target_group_from_map(dbg,
-                doas.info,
-                &linkgroup,error);
-            if (res == DW_DLV_OK ) {
-                /*  Fall through.
-                    linkgroup is in group map already. */
-            } else if (res == DW_DLV_ERROR) {
-                return res;
-            } else { /* DW_DLV_NO_ENTRY */
-                res = _dwarf_insert_in_group_map(dbg,
-                    linkgroup,obj_section_index,
-                    scn_name,
-                    error);
-                if (res != DW_DLV_OK ) {
-                    return res;
-                }
-            }
+        if (is_a_relx_section(scn_name,doas.type,&is_rela)) {
             continue;
         }
 
@@ -1154,11 +1266,14 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
     unsigned foundDwarf = FALSE;
     unsigned obj_section_index = 0;
 
-    dbg->de_assume_string_in_bounds = _dwarf_assume_string_in_bounds;
+    dbg->de_assume_string_in_bounds =
+        _dwarf_assume_string_in_bounds;
+    /* First make an arbitrary assumption. */
     dbg->de_same_endian = 1;
     dbg->de_copy_word = _dwarf_memcpy_noswap_bytes;
     obj = dbg->de_obj_file;
     endianness = obj->methods->get_byte_order(obj->object);
+    /* Then adjust any changes we need. */
 #ifdef WORDS_BIGENDIAN
     dbg->de_big_endian_object = 1;
     if (endianness == DW_OBJECT_LSB ) {
@@ -1223,6 +1338,7 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
         int err = 0;
         unsigned groupnumber = 0;
         unsigned mapgroupnumber = 0;
+        int is_rela = FALSE;
 
         res = _dwarf_section_get_target_group_from_map(dbg,obj_section_index,
             &groupnumber,error);
@@ -1256,10 +1372,10 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
                 groupnumber = DW_GROUPNUMBER_BASE;
             }
         }
-        if (!this_section_dwarf_relevant(scn_name,doas.type) ) {
+        if (!this_section_dwarf_relevant(scn_name,doas.type,&is_rela) ) {
             continue;
         }
-        if (!is_a_rela_section(scn_name,doas.type)
+        if (!is_a_relx_section(scn_name,doas.type,&is_rela)
             && !is_a_special_section_semi_dwarf(scn_name)) {
             /*  We do these actions only for group-related
                 sections.  Do for  .debug_info etc,
@@ -1331,18 +1447,18 @@ _dwarf_setup(Dwarf_Debug dbg, Dwarf_Error * error)
             }
 
             if (!found_match) {
-                /*  For an object file with incorrect rela section name,
+                /*  For an object file with incorrect rel[a] section name,
                     the 'readelf' tool, prints correct debug information,
                     as the tool takes the section type instead
                     of the section name. If the current section
                     is a RELA one and the 'sh_info'
                     refers to a debug section, add the relocation data. */
-                if (is_a_rela_section(scn_name,doas.type)) {
+                if (is_a_relx_section(scn_name,doas.type,&is_rela)) {
                     if ( doas.info < section_count) {
                         if (sections[doas.info]) {
-                            add_rela_data_to_secdata(sections[doas.info],
+                            add_relx_data_to_secdata(sections[doas.info],
                                 &doas,
-                                obj_section_index);
+                                obj_section_index,is_rela);
                         }
                     } else {
                         /* Something is wrong with the ELF file. */
@@ -1491,6 +1607,9 @@ dwarf_object_init_b(Dwarf_Obj_Access_Interface* obj, Dwarf_Handler errhand,
     if (setup_result != DW_DLV_OK) {
         int freeresult = 0;
         int myerr = 0;
+        dwarfstring msg;
+
+        dwarfstring_constructor(&msg);
         /* We cannot use any _dwarf_setup()
             error here as
             we are freeing dbg, making that error (setup
@@ -1499,10 +1618,11 @@ dwarf_object_init_b(Dwarf_Obj_Access_Interface* obj, Dwarf_Handler errhand,
             But error might be NULL and the init call
             error-handler function might be set.
         */
-        if ( (setup_result == DW_DLV_ERROR) && error ) {
+        if ( (setup_result == DW_DLV_ERROR) && *error ) {
             /*  Preserve our _dwarf_setup error number, but
                 this does not apply if error NULL. */
             myerr = dwarf_errno(*error);
+            dwarfstring_append(&msg,dwarf_errmsg(*error));
             /*  deallocate the soon-stale error pointer. */
             dwarf_dealloc(dbg,*error,DW_DLA_ERROR);
             *error = 0;
@@ -1519,7 +1639,9 @@ dwarf_object_init_b(Dwarf_Obj_Access_Interface* obj, Dwarf_Handler errhand,
                 a message on stderr and abort(), as without
                 dbg there is no error-handler function.
                 */
-            _dwarf_error(NULL,error,DW_DLE_DBG_ALLOC);
+            _dwarf_error_string(dbg,error,DW_DLE_DBG_ALLOC,
+                dwarfstring_string(&msg));
+            dwarfstring_destructor(&msg);
             return DW_DLV_ERROR;
         }
         if (setup_result == DW_DLV_ERROR) {
@@ -1528,8 +1650,10 @@ dwarf_object_init_b(Dwarf_Obj_Access_Interface* obj, Dwarf_Handler errhand,
                 a message on stderr and abort(), as without
                 dbg there is no error-handler function.
                 */
-            _dwarf_error(NULL,error,myerr);
+            _dwarf_error_string(dbg,error,myerr,
+                dwarfstring_string(&msg));
         }
+        dwarfstring_destructor(&msg);
         return setup_result;
     }
     dwarf_harmless_init(&dbg->de_harmless_errors,
@@ -1546,7 +1670,9 @@ dwarf_object_init_b(Dwarf_Obj_Access_Interface* obj, Dwarf_Handler errhand,
 int
 dwarf_object_finish(Dwarf_Debug dbg, Dwarf_Error * error)
 {
-    int res = _dwarf_free_all_of_one_debug(dbg);
+    int res = 0;
+
+    res = _dwarf_free_all_of_one_debug(dbg);
     if (res == DW_DLV_ERROR) {
         DWARF_DBG_ERROR(dbg, DW_DLE_DBG_ALLOC, DW_DLV_ERROR);
     }
@@ -1782,10 +1908,10 @@ _dwarf_load_section(Dwarf_Debug dbg,
         return res;
     }
     /*apply relocations */
-    res = o->methods->relocate_a_section( o->object, section->dss_index,
-        dbg, &err);
+    res = o->methods->relocate_a_section( o->object,
+        section->dss_index, dbg, &err);
     if (res == DW_DLV_ERROR) {
-        DWARF_DBG_ERROR(dbg, err, DW_DLV_ERROR);
+        DWARF_DBG_ERROR(dbg, err, res);
     }
     return res;
 }

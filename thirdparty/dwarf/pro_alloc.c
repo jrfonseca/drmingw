@@ -37,11 +37,11 @@
 #include "pro_alloc.h"
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#else
+#endif /* HAVE_STDLIB_H */
 #ifdef HAVE_MALLOC_H
+/* Useful include for some Windows compilers. */
 #include <malloc.h>
 #endif /* HAVE_MALLOC_H */
-#endif /* HAVE_STDLIB_H */
 #ifdef HAVE_STRING_H
 #include <string.h>
 #endif /* HAVE_STRING_H */

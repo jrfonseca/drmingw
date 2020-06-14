@@ -158,14 +158,35 @@ dwarf_add_line_entry(Dwarf_P_Debug dbg,
 void
 _dwarf_init_default_line_header_vals(Dwarf_P_Debug dbg)
 {
-    dbg->de_line_inits.pi_version = dbg->de_output_version;
+    dbg->de_line_inits.pi_linetable_version = dbg->de_output_version;
+    dbg->de_line_inits.pi_default_is_stmt =
+        /* is false pro_line.h */
+        DEFAULT_IS_STMT;
+    dbg->de_line_inits.pi_minimum_instruction_length =
+        /* is 1 or 4 depending on ifdefs in pro_line.h */
+        MIN_INST_LENGTH;
+    dbg->de_line_inits.pi_maximum_operations_per_instruction =
+        /*  Assuming the instruction set is not VLIW,
+            used in the line table */
+        1;
+    dbg->de_line_inits.pi_opcode_base =
+        /*  is 10 in pro_line.h but should be 13 in DWARF3
+            and later. */
+        OPCODE_BASE;
+    dbg->de_line_inits.pi_line_base =
+        /* is -1 in pro_line.h */
+        LINE_BASE;
+    dbg->de_line_inits.pi_line_range =
+        /* is 4 in pro_line.h */
+        LINE_RANGE;
 
-    dbg->de_line_inits.pi_default_is_stmt = DEFAULT_IS_STMT;
-    dbg->de_line_inits.pi_minimum_instruction_length = MIN_INST_LENGTH;
-    dbg->de_line_inits.pi_maximum_operations_per_instruction = 1;
-    dbg->de_line_inits.pi_opcode_base = OPCODE_BASE;
-    dbg->de_line_inits.pi_line_base = LINE_BASE;
-    dbg->de_line_inits.pi_line_range = LINE_RANGE;
+    /*  Applies to line table and everywhere else
+        for a CU. */
+    dbg->de_line_inits.pi_address_size = dbg->de_pointer_size;
+
+    /*  Assuming no segments. */
+    dbg->de_line_inits.pi_segment_selector_size = 0;
+    dbg->de_line_inits.pi_segment_size = 0;
 }
 
 

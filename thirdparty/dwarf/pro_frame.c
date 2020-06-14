@@ -4,25 +4,28 @@
   Portions Copyright 2011-2017  David Anderson. All Rights Reserved.
   Portions Copyright 2012 SN Systems Ltd. All rights reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License
-  as published by the Free Software Foundation.
+  This program is free software; you can redistribute it
+  and/or modify it under the terms of version 2.1 of the
+  GNU Lesser General Public License as published by the Free
+  Software Foundation.
 
-  This program is distributed in the hope that it would be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  This program is distributed in the hope that it would be
+  useful, but WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  PURPOSE.
 
-  Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement
-  or the like.  Any license provided herein, whether implied or
-  otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with
-  other software, or any other product whatsoever.
+  Further, this software is distributed without any warranty
+  that it is free of the rightful claim of any third person
+  regarding infringement or the like.  Any license provided
+  herein, whether implied or otherwise, applies only to this
+  software file.  Patent licenses, if any, provided herein
+  do not apply to combinations of this program with other
+  software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this program; if not, write the Free Software
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
-  USA.
+  You should have received a copy of the GNU Lesser General
+  Public License along with this program; if not, write the
+  Free Software Foundation, Inc., 51 Franklin Street - Fifth
+  Floor, Boston MA 02110-1301, USA.
 
 */
 
@@ -45,7 +48,6 @@
 #define SIZEOFT32 4
 #define SIZEOFT64 8
 
-/* Assuming endianness of t, s match...! FIXME */
 #ifdef WORDS_BIGENDIAN
 #define ASNOUT(t,s,l)                       \
     do {                                    \
@@ -57,7 +59,7 @@
         }                                   \
         sbyte = sizeof(s) - l;              \
         p = (const char *)(&s);             \
-        memcpy(t,(const void *)(p+sbyte),l);\
+        dbg->de_copy_word(t,(const void *)(p+sbyte),l);\
     } while (0)
 #else /* LITTLEENDIAN */
 #define ASNOUT(t,s,l)                       \
@@ -68,7 +70,7 @@
             return DW_DLV_ERROR;            \
         }                                   \
         p = (const char *)(&s);             \
-        memcpy(t,(const void *)p,l);        \
+        dbg->de_copy_word(t,(const void *)p,l);  \
     } while (0)
 #endif /* ENDIANNESS */
 
@@ -433,7 +435,7 @@ dwarf_new_fde_a(Dwarf_P_Debug dbg,
         DWARF_P_DBG_ERROR(dbg, DW_DLE_FDE_ALLOC, DW_DLV_ERROR);
     }
     fde->fde_dbg = dbg;
-    fde->fde_uwordb_size = dbg->de_offset_size;
+    fde->fde_uwordb_size = dbg->de_dwarf_offset_size;
     *fde_out = fde;
     return DW_DLV_OK;
 }
@@ -571,7 +573,6 @@ dwarf_add_fde_inst_a(Dwarf_P_Fde fde,
         _dwarf_p_error(dbg, error, DW_DLE_FPGM_ALLOC);
         return DW_DLV_ERROR;
     }
-
     switch (op) {
 
     case DW_CFA_advance_loc: {
@@ -762,7 +763,6 @@ dwarf_add_fde_inst_a(Dwarf_P_Fde fde,
     curinst->dfp_args = ptr;
     curinst->dfp_nbytes = nbytes;
     curinst->dfp_next = NULL;
-
     _dwarf_pro_add_to_fde(fde, curinst);
     return DW_DLV_OK;
 }

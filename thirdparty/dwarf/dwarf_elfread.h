@@ -37,9 +37,8 @@ extern "C" {
 #endif /* __cplusplus */
 
 
-/*  Use this for rel too. */
+/*  Use this for .rel. too. */
 struct generic_rela {
-    int          gr_isrela; /* 0 means rel, non-zero means rela */
     Dwarf_Unsigned gr_offset;
     Dwarf_Unsigned gr_info;
     Dwarf_Unsigned gr_sym; /* From info */
@@ -47,6 +46,9 @@ struct generic_rela {
     Dwarf_Signed   gr_addend;
     unsigned char  gr_type2; /*MIPS64*/
     unsigned char  gr_type3; /*MIPS64*/
+    /*  The following TRUE if .rela. and FALSE if .rel.
+        if FALSE, gr_addend will be zero. */
+    int            gr_is_rela;
 };
 
 /*  The following are generic to simplify handling
@@ -236,9 +238,19 @@ int _dwarf_load_elf_sectheaders(dwarf_elf_object_access_internals_t* ep,int *err
 int _dwarf_load_elf_symtab_symbols(dwarf_elf_object_access_internals_t *ep,int *errcode);
 int _dwarf_load_elf_symstr( dwarf_elf_object_access_internals_t *ep, int *errcode);
 
+/*  These two enums used for type safety in passing
+    values. */
+enum RelocRela {
+    RelocIsRela = 1,
+    RelocIsRel = 2
+};
+enum RelocOffsetSize {
+    RelocOffset32 = 4,
+    RelocOffset64 = 8
+};
 
-int _dwarf_load_elf_rela(dwarf_elf_object_access_internals_t *ep,
-    Dwarf_Unsigned secnum, int *errcode);
+int _dwarf_load_elf_relx(dwarf_elf_object_access_internals_t *ep,
+    Dwarf_Unsigned secnum,enum RelocRela,int *errcode);
 
 #ifndef EI_NIDENT
 #define EI_NIDENT 16

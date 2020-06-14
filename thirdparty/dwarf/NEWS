@@ -1,3 +1,24 @@
+March 14, 2020
+  The documentation of dwarf_diename() and dwarf_die_text()
+  has been corrected. Never dwarf_dealloc() the strings
+  returned by these functions.
+  The new function dwarf_set_de_alloc_flag(0) allows
+  consumer code to save memory space at run time.
+  If it is called it leaves all dwarf_dealloc() calls
+  to the libdwarf caller: dwarf_finish() will not be able
+  to free leftover allocations. By default libdwarf
+  does keep track of allocations and dwarf_finish() will
+  clean up any allocations not already dwarf_dealloc()-d.
+  Unless the DWARF one is reading is really large
+  it is best to let libdwarf keep track of its allocations.
+  so there will be no leaks after dwarf_finish().
+November 26, 2019
+  The dwarf_init*() functions no longer use libelf
+  so calling dwarf_get_elf() cannot succeed unless
+  dwarf_elf_init() or dwarf_elf_init_b() was used
+  to open a Dwarf_Debug on an object file.
+  This change actually happened around  5 May 2019
+  but was not documented properly till  26 November.
 January 15, 2019
   All references to C data types spelled *int16* *int32* or
   *int64* have been removed.  Dwarf_Unsigned is used instead.

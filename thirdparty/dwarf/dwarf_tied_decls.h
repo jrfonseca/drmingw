@@ -48,3 +48,9 @@ struct Dwarf_Tied_Entry_s {
 int _dwarf_tied_compare_function(const void *l, const void *r);
 void * _dwarf_tied_make_entry(Dwarf_Sig8 *key, Dwarf_CU_Context val);
 DW_TSHASHTYPE _dwarf_tied_data_hashfunc(const void *keyp);
+
+int
+_dwarf_loop_reading_debug_info_for_cu(
+    Dwarf_Debug tieddbg,
+    Dwarf_Sig8 sig,
+    Dwarf_Error *error);

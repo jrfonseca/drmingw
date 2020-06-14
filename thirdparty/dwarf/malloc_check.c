@@ -36,8 +36,13 @@
 */
 
 #include <stdio.h>
-#include <stdlib.h>             /* for exit() and various malloc
-    prototypes */
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif /* HAVE_STDLIB_H */
+#ifdef HAVE_MALLOC_H
+/* Useful include for some Windows compilers. */
+#include <malloc.h>
+#endif /* HAVE_MALLOC_H */
 #include "config.h"
 #include "dwarf_incl.h"
 #include "malloc_check.h"

@@ -1,588 +1,634 @@
-2019-05-29 David Anderson
-     * libdwarf_version.h: Updated version string.
-     * dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,
-       dwarf_names_new.h: regenerated.
-2019-05-26 David Anderson
-     * dwarf_alloc.c,dwarf_frame.c: Reformat comment lines
-       to shorten them.
-       Include inttypes.h for tsearch.h.
-     * elf_load_headers.c: Remove trailing whitespace.
-     * dwarf_groups.c,dwarf_loc.c,dwarf_tied.c: Reformat 
-       comment lines to shorten them. 
-       Remove small erroneous comment.
-     * dwarf_machoread.c: Shorten too-long lines.
-     * dwarf_tied_test.c: Reformat 
-       comment lines to shorten them. Remove trailing whitespace.
-     * dwarf_tsearch.h: Make idempotent include with 
-       ifndef DWARF_TSEARCH_H . Delete a blank line.
-     * dwarf_tsearchhash.c: Add and use DW_PR_DUx and
-       DW_PR_DUu and uintptr_t, refining casts to avoid
-       compiler warnings.
-     * pro_alloc.c,pro_die.c:  Reformat comment lines
-       to shorten them.
-       Remove small erroneous comment.
-     * pro_expr.c,pro_init.c:  Reformat comment lines
-       to shortent them.
-       Remove small erroneous comment.
-2019-05-24 David Anderson
-     * Makefile.am: Delete mention of config.h.in.cmake.
-     * Makefile.in: Regenerate.
-     * dwarf_tied_test.c: Delete the comment on uintptr_t
-       on the intypes.h line.
-     * libdwarf.h.in: Refine commentary a little.
-     * generated_libdwarf.h.in: Regenerated.
-2019-05-20 David Anderson
-     * CMakeLists.txt: No longer generates a local-build-dir
-       config.h
-     * config.h.in.cmake: Deleted.
-2019-05-20 David Anderson
-     * CMakeLists.txt: Reflects revised cmake option names.
-       Adds compiler warning options when -DWALL selected.
-     * config.h.in.cmake: Reflects the set of defines
-       needed now, such as cmakedefine DWARF_WITH_LIBELF.
-     * dwarf_elf_access.c: Removes some messy HAVE_LIBELF_H
-       etc to dwarf_elf_defines.h so the test/define 
-       is reusable
-     * dwarf_elf_defines.h: Now has the messy HAVE_LIBELF_H
-       etc tests.
-     * dwarf_elf_load_headers.c: Removes unwanted include  of elf.h
-     * dwarf_elfread.c: Add Windows-related ifdef.
-       A couple if () reformatted slightly. a few casts
-       added to ensure compiler warnings eliminated.
-     * dwarf_frame2.c: Using Dwarf_Unsigned a bit more
-       so the output can use DW_PR_DUx for the printf.
-     * dwarf_incl.h: Small comment change for readability.
-     * dwarf_machoread.c: Add Windows-related ifdef/define/include.
-       Minor if() revision for consistency. Some casts
-       added to avoid compiler warnings and communicate intent.
-     * dwarf_object_detector.c: Added Windows specific ifdef/include
-       and accomodation of HAVE_CUSTOM_LIBELF.
-     * dwarf_object_read_common.c: Added Windows specific 
-       ifdef/include and a slight reformatting of argument
-       lists.
-     * dwarf_peread.c: Added Windows specific ifdef/include.
-       Added casts to avoid compiler warnings.
-     * dwarf_query.c: Reformat some if() for consistency.
-     * gennames.c: Added Windows specific ifdef/include.
-     * libdwarf.h.in: Deleted excessive blank lines.
-       Added DW_FTYPE_CUSTOM_ELF 5.
-     * pro_encode_nm.c: Added casts to avoid certain compiler
-       warnings.
-     * pro_incl.h: Made a comment more consistent with
-       other uses of that comment.
-2019-05-14 David Anderson
-     * dwarf_pe_descr.h: Several // C++ comments
-       present, now all such comments deleted.
-2019-05-13 David Anderson
-     * pro_section.c,pro_frame.c: A bug in a macro shows up only
-       on big-endian systems (causes a compiler warning).
-       This fixes it.
-2019-05-07 David Anderson
-     * configure.cmake: Moved into CMakeLists.txt.
-     * Makefile.am: Deleted reference to configure.cmake.
-     * CMakeLists.txt: no longer needs configure.cmake
-2019-05-05 David Anderson
-     * dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,
-       dwarf_names_new.h: Updated with latest version
-       string (in a comment).
-     * libdwarf_version.h: New version string.
-2019-05-04 David Anderson
-     * dwarf_elf_load_headers.c: A corrupt Elf .shstring
-       section (lacking trailing NUL) is now detected.
-     * dwarf_elfread.h: Removed an unused struct
-       and an unused struct field.
-2019-05-02 David Anderson
-     * dwarf_leb.c,dwarf_tied.c,dwarf_tied_decls.h,
-       dwarf_tied_test.c: Removing trailing whitespace
-       and final blank lines.
-     * dwarf_object_detector.c,dwarf_pe_descr.h,dwarf_peread.c:
-       Adding _dw to the names of more Windows things to avoid
-       compilation conflicts with Windows names.
-2019-05-01 David Anderson
-     * configure.cmake: Removed some more lines.
-       Mainly leaving options declarations (which
-       will be moved later).
-     * dwarf_incl.h: Fixed a typo in a comment.
-2019-05-01 David Anderson
-     * configure.cmake: Removed some lines, placing them in
-       base directory configure.cmake.
-2019-04-30 David Anderson
-     * CMakeLists.txt: Added the new files. Revised the
-       testing area the tests can be run and pass.
-2019-04-30 David Anderson
-     * libdwarf2.1.mm: Increased font size for better
-       legibility in the pdf on a computer monitor
-       Using the .S mm control. Rev 2.73.
-       The smaller size was readable on paper, but
-       not very readable on a screen.
-     * libdwarf2p.1.mm: Larger font size here too. Rev 1.45.
-     * libdwarf2.1.pdf,libdwarf2p.1.pdf: Regenerated
-     * pdfbld.sh: Fixed the -p option.
-2019-04-30 David Anderson
-     * Makefile.am: Altered the lists of headers/source
-       to account for  the new 'make check' details.
-     * dwarf_leb.c,dwarf_tied.c: Removed testing-related
-       source. Moved to the respective _test.c
-     * dwarf_leb_test.c,dwarf_tied_decls.h,dwarf_tied_test.c:
-       New files so we isolate test code without ifdefs.
-     * runtests.sh: Now reflects the new test sourcefiles.
-2019-04-29 David Anderson
-     * dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,
-       dwarf_names_new.h: Regenerated.
-       Version date update.
-2019-04-28 David Anderson
-      * config.h.in.cmake, configure.cmake: Deleted all reference to
-        INT32 and INT64 as no longer needed.
-2019-04-26 David Anderson
-      * CMakeLists.txt,config.h.in.cmake,configure.cmake:
-        Revised to work with the updated use of cmake.   
-2019-04-25 David Anderson
-      * dwarf_pe_descr.h, dwarf_peread.c: All the Windows PE
-        structs have been renamed, adding a trailing _dw,
-        to make them distinct from the standard Windows
-        names.
-2019-04-25 David Anderson
-      * dwarf_elfread.c, dwarf_object_read_common.c: Removed
-        trailing whitespace.
-2019-04-25 David Anderson
-      * dwarf_peread.c: Change the way an strncpy
-        is handled to avoid a compiler warning
-        as well as create hopefully clearer code.
-2019-04-25 David Anderson
-      * dwarf_elf_load_headers.c,dwarf_elfread.c,
-        dwarf_object_read_common.c: Added missing
-        Windows-specific includes.
-      * libdwarf_version.h: Updated version date string.
-2019-04-24 David Anderson
-      * dwarf_die_deliv.c(_dwarf_next_cu_internal):
-        Allow a null as the next_cu_offset pointer 
-        passed in.
-      * dwarf_elf_load_headers.c: Correct the check
-        for a dwarf-related section.  Correct
-        the error code returned in several places.
-      * dwarf_elfread.c:a Correct the error code
-        returned and one return value.
-      * dwarf_errmsg_list.h: Add specific errors relating
-        to nolibelf elf reading.
-      * dwarf_generaic_init.c: Remove trailing whitespace.
-      * dwarf_query.c(dwarf_highpc_b): Allow a couple
-        of pointer args to be null in case clients
-        are uninterested in returning values.
-      * libdwarf.h.in: Added DW_DLE_ELF_SECTION_ERROR,
-        DW_DLE_ELF_STRING_SECTION_ERROR.
-      * libdwarf2.1.mm: Version 2.72. Documented that
-        dwarf_next_cu_header_d() and dwarf_hipc_b()
-        allow specific arguments to be null.
-      * libdwarf2.1.pdf: Regenerated
-2019-04-22 David Anderson
-      * dwarf_generic_init.c, dwarf_machoread.c,
-        dwarf_object_detector.c,
-        dwarf_object_read_common.c,dwarf_peread.c: Add test 
-        for _MSC_VER for Windows MSVC.
-2019-04-22   David Anderson
-      * dwarf_frame.c: Add ifdef/include of stdint.h
-        and inttypes.h and add casts using uintptr_t
-        so we avoid some compiler warnings.
-      * dwarf_groups.c,dwarf_tied.c,
-        pro_alloc.c,pro_die.c,pro_init.c: Add ifdef/include
-        of stdint.h
-        and inttypes.h as the updated dwarf_tsearch.h
-        requires uintptr_t.
-      * dwarf_loc.c,pro_expr.c: Add ifdef/include of stdint.h
-        and inttypes.h  so we can use uintptr_t
-        in casts and avoid compiler warnings.
-      * dwarf_tsearchhash.c: Add ifdef/include of stdint.h
-        and inttypes.h for dwarf_tsearch.h so we can use uintptr_t
-        in casts and avoid compiler warnings.
-2019-04-21   David Anderson
-      * dwarf_pe_descr.h: Added a comment specifying
-        a MS web page describing
-        how  the section data length and content is 
-        calculated and handled.
-      * dwarf_peread.c(pe_get_section_info): The understanding
-        of the length of section data was overly simplistic.
-        Now with all the bytes filled in properly in this function.
-2019-04-21   David Anderson
-      * dwarf_peread.c: Now getting pe section
-        data returns a meaningful section virtual address.
-2019-04-19   David Anderson
-      * CMakeLists.txt: Add new files to the files to build.
-      * Makefile.am: add the new .h and .c files.
-      * dwarf_die_deliv.c(reloc_incomplete): Reformat
-        the long 'if' to make it easier to read.
-      * dwarf_elf_access.c: Remove the full list of
-        relocations header files as no longer needed,
-        include dwarf_elf_defines.h instead.
-        Remove the
-        is_??bit_abs_reloc() predicate functions. Move
-        to  dwarf_elf_rel_detector. (renamed the functions).
-      * dwarf_errmsg_list.h: Added 
-        DW_DLE_SECTION_SIZE_ERROR,
-        DW_DLE_INTERNAL_NULL_POINTER,
-        DW_DLE_SECTION_STRING_OFFSET_BAD,
-        DW_DLE_SECTION_INDEX_BAD, DW_DLE_INTEGER_TOO_SMALL,
-        DW_DLE_ELF_SECTION_LINK_ERROR,DW_DLE_ELF_SECTION_GROUP_ERROR,
-        DW_DLE_ELF_SECTION_COUNT_MISMATCH,
-        DW_DLE_ELF_STRING_SECTION_MISSING,DW_DLE_SEEK_OFF_END,
-        DW_DLE_READ_OFF_END for use by the nolibelf
-        elf reader.
-      * dwarf_generic_init.c: Now separates  
-        archive access (using libelf) from non-archive (using
-        no libelf).
-      * dwarf_init_finish.c: Revamp commentary about 
-        _dwarf_load_section.
-      * dwarf_machoread.c: Renamed mo_byteorder to mo_endian
-        for consistency. Added filesize to seek/read
-        (RRMOA macro)for better checking of offset/size.
-      * dwarf_machoread.h: Renamed mo_byteorder to mo_endian.
-      * dwarf_object_detector.c: Added filesize to seek/read
-        (_dwarf_object_read_random())
-        for better checking of offset/size.
-      * dwarf_object_read_common.c: Added additional checks
-        of seek/read to ensure offset correctness.
-        Seek itself allows seeking past end, which we
-        do not want.
-      * dwarf_object_read_common.h: Added filesize to
-        _dwarf_object_read_random argument list.
-      * dwarf_opaque.h: Removed trailing whitespace.
-        Added _dwarf_elf_nlsetup() declaration for non-libelf.
-      * dwarf_original_elf_init.c: Added ifdef so calls
-        do not get warnings when only non-libelf.
-      * dwarf_peread.c: Renamed pe_byteorder to pe_endian
-        forconsistency.  Added filesize arg to
-        _dwarf_object_read_random calls.
-      * dwarf_peread.h: Renamed pe_byteorder to pe_endian
-        for consistency.
-      * dwarf_reading.h: Now RRMOA macro adds filesize
-        argument.
-      * libdwarf.h.in: Added error codes DW_DLE_SECTION_SIZE_ERROR,
-        DW_DLE_INTERNAL_NULL_POINTER,DW_DLE_SECTION_STRING_OFFSET_BAD,
-        DW_DLE_SECTION_INDEX_BAD,DW_DLE_INTEGER_TOO_SMALL,
-        DW_DLE_ELF_SECTION_LINK_ERROR,DW_DLE_ELF_SECTION_GROUP_ERROR,
-        DW_DLE_ELF_SECTION_COUNT_MISMATCH,
-        DW_DLE_ELF_STRING_SECTION_MISSING,DW_DLE_SEEK_OFF_END,
-        DW_DLE_READ_OFF_END          
-      * memcpy_swap.h: Returned the function declarations
-        to be a single long line each.
-      * dwarf_elf_rel_detector.h, dwarf_elf_rel_detector.c:
-        Refactored relocation tests determing whether
-        the relocation was 32bit or 64bit.
-      * dwarf_elf_reloc_386.h,
-        dwarf_elf_reloc_aarch64.h,dwarf_elf_reloc_arm.h,
-        dwarf_elf_reloc_mips.h,dwarf_elf_reloc_ppc64.h,
-        dwarf_elf_reloc_ppc.h,dwarf_elf_reloc_sparc.h,
-        dwarf_elf_reloc_x86_64.h: Complete lists
-        of relocation types. 
-        These are no longer needed by libdwarf, but
-        for now remain here.  They were once needed
-        for builds lacking a sufficiently complete
-        elf.h.
-      * dwarf_elfstructs.h: struct declarations for
-        the standard Elf structs, but using character
-        arrays, not integers. Assures we always have the
-        correct lengths independent of integer sizes.
-      * dwarf_elf_defines.h:  A basic set of Elf defines
-        so the producer code has all it needs.
-        Used by the Elf readers (libelf and nolibelf).
-      * dwarf_elfread.h: The internally-used set of
-        structures that hold nolibelf Elf data.
-        The fields are sized to hold 64bit and used for
-        both 32bit and 64bit elf. Some extra fields exist
-        so aspects that differ by 32/64 are recorded
-        by 32/64 specific code so 
-      * dwarf_elf_load_headers.c: Actually reads 32 and 64
-        Elf and inserts the values into the structures
-        declared in dwarf_elfread.h. 
-      *	dwarf_elfread.c: This does the nolibelf setup
-        and calls dwarf_elf_load_headers.c interfaces
-        to help with setup.
-2019-03-08   David Anderson
-      * pro_section.c: Remove trailing whitespace.
-2019-03-07   David Anderson
-      * pro_section.c(_dwarf_pro_generate_debuginfo): Now when
-        there are zero bytes to copy we do not call memcpy,
-        as in that case the source pointer will be NULL.
-2019-03-06   David Anderson
-      * dwarf_form.c,dwarf_global.c: Removed trailing whitespace.
-      * pro_init.c: Removed trailing whitespace and fixed indents.
-      * pro_forms.c(dwarf_add_AT_any_value_uleb_a): Accidentally
-        leftout dbg = ownerdie->di_dbg, resulting in a memory
-        leak.
-      * pro_frame.c(dwarf_new_fde_a): Accidentally left out
-        setting fde_dbg, resulting in a memory leak.
-2019-03-04   David Anderson
-      * dwarf.h:  Adding go-specifig type attributes
-        DW_AT_go_kind,DW_AT_go_key,DW_AT_go_elem,
-        DW_AT_go_embedded_field,DW_AT_go_runtime_type.
-        Added error code DW_DLE_RETURN_EMPTY_PUBNAMES_ERROR.
-      * dwarf_errmsg_list.h:
-        Added error code DW_DLE_RETURN_EMPTY_PUBNAMES_ERROR.
-      * dwarf_global.c: Updates new fields in the hidden struct
-        with pubnames(etc) context data and makes it possible
-        to see the CU headers there, even if there are no
-        actual variables listed for a CU (a fake record
-        returned in that case). The change in output
-        records (the fake records) only appear if
-        the caller has requested such by a call to
-        xxxxx
-        Implements dwarf_get_globals_header() so a caller
-        like dwarfdump can print such section headers.
-        Implements dwarf_return_empty_pubnames()
-        which just sets a flag so a caller
-        like dwarfdump can request such empty sections
-        return a useful fake entry.
-      * dwarf_global.h: Adds fields like pu_length, pu_version
-        so pubnames(etc) sections can have  their cu header
-        data returned.
-      * dwarf_line.c:  Adds explicit calls to dwarf_dealloc
-        in error cases to avoid leaving the allocated memory
-        hanging around until dwarf_finish().
-      * dwarf_names.c,dwarf_names.h, dwarf_names_enum.h,
-        dwarf_names_new.h: Regenerated to create the new attributes
-        for the Go language.
-      * dwarf_opaque.h: Adds  flag de_return_empty_pubnames to
-        Dwarf_Debug_s struct so libdwarf can know when fake
-        records for CUs with no entries are wanted by
-        callers.
-      * libdwarf.h.in: Added error code DW_DLE_RETURN_EMPTY_PUBNAMES_ERROR.
-        Declares dwarf_return_empty_pubnames() and
-        dwarf_get_globals_header() so callers (like dwarfdump)
-        can see and access all pubnames(etc)section CU headers.
-      * libdwarf2.1.mm: Version 2.71. Documents the new functions.
-        Revises the contest structure a little so all the pubnames-like
-        sections are documented as a related group of functions.
-      * libdwarf2.1.pdf: Regenerated. Version 2.71.
-      * libdwarf_version.h: New date string.
-2019-02-26   David Anderson
-      * dwarf.h: Added go language specific attributes.
-      * dwarf_line.c(dwarf_srcfiles): Dealloc stmt_list_attr 
-        as soon as we lose interest in it instead of waiting
-        for dwarf_finish() to be called.
-2019-02-24   David Anderson
-      * libdwarf_version.h: Updated date string.
-      * dwarf_names.c,dwarf_names.h, dwarf_names_enum.h,
-        dwarf_names_new.h: Regenerated with latest date string.
-2019-02-18   David Anderson
-      * configure.cmake: Now always defines DWARF_WITH_LIBELF
-        so builds work as always.
-      *	dwarf_elf_access.c,dwarf_generic_init.c,
-        dwarf_original_elf_init.c,
-	pro_incl.h,pro_init.c,pro_reloc_stream.c: Now these use
-        DWARF_WITH_LIBELF tests to build properly when 
-        libelf is to be used.
-2019-02-18   David Anderson
-      * pro_incl.h: Added comments on tests of HAVE_ELF_H
-        and the LIBELF_H macros and the #include of 
-        the Elf/libelf headers.
-2019-02-18   David Anderson
-      * pro_reloc_stream.h: Was testing ifdef HAVE_ELF_H, which
-        is unnecessary as it does not use any elf.h types.
-2019-02-12   David Anderson
-      * dwarf_form.c: Implement dwarf_uncompress_integer_block_a()
-        with the proper return type (int). Use this instead
-        of the old dwarf_uncompress_integer_block().
-      * libdwarf.h.in: Declare dwarf_uncompress_integer_block_a()
-        and dwarf_uncompress_integer_block_a().
-      * pro_forms.c: Implment the two new functions.
-2019-02-10   David Anderson
-      * dwarf_errmsg_list.h,libdwarf.h.in: Adding
-        DW_DLE_NO_STREAM_RELOC_SUPPORT error code.
-      * pro_alloc.c,pro_arange.c,pro_die.c,pro_dnames.c,
-	pro_error.c,pro_expr.c,pro_finish.c,pro_forms.c,
-	pro_frame.c,pro_funcs.c,pro_init.c,pro_line.c,
-	pro_macinfo.c,pro_pubnames.c,pro_reloc.c,
-	pro_reloc_symbolic.c,pro_section.c,pro_types.c,
-	pro_vars.c,pro_weaks.c:
-        Removed the ifdef HAVE_ELF_H in most places
-        as we can really build everything without elf.h
-        except pro_reloc_stream.c (which retains
-        the big ifdef HAVE_ELF_H on the whole file).
-        Now only a couple files have ifdef HAVE_ELF_H
-      * pro_reloc_stream.h: Hiding the function decls
-        with ifdef HAVE_ELF_H 
-2019-02-10   David Anderson
-      * dwarf_errmsg_list.h,dwarf_generic_init.c:
-        Removed trailing whitespace on one line.
-      * dwarf_incl.h: Removed blank line
-        and a duplicated include statement.
-2019-02-10   David Anderson
-      * pro_alloc.c,pro_arange.c,pro_die.c,pro_dnames.c,
-        pro_error.c,pro_expr.c,pro_finish.c,pro_forms.c,
-        pro_frame.c,pro_funcs.c,pro_incl.h,pro_init.c,
-        pro_line.c,pro_macinfo.c,pro_pubnames.c,pro_reloc.c,
-        pro_reloc_stream.c,pro_reloc_symbolic.c,pro_section.c,
-        pro_types.c,pro_vars.c,pro_weaks.c: Now pro_incl.h
-        is almost entirely just #defines and each .c
-        brings in just the headers it really wants.
-2019-02-10   David Anderson
-      * dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,
-	dwarf_names_new.h: Datestring update.
-      * libdwarf_version.h: Updated date string
-2019-02-07   David Anderson
-      * dwarf_elf_access.c, pro_alloc.c, pro_arange,c,pro_die.c,
-        pro_dnames.c,pro_error.c,pro_xpr.c,pro_finish.c,
-        pro_forms.c,pro_frame.c, pro_funcs.c,pro_init.c,
-        pro_line.c,pro_macinfo.c,pro_pubnames.c,pro_reloc.c,
-        pro_reloc_stream.c, pro_reloc_symbolic.c,pro_section.c,
-        pro_types.c,pro_vars.c,pro_weaks.c:
-        Ifdef (entire file after include config.h)
-         HAVE_ELF_H so libdwarf compiles without HAVE_ELF_H
-      * pro_encode_nm.c: Get rid nested includes, include just
-        what is needed.
-      * dwarf_generic_init.c: Moved dwarf_set_tied_dbg() here 
-        and ifdef HAVE_ELF_H so 
-        libdwarf compiles without HAVE_ELF_H
-      * dwarf_original_elf_init.c: ifdef HAVE_ELF_H so
-        we can emit an error if no Elf: DW_DLE_NO_ELF_SUPPORT.
-      * dwarf_errmsg_list.h: Add new error DW_DLE_PRODUCER_CODE_NOT_AVAILABLE
-        to display if an attempt is made to open an elf object
-        when libdwarf built without HAVE_ELF_H. And add
-        DW_DLE_NO_ELF_SUPPORT.
-      * libdwarf.h.in: Add DW_DLE_PRODUCER_CODE_NOT_AVAILABLE and
-        DW_DLE_NO_ELF_SUPPORT.
-2019-01-31   David Anderson
-      * dwarf_alloc.c, dwarf_die_deliv.c,dwarf_dnames.c, dwarf_dsc.c,
-        dwarf_elf_access.c,dwarf_frame.c,dwarf_frame2.c,
-        dwarf_gdbindex.c,dwarf_generic_init.c,dwarf_init_finish.c,
-        dwarf_line.c,dwarf_loc.c,dwarf_loc2.h,dwarf_machoread.c,
-        dwarf_macro.c,dwarf_macro5.c,dwarf_opaque.h,dwarf_peread.c,
-        dwarf_tsearchhash.c,dwarf_util.c,dwarf_xu_index.c,pro_alloc.c,
-        pro_arange.c,pro_expr.c,pro_line.c,pro_macinfo.c,
-        pro_section.c,pro_types.c: Fixed 56 bugs found
-        by llvm's scan-build tool.
-2019-01-27   David Anderson
-      * dwarf_form.c,dwarf_gdbindex.c,dwarf_object_read_common.c,
-        pro_forms.c,pro_section.c: Remove trailing whitespace.
-2019-01-27   David Anderson
-      * dwarf_object_read_common.c,dwarf_object_read_common.h:
-        Now uses the ISO (1990) datatypes off_t and size_t and
-        ssize_t for lseek, read.
-2019-01-20   David Anderson
-      * dwarf_base_types.h: Remove Dwarf_ufixed and 
-        Dwarf_sfixed and all __int32_t and __uint32_t use.
-        __uint64_t Dwarf_ufixed64 and __int64_t Dwarf_sfixed64
-        have also been removed.
-      * dwarf_elf_access.c: Remove use of those types here too.
-      * dwarf_form.c: Remove references to those types here
-        too.
-      * dwarf_gdbindex.c, dwarf_gdbindex.h: Replace 
-        gdbindex_offset_type headerval[6]
-        by char gfs[4][6] (replacing dependence on the  int32
-        sorts of types.
-      * dwarf_macho_loader.h: Clarified that the uint32_t sorts
-        of things are just comments.
-      * libdwarf.h.in: Fixed a too-long comment line.
-      * libdwarfdefs.h: Removed all the *UINT32* and
-        *uint64* use.
-      * pro_forms.c,pro_opaque, pro_section.c: 
-        Removed all the Dwarf_sfixed and ufixed
-        stuff here too.
-2019-01-14   David Anderson
-     * dwarf_frame.c: Add support for DW_CFA_MIPS_advance_loc8
-       (though pointless, really) so we can test all the code
-       paths of advance_loc production. 
-     * dwarf_frame2.c: Minor formatting cleanup.
-     * dwarf_line_table_reader_common.h: Now tests for
-       negative line numbers in the table and returns an error
-       with the new error code DW_DLE_LINE_TABLE_LINENO_ERROR
-       (which indicates a corrupted line table).
-     * dwarf_names.c, dwarf_names.h, dwarf_names_enum.h,
-       dwarf_names_new.h: Regenerated. Just an update of
-       the sourcedate comment.
-     * dwarf_opaque.h: Delete a trailing whitespace character.
-     * libdwarf.h.in: Add error DW_DLE_LINE_TABLE_LINENO_ERROR.
-     * pro_expr.c: Remove trailing whitespace.
-     * pro_frame.c( dwarf_add_fde_inst_a): A new simpler 
-       more portable implementation of the DW_CFA_advance_loc
-       code.
-     * pro_opaque.h: Delete blank last line.
-2019-01-12   David Anderson
-     * dwarf_abbrev.c,dwarf_abbrev.h,dwarf_base_types.h,
-       dwarf_die_deliv.c, dwarf_dsc.c,dwarf_error.c,
-       dwarf_error.h,dwarf_form.c,dwarf_frame.c,
-       dwarf_frame.h,dwarf_frame2.c,dwarf_global.h,
-       dwarf_leb.c,dwarf_line.c,dwarf_line.h,
-       dwarf_line_table_reader_common.h,dwarf_loc.c,
-       dwarf_loc2.h,dwarf_macro5.c,dwarf_macro5.h,dwarf_opaque.h,
-       dwarf_print_lines.c,dwarf_query.c,dwarf_util.c,dwarf_util.h,
-       pro_arange.c,pro_error.c,pro_error.h,pro_expr.c,
-       pro_forms.c,pro_frame.c,pro_frame.h,pro_line.h,
-       pro_opaque.h,pro_reloc_stream.c,pro_section.c,
-       pro_types.c: Removed all instances of use of
-       Dwarf_Word, Dwarf_Sword, __int32_t (and other such).
-       In nearly all cases the use was gratuitous. In a few
-       cases some very old code was problematic (dwarf_frame2.c)
-       and is fixed.
-2019-01-10   David Anderson
-     * libdwarf_version.h: New date string.
-2019-01-09   David Anderson
-     * dwarf_original_elf_init.c: One of the calls to
-       dwarf_object_init_b() was checking the result code
-       then doing a statment that will crash the caller unless
-       the result code was DW_DLV_OK.
-2019-01-05   David Anderson
-     * dwarf_generic_init.c: Removed trailing whitespace.
-2019-01-04   David Anderson
-     * dwarf_generic_init.c: After closing de_fd,
-       set de_owns_fd FALSE as an extra guard.
-2019-01-04   David Anderson
-     * dwarf_object_detector.c: Ensure the configure
-       can set O_BINARY if necessary so open() will use it.
-2019-01-04   David Anderson
-     * dwarf_elf_access.c,dwarf_generic_init.c,dwarf_machoread.c,
-       dwarf_opaque.h,dwarf_peread.c: Simplified and unified
-       the requirement that dwarf_finish() close the fd
-       that dwarf_init_path() opened.
-2019-01-04   David Anderson
-     * configure.ac: Version 20190104
-     * dwarf_elf_access.c: Now records that libdwarf owns
-       its fd in the elf case and arranges to close it
-       when the Dwarf_Debug is being closed.
-       This is the case of dwarf_init_path().
-       Hopefully will address Coverity CID 190599.
-     * dwarf_object_detector.c: Now that struct stat
-       is not in use delete the sys/types.h and sys/stat.h
-       includes as they are no longer needed.
-     * dwarf_generic_init(dwarf_init_path): When libdwarf 
-       owns the fd, call _dwarf_elf_record_owned_fd()
-       to record that information.
-       In the default case (not a known object type)
-       we also now close the fd.
-     * dwarf_opaque.h: Add prototype for 
-       _dwarf_elf_record_owned_fd, a new internal function
-       so the fd can be closed by libdwarf only when 
-       libdwarf owns it.
-     * libdwarf_version.h: New date string.
-2019-01-03   David Anderson
-     * dwarf_object_detector.c: Had a pointless call to stat()
-       which was noticed by Coverity CID  190601
-       as a possible race condition. Deleted the call.
-     * dwarf_generic_init(dwarf_init_path):
-       Serious bugs introduced yesterday.
-       Coverity CID 190600.
-       the fd is remembered in the Dwarf_Debug
-       being created and will eventually be closed
-       when the Dwarf_Debug is closed.
-2019-01-02   David Anderson
-     * dwarf_die_deliv.c(dwarf_get_real_section_name): 
-       Uninitialized local char array
-       could lead to unpredictable behavior, so now initialized
-       with a NUL first byte so the array is a legal string.
-       Coverity CID CID 190598.
-     * ChangeLog: Renamed ChangeLog2018. New ChangeLog created.
-     * Makefile.am: Added ChangeLog2018 to files in dist.
-     * gennames.c(GenerateOneSet): Fixing Coverity CID 190603
-       by removing an unused (unusable) value. 
-     * dwarf_machoread.c.The include order
-       is now libdwarfdefs.h then dwarf_base_types.h
-     * dwarf_peread.c: The include order
-       is now libdwarfdefs.h then dwarf_base_types.h
-       Was leaking memory re-malloc into local var
-       localdoas. Coverity CID 190602.
-     * dwarf_generic_init.c(dwarf_init_path): 
-       We clarify the use of fd and in case
-       of failure ensure we close the fd if
-       it is open (fd >= 0). 
-     * dwarf_object_detector.c(dwarf_object_detector_path):
-       Mistaken 'fix'
-     * libdwarf_version.h: Updated version string.
+2020-05-23: David Anderson
+    * dwarf_opaque.h: Defines DWARFSTRING_ALLOC_SIZE   200
+    * dwarf_form.c: Using DWARFSTRING_ALLOC_SIZE for the
+      initial allocation, (mostly) avoiding the need
+      for malloc here.  dwarfstring is mainly used
+      for error messages, so preallocation is rarely useful
+    * dwarf_line.c(create_fullest_file_path): Corrected
+      the comments for this function.
+2020-05-22: David Anderson
+    * dwarf_alloc.c: New functions with proper type checking:
+      dwarf_dealloc_error(), dwarf_dealloc_attribute(),
+      dwarf_dealloc_die().
+    * dwarf_arange.c: Now does correct free_aranges_chain() 
+      and ensures chain entry stuff dealloc-d as appropriate.  
+    * dwarf_die_deliv.c: Improved an error message in reports
+      an address-size error.
+    * dwarf_frame.c: Initialize more local variables at the
+      point of declaration. Do  all needed dealloc of
+      the chain entries 
+      when creating the list.
+    * dwarf_global.c: Now uses the new ch_itemtype
+      to dealloc properly.  Which simplifies the 
+      dealloc_globals_chain() call.
+    * dwarf_line.c:  Now uses the new ch_itemtype
+      to dealloc properly.
+    * dwarf_line_table_reader_common.h: Now uses wrappers
+      for the READ_UNALIGNED_CK DECODE_LEB128_UWORD_CK etc
+      macros so the code
+      now deallocs appropriately in case of error.
+      Most places were not doing full dealloc. Now
+      all are.
+    * dwarf_opaque.h: New field ar_dbg so attribute
+      dealloc is easier.  New chain field ch_itemtype
+      so dealloc is simpler and safer.
+    * dwarf_query.c: Removed comment about leaking memory,
+      the leaks are fixed by using the DECODE_LEB128_UWORD_CK
+      etc wrapper functions.
+    * libdwarf.h.in: Declares the new dealloc functions
+      dwarf_dealloc_error(),dwarf_dealloc_die(),
+      dwarf_dealloc_attribute().
+    * generated_libdwarf.h.in: Regenerated.
+    * libdwarf2.1.mm: New documentation of dwarf_dealloc()
+      as well as documentation of
+      dwarf_dealloc_error(),dwarf_dealloc_die(),
+      dwarf_dealloc_attribute().
+    * libdwarf2.1.pdf: Regenerated. Version 2.94.
+2020-05-19: David Anderson
+    * dwarf_rnglists.c: Ommited a crucial assign to rh_debug so it
+      leaked if de_alloc_tree absent.
+2020-05-19: David Anderson
+    *  dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,dwarf_names_new.h,
+       libdwarf_version.h : New version strings.
+2020-05-19: David Anderson
+    * libdwarf.h.in: Revised a couple rnglists functions
+      by removing unneeded arguments and revising the arguments
+      to dwarf_rnglists_offset_get_rle_head(),
+      dwarf_get_rnglist_head_basics(), and
+      dwarf_get_rnglists_entry_fields()
+    * generated_libdwarf.h.in: Regenerated.
+    * dwarf_rnglists.c: Checked a pointer argument for null before using.
+      Remove the unneeded function arguments (affecting several internal
+      functions too). Renamed a few internal things for clarity.
+    * libdwarf2.1.mm: Documented the new rnglists functions
+      and added examples of use.
+    * libdwarf2.1.pdf: Regenerated. Version 2.93.
+2020-05-17: David Anderson
+    * dwarf_dnames.c: Improved error reporting of the names generation
+      when something goes wrong.
+    * dwarf_elf_access.c,dwarf_elfread.c: Add MATCH_REL_SEC 
+      for the .debug_addr section.
+    * dwarf_form.c: Improved error reporting by showing specific details.
+      Now supports DW_FORM_rnglistx.  New function
+      dwarf_addr_form_is_indexed(theform) created, now using
+      it here and in dwarfdump as needed..
+    * dwarf_line_table_reader_common.h: Corrected indents.
+    * dwarf_opaque.h:  Small commentary changes, added the 
+      CU Context field cc_dwo_name_present (used for 
+      non-standard DWARF4).
+    * dwarf_query.c: Simplified some pointlessly messy code.
+      Now also using dwarf_addr_form_is_indexed() instead of
+      a list missing some DWARF5 values.
+    * dwarf_ranges.c: #if 0 some useless code for now. 
+    * dwarf_rnglists.c: The .debug_rnglists code is here.
+    * dwarf_rnglists.h: For use inside libdwarf. Opaque
+      to libdwarf callers.
+    * dwarf_tsearchhash.c: Trivial change. No logic change.
+    * dwarf_util.c: Removed pointless blank line.
+    * dwarf_util.h, dwarf_xu_index.h: Fix trailing whitespace.
+    * libdwarf.h.in: New functions and opaque types for reading
+      the .debug_rnglists section.
+    * generated_libdwarf.h.in: Regenerated.
+2020-05-05: David Anderson
+    * dwarf_rnglists.h, dwarf_opaque.h, dwarf_rnglists.c: 
+      Preliminary new fields/code for Rnglists_Context.
+2020-05-04: David Anderson
+    * dwarf_alloc.c: renamed dwarf_dealloc_rnglists
+      to _dwarf_dealloc_rnglists.
+    * dwarf_errmsg_list.h: Added DW_DLE_RNGLISTS_ERROR.
+    * dwarf_opaque.h: Added _dwarf_dealloc_rnglists() prototype.
+    * dwarf_rnglists.c: Minor corrections of this new code.
+    * dwarf_rnglists.h: Added a new field for internal use.
+      Deleted some #if 0 lines.
+    * dwarf_util.c(_dwarf_load_debug_info): Now also
+      calls dwarf_load_rnglists as we need that in the
+      Dwarf_Debug.
+    * libdwarf.h.in: Added DW_DLE_RNGLISTS_ERROR.
+      Deleted dwarf_dealloc_rnglists as it is renamed
+      and made private to libdwarf.
+    * generated_libdwarf.h.in: Regenerated.
+2020-05-02: David Anderson
+    * libdwarf2.1.mm: Added a note to Changes that
+      instances of 'length_size' in the code and headers
+      variable naming will, over time, be changed to 
+      'offset_size' as this name suggests what they really
+      represent: a 4 or 8 byte offset size.
+    * libdwarf2.1.pdf: Regenerated, version 2.92
+2020-05-02: David Anderson
+    * CMakeLists.txt, Makefile.am: Added dwarf_rnglists.h,
+      dwarf_rnglists.c
+    * Makefile.in: Regenerated.
+    * dwarf_alloc.c: Now calls dwarf_dealloc_rnglists() at
+      finish to clean up rnglists data, if any.
+    * dwarf_arange.c: Deleted some blank lines and added one.
+    * dwarf_opaque.h: Added de_rnglists_context_count and
+      de_rnglists_context to support rnglists.
+    * dwarf_rnglists.h:  Defines the Dwarf_Rnglists_Context
+      structure.
+    * dwarf_rnglists.c:  Implements initial support of the
+      .debug_rnglists section.
+    * libdwarf.h.in: Declares new rnglist-related functions
+      and an opaque struct Dwarf_Rnglists_Context_s.
+    * generated_libdwarf.h.in: Regenerated.
+2020-04-26: David Anderson
+    * dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,
+      dwarf_names_new.h,libdwarf_version.h: Updated
+      version string.
+2020-04-25: David Anderson
+    * dwarf_abbrev.c: Fix trailing whitespace.
+    * dwarf_arange.c: Delete macro READ_UNALIGNED_CK
+      use an just use  _dwarf_read_unaligned_ck_wrapper.
+    * dwarf_die_deliv.c: Uses wrapper instead
+      of READ_UNALIGNED_CK where necessary.
+      Delete commented-out lines.
+    * dwarf_error.c: Remove unwanted debug  code.
+    * dwarf_form.c: Remove trailing whitespace.
+    * dwarf_global.c: Rename some arguments for greater
+      clarity.
+    * dwarf_line.c: Fix line handling so both DW5
+      and earlier handled better.  Improve some error
+      messages.
+    * dwarf_macro5.c:  Use wrapper() funcs, not
+      READ_UNALIGNED_CK and fix a couple local
+      variables so that works.
+    * dwarf_ranges.c: Remove trailing whitespace.
+    * dwarf_util.c: Remove trailing whitespace.
+2020-04-24: David Anderson
+    * dwarf_die_deliv.c: Now using wrappers so that
+      errors do not lead to a temporary leak.
+    * dwarf_global.c: Now ensures that an error
+      in reading globals does not lead to temporary
+      leaks that rely on dwarf_finish() to clean up.
+2020-04-24: David Anderson
+    * dwarf_names.c,dwarf_names.h, dwarf_names_enum.h,
+      dwarf_names_new.h, libdwarf_version.h: 
+      updated version string.
+2020-04-23: David Anderson
+    * dwarf_arange.c: Using new wrapper() code
+      so that the reader macros do not interfere
+      with doing appropriate dealloc.
+    * dwarf_util.c: Implement new wrapper functions
+      _dwarf_read_unaligned_ck_wrapper() and
+      _dwarf_read_area_length_ck_wrapper.
+    * dwarf_util.h: Declare the new functions.
+2020-04-22: David Anderson
+    * libdwarf.h.in: Added DW_DLE_USER_DECLARED_ERROR
+      and the dwarf_error_creation() function that creates
+      the Dwarf_Error.
+    * generated_libdwarf.h.in: Regenerated.
+2020-04-20: David Anderson
+    * dwarf_form.c: Split a too-long comment line.
+2020-04-16: David Anderson
+    * dwarf_line_table_reader_common.h: more detailed error
+      messages in a few cases.
+    * dwarf_print_lines.c: Added dwarf_check_lineheader_b()
+      as dwarf_check_lineheader() did not return error
+      details.
+    * libdwarf.h.in: defined prototype for 
+      dwarf_check_lineheader_b();
+    * generated_libdwarf.h.in: regenerated.
+2020-04-14: David Anderson
+    * libdwarf2.1.mm: Fixed wording 
+      of dwarf_get_fde_info_for_cfa_reg3_b()
+      which had the 1/0 value of has_more_rows
+      backwards.
+      Corrected several misspellings. 
+    * libdwarf2.1.pdf: Regenerated, v2.91.
+2020-04-13: David Anderson
+    * dwarf_abbrev.c: Various errors now show additional detail
+      about what exactly is wrong.
+2020-04-11: David Anderson
+    * dwarf_die_deliv.c,dwarf_xu_index.c: Each had
+      a single trailing space. Removed. 
+2020-04-11: David Anderson
+    * dwarf_global.c: Changed break to continue
+      so we don't stop the loop too early, yet
+      still avoid leaking a useless.
+2020-04-10: David Anderson
+    * debug-cu-tu-indexes-layout.odg: The Split-Dwarf
+      (aka debugfission) table layout is simple, but
+      this is an introduction to the 
+      layout of the arrays.  LibreOffice Draw document.
+    * dwarf_init_finish.c: Small enhancements of error messages.
+    * dwarf_util.c: Reformatted a macro here
+      (READ_UNALIGNED_CK) so the lines are not so long
+      and the backslashes are easily seen as complete.
+    * dwarf_xu_index.c: There was some confusion in the
+      code which prevented it from working.
+      Interfaces remain the same, but things work now.
+      The first part is a 20 line (or so) explanation
+      of some of the internal handling of the tables.
+      Now things work. Many error messges get
+      detailed information.
+    * dwarf_xu_index.h: Added new fields and relabeled
+      the N U S fields in the header to match the
+      DWARF5 standard.
+    * libdwarf2.1.mm: Rev 2.90 10 April 2020.
+      A little bit of reformatting to shorten the lines
+      here. Has little or no effect on the output pdf.
+      corrected the wording about the
+      dwarf_get_xu_section_offset() function. 
+    * libdwarf2.1.pdf: Regenerated Rev 2.90.
+2020-04-07: David Anderson
+    * dwarf_alloc.c: Deleted useless comment and added
+      a blank line to separate declarations from code.
+    * dwarf_frame2.c:  Fixed a too-long line.
+    * dwarf_query.c: Now DW_DLE_ALLOC_FAIL has a meaningful
+      error string attached.
+    * dwarf_util.c: Added comment before CHECK_DIE macro.
+2020-04-03: David Anderson
+    * dwarf_arange.c: Deleted a useless blank line.
+      Removed useless () around a return value.
+2020-04-03: David Anderson
+    *  dwarf_form.c,dwarf_frame2.c,dwarf_query.c: Fix indents and
+       remove trailing whitespace.
+2020-04-02: David Anderson
+    * dwarf_die_deliv.c: Better text printed for an address size error
+      including reporting the actual addrss-size found by libdwarf.
+    * dwarf_frame2.c: Deleted a static version of
+      _dwarf_create_address_size_dwarf_error() and use
+      the global one. Revised some error messages to
+      have specific details. Each instance of
+      DW_DLE_DEBUG_FRAME_LENGTH_BAD now reports something
+      specific about each case.
+    * dwarf_opaque.h: Added a declaration of
+      _dwarf_create_address_size_dwarf_error().
+2020-03-28: David Anderson
+    * dwarf_global.c: dwarf_return_empty_pubnames() revised
+      so it cannot fail.
+    * libdwarf.h.in: Revised comments attached to
+      dwarf_return_empty_pubnames() function prototype.
+    * generated_libdwarf.h.in: Regenerated.
+2020-03-27: David Anderson
+    * dwarf_names.c,dwarf_names.h, dwarf_names_enum.h,
+      dwarf_names_new.h, libdwarf_version.h: 
+      updated version string.
+2020-03-27: David Anderson
+    * dwarf_form.c,dwarf_query.c,dwarf_ranges.c: Improve various
+      error messages with specific information about the
+      error.
+2020-03-27: David Anderson
+    * dwarf_ranges.c: Properly detect end-of-section
+      again.
+2020-03-27: David Anderson
+    * dwarf_alloc.c, dwarf_form.c: Removed
+      trailing whitespace.
+2020-03-27: David Anderson
+    * dwarf_alloc.c: The (static) list of DW_DLA 
+      initializers was very messy and hard to read.
+      Cleaned up its appearance.`
+      Added the 'type' to the fields that -DDEBUG
+      prints.
+    * dwarf_form.c,dwarf_util.c: The DW_DLE_FORM_BLOCK_LENGTH_ERROR
+      error messages now have a longer and more
+      complete error string.
+2020-03-26: David Anderson
+    * dwarf_alloc.c,dwarf_error.c: Changed spelling of the
+      -DDEBUG prefixes to "libdwarfdetector"
+    * libdwarf2.1.mm: Documented hints on finding libdwarf
+      and libdwarf-caller memory leaks. Section 6.33
+    * libdwarf2.1.pdf: Regenerated, version 2.89
+2020-03-26: David Anderson
+    * dwarf_alloc.c,dwarf_error.c:  Now DEBUG can be turned on via
+      CFLAGS at configure time. Or left off by default.
+      Changed all the fprintf here (debug stuff) to
+      do printf instead.
+    * dwarf_die_deliv.c,dwarf_frame2.c: Altered the 
+      DW_DLE_ADDRESS_SIZE_ERROR
+      strings so the 3 cases can be distinquished easily
+      (just a convenience for debugging).
+    * dwarf_globals.c: Removed one superfluous ().
+    * dwarf_query.c: Reforatted lgpl text for shorter
+      lines (no change in the content).
+      Removed one superfluous ().
+2020-03-25: David Anderson
+    * dwarf_alloc.c, dwarf_error.c: Revised the debug
+      output created if DEBUG is defined.
+2020-03-25: David Anderson
+    * dwarf_die_deliv.c: Fix trailing whitespace.
+    * dwarf_frame2.c:    Fix trailing whitespace.
+2020-03-24: David Anderson
+    * dwarf_line.c: Deleted useless blank line.
+2020-03-24: David Anderson
+    * dwarf_alloc.c: Now with #ifdef DEBUG of debug messages in
+      various places as thise get needed over and over.
+    * dwarf_die_deliv.c: Working toward complete dealloc
+      of resources to eliminate the  dependence on de_alloc_tree.
+    * dwarf_error.c: #if 0 a debug message.
+    * dwarf_form.c: Remove superflous ().
+    * dwarf_global.c(_dwarf_internal_globals_dealloc):
+      Recreated and documented critical dealloc code
+      so Dwarf_Global_Context gets dealloc-c.
+    * dwarf_line.c: Add a return DW_DLV_ERROR after
+      an error Dwarf_Error is created..
+2020-03-23: David Anderson
+    * dwarf_die_deliv.c,dwarf_frame2.c: Some error messages
+      are now far more precise (showing values).
+    * dwarf_global.c: Correcting leakage and making
+      some error messages more precise.
+    * dwarf_print_lines.c: Correcting leakages.
+    * dwarf_pubtypes.c: Minor readability change.
+2020-03-21: David Anderson
+    * dwarf_abbrev.c Move leb wrapper functions to dwarf_util.[ch]:
+      and rename as _dwarf.....
+      Make certain error conditions more explicit (better
+      text in the error string).
+    * dwarf_die_deliv.c: Move leb wrapper functions to dwarf_util.[ch]
+      and rename as _dwarf.....
+    * dwarf_frame2.c: Add {} for the few 'if' missing same.
+    * dwarf_line.c: In case of form error make the error
+      text more useful.
+    * dwarf_query.c: Move leb wrapper functions to dwarf_util.[ch]
+      and rename as _dwarf.....
+    * dwarf_util.c, dwarf_util.h: Add the renamed
+      _dwarf_leb128_uword_wrapper() and
+      _dwarf_leb128_sword_wrapper() for general use
+      where better error messages are advisable.
+    * dwarf_init_finish.c: Removed a single trailing blank.
+    * libdwarf.h.in: Removed trailing spaces.
+    * generated_libdwarf.h.in: Regenerated.
+2020-03-20: David Anderson
+    * dwarf_arange.c: In case of error, was failing
+      to clean up all allocations.
+    * dwarf_macro5.c: Was preventing some dwarf_dealloc().
+      Fixed.
+2020-03-19: David Anderson
+    * dwarf_abbrev.c: Generates a more useful and specific
+      message in case a TAG is corrupt.
+    * dwarf_line.c: After dealloc assign 0 to the pointer.
+    * dwarf_die_deliv.c: Improved insert_into_context_list()
+      for clarity and correctness. 
+    * dwarf_error.c: Removed a couple "!= NULL" in if
+      conditions.
+    * dwarf_query.c: Uses local variable now to
+      satisfy the usual libdwarf convention that in case
+      of DW_DLV_NO_ENTRY or DW_DLV_ERROR only the
+      Dwarf_Error argument is altered, not other
+      pointer args.
+    * dwarf_util.h: Declaration for _dwarf_format_TAG_err_msg()
+    * dwarf_util.c: Generates a more useful and specific
+      message in in _dwarf_format_TAG_err_msg()
+      in case a TAG is corrupt.
+2020-03-18: David Anderson
+    * dwarf_die_deliv.c: Rewrote the function that
+      keeps the cu_context list in the proper order.
+      For clarity and correctness.
+2020-03-16: David Anderson
+    * dwarf_alloc.c: A recent change had the wrong
+      test during initial Dwarf_Debug
+      struct setup meaning dwarf_finish() was not cleaning
+      up allocations. This made the runtimes better
+      than they should be. Important correction here.
+    * dwarf_die_deliv.c: Drop use of the dwarf_dieoff()
+      context list, that was never appropriate. Now
+      again with one list.
+    * dwarf_opaque.h: Removed a list of Dwarf_CU_Contexts,
+      that was never correct to have dwarf_offdie maintain
+      a list separate from iterating through CUs.
+    * dwarf_query.c (dwarf_attrlist): Add a 
+      dwarf_dealloc on abbrev_list
+      in an error case.
+    * dwarf_util.c: Make the lines look a tiny bit
+      better avoiding too-long lines.
+2020-03-15: David Anderson
+    * dwarf_frame2.c: On an internal error (bad dwarf)
+      the necessary cleanup function was not being called
+      in two places.
+2020-03-15: David Anderson
+    * dwarf_alloc.c: Now with configure-time options
+      for tracking the alloc/dealloc actions in detail.
+2020-03-15: David Anderson
+    * dwarf_alloc.c: Now with the de_alloc_tree tests
+      in final form. Respecting dwarf_set_de_alloc_flag().
+2020-03-14: David Anderson
+    * dwarf_alloc.c: Now adds an optional DEBUG
+      macro that libdwarf developers may find useful.
+      Revised the dwarf_dealloc code to not require de_alloc_tree.
+    * dwarf_line.c: Now dwarf_srcfiles() and dwarf_filename()
+      always allocate DW_DLA_STRINGS. Whereas earlier some
+      of the strings were actually in a .debug section,
+      not allocated. 
+    * libdwarf2.1.mm: Now dwarf_diename()  and
+      dwarf_die_text are documented
+      as returning static strings that are not be be
+      freed or dwarf_dealloc'd.  This was always true
+      but the documentation said dwarf_dealloc() was
+      required. Don't use dwarf_dealloc on these returned
+      strings.
+    * libdwarf2.1.pdf: Regenerated, version 2.88
+    * dwarf_loc.c: Was incorrectly passing NULL instead
+      of dbg to _dwarf_get_alloc in a few places.
+    * dwarf_util.c, dwarf_global.c: Now checks more for
+      incomplete setup
+      of an internal structure to avoid calling dwarf_dealloc
+      with NULL as the space to be freed.
+2020-03-13: David Anderson
+    * dwarf_abbrev.c: Remove erroneous dwarf_dealloc
+      introduced yesterday. Caused a coredump
+      in FreeBSD 64bit dwarfdump testing.
+    * dwarfstring.c: Introduced an extra zero initializer in
+      the dwarfstring_destructor() as safe and harmless.
+2020-03-12: David Anderson
+    * dwarf_abbrev.c: Use a wrapper on macro
+      DECODE_LEB128_UWORD_CK
+      so we can dwarf_dealloc in case of a problem.
+      And be more thorough in various places
+      for those dwarf_dealloc.
+2020-03-12: David Anderson
+    * dwarf_die_deliv.c:  A local function now explicitly
+      static (_dwarf_siblingof_internal). 
+      Following dwarf_dealloc of cudie  we assign 0 to it.`
+      New function local_dealloc_cu_context() enables
+      accurate and full dealloc of a cu context
+      (which means there was some error fount) in
+      an easy and complete way.
+      local_attrlist_dealloc() does similarly for attrlists.
+      A DECODE_LEB128_UWORD_CK now in a wrapper so on error
+      we can dwarf_dealloc a DIE.
+    * dwarf_macro5.c: Now dwarf_dealloc_macro_context() is safe
+      if called with a null argument (and in that case there
+      is nothing to do).
+    * dwarf_opaque.h: Removed _dwarf_siblingof_internal()
+      from the declared functions.
+2020-03-12: David Anderson
+    * dwarf_alloc.h, dwarf_opaque.h: Removed trailing whitespace.
+      Shortened the lines of the LGPL text (the text
+      is unchanged).
+2020-03-12: David Anderson
+    * dwarf_str_offsets.c,dwarf_util.c: Removed trailing whitespace
+      and fixed indent mistakes.
+2020-03-12: David Anderson
+    * dwarf_query.c: Adds wrapper code around some
+      dwarf_util.h macros
+      so in case of a serious DWARF error we can
+      free locally allocated things.
+2020-03-12: David Anderson
+    * dwarf_errmsg_list.h: Corrected DW_DLE_STR_OFFSETS_EXTRA_BYTES
+      text. The error messages have more detail due to 
+      the dwarf_str_offsets.c changes below, so fixed
+      the string here.
+2020-03-12: David Anderson
+    * dwarf_macro5.c: Do proper dwarf_dealloc, avoiding
+      a pointless dependency on de_alloc_tree freeing 
+      things.
+2020-03-12: David Anderson
+    * dwarf_alloc.c: Minor cleanup that assigns
+      zero after dwarf_dealloc so dead pointers
+      not left around.
+2020-03-12: David Anderson
+    * dwarf_str_offsets.c: Improve messages in case of
+      a serious DWARF error, reporting what is wrong
+      more precisely and allowing a few bytes of all-zero-bits
+      to be allowed at end of section (no error needed).
+2020-03-12: David Anderson
+    * dwarf_util.c: Revise too-long lines and checks for NULL
+      pointers for moderm readability.
+      Improve _dwarf_free_abbrev_hash_table_contents() so
+      it can safely free an incompletely set up hash table.
+2020-03-09: David Anderson
+    * dwarf_alloc.c: Implements optional (at run time)
+      reduced use of the de_alloc_tree search tree
+      as a performance enhancement (see libdwarf2.1.mm/pdf).
+    * dwarf_alloc.h: Declares _dwarf_alloc_tree_counts(),
+      a new hidden function.
+    * libdwarf_version.h: New date string
+    * dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,
+      dwarf_names_new.h: New date string so regenerated
+      these.
+    * libdwarf.h.in: New function dwarf_set_de_alloc_flag()
+      declared.
+    * generated_libdwarf.h.in: Regenerated
+2020-03-02: David Anderson
+    * dwarf_print_lines.c: Removed one-line #if 0
+      code that serves no purpose.
+2020-02-25: David Anderson
+    * dwarf_print_lines.c: Removed space character just before newline
+      as it  has no useful prupose. 3 places.
+2020-02-25: David Anderson
+    * dwarf_names.c,dwarf_names.h, dwarf_names_enum.h,
+      dwarf_names_new.h:
+      libdwarf_version.h: updated version string.
+2020-02-25: David Anderson
+    * dwarf_line_table_reader_common.h: Now with dwarfstring
+      containers in local scopes and easily evaluated
+      as to lifetime and correctness.
+2020-02-25: David Anderson
+    * dwarf_elfread.c: Deleted a #if 0 ...#endif few lines.
+    * dwarf_line.c: Fixed trailing whitespace.
+    * dwarf_line_table_reader_common.h: Removed all use of the
+      old dwarf_printf varargs code.  Instead using dwarfstring
+      and dwarfstring_append_printf_i() etc.
+      And a far simpler _dwarf_printf().
+      No longer any sprintf/snprintf/vsnprintf here.
+    * dwarf_opaque.h: Remove trailing whitespace.
+    * dwarf_print_lines.c: Removed all use of the
+      old dwarf_printf varargs code.
+      No longer any sprintf/snprintf/vsnprintf here.
+    * dwarf_util.c: Delete unused buffersetsize function.
+      Delete now-unuised dwarf_printf()
+    * dwarfstring.c: Now using TRUE FALSE, not DW_DLV anything.
+      No one will be testing the integer return value anyway.
+      Fixed the code where %-4s was truncating if the string
+      to be processed was longer than 4 characters.
+    * dwarfstring.h: Added commentary.
+    * test_dwarfstring.c: New testcase for dwarfstring
+2020-02-21: David Anderson
+    * dwarf_arange.c,dwarf_debuglink.c,dwarf_frame2.c:
+      removed the last sprintf/snprintf, changed to 
+      use dwarfstring.h functions.
+2020-02-18: David Anderson
+    * dwarf_line.c: Added free() calls to delete_line_context_itself
+      to avoid a leak that was created in last commit..
+    * dwarf_line.h: Deleted a now-spurious comment.
+    * dwarf_line_table_reader_common.h: Removed an == NULL
+      comparison in favor of a !filename_entry_pairs.
+2020-02-16: David Anderson
+    * libdwarf2.1.mm: Now explains how dwarf_srcfiles()
+      name arrays differ in DWARF5 from earlier
+      debug_info versions. So callers can use
+      the srcfiles array properly.
+    * libdwarf2.1.pdf: Now version 2.87, dated 16 February 2020.
+    * dwarf_line.c, dwarf_line.h,dwarf_print_lines.c,
+      dwarf_line_table_reader_common.h: Recording DW5 line table
+      header data more fully so lines print verbose
+      prints more of the actual line table header.
+2020-02-15: David Anderson
+    * dwarf_elf_access.c,dwarf_init_finish.c: With libelf
+      in use there was a mistake that broke dumping some objects that
+      needed relocations.
+    * dwarf_opaque.h: Corrected a is_rela to r_is_rela
+2020-02-13: David Anderson
+    * dwarf_elfread.c,dwarf_errmsg_list.h: Removed
+      trailing whitespace.
+2020-02-13: David Anderson
+    *  libdwarf_version.h: New version string 
+    *  dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,
+       dwarf_names_new.h: Regenerated with new
+       version string.
+2020-02-13: David Anderson
+     * libdwarf/libdwarf.h.in: Added a new error code to
+       properly distinguish between distinct elf section
+       header issues related to relocations versus
+       other section header issues.
+     * libdwarf/generated_libdwarf.h.in: regenerated
+
+    * dwarf_elf_access.c: Adding local READ_UNALIGNED_SAFE
+      so we can do libelf relocations properly; .rel and .rela.
+    * dwarf_elf_defines.h: Adding R_386_PC32 to the 
+      applicable relocation sets.
+    * dwarf_elf_load_headers.c: Now we deal with .rel.
+      and .rela. relocations for better completeness.
+      Removed some code duplication and complexity
+      too.
+    * dwarf_elf_rel_detector.c: Deals with R_386_PC32 now.
+    * dwarf_elfread.c: Add READ_UNALIGNED_SAFE so we can
+      do no-libelf relocations properly; .rel and .rela
+    * dwarf_elfread.h: Added gr_is_rela field and
+      two enums RelocRela and RelocOffsetSize so we have
+      type-safety in the argument lists.
+    * dwarf_init_finish.c: A new function ensures we
+      skip various sections we know we do not want to
+      look at.
+    * dwarf_opaque.h: Declare _dwarf_ignorethissection()
+      so libelf and non-libelf can ignore the unwanted
+      sections.
+    *  dwarf_errmsg_list.h: Entry added for the new
+       DW_DLE error code.
+2020-02-11: David Anderson
+    * dwarf_elf_access.c,dwarf_line_table_reader_common.h,
+      dwarf_tied_decls.h:
+      removed trailing whitespace and final blank line.
+2020-02-11: David Anderson
+    * dwarf_init_finish.c: Removed code that was #if 0 #endif
+2020-02-10: David Anderson
+    * dwarf_elf_access.c: Now allows for .rel and .rela.
+    * dwarf_elf_defines.h: Now allows for .rel and .rela.
+    * dwarf_init_finish.c: Now allows for .rel and .rela.
+    * dwarf_opaque.h: Adding dss_is_rela so we can
+      process .rel. sections too.
+2020-01-25: David Anderson
+    * dwarf_form.c: DW_FORM_rnglistx was ommitted from a switch statement.
+      Adding it in fixed the resulting errors in a DWARF5 object file
+      built by clang 9.0.0.0
+2020-01-16: David Anderson
+    * dwarf_alloc.c,dwarf_die_deliv.c,dwarf_form.a,
+      dwarf_query.c,dwarfstring.c,
+      pro_reloc.c,pro_reloc_stream.c,pro_reloc_symbolic.c,
+      pro_section.c,pro_types.c,pro_vars.c,pro_weaks.c,
+      test_dwarfstring.c: Fixed indentations and
+      removed trailing whitespace.
+    * dwarf_xu_index.c: Ensure local Dwarf_Sig8 variables
+      are always initialized. Does not fix any bug but
+      does make it easier to read the code.
+      Fixes indentation and removes trailing whitespace too.
+2020-01-14: David Anderson
+    * dwarf_names.c,dwarf_names.h,dwarf_names_enum.h,
+      dwarf_names_new.h,libdwarf_version.h: Updated version string.
+2020-01-05: David Anderson
+    * dwarf_query.c(dwarf_offset_list): Coverity Scan CID 206598.
+      Now checks for DW_DLV_ERROR where it failed to do so before,
+      and returns an error instead of letting it slip through.
+2020-01-03: David Anderson
+    * dwarf_load_elf_headers.c(dwarf_elf_load_rela_32):
+      Coverity Scan uncovered a memory leak in one
+      case. CID 206524

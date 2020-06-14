@@ -82,11 +82,14 @@ _dwarf_is_32bit_abs_reloc(unsigned int type, unsigned machine)
             );
         break;
 #endif /* EM_SPARC */
-#if defined(EM_386) && defined (R_386_32)
+#if defined(EM_386) && defined (R_386_32) && defined (R_386_PC32)
     case EM_386:
         r = (0
 #if defined (R_386_32)
             |  (type == R_386_32)
+#endif
+#if defined (R_386_PC32)
+            |  (type == R_386_PC32)
 #endif
 #if defined (R_386_TLS_LDO_32)
             | (type == R_386_TLS_LDO_32)

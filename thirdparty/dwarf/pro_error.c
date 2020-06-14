@@ -31,7 +31,9 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <stdlib.h>
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h> /* for exit(), C89 malloc */
+#endif /* HAVE_STDLIB_H */
 #include "pro_incl.h"
 #include <stddef.h>
 #include "dwarf.h"

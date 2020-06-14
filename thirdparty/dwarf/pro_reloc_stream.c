@@ -30,7 +30,6 @@
 #ifdef DWARF_WITH_LIBELF
 #include "libdwarfdefs.h"
 #include <stdio.h>
-#include <string.h>
 #ifdef HAVE_ELFACCESS_H
 #include <elfaccess.h>
 #else
@@ -38,8 +37,13 @@
 #define Set_REL32_info(r,s,t) ((r).r_info = ELF32_R_INFO(s,t))
 #define Set_REL64_info(r,s,t) ((r).r_info = ELF64_R_INFO(s,t))
 #endif
-#include "pro_incl.h"
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif /* HAVE_STRING_H */
+#ifdef HAVE_STDDEF_H
 #include <stddef.h>
+#endif /* HAVE_STDDEF_H */
+#include "pro_incl.h"
 #include "dwarf.h"
 #include "libdwarf.h"
 #include "pro_opaque.h"
@@ -72,7 +76,7 @@ _dwarf_pro_reloc_name_stream64(Dwarf_P_Debug dbg,
 
 
     if (type == dwarf_drt_data_reloc) {
-        if (reltarget_length == dbg->de_offset_size) {
+        if (reltarget_length == dbg->de_dwarf_offset_size) {
             rel_type = dbg->de_offset_reloc;
         } else if (reltarget_length == dbg->de_pointer_size) {
             rel_type = dbg->de_ptr_reloc;
@@ -115,7 +119,7 @@ _dwarf_pro_reloc_name_stream32(Dwarf_P_Debug dbg, int base_sec_index,
     if (res != DW_DLV_OK)
         return res;
     if (type == dwarf_drt_data_reloc) {
-        if (reltarget_length == dbg->de_offset_size) {
+        if (reltarget_length == dbg->de_dwarf_offset_size) {
             rel_type = dbg->de_offset_reloc;
         } else if (reltarget_length == dbg->de_pointer_size) {
             rel_type = dbg->de_ptr_reloc;

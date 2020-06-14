@@ -44,11 +44,10 @@ dwarf_get_pubtypes(Dwarf_Debug dbg,
         return res;
     }
     if (!dbg->de_debug_pubtypes.dss_size) {
-        return (DW_DLV_NO_ENTRY);
+        return DW_DLV_NO_ENTRY;
     }
 
-
-    return _dwarf_internal_get_pubnames_like_data(dbg,
+    res = _dwarf_internal_get_pubnames_like_data(dbg,
         dbg->de_debug_pubtypes.dss_data,
         dbg->de_debug_pubtypes.dss_size,
         (Dwarf_Global **) types, /* Type punning for sections
@@ -59,6 +58,7 @@ dwarf_get_pubtypes(Dwarf_Debug dbg,
             so use DW_DLA_GLOBAL. */
         DW_DLE_DEBUG_PUBTYPES_LENGTH_BAD,
         DW_DLE_DEBUG_PUBTYPES_VERSION_ERROR);
+    return res;
 }
 
 /* Deallocating fully requires deallocating the list

@@ -4,25 +4,28 @@
   Portions Copyright 2007-2010 Sun Microsystems, Inc. All rights reserved.
   Portions Copyright 2017  David Anderson  All rights reserved.
 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of version 2.1 of the GNU Lesser General Public License
-  as published by the Free Software Foundation.
+  This program is free software; you can redistribute it
+  and/or modify it under the terms of version 2.1 of the
+  GNU Lesser General Public License as published by the Free
+  Software Foundation.
 
-  This program is distributed in the hope that it would be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  This program is distributed in the hope that it would be
+  useful, but WITHOUT ANY WARRANTY; without even the implied
+  warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+  PURPOSE.
 
-  Further, this software is distributed without any warranty that it is
-  free of the rightful claim of any third person regarding infringement
-  or the like.  Any license provided herein, whether implied or
-  otherwise, applies only to this software file.  Patent licenses, if
-  any, provided herein do not apply to combinations of this program with
-  other software, or any other product whatsoever.
+  Further, this software is distributed without any warranty
+  that it is free of the rightful claim of any third person
+  regarding infringement or the like.  Any license provided
+  herein, whether implied or otherwise, applies only to this
+  software file.  Patent licenses, if any, provided herein
+  do not apply to combinations of this program with other
+  software, or any other product whatsoever.
 
-  You should have received a copy of the GNU Lesser General Public
-  License along with this program; if not, write the Free Software
-  Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston MA 02110-1301,
-  USA.
+  You should have received a copy of the GNU Lesser General
+  Public License along with this program; if not, write the
+  Free Software Foundation, Inc., 51 Franklin Street - Fifth
+  Floor, Boston MA 02110-1301, USA.
 
 */
 
@@ -33,16 +36,27 @@
 
 #if defined(__i386) || defined(__x86_64)
 #define MIN_INST_LENGTH			1
+#elif defined(__s390__) || defined(__s390x__)
+/*  Correct value unknown.  This is temporary
+    as we need a better way to set this (in
+    dwarfgen). This at least works for dwarfgen testing
+    at this point, avoids an error. */
+#define MIN_INST_LENGTH			1
 #else
+/*  1 is not necessarily the most efficient (space-wise) for various
+    architectures, but will allow line tables to be generated
+    without error if the input expects the min length to be 1.
+    When using dwarfgen the setting should be that of the
+    output arch, not the host (unless the two essentially match).  */
 #define MIN_INST_LENGTH			4
 #endif
 #define DEFAULT_IS_STMT			false
 /*  line base and range are temporarily defines.
-    They need to be calculated later */
+    They need to be calculated later. */
 #define LINE_BASE   -1
 #define LINE_RANGE   4
 
-#define OPCODE_BASE  10 /* DWARF2.  13 in DWARF3, DWARF4 */
+#define OPCODE_BASE  10 /* DWARF2.  13 in DWARF3, 4, 5  */
 #define MAX_OPCODE   255
 
 
