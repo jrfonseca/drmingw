@@ -49,7 +49,7 @@ struct mgwhelp_module
 
     DWORD64 image_base_vma;
 
-    Dwarf_Debug dbg;
+    dwarf_module dwarf;
 };
 
 
@@ -298,8 +298,8 @@ mgwhelp_module_create(struct mgwhelp_process * process,
     module->image_base_vma = PEGetImageBase(module->lpFileBase);
 
     error = 0;
-    if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dbg, &error) != DW_DLV_OK) {
-        /* do nothing */
+    if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dwarf.dbg, &error) == DW_DLV_OK) {
+        dwarf_get_aranges(module->dwarf.dbg, &module->dwarf.aranges, &module->dwarf.arange_count, &error);
     }
 
     if (bOwnFile) {
@@ -327,9 +327,15 @@ no_module:
 static void
 mgwhelp_module_destroy(struct mgwhelp_module * module)
 {
-    if (module->dbg) {
+    if (module->dwarf.dbg) {
         Dwarf_Error error = 0;
-        dwarf_pe_finish(module->dbg, &error);
+        if (module->dwarf.aranges) {
+            for(Dwarf_Signed i = 0; i < module->dwarf.arange_count; ++i) {
+                dwarf_dealloc(module->dwarf.dbg, module->dwarf.aranges[i], DW_DLA_ARANGE);
+            }
+            dwarf_dealloc(module->dwarf.dbg, module->dwarf.aranges, DW_DLA_LIST);
+        }
+        dwarf_pe_finish(module->dwarf.dbg, &error);
     }
 
     UnmapViewOfFile(module->lpFileBase);
@@ -402,30 +408,6 @@ mgwhelp_find_module(HANDLE hProcess, DWORD64 Address, PDWORD64 pOffset)
     *pOffset = module->image_base_vma + Address - (DWORD64)module->Base;
 
     return module;
-}
-
-
-static BOOL
-mgwhelp_find_symbol(HANDLE hProcess, DWORD64 Address, struct find_dwarf_info *info)
-{
-    struct mgwhelp_module *module;
-
-    DWORD64 Offset;
-    module = mgwhelp_find_module(hProcess, Address, &Offset);
-    if (!module) {
-        return FALSE;
-    }
-
-    memset(info, 0, sizeof *info);
-
-    if (module->dbg) {
-        find_dwarf_symbol(module->dbg, Offset, info);
-        if (info->found) {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
 }
 
 
@@ -589,46 +571,44 @@ demangle(const char *mangled, DWORD Flags)
 BOOL WINAPI
 MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
 {
-    struct find_dwarf_info info;
-
     DWORD dwOptions = SymGetOptions();
 
-    if (mgwhelp_find_symbol(hProcess, Address, &info)) {
-        char *output_buffer = NULL;
-        if (dwOptions & SYMOPT_UNDNAME) {
-            output_buffer = demangle(info.functionname, UNDNAME_NAME_ONLY);
-        }
-        if (output_buffer) {
-            strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
-            free(output_buffer);
-        } else {
-            strncpy(Symbol->Name, info.functionname, Symbol->MaxNameLen);
-        }
-
-        if (Displacement) {
-            /* TODO */
-            *Displacement = 0;
-        }
-
-        return TRUE;
-    }
-
-    struct mgwhelp_module *module;
+    //search pe symbols first (more accurate than dwarf)
     DWORD64 Offset;
-    module = mgwhelp_find_module(hProcess, Address, &Offset);
+    mgwhelp_module* module = mgwhelp_find_module(hProcess, Address, &Offset);
+
     if (module && module->lpFileBase) {
         if (pe_find_symbol(module,
                            Offset,
                            Symbol->MaxNameLen,
                            Symbol->Name,
                            Displacement)) {
-            char *output_buffer = NULL;
             if (dwOptions & SYMOPT_UNDNAME) {
-                output_buffer = demangle(Symbol->Name, UNDNAME_NAME_ONLY);
+                char* output_buffer = demangle(Symbol->Name, UNDNAME_NAME_ONLY);
+                if (output_buffer) {
+                    strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
+                    free(output_buffer);
+                }
             }
-            if (output_buffer) {
-                strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
-                free(output_buffer);
+            return TRUE;
+        }
+    }
+
+    if (module && module->dwarf.aranges) {
+        struct dwarf_symbol_info info;
+        info.functionname = Symbol->Name;
+        info.functionname[0] = '\0';
+        if (dwarf_find_symbol(&module->dwarf, Offset, &info)) {
+            if (dwOptions & SYMOPT_UNDNAME) {
+                char* output_buffer = demangle(info.functionname, UNDNAME_NAME_ONLY);
+                if (output_buffer) {
+                    strncpy(info.functionname, output_buffer, Symbol->MaxNameLen);
+                    free(output_buffer);
+                }
+            }
+            if (Displacement) {
+                /* TODO */
+                *Displacement = 0;
             }
             return TRUE;
         }
@@ -641,18 +621,25 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 BOOL WINAPI
 MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line)
 {
-    struct find_dwarf_info info;
+    DWORD64 Offset;
+    mgwhelp_module* module = mgwhelp_find_module(hProcess, dwAddr, &Offset);
 
-    if (mgwhelp_find_symbol(hProcess, dwAddr, &info)) {
-        Line->FileName = (char *)info.filename;
-        Line->LineNumber = info.line;
+    if (module && module->dwarf.aranges) {
+        struct dwarf_line_info info;
+        static char file_name_buf[1024];
+        info.filename = file_name_buf;
+        info.filename[0] = '\0';
+        info.line = 0;
+        if (dwarf_find_line(&module->dwarf, Offset, &info)) {
+            Line->FileName = info.filename;
+            Line->LineNumber = info.line;
 
-        if (pdwDisplacement) {
-            /* TODO */
-            *pdwDisplacement = 0;
+            if (pdwDisplacement) {
+                /* TODO */
+                *pdwDisplacement = 0;
+            }
+            return TRUE;
         }
-
-        return TRUE;
     }
 
     return SymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, Line);

@@ -30,19 +30,36 @@ extern "C" {
 #endif
 
 
-struct find_dwarf_info
+struct dwarf_symbol_info
 {
-    const char *filename;
-    const char *functionname;
+    char* functionname;
+};
+
+struct dwarf_line_info
+{
+    char* filename;
     unsigned int line;
-    bool found;
+};
+
+struct dwarf_module
+{
+    Dwarf_Debug dbg;
+
+    //cached aranges
+    Dwarf_Arange* aranges;
+    Dwarf_Signed arange_count;
 };
 
 
-void
-find_dwarf_symbol(Dwarf_Debug dbg,
+bool
+dwarf_find_symbol(dwarf_module* dwarf,
                   Dwarf_Addr addr,
-                  struct find_dwarf_info *info);
+                  struct dwarf_symbol_info *info);
+
+bool
+dwarf_find_line(dwarf_module* dwarf,
+                  Dwarf_Addr addr,
+                  struct dwarf_line_info *info);
 
 #ifdef __cplusplus
 }
