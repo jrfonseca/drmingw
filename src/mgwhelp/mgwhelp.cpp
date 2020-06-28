@@ -701,8 +701,10 @@ MgwSymCleanup(HANDLE hProcess)
 BOOL WINAPI
 MgwSymFromAddrW(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFOW SymbolW)
 {
-    PSYMBOL_INFO SymbolA = (PSYMBOL_INFO)malloc(offsetof(SYMBOL_INFO, Name) + SymbolW->MaxNameLen);
-    memcpy(SymbolA, SymbolW, offsetof(SYMBOL_INFO, Name));
+    unsigned char buffer[1024];
+    SYMBOL_INFO* SymbolA = (SYMBOL_INFO*)buffer;
+    SymbolA->SizeOfStruct = sizeof(SYMBOL_INFO);
+    SymbolA->MaxNameLen = ((sizeof(buffer) - sizeof(SYMBOL_INFO)) / sizeof(CHAR)) - 1;
     if (MgwSymFromAddr(hProcess, Address, Displacement, SymbolA)) {
         MultiByteToWideChar(CP_ACP, 0, SymbolA->Name, -1, SymbolW->Name, SymbolW->MaxNameLen);
         return TRUE;
@@ -716,16 +718,18 @@ BOOL WINAPI
 MgwSymGetLineFromAddrW64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINEW64 LineW)
 {
     IMAGEHLP_LINE64 LineA;
+    ZeroMemory(&LineA, sizeof(LineA));
+    LineA.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
     if (MgwSymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, &LineA)) {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/ms681330.aspx
         // states that SymGetLineFromAddrW64 "returns a pointer to a buffer
         // that may be reused by another function" and that callers should be
         // "sure to copy the data returned to another buffer immediately",
         // therefore the static buffer should be safe.
-        static WCHAR FileName[MAX_PATH];
-        MultiByteToWideChar(CP_ACP, 0, LineA.FileName, -1, FileName, MAX_PATH);
-        memcpy(LineW, &LineA, sizeof LineA);
+        static WCHAR FileName[1024];
         LineW->FileName = FileName;
+        MultiByteToWideChar(CP_ACP, 0, LineA.FileName, -1, LineW->FileName, 1024);
+        LineW->LineNumber = LineA.LineNumber;
         return TRUE;
     } else {
         return FALSE;
