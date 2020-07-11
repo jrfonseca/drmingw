@@ -46,5 +46,5 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
     return 0;
 }
 
-// CHECK_STDERR: /  seh_unhandled\.exe\!WinMain  \[.*\bseh_unhandled\.c @ 44\]/
+// CHECK_STDERR: /  seh_unhandled\.exe\!WinMain(@16)?  \[.*\bseh_unhandled\.c @ 44\]/
 // CHECK_EXIT_CODE: 0xE0000001
