@@ -299,7 +299,9 @@ mgwhelp_module_create(struct mgwhelp_process * process,
 
     error = 0;
     if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dwarf.dbg, &error) == DW_DLV_OK) {
-        dwarf_get_aranges(module->dwarf.dbg, &module->dwarf.aranges, &module->dwarf.arange_count, &error);
+        if (dwarf_get_aranges(module->dwarf.dbg, &module->dwarf.aranges, &module->dwarf.arange_count, &error) != DW_DLV_OK) {
+            OutputDebug("MGWHELP: libdwarf error - %s\n", dwarf_errmsg(error));
+        }
     }
 
     if (bOwnFile) {
@@ -330,7 +332,7 @@ mgwhelp_module_destroy(struct mgwhelp_module * module)
     if (module->dwarf.dbg) {
         Dwarf_Error error = 0;
         if (module->dwarf.aranges) {
-            for(Dwarf_Signed i = 0; i < module->dwarf.arange_count; ++i) {
+            for (Dwarf_Signed i = 0; i < module->dwarf.arange_count; ++i) {
                 dwarf_dealloc(module->dwarf.dbg, module->dwarf.aranges[i], DW_DLA_ARANGE);
             }
             dwarf_dealloc(module->dwarf.dbg, module->dwarf.aranges, DW_DLA_LIST);
@@ -584,7 +586,7 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
                            Symbol->Name,
                            Displacement)) {
             if (dwOptions & SYMOPT_UNDNAME) {
-                char* output_buffer = demangle(Symbol->Name, UNDNAME_NAME_ONLY);
+                char *output_buffer = demangle(Symbol->Name, UNDNAME_NAME_ONLY);
                 if (output_buffer) {
                     strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
                     free(output_buffer);
@@ -600,7 +602,7 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
         info.functionname[0] = '\0';
         if (dwarf_find_symbol(&module->dwarf, Offset, &info)) {
             if (dwOptions & SYMOPT_UNDNAME) {
-                char* output_buffer = demangle(info.functionname, UNDNAME_NAME_ONLY);
+                char *output_buffer = demangle(info.functionname, UNDNAME_NAME_ONLY);
                 if (output_buffer) {
                     strncpy(info.functionname, output_buffer, Symbol->MaxNameLen);
                     free(output_buffer);
@@ -701,10 +703,10 @@ MgwSymCleanup(HANDLE hProcess)
 BOOL WINAPI
 MgwSymFromAddrW(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFOW SymbolW)
 {
-    unsigned char buffer[1024];
-    SYMBOL_INFO* SymbolA = (SYMBOL_INFO*)buffer;
-    SymbolA->SizeOfStruct = sizeof(SYMBOL_INFO);
-    SymbolA->MaxNameLen = ((sizeof(buffer) - sizeof(SYMBOL_INFO)) / sizeof(CHAR)) - 1;
+    char buffer[1024];
+    PSYMBOL_INFO SymbolA = (PSYMBOL_INFO)buffer;
+    SymbolA->SizeOfStruct = sizeof *SymbolA;
+    SymbolA->MaxNameLen = ((sizeof(buffer) - sizeof *SymbolA) / sizeof(CHAR)) - 1;
     if (MgwSymFromAddr(hProcess, Address, Displacement, SymbolA)) {
         MultiByteToWideChar(CP_ACP, 0, SymbolA->Name, -1, SymbolW->Name, SymbolW->MaxNameLen);
         return TRUE;
@@ -718,8 +720,8 @@ BOOL WINAPI
 MgwSymGetLineFromAddrW64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINEW64 LineW)
 {
     IMAGEHLP_LINE64 LineA;
-    ZeroMemory(&LineA, sizeof(LineA));
-    LineA.SizeOfStruct = sizeof(IMAGEHLP_LINE64);
+    ZeroMemory(&LineA, sizeof LineA);
+    LineA.SizeOfStruct = sizeof LineA;
     if (MgwSymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, &LineA)) {
         // https://msdn.microsoft.com/en-us/library/windows/desktop/ms681330.aspx
         // states that SymGetLineFromAddrW64 "returns a pointer to a buffer

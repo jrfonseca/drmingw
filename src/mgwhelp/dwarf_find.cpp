@@ -41,9 +41,9 @@ static char unknown[] = { '?', '?', '\0' };
 
 static bool
 search_func(Dwarf_Debug dbg,
-            Dwarf_Die* die,
+            Dwarf_Die *die,
             Dwarf_Addr addr,
-            char* rlt_func)
+            char *rlt_func)
 {
     Dwarf_Die spec_die;
     Dwarf_Die child_die;
@@ -88,20 +88,20 @@ search_func(Dwarf_Debug dbg,
             }
 
             ret = dwarf_attr(*die, DW_AT_linkage_name, &sub_at, &de);
-            if(ret == DW_DLV_ERROR)
+            if (ret == DW_DLV_ERROR)
                 return false;
-            if(ret == DW_DLV_OK) {
-                if(dwarf_formstring(sub_at, &func0, &de) == DW_DLV_OK)
+            if (ret == DW_DLV_OK) {
+                if (dwarf_formstring(sub_at, &func0, &de) == DW_DLV_OK)
                     strcpy(rlt_func, func0);
                 dwarf_dealloc(dbg, sub_at, DW_DLA_ATTR);
                 return true;
             }
 
             ret = dwarf_attr(*die, DW_AT_MIPS_linkage_name, &sub_at, &de);
-            if(ret == DW_DLV_ERROR)
+            if (ret == DW_DLV_ERROR)
                 return false;
-            if(ret == DW_DLV_OK) {
-                if(dwarf_formstring(sub_at, &func0, &de) == DW_DLV_OK)
+            if (ret == DW_DLV_OK) {
+                if (dwarf_formstring(sub_at, &func0, &de) == DW_DLV_OK)
                     strcpy(rlt_func, func0);
                 dwarf_dealloc(dbg, sub_at, DW_DLA_ATTR);
                 return true;
@@ -114,13 +114,11 @@ search_func(Dwarf_Debug dbg,
              */
             if (dwarf_attr(*die, DW_AT_specification, &spec_at, &de) != DW_DLV_OK)
                 return false;
-            if (dwarf_global_formref(spec_at, &ref, &de) != DW_DLV_OK)
-            {
+            if (dwarf_global_formref(spec_at, &ref, &de) != DW_DLV_OK) {
                 dwarf_dealloc(dbg, spec_at, DW_DLA_ATTR);
                 return false;
             }
-            if (dwarf_offdie(dbg, ref, &spec_die, &de) != DW_DLV_OK)
-            {
+            if (dwarf_offdie(dbg, ref, &spec_die, &de) != DW_DLV_OK) {
                 dwarf_dealloc(dbg, spec_at, DW_DLA_ATTR);
                 return false;
             }
@@ -137,12 +135,12 @@ search_func(Dwarf_Debug dbg,
         ret = dwarf_child(*die, &child_die, &de);
         if (ret == DW_DLV_ERROR)
             OutputDebug("MGWHELP: dwarf_child failed - %s\n", dwarf_errmsg(de));
-        else if (ret == DW_DLV_OK)
-        {
+        else if (ret == DW_DLV_OK) {
             result = search_func(dbg, &child_die, addr, rlt_func);
             dwarf_dealloc(dbg, child_die, DW_DLA_DIE);
-            if(result)
+            if (result) {
                 return true;
+            }
         }
 
         /* Advance to next sibling. */
@@ -231,7 +229,7 @@ dwarf_find_line(dwarf_module* dwarf,
         char *file, *pfile;
         plineaddr = ~0ULL;
         plineno = lineno = 0;
-        pfile = file = NULL;
+        pfile = file = nullptr;
         Dwarf_Signed i;
 
         i = 0;
@@ -266,7 +264,7 @@ dwarf_find_line(dwarf_module* dwarf,
                 // Lines are past the address
                 lineno = plineno;
                 file = pfile;
-                pfile = NULL;
+                pfile = nullptr;
                 result = true;
                 break;
             }
@@ -288,7 +286,7 @@ dwarf_find_line(dwarf_module* dwarf,
 
             plineaddr = lineaddr;
             plineno = lineno;
-            if(pfile) {
+            if (pfile) {
                 dwarf_dealloc(dbg, pfile, DW_DLA_STRING);
             }
             pfile = file;
