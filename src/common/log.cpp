@@ -471,9 +471,10 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
                 if (isprint(c))
                     lprintf("%c", c);
             lprintf("\n");
-        } else
-            while (!feof(fp) && (c = fgetc(fp)) != '\n')
+        } else {
+            while (!feof(fp) && fgetc(fp) != '\n')
                 ;
+        }
     }
 
     fclose(fp);
