@@ -28,7 +28,7 @@
 int
 main(int argc, char *argv[])
 {
-    *((int *)0) = 0;
+    *((volatile int *)0) = 0;
 
     return 0;
 }

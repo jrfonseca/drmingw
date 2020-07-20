@@ -31,7 +31,7 @@ NO_INLINE
 static void
 test(void)
 {
-    *((int *)0) = 0;
+    *((volatile int *)0) = 0;
 }
 
 int
