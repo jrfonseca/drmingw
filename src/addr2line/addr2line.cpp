@@ -154,7 +154,10 @@ main(int argc, char **argv)
 
     HANDLE hProcess = GetCurrentProcess();
     bRet = InitializeSym(hProcess, FALSE);
-    assert(bRet);
+    if (!bRet) {
+        fprintf(stderr, "warning: failed to initialize DbgHelp\n");
+        return EXIT_FAILURE;
+    }
 
     if (debug) {
         SymRegisterCallback64(hProcess, &callback, 0);
