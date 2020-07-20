@@ -36,10 +36,10 @@
 
 
 #ifndef STATUS_CPP_EH_EXCEPTION
-#define STATUS_CPP_EH_EXCEPTION 0xE06D7363
+#define STATUS_CPP_EH_EXCEPTION ((NTSTATUS)0xE06D7363)
 #endif
 #ifndef STATUS_CLR_EXCEPTION
-#define STATUS_CLR_EXCEPTION 0xE0434f4D
+#define STATUS_CLR_EXCEPTION ((NTSTATUS)0xE0434f4D)
 #endif
 
 
@@ -325,7 +325,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
  * - https://msdn.microsoft.com/en-us/library/windows/hardware/ff558784.aspx
  */
 static LPCSTR
-getExceptionString(DWORD ExceptionCode)
+getExceptionString(NTSTATUS ExceptionCode)
 {
     switch (ExceptionCode) {
 
