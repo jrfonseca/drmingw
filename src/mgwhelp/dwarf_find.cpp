@@ -36,14 +36,11 @@
 #include "outdbg.h"
 
 
-static char unknown[] = { '?', '?', '\0' };
+static char unknown[] = {'?', '?', '\0'};
 
 
 static bool
-search_func(Dwarf_Debug dbg,
-            Dwarf_Die *die,
-            Dwarf_Addr addr,
-            char *rlt_func)
+search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, char *rlt_func)
 {
     Dwarf_Die spec_die;
     Dwarf_Die child_die;
@@ -59,7 +56,6 @@ search_func(Dwarf_Debug dbg,
     bool result;
 
     do {
-
         if (dwarf_tag(*die, &tag, &de) != DW_DLV_OK) {
             OutputDebug("MGWHELP: dwarf_tag failed - %s", dwarf_errmsg(de));
             goto cont_search;
@@ -129,7 +125,7 @@ search_func(Dwarf_Debug dbg,
             return true;
         }
 
-    cont_search:
+cont_search:
 
         /* Recurse into children. */
         ret = dwarf_child(*die, &child_die, &de);
@@ -157,9 +153,7 @@ search_func(Dwarf_Debug dbg,
 
 
 bool
-dwarf_find_symbol(dwarf_module* dwarf,
-                  Dwarf_Addr addr,
-                  struct dwarf_symbol_info *info)
+dwarf_find_symbol(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_symbol_info *info)
 {
     bool result = false;
     Dwarf_Error error = 0;
@@ -184,10 +178,8 @@ dwarf_find_symbol(dwarf_module* dwarf,
     result = search_func(dbg, &cu_die, addr, info->functionname);
 
     dwarf_dealloc(dbg, cu_die, DW_DLA_DIE);
-no_cu_die:
-    ;
-no_die_offset:
-    ;
+no_cu_die:;
+no_die_offset:;
 no_arange:
     if (error) {
         OutputDebug("MGWHELP: libdwarf error - %s\n", dwarf_errmsg(error));
@@ -196,9 +188,7 @@ no_arange:
 }
 
 bool
-dwarf_find_line(dwarf_module* dwarf,
-                  Dwarf_Addr addr,
-                  struct dwarf_line_info *info)
+dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *info)
 {
     bool result = false;
     Dwarf_Error error = 0;
@@ -223,7 +213,8 @@ dwarf_find_line(dwarf_module* dwarf,
 
     Dwarf_Line *linebuf;
     Dwarf_Signed linecount;
-    if (search_func(dbg, &cu_die, addr, symbol_name) && dwarf_srclines(cu_die, &linebuf, &linecount, &error) == DW_DLV_OK) {
+    if (search_func(dbg, &cu_die, addr, symbol_name) &&
+        dwarf_srclines(cu_die, &linebuf, &linecount, &error) == DW_DLV_OK) {
         Dwarf_Unsigned lineno, plineno;
         Dwarf_Addr lineaddr, plineaddr;
         char *file, *pfile;
@@ -249,7 +240,8 @@ dwarf_find_line(dwarf_module* dwarf,
                 while (i < linecount) {
                     Dwarf_Bool has_is_addr_set = FALSE;
                     if (dwarf_line_is_addr_set(linebuf[i], &has_is_addr_set, &error) != DW_DLV_OK) {
-                        OutputDebug("MGWHELP: dwarf_line_is_addr_set failed - %s\n", dwarf_errmsg(error));
+                        OutputDebug("MGWHELP: dwarf_line_is_addr_set failed - %s\n",
+                                    dwarf_errmsg(error));
                         has_is_addr_set = FALSE;
                     }
                     if (has_is_addr_set) {
@@ -309,10 +301,8 @@ dwarf_find_line(dwarf_module* dwarf,
     }
 
     dwarf_dealloc(dbg, cu_die, DW_DLA_DIE);
-no_cu_die:
-    ;
-no_die_offset:
-    ;
+no_cu_die:;
+no_die_offset:;
 no_arange:
     if (error) {
         OutputDebug("MGWHELP: libdwarf error - %s\n", dwarf_errmsg(error));

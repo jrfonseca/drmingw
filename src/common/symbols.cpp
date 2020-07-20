@@ -42,9 +42,7 @@ SetSymOptions(BOOL fDebug)
         dwSymOptions &= ~SYMOPT_UNDNAME;
     }
 
-    dwSymOptions |=
-        SYMOPT_LOAD_LINES |
-        SYMOPT_OMAP_FIND_NEAREST;
+    dwSymOptions |= SYMOPT_LOAD_LINES | SYMOPT_OMAP_FIND_NEAREST;
 
     if (TRUE) {
         dwSymOptions |= SYMOPT_DEFERRED_LOADS;
@@ -70,16 +68,13 @@ InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
     // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
     char szSymSearchPathBuf[MAX_PATH * 2];
     const char *szSymSearchPath = NULL;
-    if (getenv("_NT_SYMBOL_PATH") == NULL &&
-        getenv("_NT_ALT_SYMBOL_PATH") == NULL) {
+    if (getenv("_NT_SYMBOL_PATH") == NULL && getenv("_NT_ALT_SYMBOL_PATH") == NULL) {
         char szLocalAppData[MAX_PATH];
         HRESULT hr = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szLocalAppData);
         assert(SUCCEEDED(hr));
         if (SUCCEEDED(hr)) {
-            _snprintf(szSymSearchPathBuf,
-                      sizeof szSymSearchPathBuf,
-                      "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols",
-                      szLocalAppData);
+            _snprintf(szSymSearchPathBuf, sizeof szSymSearchPathBuf,
+                      "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols", szLocalAppData);
             szSymSearchPath = szSymSearchPathBuf;
         } else {
             // No cache
@@ -91,12 +86,13 @@ InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
 }
 
 
-
-BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD nSize)
+BOOL
+GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD nSize)
 {
     PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + nSize * sizeof(char));
 
-    DWORD64 dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
+    DWORD64 dwDisplacement =
+        0; // Displacement of the input address, relative to the start of the symbol
     BOOL bRet;
 
     pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
@@ -119,16 +115,22 @@ BOOL GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD n
     return bRet;
 }
 
-BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber)
+BOOL
+GetLineFromAddr(HANDLE hProcess,
+                DWORD64 dwAddress,
+                LPSTR lpFileName,
+                DWORD nSize,
+                LPDWORD lpLineNumber)
 {
     IMAGEHLP_LINE64 Line;
-    DWORD dwDisplacement = 0;  // Displacement of the input address, relative to the start of the symbol
+    DWORD dwDisplacement =
+        0; // Displacement of the input address, relative to the start of the symbol
 
     // Do the source and line lookup.
     memset(&Line, 0, sizeof Line);
     Line.SizeOfStruct = sizeof Line;
 
-    if(!SymGetLineFromAddr64(hProcess, dwAddress, &dwDisplacement, &Line))
+    if (!SymGetLineFromAddr64(hProcess, dwAddress, &dwDisplacement, &Line))
         return FALSE;
 
     assert(lpFileName && lpLineNumber);
@@ -138,4 +140,3 @@ BOOL GetLineFromAddr(HANDLE hProcess, DWORD64 dwAddress,  LPSTR lpFileName, DWOR
 
     return TRUE;
 }
-

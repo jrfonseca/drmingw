@@ -63,8 +63,8 @@ writeReport(const char *szText)
 }
 
 
-static
-void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
+static void
+GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 {
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
 
@@ -75,7 +75,8 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     GetLocalTime(&SystemTime);
     char szDateStr[128];
     LCID Locale = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);
-    GetDateFormatA(Locale, 0, &SystemTime, "dddd',' MMMM d',' yyyy", szDateStr, _countof(szDateStr));
+    GetDateFormatA(Locale, 0, &SystemTime, "dddd',' MMMM d',' yyyy", szDateStr,
+                   _countof(szDateStr));
     char szTimeStr[128];
     GetTimeFormatA(Locale, 0, &SystemTime, "HH':'mm':'ss", szTimeStr, _countof(szTimeStr));
     lprintf("Error occurred on %s at %s.\n\n", szDateStr, szTimeStr);
@@ -85,7 +86,6 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     SetSymOptions(FALSE);
 
     if (InitializeSym(hProcess, TRUE)) {
-
         dumpException(hProcess, pExceptionRecord);
 
         PCONTEXT pContext = pExceptionInfo->ContextRecord;
@@ -118,11 +118,10 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     ZeroMemory(&osvi, sizeof osvi);
     osvi.dwOSVersionInfoSize = sizeof osvi;
     GetVersionEx(&osvi);
-    lprintf("Windows %lu.%lu.%lu\n",
-            osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
+    lprintf("Windows %lu.%lu.%lu\n", osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
 
-    lprintf("DrMingw %u.%u.%u\n",
-            PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR, PACKAGE_VERSION_PATCH);
+    lprintf("DrMingw %u.%u.%u\n", PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR,
+            PACKAGE_VERSION_PATCH);
 
     lprintf("\n");
 }
@@ -133,15 +132,16 @@ void GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
 
 // Entry point where control comes on an unhandled exception
-static
-LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
+static LONG WINAPI
+TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
 {
     static LONG cBeenHere = 0;
 
     if (InterlockedIncrement(&cBeenHere) == 1) {
         UINT fuOldErrorMode;
 
-        fuOldErrorMode = SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+        fuOldErrorMode =
+            SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
         if (REPORT_FILE) {
             if (!g_hReportFile) {
@@ -149,15 +149,9 @@ LONG WINAPI TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
                     g_hReportFile = GetStdHandle(STD_ERROR_HANDLE);
                     g_bOwnReportFile = FALSE;
                 } else {
-                    g_hReportFile = CreateFileA(
-                        g_szLogFileName,
-                        GENERIC_WRITE,
-                        FILE_SHARE_READ | FILE_SHARE_WRITE,
-                        0,
-                        OPEN_ALWAYS,
-                        0,
-                        0
-                    );
+                    g_hReportFile =
+                        CreateFileA(g_szLogFileName, GENERIC_WRITE,
+                                    FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, 0, 0);
                     g_bOwnReportFile = TRUE;
                 }
             }
@@ -191,22 +185,17 @@ Setup(void)
 
     if (REPORT_FILE) {
         // Figure out what the report file will be named, and store it away
-        if(GetModuleFileNameA(NULL, g_szLogFileName, MAX_PATH))
-        {
+        if (GetModuleFileNameA(NULL, g_szLogFileName, MAX_PATH)) {
             LPSTR lpszDot;
 
             // Look for the '.' before the "EXE" extension.  Replace the extension
             // with "RPT"
-            if((lpszDot = strrchr(g_szLogFileName, '.')))
-            {
-                lpszDot++;    // Advance past the '.'
-                strcpy(lpszDot, "RPT");    // "RPT" -> "Report"
-            }
-            else
+            if ((lpszDot = strrchr(g_szLogFileName, '.'))) {
+                lpszDot++;              // Advance past the '.'
+                strcpy(lpszDot, "RPT"); // "RPT" -> "Report"
+            } else
                 strcat(g_szLogFileName, ".RPT");
-        }
-        else if(GetWindowsDirectoryA(g_szLogFileName, MAX_PATH))
-        {
+        } else if (GetWindowsDirectoryA(g_szLogFileName, MAX_PATH)) {
             strcat(g_szLogFileName, "EXCHNDL.RPT");
         }
     }
@@ -260,10 +249,8 @@ BOOL APIENTRY
 ExcHndlSetLogFileNameA(const char *szLogFileName)
 {
     size_t size = _countof(g_szLogFileName);
-    if (!szLogFileName ||
-        strlen(szLogFileName) > size - 1) {
-        OutputDebug("EXCHNDL: specified log name is too long or invalid (%s)\n",
-                    szLogFileName);
+    if (!szLogFileName || strlen(szLogFileName) > size - 1) {
+        OutputDebug("EXCHNDL: specified log name is too long or invalid (%s)\n", szLogFileName);
         return FALSE;
     }
     strncpy(g_szLogFileName, szLogFileName, size - 1);
@@ -272,25 +259,23 @@ ExcHndlSetLogFileNameA(const char *szLogFileName)
 }
 
 
-EXTERN_C BOOL APIENTRY
-DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved);
+EXTERN_C BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved);
 
 BOOL APIENTRY
 DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved)
 {
-    switch (dwReason)
-    {
-        case DLL_PROCESS_ATTACH:
-            Setup();
-            if (lpvReserved == NULL) {
-                SetupHandler();
-            }
-            break;
+    switch (dwReason) {
+    case DLL_PROCESS_ATTACH:
+        Setup();
+        if (lpvReserved == NULL) {
+            SetupHandler();
+        }
+        break;
 
-        case DLL_PROCESS_DETACH:
-            CleanupHandler();
-            Cleanup();
-            break;
+    case DLL_PROCESS_DETACH:
+        CleanupHandler();
+        Cleanup();
+        break;
     }
 
     return TRUE;

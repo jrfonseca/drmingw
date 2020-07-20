@@ -56,10 +56,7 @@ usage(const char *argv0)
 
 
 static BOOL CALLBACK
-callback(HANDLE hProcess,
-         ULONG ActionCode,
-         ULONG64 CallbackData,
-         ULONG64 UserContext)
+callback(HANDLE hProcess, ULONG ActionCode, ULONG64 CallbackData, ULONG64 UserContext)
 {
     if (ActionCode == CBA_DEBUG_INFO) {
         fputs((LPCSTR)(UINT_PTR)CallbackData, stderr);
@@ -152,7 +149,7 @@ main(int argc, char **argv)
 
     // We can get more information by calling UnDecorateSymbolName() ourselves.
     dwSymOptions &= ~SYMOPT_UNDNAME;
-    
+
     SymSetOptions(dwSymOptions);
 
     HANDLE hProcess = GetCurrentProcess();
@@ -199,7 +196,8 @@ main(int argc, char **argv)
             if (bRet) {
                 function = sym.Symbol.Name;
                 if (demangle) {
-                    if (UnDecorateSymbolName( sym.Symbol.Name, UnDecoratedName, sizeof UnDecoratedName, UNDNAME_COMPLETE)) {
+                    if (UnDecorateSymbolName(sym.Symbol.Name, UnDecoratedName,
+                                             sizeof UnDecoratedName, UNDNAME_COMPLETE)) {
                         function = UnDecoratedName;
                     }
                 }

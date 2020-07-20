@@ -5,12 +5,12 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
@@ -115,10 +115,7 @@ pe_get_section_count(void *obj)
 
 
 static int
-pe_load_section(void *obj,
-                Dwarf_Half section_index,
-                Dwarf_Small **return_data,
-                int *error)
+pe_load_section(void *obj, Dwarf_Half section_index, Dwarf_Small **return_data, int *error)
 {
     pe_access_object_t *pe_obj = (pe_access_object_t *)obj;
     if (section_index == 0) {
@@ -131,15 +128,12 @@ pe_load_section(void *obj,
 }
 
 
-static const Dwarf_Obj_Access_Methods
-pe_methods = {
-    pe_get_section_info,
-    pe_get_byte_order,
-    pe_get_length_pointer_size,
-    pe_get_length_pointer_size,
-    pe_get_section_count,
-    pe_load_section
-};
+static const Dwarf_Obj_Access_Methods pe_methods = {pe_get_section_info,
+                                                    pe_get_byte_order,
+                                                    pe_get_length_pointer_size,
+                                                    pe_get_length_pointer_size,
+                                                    pe_get_section_count,
+                                                    pe_load_section};
 
 
 int
@@ -181,28 +175,21 @@ dwarf_pe_init(HANDLE hFile,
     assert(dwFileSizeHi == 0);
 #endif
 
-    pe_obj->pNtHeaders = (PIMAGE_NT_HEADERS) (
-        pe_obj->lpFileBase + 
-        pe_obj->pDosHeader->e_lfanew
-    );
-    pe_obj->Sections = (PIMAGE_SECTION_HEADER) (
-        (PBYTE)pe_obj->pNtHeaders + 
-        sizeof(DWORD) + 
-        sizeof(IMAGE_FILE_HEADER) + 
-        pe_obj->pNtHeaders->FileHeader.SizeOfOptionalHeader
-    );
-    pe_obj->pSymbolTable = (PIMAGE_SYMBOL) (
-        pe_obj->lpFileBase + 
-        pe_obj->pNtHeaders->FileHeader.PointerToSymbolTable
-    );
+    pe_obj->pNtHeaders = (PIMAGE_NT_HEADERS)(pe_obj->lpFileBase + pe_obj->pDosHeader->e_lfanew);
+    pe_obj->Sections = (PIMAGE_SECTION_HEADER)((PBYTE)pe_obj->pNtHeaders + sizeof(DWORD) +
+                                               sizeof(IMAGE_FILE_HEADER) +
+                                               pe_obj->pNtHeaders->FileHeader.SizeOfOptionalHeader);
+    pe_obj->pSymbolTable =
+        (PIMAGE_SYMBOL)(pe_obj->lpFileBase + pe_obj->pNtHeaders->FileHeader.PointerToSymbolTable);
     if (pe_obj->pNtHeaders->FileHeader.PointerToSymbolTable +
-        pe_obj->pNtHeaders->FileHeader.NumberOfSymbols * sizeof pe_obj->pSymbolTable[0] > pe_obj->nFileSize) {
+            pe_obj->pNtHeaders->FileHeader.NumberOfSymbols * sizeof pe_obj->pSymbolTable[0] >
+        pe_obj->nFileSize) {
         OutputDebug("MGWHELP: %s - symbol table extends beyond image size\n", image);
         goto no_intfc;
     }
 
-    pe_obj->pStringTable = (PSTR)
-        &pe_obj->pSymbolTable[pe_obj->pNtHeaders->FileHeader.NumberOfSymbols];
+    pe_obj->pStringTable =
+        (PSTR)&pe_obj->pSymbolTable[pe_obj->pNtHeaders->FileHeader.NumberOfSymbols];
 
     // https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
     section_count = pe_get_section_count(pe_obj);
@@ -235,7 +222,7 @@ dwarf_pe_init(HANDLE hFile,
             debugSearchDirs.emplace_back(imageDir);
 
             HANDLE hFile = INVALID_HANDLE_VALUE;
-            for (auto const & debugSearchDir : debugSearchDirs) {
+            for (auto const &debugSearchDir : debugSearchDirs) {
                 std::string debugImage(debugSearchDir);
                 debugImage.append(debuglink);
                 const char *debugImageStr = debugImage.c_str();
@@ -275,8 +262,7 @@ dwarf_pe_init(HANDLE hFile,
         // See also http://reverseengineering.stackexchange.com/a/1826
         PIMAGE_OPTIONAL_HEADER pOptionalHeader;
         pOptionalHeader = &pe_obj->pNtHeaders->OptionalHeader;
-        if (pOptionalHeader->MajorLinkerVersion == 2 &&
-            pOptionalHeader->MinorLinkerVersion >= 21) {
+        if (pOptionalHeader->MajorLinkerVersion == 2 && pOptionalHeader->MinorLinkerVersion >= 21) {
             OutputDebug("MGWHELP: %s - no dwarf symbols\n", image);
         }
 
@@ -295,8 +281,7 @@ no_internals:
 
 
 int
-dwarf_pe_finish(Dwarf_Debug dbg,
-                Dwarf_Error *error)
+dwarf_pe_finish(Dwarf_Debug dbg, Dwarf_Error *error)
 {
     Dwarf_Obj_Access_Interface *intfc = dbg->de_obj_file;
     pe_access_object_t *pe_obj = (pe_access_object_t *)intfc->object;

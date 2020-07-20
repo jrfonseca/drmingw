@@ -33,7 +33,7 @@ static HWND g_hWnd = NULL;
 static INT_PTR CALLBACK
 AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-    switch(Message) {
+    switch (Message) {
     case WM_INITDIALOG:
         return TRUE;
     case WM_COMMAND:
@@ -55,160 +55,146 @@ void
 appendText(LPCSTR szText)
 {
     char *szBuf = strdup(szText);
-    PostMessage(g_hWnd, WM_USER_APPEND_TEXT, (WPARAM) 0, (LPARAM) szBuf);
+    PostMessage(g_hWnd, WM_USER_APPEND_TEXT, (WPARAM)0, (LPARAM)szBuf);
 }
 
 
 static LRESULT CALLBACK
 WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 {
-    switch(Message)
-    {
-        case WM_CREATE:
-        {
-            // Newer rich edit controls are much faster
-            // http://blogs.msdn.com/b/murrays/archive/2006/10/14/richedit-versions.aspx
-            // https://msdn.microsoft.com/en-us/library/windows/desktop/hh298375.aspx
-            LoadLibraryA("riched20.dll");
-            CreateWindowA(
-                RICHEDIT_CLASS,
-                "",
-                WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY,
-                CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                hwnd,
-                (HMENU)IDC_MESSAGE,
-                g_hInstance,
-                NULL
-            );
+    switch (Message) {
+    case WM_CREATE: {
+        // Newer rich edit controls are much faster
+        // http://blogs.msdn.com/b/murrays/archive/2006/10/14/richedit-versions.aspx
+        // https://msdn.microsoft.com/en-us/library/windows/desktop/hh298375.aspx
+        LoadLibraryA("riched20.dll");
+        CreateWindowA(RICHEDIT_CLASS, "",
+                      WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY,
+                      CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hwnd,
+                      (HMENU)IDC_MESSAGE, g_hInstance, NULL);
 
-            // Set the background color to match the disabled edit control
-            DWORD dwColor = GetSysColor(COLOR_3DFACE);
-            SendDlgItemMessage(hwnd, IDC_MESSAGE, EM_SETBKGNDCOLOR, FALSE, dwColor);
+        // Set the background color to match the disabled edit control
+        DWORD dwColor = GetSysColor(COLOR_3DFACE);
+        SendDlgItemMessage(hwnd, IDC_MESSAGE, EM_SETBKGNDCOLOR, FALSE, dwColor);
 
-            // We used to use GetStockObject(ANSI_FIXED_FONT), but it's known
-            // to lead to unreliable results, particularly on Russian locales
-            // or high-DPI displays, so now we match Notepad's default font.
-            LOGFONTA lf = {
-                10,                      // lfHeight
-                0,                       // lfWidth
-                0,                       // lfEscapement
-                0,                       // lfOrientation
-                FW_NORMAL,               // lfWeight
-                FALSE,                   // lfItalic
-                FALSE,                   // lfUnderline
-                FALSE,                   // lfStrikeOut
-                ANSI_CHARSET,            // lfCharSet
-                0,                       // lfOutPrecision
-                0,                       // lfClipPrecision
-                DEFAULT_QUALITY,         // lfQuality
-                FIXED_PITCH | FF_MODERN, // lfPitchAndFamily
-                "Lucida Console"     // lfFaceName
-            };
+        // We used to use GetStockObject(ANSI_FIXED_FONT), but it's known
+        // to lead to unreliable results, particularly on Russian locales
+        // or high-DPI displays, so now we match Notepad's default font.
+        LOGFONTA lf = {
+            10,                      // lfHeight
+            0,                       // lfWidth
+            0,                       // lfEscapement
+            0,                       // lfOrientation
+            FW_NORMAL,               // lfWeight
+            FALSE,                   // lfItalic
+            FALSE,                   // lfUnderline
+            FALSE,                   // lfStrikeOut
+            ANSI_CHARSET,            // lfCharSet
+            0,                       // lfOutPrecision
+            0,                       // lfClipPrecision
+            DEFAULT_QUALITY,         // lfQuality
+            FIXED_PITCH | FF_MODERN, // lfPitchAndFamily
+            "Lucida Console"         // lfFaceName
+        };
 
-            // Apply the DPI scale factor
-            // https://msdn.microsoft.com/en-us/library/windows/desktop/dn469266.aspx
-            if (lf.lfHeight > 0) {
-                HDC hdc = GetDC(NULL);
-                int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
-                ReleaseDC(NULL, hdc);
+        // Apply the DPI scale factor
+        // https://msdn.microsoft.com/en-us/library/windows/desktop/dn469266.aspx
+        if (lf.lfHeight > 0) {
+            HDC hdc = GetDC(NULL);
+            int dpiY = GetDeviceCaps(hdc, LOGPIXELSY);
+            ReleaseDC(NULL, hdc);
 
-                lf.lfHeight = -MulDiv(lf.lfHeight, dpiY, 72);
-            }
-
-            HFONT hFont;
-            hFont = CreateFontIndirectA(&lf);
-
-            SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_SETFONT, (WPARAM) hFont, MAKELPARAM(TRUE, 0));
-
-            SendDlgItemMessage(hwnd, IDC_MESSAGE, EM_LIMITTEXT, ~(WPARAM)0, 0);
-            break;
+            lf.lfHeight = -MulDiv(lf.lfHeight, dpiY, 72);
         }
-        case WM_USER_APPEND_TEXT: {
-            // http://support.microsoft.com/kb/109550
-            HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
-            int ndx = GetWindowTextLength(hEdit);
-            SetFocus(hEdit);
-            SendMessage(hEdit, EM_SETSEL, (WPARAM) ndx, (LPARAM) ndx);
-            SendMessage(hEdit, EM_REPLACESEL, (WPARAM) 0, lParam);
-            free((void *)lParam);
-            break;
-        }
-        case WM_SIZE:
-            if(wParam != SIZE_MINIMIZED)
-                MoveWindow(GetDlgItem(hwnd, IDC_MESSAGE), 0, 0, LOWORD(lParam), HIWORD(lParam), TRUE);
-            break;
-        case WM_SETFOCUS:
-            SetFocus(GetDlgItem(hwnd, IDC_MESSAGE));
-            break;
-        case WM_COMMAND:
-            switch(LOWORD(wParam))
-            {
-                case CM_FILE_SAVEAS:
-                {
-                    OPENFILENAMEA ofn;
-                    char szFileName[MAX_PATH];
 
-                    ZeroMemory(&ofn, sizeof(ofn));
-                    szFileName[0] = 0;
+        HFONT hFont;
+        hFont = CreateFontIndirectA(&lf);
 
-                    ofn.lStructSize = sizeof(ofn);
-                    ofn.hwndOwner = hwnd;
-                    ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0\0";
-                    ofn.lpstrFile = szFileName;
-                    ofn.nMaxFile = MAX_PATH;
-                    ofn.lpstrDefExt = "txt";
+        SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
-                    ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY |
-                    OFN_OVERWRITEPROMPT;
+        SendDlgItemMessage(hwnd, IDC_MESSAGE, EM_LIMITTEXT, ~(WPARAM)0, 0);
+        break;
+    }
+    case WM_USER_APPEND_TEXT: {
+        // http://support.microsoft.com/kb/109550
+        HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
+        int ndx = GetWindowTextLength(hEdit);
+        SetFocus(hEdit);
+        SendMessage(hEdit, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
+        SendMessage(hEdit, EM_REPLACESEL, (WPARAM)0, lParam);
+        free((void *)lParam);
+        break;
+    }
+    case WM_SIZE:
+        if (wParam != SIZE_MINIMIZED)
+            MoveWindow(GetDlgItem(hwnd, IDC_MESSAGE), 0, 0, LOWORD(lParam), HIWORD(lParam), TRUE);
+        break;
+    case WM_SETFOCUS:
+        SetFocus(GetDlgItem(hwnd, IDC_MESSAGE));
+        break;
+    case WM_COMMAND:
+        switch (LOWORD(wParam)) {
+        case CM_FILE_SAVEAS: {
+            OPENFILENAMEA ofn;
+            char szFileName[MAX_PATH];
 
-                    if(GetSaveFileNameA(&ofn))
+            ZeroMemory(&ofn, sizeof(ofn));
+            szFileName[0] = 0;
+
+            ofn.lStructSize = sizeof(ofn);
+            ofn.hwndOwner = hwnd;
+            ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0\0";
+            ofn.lpstrFile = szFileName;
+            ofn.nMaxFile = MAX_PATH;
+            ofn.lpstrDefExt = "txt";
+
+            ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+
+            if (GetSaveFileNameA(&ofn)) {
+                HANDLE hFile;
+                BOOL bSuccess = FALSE;
+
+                if ((hFile = CreateFileA(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                                         FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE) {
+                    HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
+                    DWORD dwTextLength = GetWindowTextLength(hEdit);
+                    if (dwTextLength > 0) // No need to bother if there's no text.
                     {
-                        HANDLE hFile;
-                        BOOL bSuccess = FALSE;
+                        LPSTR pszText;
 
-                        if((hFile = CreateFileA(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE)
-                        {
-                            HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
-                            DWORD dwTextLength = GetWindowTextLength(hEdit);
-                            if(dwTextLength > 0) // No need to bother if there's no text.
-                            {
-                                LPSTR pszText;
-
-                                if((pszText = (LPSTR)GlobalAlloc(GPTR, dwTextLength + 1)) != NULL)
-                                {
-                                    if(GetWindowTextA(hEdit, pszText, dwTextLength + 1))
-                                    {
-                                        DWORD dwWritten;
-                                        if(WriteFile(hFile, pszText, dwTextLength, &dwWritten, NULL))
-                                            bSuccess = TRUE;
-                                    }
-                                    GlobalFree(pszText);
-                                }
+                        if ((pszText = (LPSTR)GlobalAlloc(GPTR, dwTextLength + 1)) != NULL) {
+                            if (GetWindowTextA(hEdit, pszText, dwTextLength + 1)) {
+                                DWORD dwWritten;
+                                if (WriteFile(hFile, pszText, dwTextLength, &dwWritten, NULL))
+                                    bSuccess = TRUE;
                             }
-                            CloseHandle(hFile);
+                            GlobalFree(pszText);
                         }
-
-                        if(!bSuccess)
-                            MessageBoxA(hwnd, "Save file failed.", "Error", MB_OK | MB_ICONEXCLAMATION);
                     }
-                    break;
+                    CloseHandle(hFile);
                 }
-                case CM_FILE_EXIT:
-                    PostMessage(hwnd, WM_CLOSE, 0, 0);
-                    break;
 
-                case CM_HELP_ABOUT:
-                    return DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUT), hwnd, AboutDlgProc);
-                  }
+                if (!bSuccess)
+                    MessageBoxA(hwnd, "Save file failed.", "Error", MB_OK | MB_ICONEXCLAMATION);
+            }
             break;
-        case WM_CLOSE:
-            DestroyWindow(hwnd);
+        }
+        case CM_FILE_EXIT:
+            PostMessage(hwnd, WM_CLOSE, 0, 0);
             break;
-        case WM_DESTROY:
-            PostQuitMessage(0);
-            break;
-        default:
-            return DefWindowProc(hwnd, Message, wParam, lParam);
+
+        case CM_HELP_ABOUT:
+            return DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUT), hwnd, AboutDlgProc);
+        }
+        break;
+    case WM_CLOSE:
+        DestroyWindow(hwnd);
+        break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+    default:
+        return DefWindowProc(hwnd, Message, wParam, lParam);
     }
     return 0;
 }
@@ -223,42 +209,35 @@ createDialog(void)
     g_hInstance = GetModuleHandle(NULL);
     GetStartupInfoA(&startinfo);
 
-    WndClass.cbSize        = sizeof WndClass;
-    WndClass.style         = 0;
-    WndClass.lpfnWndProc   = WndProc;
-    WndClass.cbClsExtra    = 0;
-    WndClass.cbWndExtra    = 0;
-    WndClass.hInstance     = g_hInstance;
-    WndClass.hIcon         = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
-    WndClass.hCursor       = LoadCursor(NULL, IDC_ARROW);
-    WndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
-    WndClass.lpszMenuName  = MAKEINTRESOURCEA(IDM_MAINMENU);
+    WndClass.cbSize = sizeof WndClass;
+    WndClass.style = 0;
+    WndClass.lpfnWndProc = WndProc;
+    WndClass.cbClsExtra = 0;
+    WndClass.cbWndExtra = 0;
+    WndClass.hInstance = g_hInstance;
+    WndClass.hIcon = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
+    WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
+    WndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    WndClass.lpszMenuName = MAKEINTRESOURCEA(IDM_MAINMENU);
     WndClass.lpszClassName = "DrMingw";
-    WndClass.hIconSm       = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
+    WndClass.hIconSm = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
 
     if (!RegisterClassExA(&WndClass)) {
         ErrorMessageBox("RegisterClassEx: %s", LastErrorMessage());
         exit(EXIT_FAILURE);
     }
 
-    g_hWnd = CreateWindowExA(
-        WS_EX_CLIENTEDGE,
-        WndClass.lpszClassName,
-        "Dr. Mingw",
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-        NULL,
-        NULL,
-        g_hInstance,
-        NULL
-    );
+    g_hWnd = CreateWindowExA(WS_EX_CLIENTEDGE, WndClass.lpszClassName, "Dr. Mingw",
+                             WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                             CW_USEDEFAULT, NULL, NULL, g_hInstance, NULL);
 
     if (g_hWnd == NULL) {
         ErrorMessageBox("CreateWindowEx: %s", LastErrorMessage());
         exit(EXIT_FAILURE);
     }
 
-    ShowWindow(g_hWnd, (startinfo.dwFlags & STARTF_USESHOWWINDOW) ? startinfo.wShowWindow : SW_SHOWDEFAULT);
+    ShowWindow(g_hWnd,
+               (startinfo.dwFlags & STARTF_USESHOWWINDOW) ? startinfo.wShowWindow : SW_SHOWDEFAULT);
     UpdateWindow(g_hWnd);
 }
 

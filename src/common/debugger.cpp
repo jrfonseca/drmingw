@@ -38,10 +38,9 @@ DebugOptions debugOptions;
 
 typedef struct {
     HANDLE hThread;
-}
-THREAD_INFO, * PTHREAD_INFO;
+} THREAD_INFO, *PTHREAD_INFO;
 
-typedef std::map< DWORD, THREAD_INFO > THREAD_INFO_LIST;
+typedef std::map<DWORD, THREAD_INFO> THREAD_INFO_LIST;
 
 typedef struct {
     HANDLE hProcess;
@@ -49,14 +48,14 @@ typedef struct {
     BOOL fBreakpointSignalled;
     BOOL fWowBreakpointSignalled;
     BOOL fDumpWritten;
-}
-PROCESS_INFO, * PPROCESS_INFO;
+} PROCESS_INFO, *PPROCESS_INFO;
 
-typedef std::map< DWORD, PROCESS_INFO> PROCESS_INFO_LIST;
+typedef std::map<DWORD, PROCESS_INFO> PROCESS_INFO_LIST;
 static PROCESS_INFO_LIST g_Processes;
 
 
-BOOL ObtainSeDebugPrivilege(void)
+BOOL
+ObtainSeDebugPrivilege(void)
 {
     HANDLE hToken;
     PTOKEN_PRIVILEGES NewPrivileges;
@@ -67,8 +66,7 @@ BOOL ObtainSeDebugPrivilege(void)
     LUID LuidPrivilege;
 
     // Make sure we have access to adjust and to get the old token privileges
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
-    {
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
         OutputDebug("OpenProcessToken failed with 0x%08lx\n", GetLastError());
 
         return FALSE;
@@ -77,13 +75,13 @@ BOOL ObtainSeDebugPrivilege(void)
     cbNeeded = 0;
 
     // Initialize the privilege adjustment structure
-    LookupPrivilegeValue( NULL, SE_DEBUG_NAME, &LuidPrivilege );
+    LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &LuidPrivilege);
 
-    NewPrivileges = (PTOKEN_PRIVILEGES) LocalAlloc(
-        LMEM_ZEROINIT,
-        sizeof(TOKEN_PRIVILEGES) + (1 - ANYSIZE_ARRAY)*sizeof(LUID_AND_ATTRIBUTES)
-    );
-    if(NewPrivileges == NULL) {
+    NewPrivileges =
+        (PTOKEN_PRIVILEGES)LocalAlloc(LMEM_ZEROINIT,
+                                      sizeof(TOKEN_PRIVILEGES) +
+                                          (1 - ANYSIZE_ARRAY) * sizeof(LUID_AND_ATTRIBUTES));
+    if (NewPrivileges == NULL) {
         return FALSE;
     }
 
@@ -93,34 +91,20 @@ BOOL ObtainSeDebugPrivilege(void)
 
     // Enable the privilege
     pbOldPriv = OldPriv;
-    fRc = AdjustTokenPrivileges(
-        hToken,
-        FALSE,
-        NewPrivileges,
-        1024,
-        (PTOKEN_PRIVILEGES)pbOldPriv,
-        &cbNeeded
-    );
+    fRc = AdjustTokenPrivileges(hToken, FALSE, NewPrivileges, 1024, (PTOKEN_PRIVILEGES)pbOldPriv,
+                                &cbNeeded);
 
     if (!fRc) {
-
         // If the stack was too small to hold the privileges
         // then allocate off the heap
         if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
-
             pbOldPriv = (PBYTE)LocalAlloc(LMEM_FIXED, cbNeeded);
             if (pbOldPriv == NULL) {
                 return FALSE;
             }
 
-            fRc = AdjustTokenPrivileges(
-                hToken,
-                FALSE,
-                NewPrivileges,
-                cbNeeded,
-                (PTOKEN_PRIVILEGES)pbOldPriv,
-                &cbNeeded
-            );
+            fRc = AdjustTokenPrivileges(hToken, FALSE, NewPrivileges, cbNeeded,
+                                        (PTOKEN_PRIVILEGES)pbOldPriv, &cbNeeded);
         }
     }
     return fRc;
@@ -130,17 +114,15 @@ BOOL ObtainSeDebugPrivilege(void)
 static BOOL
 symCallbackDeferedSymbol(const char *szVerb, ULONG64 CallbackData)
 {
-    PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData = (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
+    PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData =
+        (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
     lprintf("%s deferred symbol load of: %s (hFile = %p)\n", szVerb, pData->FileName, pData->hFile);
     return FALSE;
 }
 
 
 static BOOL CALLBACK
-symCallback(HANDLE hProcess,
-            ULONG ActionCode,
-            ULONG64 CallbackData,
-            ULONG64 UserContext)
+symCallback(HANDLE hProcess, ULONG ActionCode, ULONG64 CallbackData, ULONG64 UserContext)
 {
     if (ActionCode == CBA_DEBUG_INFO) {
         lprintf("%s", (LPCSTR)(UINT_PTR)CallbackData);
@@ -149,7 +131,8 @@ symCallback(HANDLE hProcess,
 
     if (1) {
         if (ActionCode == CBA_DEFERRED_SYMBOL_LOAD_PARTIAL) {
-            PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData = (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
+            PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData =
+                (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
             lprintf("error: partial symbol load of %s\n", pData->FileName);
             return FALSE;
         }
@@ -175,17 +158,16 @@ symCallback(HANDLE hProcess,
 
 // https://msdn.microsoft.com/en-us/library/aa366789.aspx
 static BOOL
-GetFileNameFromHandle(HANDLE hFile,
-                      LPSTR lpszFilePath,
-                      DWORD cchFilePath)
+GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
 {
     static HMODULE hKernel32;
-    typedef DWORD (WINAPI *PFNGETFINALPATHNAMEBYHANDLE)(HANDLE, LPSTR, DWORD, DWORD);
+    typedef DWORD(WINAPI * PFNGETFINALPATHNAMEBYHANDLE)(HANDLE, LPSTR, DWORD, DWORD);
     static PFNGETFINALPATHNAMEBYHANDLE pfnGetFinalPathNameByHandle = NULL;
     if (!hKernel32) {
         hKernel32 = GetModuleHandleA("kernel32.dll");
         if (hKernel32) {
-            pfnGetFinalPathNameByHandle = (PFNGETFINALPATHNAMEBYHANDLE)GetProcAddress(hKernel32, "GetFinalPathNameByHandleA");
+            pfnGetFinalPathNameByHandle =
+                (PFNGETFINALPATHNAMEBYHANDLE)GetProcAddress(hKernel32, "GetFinalPathNameByHandleA");
         }
     }
     if (pfnGetFinalPathNameByHandle) {
@@ -195,8 +177,8 @@ GetFileNameFromHandle(HANDLE hFile,
     DWORD dwFileSizeHi = 0;
     DWORD dwFileSizeLo = GetFileSize(hFile, &dwFileSizeHi);
     if (dwFileSizeLo == 0 && dwFileSizeHi == 0) {
-         // Cannot map a file with a length of zero.
-         return FALSE;
+        // Cannot map a file with a length of zero.
+        return FALSE;
     }
 
     BOOL bSuccess = FALSE;
@@ -205,7 +187,8 @@ GetFileNameFromHandle(HANDLE hFile,
         LPVOID pMem = MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 1);
         if (pMem) {
             if (GetMappedFileNameA(GetCurrentProcess(), pMem, lpszFilePath, cchFilePath)) {
-                // Unlike the example, we don't bother translating the path with device name to drive letters.
+                // Unlike the example, we don't bother translating the path with device name to
+                // drive letters.
                 bSuccess = TRUE;
             }
             UnmapViewOfFile(pMem);
@@ -249,7 +232,8 @@ loadModule(HANDLE hProcess, HANDLE hFile, PCSTR pszImageName, LPVOID lpBaseOfDll
         DllSize = getModuleSize(hProcess, lpBaseOfDll);
     }
 
-    if (!SymLoadModuleEx(hProcess, hFile, pszImageName, NULL, (UINT_PTR)lpBaseOfDll, DllSize, NULL, 0)) {
+    if (!SymLoadModuleEx(hProcess, hFile, pszImageName, NULL, (UINT_PTR)lpBaseOfDll, DllSize, NULL,
+                         0)) {
         OutputDebug("warning: SymLoadModule64 failed: 0x%08lx\n", GetLastError());
     }
 
@@ -278,8 +262,7 @@ readProcessString(HANDLE hProcess, LPCVOID lpBaseAddress, SIZE_T nSize)
 
 
 static BOOL
-getThreadContext(HANDLE hProcess, HANDLE hThread,
-                 PCONTEXT pContext)
+getThreadContext(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 {
     ZeroMemory(pContext, sizeof *pContext);
 
@@ -291,7 +274,8 @@ getThreadContext(HANDLE hProcess, HANDLE hThread,
     BOOL bSuccess;
     if (bWow64) {
         PWOW64_CONTEXT pWow64Context = reinterpret_cast<PWOW64_CONTEXT>(pContext);
-        static_assert(sizeof *pContext >= sizeof *pWow64Context, "WOW64_CONTEXT should fit in CONTEXT");
+        static_assert(sizeof *pContext >= sizeof *pWow64Context,
+                      "WOW64_CONTEXT should fit in CONTEXT");
         pWow64Context->ContextFlags = WOW64_CONTEXT_ALL;
         bSuccess = Wow64GetThreadContext(hThread, pWow64Context);
     } else {
@@ -328,11 +312,8 @@ writeDump(DWORD dwProcessId,
     /*
      * http://www.debuginfo.com/articles/effminidumps2.html#minidump
      */
-    UINT DumpType = MiniDumpWithPrivateReadWriteMemory |
-                    MiniDumpWithDataSegs |
-                    MiniDumpWithHandleData |
-                    MiniDumpWithFullMemoryInfo |
-                    MiniDumpWithThreadInfo |
+    UINT DumpType = MiniDumpWithPrivateReadWriteMemory | MiniDumpWithDataSegs |
+                    MiniDumpWithHandleData | MiniDumpWithFullMemoryInfo | MiniDumpWithThreadInfo |
                     MiniDumpWithUnloadedModules;
 
     std::string comment = "Dump generated with DrMingw\n";
@@ -342,7 +323,8 @@ writeDump(DWORD dwProcessId,
         IsWow64Process(pProcessInfo->hProcess, &bWow64);
     }
     if (bWow64) {
-        comment += "Enter `.effmach x86` command to debug this WOW64 dump with WinDbg (https://bit.ly/2TLG7hl)\n";
+        comment += "Enter `.effmach x86` command to debug this WOW64 dump with WinDbg "
+                   "(https://bit.ly/2TLG7hl)\n";
     }
 
     MINIDUMP_USER_STREAM UserStreams[1];
@@ -356,13 +338,9 @@ writeDump(DWORD dwProcessId,
 
     BOOL bSuccess = FALSE;
     if (hFile != INVALID_HANDLE_VALUE) {
-        bSuccess = MiniDumpWriteDump(pProcessInfo->hProcess,
-                                     dwProcessId,
-                                     hFile,
-                                     (MINIDUMP_TYPE)DumpType,
-                                     pExceptionParam,
-                                     &UserStreamParam,
-                                     nullptr);
+        bSuccess =
+            MiniDumpWriteDump(pProcessInfo->hProcess, dwProcessId, hFile, (MINIDUMP_TYPE)DumpType,
+                              pExceptionParam, &UserStreamParam, nullptr);
 
         CloseHandle(hFile);
     }
@@ -435,15 +413,14 @@ DebugMainLoop(void)
     BOOL fTerminating = FALSE;
 
     while (!fFinished) {
-        DEBUG_EVENT DebugEvent;            // debugging event information
-        DWORD dwContinueStatus = DBG_CONTINUE;    // exception continuation
+        DEBUG_EVENT DebugEvent;                // debugging event information
+        DWORD dwContinueStatus = DBG_CONTINUE; // exception continuation
         PPROCESS_INFO pProcessInfo;
         PTHREAD_INFO pThreadInfo;
 
         // Wait for a debugging event to occur. The second parameter indicates
         // that the function does not return until a debugging event occurs.
-        if(!WaitForDebugEvent(&DebugEvent, INFINITE))
-        {
+        if (!WaitForDebugEvent(&DebugEvent, INFINITE)) {
             OutputDebug("WaitForDebugEvent: 0x%08lx", GetLastError());
 
             return FALSE;
@@ -461,11 +438,8 @@ DebugMainLoop(void)
             // is used by the ContinueDebugEvent function.
             if (debugOptions.verbose_flag) {
                 lprintf("EXCEPTION PID=%lu TID=%lu ExceptionCode=0x%lx dwFirstChance=%lu\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId,
-                        pExceptionRecord->ExceptionCode,
-                        DebugEvent.u.Exception.dwFirstChance
-                );
+                        DebugEvent.dwProcessId, DebugEvent.dwThreadId,
+                        pExceptionRecord->ExceptionCode, DebugEvent.u.Exception.dwFirstChance);
             }
 
             // Find the process in the process list
@@ -520,7 +494,7 @@ DebugMainLoop(void)
                     }
                 }
 
-               /*
+                /*
                  * Ignore thread naming exception.
                  *
                  * http://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
@@ -532,8 +506,7 @@ DebugMainLoop(void)
                     break;
                 }
 
-                if (ExceptionCode == DBG_CONTROL_C ||
-                    ExceptionCode == DBG_CONTROL_BREAK) {
+                if (ExceptionCode == DBG_CONTROL_C || ExceptionCode == DBG_CONTROL_BREAK) {
                     dwContinueStatus = DBG_CONTINUE;
                 } else if (!debugOptions.first_chance) {
                     // Ignore other first change exceptions
@@ -541,18 +514,15 @@ DebugMainLoop(void)
                 }
             }
 
-            dumpException(pProcessInfo->hProcess,
-                          &DebugEvent.u.Exception.ExceptionRecord);
+            dumpException(pProcessInfo->hProcess, &DebugEvent.u.Exception.ExceptionRecord);
 
             // Find the thread in the thread list
             THREAD_INFO_LIST::const_iterator it;
             for (it = pProcessInfo->Threads.begin(); it != pProcessInfo->Threads.end(); ++it) {
                 DWORD dwThreadId = it->first;
                 HANDLE hThread = it->second.hThread;
-                if (dwThreadId != DebugEvent.dwThreadId &&
-                    ExceptionCode != STATUS_BREAKPOINT &&
-                    ExceptionCode != STATUS_WX86_BREAKPOINT &&
-                    ExceptionCode != DBG_CONTROL_C &&
+                if (dwThreadId != DebugEvent.dwThreadId && ExceptionCode != STATUS_BREAKPOINT &&
+                    ExceptionCode != STATUS_WX86_BREAKPOINT && ExceptionCode != DBG_CONTROL_C &&
                     ExceptionCode != DBG_CONTROL_BREAK) {
                     continue;
                 }
@@ -592,10 +562,8 @@ DebugMainLoop(void)
 
         case CREATE_THREAD_DEBUG_EVENT:
             if (debugOptions.verbose_flag) {
-                lprintf("CREATE_THREAD PID=%lu TID=%lu\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId
-                );
+                lprintf("CREATE_THREAD PID=%lu TID=%lu\n", DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId);
             }
 
             // Add the thread to the thread list
@@ -617,11 +585,8 @@ DebugMainLoop(void)
                 PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
 
                 lprintf("CREATE_PROCESS PID=%lu TID=%lu lpBaseOfImage=%p %s\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId,
-                        DebugEvent.u.CreateProcessInfo.lpBaseOfImage,
-                        lpModuleName
-                );
+                        DebugEvent.dwProcessId, DebugEvent.dwThreadId,
+                        DebugEvent.u.CreateProcessInfo.lpBaseOfImage, lpModuleName);
             }
 
             HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
@@ -647,11 +612,8 @@ DebugMainLoop(void)
 
         case EXIT_THREAD_DEBUG_EVENT:
             if (debugOptions.verbose_flag) {
-                lprintf("EXIT_THREAD PID=%lu TID=%lu dwExitCode=0x%lx\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId,
-                        DebugEvent.u.ExitThread.dwExitCode
-                );
+                lprintf("EXIT_THREAD PID=%lu TID=%lu dwExitCode=0x%lx\n", DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId, DebugEvent.u.ExitThread.dwExitCode);
             }
 
             // Remove the thread from the thread list
@@ -673,11 +635,8 @@ DebugMainLoop(void)
 
         case EXIT_PROCESS_DEBUG_EVENT: {
             if (debugOptions.verbose_flag) {
-                lprintf("EXIT_PROCESS PID=%lu TID=%lu dwExitCode=0x%lx\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId,
-                        DebugEvent.u.ExitProcess.dwExitCode
-                );
+                lprintf("EXIT_PROCESS PID=%lu TID=%lu dwExitCode=0x%lx\n", DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId, DebugEvent.u.ExitProcess.dwExitCode);
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
@@ -721,28 +680,22 @@ DebugMainLoop(void)
             if (debugOptions.verbose_flag) {
                 PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
 
-                lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %s\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId,
-                        DebugEvent.u.LoadDll.lpBaseOfDll,
-                        lpModuleName
-                );
+                lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %s\n", DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId, DebugEvent.u.LoadDll.lpBaseOfDll, lpModuleName);
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
 
-            loadModule(pProcessInfo->hProcess, hFile, lpImageName, DebugEvent.u.LoadDll.lpBaseOfDll);
+            loadModule(pProcessInfo->hProcess, hFile, lpImageName,
+                       DebugEvent.u.LoadDll.lpBaseOfDll);
 
             break;
         }
 
         case UNLOAD_DLL_DEBUG_EVENT:
             if (debugOptions.verbose_flag) {
-                lprintf("UNLOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId,
-                        DebugEvent.u.UnloadDll.lpBaseOfDll
-                );
+                lprintf("UNLOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\n", DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId, DebugEvent.u.UnloadDll.lpBaseOfDll);
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
@@ -753,19 +706,18 @@ DebugMainLoop(void)
 
         case OUTPUT_DEBUG_STRING_EVENT: {
             if (debugOptions.verbose_flag) {
-                lprintf("OUTPUT_DEBUG_STRING PID=%lu TID=%lu\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId
-                );
+                lprintf("OUTPUT_DEBUG_STRING PID=%lu TID=%lu\n", DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId);
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
 
             assert(!DebugEvent.u.DebugString.fUnicode);
 
-            LPSTR lpDebugStringData = readProcessString(pProcessInfo->hProcess,
-                                                        DebugEvent.u.DebugString.lpDebugStringData,
-                                                        DebugEvent.u.DebugString.nDebugStringLength);
+            LPSTR lpDebugStringData =
+                readProcessString(pProcessInfo->hProcess,
+                                  DebugEvent.u.DebugString.lpDebugStringData,
+                                  DebugEvent.u.DebugString.nDebugStringLength);
 
             lprintf("%s", lpDebugStringData);
 
@@ -775,30 +727,20 @@ DebugMainLoop(void)
 
         case RIP_EVENT:
             if (debugOptions.verbose_flag) {
-                lprintf("RIP PID=%lu TID=%lu\n",
-                        DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId
-                );
+                lprintf("RIP PID=%lu TID=%lu\n", DebugEvent.dwProcessId, DebugEvent.dwThreadId);
             }
             break;
 
         default:
             if (debugOptions.verbose_flag) {
-                lprintf("EVENT%lu PID=%lu TID=%lu\n",
-                    DebugEvent.dwDebugEventCode,
-                    DebugEvent.dwProcessId,
-                    DebugEvent.dwThreadId
-                );
+                lprintf("EVENT%lu PID=%lu TID=%lu\n", DebugEvent.dwDebugEventCode,
+                        DebugEvent.dwProcessId, DebugEvent.dwThreadId);
             }
             break;
         }
 
         // Resume executing the thread that reported the debugging event.
-        ContinueDebugEvent(
-            DebugEvent.dwProcessId,
-            DebugEvent.dwThreadId,
-            dwContinueStatus
-        );
+        ContinueDebugEvent(DebugEvent.dwProcessId, DebugEvent.dwThreadId, dwContinueStatus);
     }
 
     return TRUE;

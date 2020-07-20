@@ -22,49 +22,42 @@
 #include <stdarg.h>
 
 
-void _ErrorMessageBox(LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ...)
+void
+_ErrorMessageBox(LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ...)
 {
     char szErrorMsg[1024], szModule[MAX_PATH], szMsg[4096];
     va_list ap;
 
-    if(!GetModuleFileNameA(NULL, szModule, MAX_PATH))
+    if (!GetModuleFileNameA(NULL, szModule, MAX_PATH))
         strcpy(szModule, "");
 
     va_start(ap, lpszFormat);
     vsprintf(szErrorMsg, lpszFormat, ap);
     va_end(ap);
 
-    sprintf(
-        szMsg,
-        "Error!\r\n"
-        "\r\n"
-        "Program: %s\r\n"
-        "File: %s\r\n"
-        "Line: %lu\r\n"
-        "\r\n"
-        "%s\r\n"
-        "\r\n"
-        "(Press Retry to debug the application - JIT must be enabled)\r\n",
-        szModule,
-        lpszFile,
-        dwLine,
-        szErrorMsg
-    );
+    sprintf(szMsg,
+            "Error!\r\n"
+            "\r\n"
+            "Program: %s\r\n"
+            "File: %s\r\n"
+            "Line: %lu\r\n"
+            "\r\n"
+            "%s\r\n"
+            "\r\n"
+            "(Press Retry to debug the application - JIT must be enabled)\r\n",
+            szModule, lpszFile, dwLine, szErrorMsg);
 
     // Display the string.
-    switch (MessageBoxA(NULL, szMsg, "DrMingw", MB_ICONERROR | MB_ABORTRETRYIGNORE))
-    {
-        case IDABORT:
-            _exit(3);
-	    return;
+    switch (MessageBoxA(NULL, szMsg, "DrMingw", MB_ICONERROR | MB_ABORTRETRYIGNORE)) {
+    case IDABORT:
+        _exit(3);
+        return;
 
-        case IDRETRY:
-            DebugBreak();
-            return;
+    case IDRETRY:
+        DebugBreak();
+        return;
 
-        case IDIGNORE:
-            return;
+    case IDIGNORE:
+        return;
     }
 }
-
-

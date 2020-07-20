@@ -36,8 +36,7 @@
 #include "demangle.h"
 
 
-struct mgwhelp_module
-{
+struct mgwhelp_module {
     struct mgwhelp_module *next;
 
     DWORD64 Base;
@@ -53,8 +52,7 @@ struct mgwhelp_module
 };
 
 
-struct mgwhelp_process
-{
+struct mgwhelp_process {
     struct mgwhelp_process *next;
 
     HANDLE hProcess;
@@ -66,8 +64,7 @@ struct mgwhelp_process
 struct mgwhelp_process *processes = NULL;
 
 
-static DWORD64 WINAPI
-GetModuleBase(HANDLE hProcess, DWORD64 dwAddress);
+static DWORD64 WINAPI GetModuleBase(HANDLE hProcess, DWORD64 dwAddress);
 
 
 /* We must use a memory map of the file, not read memory directly, as the
@@ -92,10 +89,10 @@ PEGetImageBase(PBYTE lpFileBase)
     pOptionalHeader64 = (PIMAGE_OPTIONAL_HEADER64)pOptionalHeader;
 
     switch (pOptionalHeader->Magic) {
-    case IMAGE_NT_OPTIONAL_HDR32_MAGIC :
+    case IMAGE_NT_OPTIONAL_HDR32_MAGIC:
         ImageBase = pOptionalHeader32->ImageBase;
         break;
-    case IMAGE_NT_OPTIONAL_HDR64_MAGIC :
+    case IMAGE_NT_OPTIONAL_HDR64_MAGIC:
         ImageBase = pOptionalHeader64->ImageBase;
         break;
     default:
@@ -109,7 +106,8 @@ PEGetImageBase(PBYTE lpFileBase)
 /*
  * Search for the symbol on PE's symbol table.
  *
- * Symbols for which there's no DWARF debugging information might still appear there, put by MinGW linker.
+ * Symbols for which there's no DWARF debugging information might still appear there, put by MinGW
+ * linker.
  *
  * - https://msdn.microsoft.com/en-gb/library/ms809762.aspx
  *   - https://www.microsoft.com/msj/backissues86.aspx
@@ -133,33 +131,29 @@ pe_find_symbol(struct mgwhelp_module *module,
 
     pDosHeader = (PIMAGE_DOS_HEADER)lpFileBase;
     pNtHeaders = (PIMAGE_NT_HEADERS)(lpFileBase + pDosHeader->e_lfanew);
-    PIMAGE_SECTION_HEADER Sections = (PIMAGE_SECTION_HEADER) (
-        (PBYTE)pNtHeaders +
-        sizeof(DWORD) +
-        sizeof(IMAGE_FILE_HEADER) +
-        pNtHeaders->FileHeader.SizeOfOptionalHeader
-    );
-    PIMAGE_SYMBOL pSymbolTable = (PIMAGE_SYMBOL) (
-        lpFileBase +
-        pNtHeaders->FileHeader.PointerToSymbolTable
-    );
-    PSTR pStringTable = (PSTR)
-        &pSymbolTable[pNtHeaders->FileHeader.NumberOfSymbols];
+    PIMAGE_SECTION_HEADER Sections =
+        (PIMAGE_SECTION_HEADER)((PBYTE)pNtHeaders + sizeof(DWORD) + sizeof(IMAGE_FILE_HEADER) +
+                                pNtHeaders->FileHeader.SizeOfOptionalHeader);
+    PIMAGE_SYMBOL pSymbolTable =
+        (PIMAGE_SYMBOL)(lpFileBase + pNtHeaders->FileHeader.PointerToSymbolTable);
+    PSTR pStringTable = (PSTR)&pSymbolTable[pNtHeaders->FileHeader.NumberOfSymbols];
     pOptionalHeader = &pNtHeaders->OptionalHeader;
     pOptionalHeader32 = (PIMAGE_OPTIONAL_HEADER32)pOptionalHeader;
     pOptionalHeader64 = (PIMAGE_OPTIONAL_HEADER64)pOptionalHeader;
 
     if (pNtHeaders->FileHeader.PointerToSymbolTable +
-        pNtHeaders->FileHeader.NumberOfSymbols * sizeof pSymbolTable[0] > module->nFileSize) {
-        OutputDebug("MGWHELP: %s - symbol table extends beyond image size\n", module->LoadedImageName);
+            pNtHeaders->FileHeader.NumberOfSymbols * sizeof pSymbolTable[0] >
+        module->nFileSize) {
+        OutputDebug("MGWHELP: %s - symbol table extends beyond image size\n",
+                    module->LoadedImageName);
         return FALSE;
     }
 
     switch (pOptionalHeader->Magic) {
-    case IMAGE_NT_OPTIONAL_HDR32_MAGIC :
+    case IMAGE_NT_OPTIONAL_HDR32_MAGIC:
         ImageBase = pOptionalHeader32->ImageBase;
         break;
-    case IMAGE_NT_OPTIONAL_HDR64_MAGIC :
+    case IMAGE_NT_OPTIONAL_HDR64_MAGIC:
         ImageBase = pOptionalHeader64->ImageBase;
         bUnderscore = FALSE;
         break;
@@ -201,8 +195,7 @@ pe_find_symbol(struct mgwhelp_module *module,
                 OutputDebug("%04lu: 0x%08I64X %s\n", i, SymbolAddr, SymbolName);
             }
 
-            if (SymbolAddr <= Addr &&
-                SymbolName[0] != '.') {
+            if (SymbolAddr <= Addr && SymbolName[0] != '.') {
                 DWORD64 SymbolDisp = Addr - SymbolAddr;
                 if (SymbolDisp < Displacement) {
                     strncpy(pSymbolName, SymbolName, MaxSymbolNameLen);
@@ -230,10 +223,7 @@ pe_find_symbol(struct mgwhelp_module *module,
 
 
 static struct mgwhelp_module *
-mgwhelp_module_create(struct mgwhelp_process * process,
-                      HANDLE hFile,
-                      PCSTR ImageName,
-                      DWORD64 Base)
+mgwhelp_module_create(struct mgwhelp_process *process, HANDLE hFile, PCSTR ImageName, DWORD64 Base)
 {
     struct mgwhelp_module *module;
     BOOL bOwnFile;
@@ -255,10 +245,8 @@ mgwhelp_module_create(struct mgwhelp_process * process,
          * https://msdn.microsoft.com/en-us/library/windows/desktop/ms681336.aspx
          */
         DWORD dwRet;
-        dwRet = GetModuleFileNameExA(process->hProcess,
-                                     (HMODULE)(UINT_PTR)Base,
-                                     module->LoadedImageName,
-                                     sizeof module->LoadedImageName);
+        dwRet = GetModuleFileNameExA(process->hProcess, (HMODULE)(UINT_PTR)Base,
+                                     module->LoadedImageName, sizeof module->LoadedImageName);
         if (dwRet == 0) {
             OutputDebug("MGWHELP: could not determine module name\n");
             goto no_module_name;
@@ -298,8 +286,10 @@ mgwhelp_module_create(struct mgwhelp_process * process,
     module->image_base_vma = PEGetImageBase(module->lpFileBase);
 
     error = 0;
-    if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dwarf.dbg, &error) == DW_DLV_OK) {
-        if (dwarf_get_aranges(module->dwarf.dbg, &module->dwarf.aranges, &module->dwarf.arange_count, &error) != DW_DLV_OK) {
+    if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dwarf.dbg, &error) ==
+        DW_DLV_OK) {
+        if (dwarf_get_aranges(module->dwarf.dbg, &module->dwarf.aranges,
+                              &module->dwarf.arange_count, &error) != DW_DLV_OK) {
             OutputDebug("MGWHELP: libdwarf error - %s\n", dwarf_errmsg(error));
         }
     }
@@ -327,7 +317,7 @@ no_module:
 
 
 static void
-mgwhelp_module_destroy(struct mgwhelp_module * module)
+mgwhelp_module_destroy(struct mgwhelp_module *module)
 {
     if (module->dwarf.dbg) {
         Dwarf_Error error = 0;
@@ -345,14 +335,10 @@ mgwhelp_module_destroy(struct mgwhelp_module * module)
 }
 
 
-static struct mgwhelp_process *
-mgwhelp_process_lookup(HANDLE hProcess);
+static struct mgwhelp_process *mgwhelp_process_lookup(HANDLE hProcess);
 
 static struct mgwhelp_module *
-mgwhelp_module_lookup(HANDLE hProcess,
-                      HANDLE hFile,
-                      PCSTR ImageName,
-                      DWORD64 Base)
+mgwhelp_module_lookup(HANDLE hProcess, HANDLE hFile, PCSTR ImageName, DWORD64 Base)
 {
     struct mgwhelp_process *process;
     struct mgwhelp_module *module;
@@ -477,7 +463,8 @@ MgwSymLoadModuleEx(HANDLE hProcess,
 {
     DWORD dwRet;
 
-    dwRet = SymLoadModuleEx(hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags);
+    dwRet =
+        SymLoadModuleEx(hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags);
 
     if (BaseOfDll) {
         mgwhelp_module_lookup(hProcess, hFile, ImageName, BaseOfDll);
@@ -499,14 +486,16 @@ MgwSymLoadModuleExW(HANDLE hProcess,
 {
     DWORD dwRet;
 
-    dwRet = SymLoadModuleExW(hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags);
+    dwRet =
+        SymLoadModuleExW(hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags);
 
     if (BaseOfDll) {
         char ImageNameBuf[MAX_PATH];
         PCSTR ImageNameA;
 
         if (ImageName) {
-            WideCharToMultiByte(CP_ACP, 0, ImageName, -1, ImageNameBuf, _countof(ImageNameBuf), NULL, NULL);
+            WideCharToMultiByte(CP_ACP, 0, ImageName, -1, ImageNameBuf, _countof(ImageNameBuf),
+                                NULL, NULL);
             ImageNameA = ImageNameBuf;
         } else {
             ImageNameA = NULL;
@@ -531,9 +520,8 @@ GetModuleBase(HANDLE hProcess, DWORD64 dwAddress)
     if (hProcess == GetCurrentProcess()) {
         HMODULE hModule = NULL;
         BOOL bRet = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
-                                       GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                                       (LPCSTR)(UINT_PTR)dwAddress,
-                                       &hModule);
+                                           GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+                                       (LPCSTR)(UINT_PTR)dwAddress, &hModule);
         if (bRet) {
             return (DWORD64)(UINT_PTR)hModule;
         }
@@ -575,16 +563,12 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 {
     DWORD dwOptions = SymGetOptions();
 
-    //search pe symbols first (more accurate than dwarf)
+    // search pe symbols first (more accurate than dwarf)
     DWORD64 Offset;
-    mgwhelp_module* module = mgwhelp_find_module(hProcess, Address, &Offset);
+    mgwhelp_module *module = mgwhelp_find_module(hProcess, Address, &Offset);
 
     if (module && module->lpFileBase) {
-        if (pe_find_symbol(module,
-                           Offset,
-                           Symbol->MaxNameLen,
-                           Symbol->Name,
-                           Displacement)) {
+        if (pe_find_symbol(module, Offset, Symbol->MaxNameLen, Symbol->Name, Displacement)) {
             if (dwOptions & SYMOPT_UNDNAME) {
                 char *output_buffer = demangle(Symbol->Name, UNDNAME_NAME_ONLY);
                 if (output_buffer) {
@@ -621,10 +605,13 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 
 
 BOOL WINAPI
-MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line)
+MgwSymGetLineFromAddr64(HANDLE hProcess,
+                        DWORD64 dwAddr,
+                        PDWORD pdwDisplacement,
+                        PIMAGEHLP_LINE64 Line)
 {
     DWORD64 Offset;
-    mgwhelp_module* module = mgwhelp_find_module(hProcess, dwAddr, &Offset);
+    mgwhelp_module *module = mgwhelp_find_module(hProcess, dwAddr, &Offset);
 
     if (module && module->dwarf.aranges) {
         struct dwarf_line_info info;
@@ -649,7 +636,10 @@ MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement,
 
 
 DWORD WINAPI
-MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags)
+MgwUnDecorateSymbolName(PCSTR DecoratedName,
+                        PSTR UnDecoratedName,
+                        DWORD UndecoratedLength,
+                        DWORD Flags)
 {
     assert(DecoratedName != NULL);
 
@@ -717,7 +707,10 @@ MgwSymFromAddrW(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL
 
 
 BOOL WINAPI
-MgwSymGetLineFromAddrW64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINEW64 LineW)
+MgwSymGetLineFromAddrW64(HANDLE hProcess,
+                         DWORD64 dwAddr,
+                         PDWORD pdwDisplacement,
+                         PIMAGEHLP_LINEW64 LineW)
 {
     IMAGEHLP_LINE64 LineA;
     ZeroMemory(&LineA, sizeof LineA);

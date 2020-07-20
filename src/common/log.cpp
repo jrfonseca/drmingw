@@ -61,9 +61,10 @@ setDumpCallback(DumpCallback cb)
 
 
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 1, 2)))
+__attribute__((format(printf, 1, 2)))
 #endif
-int lprintf(const char * format, ...)
+int
+lprintf(const char *format, ...)
 {
     char szBuffer[1024];
     int retValue;
@@ -79,8 +80,7 @@ int lprintf(const char * format, ...)
 }
 
 
-static BOOL
-dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
+static BOOL dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
 
 
 #define MAX_SYM_NAME_SIZE 512
@@ -89,67 +89,46 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
 static void
 dumpContext(
 #ifdef _WIN64
-            const WOW64_CONTEXT *pContext
+    const WOW64_CONTEXT *pContext
 #else
-            const CONTEXT *pContext
+    const CONTEXT *pContext
 #endif
 )
 {
     // Show the registers
     lprintf("Registers:\n");
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
-        lprintf(
-            "eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n",
-            pContext->Eax,
-            pContext->Ebx,
-            pContext->Ecx,
-            pContext->Edx,
-            pContext->Esi,
-            pContext->Edi
-        );
+        lprintf("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n", pContext->Eax,
+                pContext->Ebx, pContext->Ecx, pContext->Edx, pContext->Esi, pContext->Edi);
     }
     if (pContext->ContextFlags & CONTEXT_CONTROL) {
-        lprintf(
-            "eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\n",
-            pContext->Eip,
-            pContext->Esp,
-            pContext->Ebp,
-            (pContext->EFlags >> 12) & 3,    //  IOPL level value
-            pContext->EFlags & 0x00100000 ? "vip" : "   ",    //  VIP (virtual interrupt pending)
-            pContext->EFlags & 0x00080000 ? "vif" : "   ",    //  VIF (virtual interrupt flag)
-            pContext->EFlags & 0x00000800 ? "ov" : "nv",    //  VIF (virtual interrupt flag)
-            pContext->EFlags & 0x00000400 ? "dn" : "up",    //  OF (overflow flag)
-            pContext->EFlags & 0x00000200 ? "ei" : "di",    //  IF (interrupt enable flag)
-            pContext->EFlags & 0x00000080 ? "ng" : "pl",    //  SF (sign flag)
-            pContext->EFlags & 0x00000040 ? "zr" : "nz",    //  ZF (zero flag)
-            pContext->EFlags & 0x00000010 ? "ac" : "na",    //  AF (aux carry flag)
-            pContext->EFlags & 0x00000004 ? "po" : "pe",    //  PF (parity flag)
-            pContext->EFlags & 0x00000001 ? "cy" : "nc"    //  CF (carry flag)
+        lprintf("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\n",
+                pContext->Eip, pContext->Esp, pContext->Ebp,
+                (pContext->EFlags >> 12) & 3,                  //  IOPL level value
+                pContext->EFlags & 0x00100000 ? "vip" : "   ", //  VIP (virtual interrupt pending)
+                pContext->EFlags & 0x00080000 ? "vif" : "   ", //  VIF (virtual interrupt flag)
+                pContext->EFlags & 0x00000800 ? "ov" : "nv",   //  VIF (virtual interrupt flag)
+                pContext->EFlags & 0x00000400 ? "dn" : "up",   //  OF (overflow flag)
+                pContext->EFlags & 0x00000200 ? "ei" : "di",   //  IF (interrupt enable flag)
+                pContext->EFlags & 0x00000080 ? "ng" : "pl",   //  SF (sign flag)
+                pContext->EFlags & 0x00000040 ? "zr" : "nz",   //  ZF (zero flag)
+                pContext->EFlags & 0x00000010 ? "ac" : "na",   //  AF (aux carry flag)
+                pContext->EFlags & 0x00000004 ? "po" : "pe",   //  PF (parity flag)
+                pContext->EFlags & 0x00000001 ? "cy" : "nc"    //  CF (carry flag)
         );
     }
     if (pContext->ContextFlags & CONTEXT_SEGMENTS) {
-        lprintf(
-            "cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx",
-            pContext->SegCs,
-            pContext->SegSs,
-            pContext->SegDs,
-            pContext->SegEs,
-            pContext->SegFs,
-            pContext->SegGs
-        );
+        lprintf("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx", pContext->SegCs,
+                pContext->SegSs, pContext->SegDs, pContext->SegEs, pContext->SegFs,
+                pContext->SegGs);
         if (pContext->ContextFlags & CONTEXT_CONTROL) {
-            lprintf(
-                "             efl=%08lx",
-                pContext->EFlags
-            );
+            lprintf("             efl=%08lx", pContext->EFlags);
         }
-    }
-    else {
+    } else {
         if (pContext->ContextFlags & CONTEXT_CONTROL) {
-            lprintf(
-                "                                                                       efl=%08lx",
-                pContext->EFlags
-            );
+            lprintf("                                                                       "
+                    "efl=%08lx",
+                    pContext->EFlags);
         }
     }
     lprintf("\n\n");
@@ -157,8 +136,7 @@ dumpContext(
 
 
 void
-dumpStack(HANDLE hProcess, HANDLE hThread,
-          const CONTEXT *pContext)
+dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
 {
     DWORD MachineType;
 
@@ -206,9 +184,9 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
     CONTEXT Context = *pContext;
 
     if (MachineType == IMAGE_FILE_MACHINE_I386) {
-        lprintf( "AddrPC   Params\n" );
+        lprintf("AddrPC   Params\n");
     } else {
-        lprintf( "AddrPC           Params\n" );
+        lprintf("AddrPC           Params\n");
     }
 
     BOOL bInsideWine = isInsideWine();
@@ -221,36 +199,20 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         char szFileName[MAX_PATH] = "";
         DWORD dwLineNumber = 0;
 
-        if (!StackWalk64(
-                MachineType,
-                hProcess,
-                hThread,
-                &StackFrame,
-                &Context,
-                NULL, // ReadMemoryRoutine
-                SymFunctionTableAccess64,
-                SymGetModuleBase64,
-                NULL // TranslateAddress
-            )
-        )
+        if (!StackWalk64(MachineType, hProcess, hThread, &StackFrame, &Context,
+                         NULL, // ReadMemoryRoutine
+                         SymFunctionTableAccess64, SymGetModuleBase64,
+                         NULL // TranslateAddress
+                         ))
             break;
 
         if (MachineType == IMAGE_FILE_MACHINE_I386) {
-            lprintf(
-                "%08lX %08lX %08lX %08lX",
-                (DWORD)StackFrame.AddrPC.Offset,
-                (DWORD)StackFrame.Params[0],
-                (DWORD)StackFrame.Params[1],
-                (DWORD)StackFrame.Params[2]
-            );
+            lprintf("%08lX %08lX %08lX %08lX", (DWORD)StackFrame.AddrPC.Offset,
+                    (DWORD)StackFrame.Params[0], (DWORD)StackFrame.Params[1],
+                    (DWORD)StackFrame.Params[2]);
         } else {
-            lprintf(
-                "%016I64X %016I64X %016I64X %016I64X",
-                StackFrame.AddrPC.Offset,
-                StackFrame.Params[0],
-                StackFrame.Params[1],
-                StackFrame.Params[2]
-            );
+            lprintf("%016I64X %016I64X %016I64X %016I64X", StackFrame.AddrPC.Offset,
+                    StackFrame.Params[0], StackFrame.Params[1], StackFrame.Params[2]);
         }
 
         BOOL bSymbol = TRUE;
@@ -259,21 +221,20 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
         DWORD64 AddrPC = StackFrame.AddrPC.Offset;
         HMODULE hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, AddrPC);
         char szModule[MAX_PATH];
-        if (hModule &&
-            GetModuleFileNameExA(hProcess, hModule, szModule, MAX_PATH)) {
-
-            lprintf( "  %s", getBaseName(szModule));
+        if (hModule && GetModuleFileNameExA(hProcess, hModule, szModule, MAX_PATH)) {
+            lprintf("  %s", getBaseName(szModule));
 
             bSymbol = GetSymFromAddr(hProcess, AddrPC + nudge, szSymName, MAX_SYM_NAME_SIZE);
             if (bSymbol) {
-                lprintf( "!%s", szSymName);
+                lprintf("!%s", szSymName);
 
-                bLine = GetLineFromAddr(hProcess, AddrPC + nudge, szFileName, MAX_PATH, &dwLineNumber);
+                bLine =
+                    GetLineFromAddr(hProcess, AddrPC + nudge, szFileName, MAX_PATH, &dwLineNumber);
                 if (bLine) {
-                    lprintf( "  [%s @ %ld]", szFileName, dwLineNumber);
+                    lprintf("  [%s @ %ld]", szFileName, dwLineNumber);
                 }
             } else {
-                lprintf( "!0x%I64x", AddrPC - (DWORD)(INT_PTR)hModule);
+                lprintf("!0x%I64x", AddrPC - (DWORD)(INT_PTR)hModule);
             }
         }
 
@@ -319,7 +280,8 @@ dumpStack(HANDLE hProcess, HANDLE hThread,
  * FormatMessage is hopeless for that, as described in:
  * - http://www.microsoft.com/msj/0497/hood/hood0497.aspx
  * - http://stackoverflow.com/questions/321898/how-to-get-the-name-description-of-an-exception
- * - http://www.tech-archive.net/Archive/Development/microsoft.public.win32.programmer.kernel/2006-05/msg00683.html
+ * -
+ * http://www.tech-archive.net/Archive/Development/microsoft.public.win32.programmer.kernel/2006-05/msg00683.html
  *
  * See also:
  * - https://msdn.microsoft.com/en-us/library/windows/hardware/ff558784.aspx
@@ -328,7 +290,6 @@ static LPCSTR
 getExceptionString(NTSTATUS ExceptionCode)
 {
     switch (ExceptionCode) {
-
     case EXCEPTION_ACCESS_VIOLATION: // 0xC0000005
         return "Access Violation";
     case EXCEPTION_IN_PAGE_ERROR: // 0xC0000006
@@ -359,7 +320,7 @@ getExceptionString(NTSTATUS ExceptionCode)
         return "Floating-point underflow";
     case EXCEPTION_INT_DIVIDE_BY_ZERO: // 0xC0000094
         return "Integer division by zero";
-    case EXCEPTION_INT_OVERFLOW:  // 0xC0000095
+    case EXCEPTION_INT_OVERFLOW: // 0xC0000095
         return "Integer overflow";
     case EXCEPTION_PRIV_INSTRUCTION: // 0xC0000096
         return "Privileged instruction";
@@ -409,8 +370,7 @@ getExceptionString(NTSTATUS ExceptionCode)
 
 
 void
-dumpException(HANDLE hProcess,
-              PEXCEPTION_RECORD pExceptionRecord)
+dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord)
 {
     NTSTATUS ExceptionCode = pExceptionRecord->ExceptionCode;
 
@@ -450,14 +410,15 @@ dumpException(HANDLE hProcess,
 
     // Now print information about where the fault occurred
     lprintf(" at location %p", pExceptionRecord->ExceptionAddress);
-    if((hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
-       GetModuleFileNameExA(hProcess, hModule, szModule, sizeof szModule))
+    if ((hModule = (HMODULE)(INT_PTR)
+             SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
+        GetModuleFileNameExA(hProcess, hModule, szModule, sizeof szModule))
         lprintf(" in module %s", getBaseName(szModule));
 
-    // If the exception was an access violation, print out some additional information, to the error log and the debugger.
+    // If the exception was an access violation, print out some additional information, to the error
+    // log and the debugger.
     // https://msdn.microsoft.com/en-us/library/windows/desktop/aa363082%28v=vs.85%29.aspx
-    if ((ExceptionCode == EXCEPTION_ACCESS_VIOLATION ||
-         ExceptionCode == EXCEPTION_IN_PAGE_ERROR) &&
+    if ((ExceptionCode == EXCEPTION_ACCESS_VIOLATION || ExceptionCode == EXCEPTION_IN_PAGE_ERROR) &&
         pExceptionRecord->NumberParameters >= 2) {
         LPCSTR lpszVerb;
         switch (pExceptionRecord->ExceptionInformation[0]) {
@@ -490,33 +451,28 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
     char szFileName[MAX_PATH] = "";
     DWORD dwContext = 2;
 
-    if(lpFileName[0] == '/' && lpFileName[1] == '/')
-    {
+    if (lpFileName[0] == '/' && lpFileName[1] == '/') {
         szFileName[0] = lpFileName[2];
         szFileName[1] = ':';
         strcpy(szFileName + 2, lpFileName + 3);
-    }
-    else
+    } else
         strcpy(szFileName, lpFileName);
 
-    if((fp = fopen(szFileName, "r")) == NULL)
+    if ((fp = fopen(szFileName, "r")) == NULL)
         return FALSE;
 
     i = 0;
-    while(!feof(fp) && ++i <= dwLineNumber + dwContext)
-    {
+    while (!feof(fp) && ++i <= dwLineNumber + dwContext) {
         int c;
 
-        if((int)i >= (int) dwLineNumber - (int)dwContext)
-        {
+        if ((int)i >= (int)dwLineNumber - (int)dwContext) {
             lprintf(i == dwLineNumber ? ">%5i: " : "%6i: ", i);
-            while(!feof(fp) && (c = fgetc(fp)) != '\n')
-                if(isprint(c))
+            while (!feof(fp) && (c = fgetc(fp)) != '\n')
+                if (isprint(c))
                     lprintf("%c", c);
             lprintf("\n");
-        }
-        else
-            while(!feof(fp) && (c = fgetc(fp)) != '\n')
+        } else
+            while (!feof(fp) && (c = fgetc(fp)) != '\n')
                 ;
     }
 
@@ -537,7 +493,7 @@ getModuleVersionInfo(LPCSTR szModule, DWORD *dwVInfo)
         ZeroMemory(pVer, size);
         if (GetFileVersionInfoA(szModule, 0, size, pVer)) {
             VS_FIXEDFILEINFO *ffi;
-            if (VerQueryValueA(pVer, "\\", (LPVOID *) &ffi,  (UINT *) &dummy)) {
+            if (VerQueryValueA(pVer, "\\", (LPVOID *)&ffi, (UINT *)&dummy)) {
                 dwVInfo[0] = ffi->dwFileVersionMS >> 16;
                 dwVInfo[1] = ffi->dwFileVersionMS & 0xFFFF;
                 dwVInfo[2] = ffi->dwFileVersionLS >> 16;
@@ -554,7 +510,6 @@ getModuleVersionInfo(LPCSTR szModule, DWORD *dwVInfo)
 void
 dumpModules(HANDLE hProcess)
 {
-
     HANDLE hModuleSnap = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, GetProcessId(hProcess));
     if (hModuleSnap == INVALID_HANDLE_VALUE) {
         return;
@@ -563,20 +518,14 @@ dumpModules(HANDLE hProcess)
     MODULEENTRY32 me32;
     me32.dwSize = sizeof me32;
     if (Module32First(hModuleSnap, &me32)) {
-        do  {
+        do {
             const char *szBaseName = getBaseName(me32.szExePath);
             DWORD dwVInfo[4];
             if (getModuleVersionInfo(me32.szExePath, dwVInfo)) {
-                lprintf(
-                    "%-12s\t%lu.%lu.%lu.%lu\n",
-                    szBaseName,
-                    dwVInfo[0],
-                    dwVInfo[1],
-                    dwVInfo[2],
-                    dwVInfo[3]
-                );
+                lprintf("%-12s\t%lu.%lu.%lu.%lu\n", szBaseName, dwVInfo[0], dwVInfo[1], dwVInfo[2],
+                        dwVInfo[3]);
             } else {
-                lprintf( "%s\n", szBaseName);
+                lprintf("%s\n", szBaseName);
             }
         } while (Module32Next(hModuleSnap, &me32));
         lprintf("\n");

@@ -47,7 +47,6 @@ outputCallback(const char *s)
 }
 
 
-
 static ULONG g_TimeOut = 0;
 static HANDLE g_hTimer = NULL;
 static HANDLE g_hTimerQueue = NULL;
@@ -66,8 +65,8 @@ TerminateProcessById(DWORD dwProcessId)
         CloseHandle(hProcess);
     }
     if (!bTerminated) {
-       fprintf(stderr, "catchsegv: error: failed to interrupt target (0x%08lx)\n", GetLastError());
-       exit(EXIT_FAILURE);
+        fprintf(stderr, "catchsegv: error: failed to interrupt target (0x%08lx)\n", GetLastError());
+        exit(EXIT_FAILURE);
     }
 }
 
@@ -124,7 +123,7 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 
     g_ElapsedTime += g_Period;
 
-    if (!g_TimeOut || g_ElapsedTime < g_TimeOut*1000) {
+    if (!g_TimeOut || g_ElapsedTime < g_TimeOut * 1000) {
         return;
     }
 
@@ -237,16 +236,14 @@ quoteArg(std::string &s, const char *arg)
 
 
 int
-main(int argc, char** argv)
+main(int argc, char **argv)
 {
     /*
      * Disable error message boxes.
      */
 
 #ifdef NDEBUG
-    SetErrorMode(SEM_FAILCRITICALERRORS |
-                 SEM_NOGPFAULTERRORBOX |
-                 SEM_NOOPENFILEERRORBOX);
+    SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
     // Disable assertion failure message box
     // http://msdn.microsoft.com/en-us/library/sas1dkb2.aspx
@@ -366,31 +363,31 @@ main(int argc, char** argv)
                         DEBUG_PROCESS,
                         NULL, // lpEnvironment
                         NULL, // lpCurrentDirectory
-                        &StartupInfo,
-                        &ProcessInformation)) {
-         fprintf(stderr, "catchsegv: error: failed to create the process (0x%08lx)\n", GetLastError());
-         exit(EXIT_FAILURE);
+                        &StartupInfo, &ProcessInformation)) {
+        fprintf(stderr, "catchsegv: error: failed to create the process (0x%08lx)\n",
+                GetLastError());
+        exit(EXIT_FAILURE);
     }
 
     DWORD dwProcessId = GetProcessId(ProcessInformation.hProcess);
 
     g_hTimerQueue = CreateTimerQueue();
     if (g_hTimerQueue == NULL) {
-        fprintf(stderr, "catchsegv: error: failed to create a timer queue (0x%08lx)\n", GetLastError());
+        fprintf(stderr, "catchsegv: error: failed to create a timer queue (0x%08lx)\n",
+                GetLastError());
         return EXIT_FAILURE;
     }
 
     TIMECAPS tc;
     MMRESULT mmRes = timeGetDevCaps(&tc, sizeof tc);
-    if (mmRes == MMSYSERR_NOERROR &&
-        tc.wPeriodMax < g_Period) {
+    if (mmRes == MMSYSERR_NOERROR && tc.wPeriodMax < g_Period) {
         g_Period = tc.wPeriodMax;
     }
 
-    if (!CreateTimerQueueTimer(&g_hTimer, g_hTimerQueue,
-                               (WAITORTIMERCALLBACK)TimeOutCallback,
+    if (!CreateTimerQueueTimer(&g_hTimer, g_hTimerQueue, (WAITORTIMERCALLBACK)TimeOutCallback,
                                (PVOID)(UINT_PTR)dwProcessId, g_Period, g_Period, 0)) {
-        fprintf(stderr, "catchsegv: error: failed to CreateTimerQueueTimer failed (0x%08lx)\n", GetLastError());
+        fprintf(stderr, "catchsegv: error: failed to CreateTimerQueueTimer failed (0x%08lx)\n",
+                GetLastError());
         return EXIT_FAILURE;
     }
 
