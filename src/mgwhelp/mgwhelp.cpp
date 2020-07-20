@@ -582,13 +582,12 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 
     if (module && module->dwarf.aranges) {
         struct dwarf_symbol_info info;
-        info.functionname = Symbol->Name;
-        info.functionname[0] = '\0';
         if (dwarf_find_symbol(&module->dwarf, Offset, &info)) {
+            strncpy(Symbol->Name, info.functionname.c_str(), Symbol->MaxNameLen);
             if (dwOptions & SYMOPT_UNDNAME) {
-                char *output_buffer = demangle(info.functionname, UNDNAME_NAME_ONLY);
+                char *output_buffer = demangle(info.functionname.c_str(), UNDNAME_NAME_ONLY);
                 if (output_buffer) {
-                    strncpy(info.functionname, output_buffer, Symbol->MaxNameLen);
+                    strncpy(Symbol->Name, output_buffer, Symbol->MaxNameLen);
                     free(output_buffer);
                 }
             }
@@ -614,13 +613,11 @@ MgwSymGetLineFromAddr64(HANDLE hProcess,
     mgwhelp_module *module = mgwhelp_find_module(hProcess, dwAddr, &Offset);
 
     if (module && module->dwarf.aranges) {
-        struct dwarf_line_info info;
-        static char file_name_buf[1024];
-        info.filename = file_name_buf;
-        info.filename[0] = '\0';
-        info.line = 0;
+        static struct dwarf_line_info info;
         if (dwarf_find_line(&module->dwarf, Offset, &info)) {
-            Line->FileName = info.filename;
+            static char buf[1024];
+            strncpy(buf, info.filename.c_str(), sizeof buf);
+            Line->FileName = buf;
             Line->LineNumber = info.line;
 
             if (pdwDisplacement) {

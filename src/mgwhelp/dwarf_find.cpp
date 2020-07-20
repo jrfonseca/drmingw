@@ -40,7 +40,7 @@ static char unknown[] = {'?', '?', '\0'};
 
 
 static bool
-search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, char *rlt_func)
+search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, std::string &rlt_func)
 {
     Dwarf_Die spec_die;
     Dwarf_Die child_die;
@@ -72,13 +72,13 @@ search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, char *rlt_func)
 
             /* Found it! */
 
-            strcpy(rlt_func, unknown);
+            rlt_func = unknown;
             ret = dwarf_attr(*die, DW_AT_name, &sub_at, &de);
             if (ret == DW_DLV_ERROR)
                 return false;
             if (ret == DW_DLV_OK) {
                 if (dwarf_formstring(sub_at, &func0, &de) == DW_DLV_OK)
-                    strcpy(rlt_func, func0);
+                    rlt_func = func0;
                 dwarf_dealloc(dbg, sub_at, DW_DLA_ATTR);
                 return true;
             }
@@ -88,7 +88,7 @@ search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, char *rlt_func)
                 return false;
             if (ret == DW_DLV_OK) {
                 if (dwarf_formstring(sub_at, &func0, &de) == DW_DLV_OK)
-                    strcpy(rlt_func, func0);
+                    rlt_func = func0;
                 dwarf_dealloc(dbg, sub_at, DW_DLA_ATTR);
                 return true;
             }
@@ -98,7 +98,7 @@ search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, char *rlt_func)
                 return false;
             if (ret == DW_DLV_OK) {
                 if (dwarf_formstring(sub_at, &func0, &de) == DW_DLV_OK)
-                    strcpy(rlt_func, func0);
+                    rlt_func = func0;
                 dwarf_dealloc(dbg, sub_at, DW_DLA_ATTR);
                 return true;
             }
@@ -119,7 +119,7 @@ search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, char *rlt_func)
                 return false;
             }
             if (dwarf_diename(spec_die, &func0, &de) == DW_DLV_OK)
-                strcpy(rlt_func, func0);
+                rlt_func = func0;
             dwarf_dealloc(dbg, spec_die, DW_DLA_DIE);
             dwarf_dealloc(dbg, spec_at, DW_DLA_ATTR);
             return true;
@@ -192,7 +192,7 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
 {
     bool result = false;
     Dwarf_Error error = 0;
-    char symbol_name[1024];
+    std::string symbol_name;
 
     Dwarf_Debug dbg = dwarf->dbg;
 
@@ -287,7 +287,7 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
         }
 
         if (result && file) {
-            strcpy(info->filename, file);
+            info->filename = file;
             info->line = lineno;
         }
         if (file) {

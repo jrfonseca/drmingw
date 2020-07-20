@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include <string>
+
 #include <stdbool.h>
 
 #include <dwarf.h>
@@ -32,13 +34,13 @@ extern "C" {
 
 struct dwarf_symbol_info
 {
-    char* functionname;
+    std::string functionname;
 };
 
 struct dwarf_line_info
 {
-    char* filename;
-    unsigned int line;
+    std::string filename;
+    unsigned int line = 0;
 };
 
 struct dwarf_module
