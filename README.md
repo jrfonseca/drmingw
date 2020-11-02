@@ -1,6 +1,5 @@
 # Dr. Mingw
 
-[![Build Status](https://travis-ci.org/jrfonseca/drmingw.svg?branch=master)](https://travis-ci.org/jrfonseca/drmingw)
 [![Build status](https://ci.appveyor.com/api/projects/status/9q3o5w85s5o5yup5?svg=true)](https://ci.appveyor.com/project/jrfonseca/drmingw)
 [![Coverage Status](https://coveralls.io/repos/github/jrfonseca/drmingw/badge.svg?branch=master)](https://coveralls.io/github/jrfonseca/drmingw?branch=master)
 
