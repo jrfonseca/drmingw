@@ -25,7 +25,7 @@ To install enter
 
     drmingw -i
 
-Dr. Mingw will register itself as the JIT debugger by writing into the system registry. Make sure you have Administrator rights. See [this page](http://msdn.microsoft.com/en-us/library/windows/desktop/bb204634.aspx) and [this page](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/enabling-postmortem-debugging) for more information on how this works.
+Dr. Mingw will register itself as the JIT debugger by writing into the system registry. Make sure you have Administrator rights. See [this page](https://docs.microsoft.com/en-gb/windows/win32/debug/configuring-automatic-debugging) and [this page](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/enabling-postmortem-debugging) for more information on how this works.
 
 If the installation is successful, the following message box should appear:
 
@@ -171,7 +171,7 @@ Callers put the _return_ IP address on the stack. Therefore the source lines we 
 
 Dr. Mingw uses DbgHelp to handle .PDB files so it has the same behavior.
 
-If you test on the machine you built, you typically need to do nothing. Otherwise you'll need to tell where your .PDBs are through the [`_NT_SYMBOL_PATH` environment variable](http://msdn.microsoft.com/en-us/library/windows/hardware/ff558829.aspx).
+If you test on the machine you built, you typically need to do nothing. Otherwise you'll need to tell where your .PDBs are through the [`_NT_SYMBOL_PATH` environment variable](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/symbol-path).
 
 ### How can I get a stack trace from a process that is hung?
 
@@ -190,15 +190,14 @@ or
  * [Breakpad](https://chromium.googlesource.com/breakpad/breakpad/)
  * [Crashpad](https://crashpad.chromium.org/)
  * [CrashRpt](http://crashrpt.sourceforge.net/)
- * [dbg](https://bitbucket.org/edd/dbg/wiki/Home)
 
 ### Suggested Reading
 
- * [A Crash Course on the Depths of Win32 Structured Exception Handling, MSJ January 1997](http://www.microsoft.com/msj/0197/exception/exception.htm)
- * [MSJEXHND - Part 1, Under the Hood, MSJ April 1997](http://www.microsoft.com/msj/0497/hood/hood0497.htm)
- * [MSJEXHND - Part 2, Under the Hood, MSJ May 1997](http://www.microsoft.com/msj/0597/hood0597.htm)
- * [Bugslayer, MSJ, August 1998](http://www.microsoft.com/msj/0898/bugslayer0898.htm)
- * [The Win32 Debugging Application Programming Interface](https://msdn.microsoft.com/en-us/library/ms809754.aspx)
- * [Using the Windows debugging API on Windows 64](http://www.howzatt.demon.co.uk/articles/DebuggingInWin64.html)
+ * [A Crash Course on the Depths of Win32 Structured Exception Handling, MSJ January 1997](https://web.archive.org/web/20180115191634/https://www.microsoft.com/msj/0197/exception/exception.aspx)
+ * [MSJEXHND - Part 1, Under the Hood, MSJ April 1997](https://web.archive.org/web/20170823084417/http://www.microsoft.com/msj/0497/hood/hood0497.aspx)
+ * [MSJEXHND - Part 2, Under the Hood, MSJ May 1997](https://web.archive.org/web/20170704142032/https://www.microsoft.com/msj/0597/hood0597.aspx)
+ * [Bugslayer, MSJ, August 1998](https://web.archive.org/web/20110304144303/https://www.microsoft.com/msj/0898/bugslayer0898.aspx)
+ * [The Win32 Debugging Application Programming Interface](https://web.archive.org/web/20200918010704/https://docs.microsoft.com/en-us/previous-versions/ms809754(v=msdn.10)?redirectedfrom=MSDN)
+ * [Using the Windows debugging API on Windows 64](https://web.archive.org/web/20190904090731/http://www.howzatt.demon.co.uk:80/articles/DebuggingInWin64.html)
  * [About Exceptions and Exception Handling](http://crashrpt.sourceforge.net/docs/html/exception_handling.html)
  * [Microsoft PDB format](https://github.com/Microsoft/microsoft-pdb/blob/master/docs/ExternalResources.md)
