@@ -11,12 +11,13 @@
 *.pyc
 *.zip
 bin
-_CPack_Packages
 CMakeCache.txt
 CMakeFiles
 compile_commands.json
-Makefile
+_CPack_Packages
+downloads
 drmingw-*-win*
 install_manifest.txt
+Makefile
 symsrv.yes
 Testing
