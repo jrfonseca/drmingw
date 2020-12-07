@@ -52,10 +52,18 @@ try {
 } catch [System.Management.Automation.CommandNotFoundException] {
     $Env:Path = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Shared\Python37_64;$Env:Path"
 }
-
-Exec { mingw32-make --version }
-Exec { cmake --version }
 Exec { python --version }
+
+try {
+    Get-Command ninja.exe -CommandType Application | Out-Null
+    Exec { ninja --version }
+    $generator = "Ninja"
+} catch [System.Management.Automation.CommandNotFoundException] {
+    Exec { mingw32-make --version }
+    $generator = "MinGW Makefiles"
+}
+
+Exec { cmake --version }
 
 if ($target -eq 'mingw64') {
     $WINDBG_DIR = "${Env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x64"
@@ -78,7 +86,7 @@ if (Test-Path Env:ENABLE_COVERAGE) {
     $ENABLE_COVERAGE = "no"
 }
 $buildDir = "$buildRoot\$target"
-Exec { cmake "-H." "-B$buildDir" -G "MinGW Makefiles" "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DENABLE_COVERAGE=$ENABLE_COVERAGE" "-DWINDBG_DIR=$WINDBG_DIR" }
+Exec { cmake "-H." "-B$buildDir" -G $generator "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DENABLE_COVERAGE=$ENABLE_COVERAGE" "-DWINDBG_DIR=$WINDBG_DIR" }
 
 #
 # Build
