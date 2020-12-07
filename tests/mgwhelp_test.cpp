@@ -31,14 +31,12 @@
 static bool
 comparePath(const char *s1, const char *s2)
 {
-    fprintf(stderr, "%s vs %s\n", s1, s2);
     if (strcmp(s1, s2) == 0) {
         return true;
     }
 
     s1 = PathFindFileNameA(s1);
     s2 = PathFindFileNameA(s2);
-    fprintf(stderr, "  %s vs %s\n", s1, s2);
 
     return strcmp(s1, s2) == 0;
 }
