@@ -102,6 +102,6 @@ if ($target -eq "mingw64") {
 #
 # Package
 #
-if (Test-Path Env:APPVEYOR) {
+if (Test-Path Env:CI) {
     Exec { cmake --build $buildDir --use-stderr --target package }
 }

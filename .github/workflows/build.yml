@@ -1,0 +1,25 @@
+name: build
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        target: [mingw64, mingw32]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+    - name: Cache Downloads
+      id: cache-downloads
+      uses: actions/cache@v2
+      with:
+        path: downloads/*.7z
+        key: ${{ runner.os }}-${{ matrix.target }}-mingw-7.3.0-v5
+    - run: Get-Host | Select-Object Version
+    - name: build
+      run: .\build.ps1 -target ${{ matrix.target }}
+      env:
+        ENABLE_COVERAGE: no
