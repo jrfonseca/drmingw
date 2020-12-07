@@ -17,10 +17,6 @@ function Exec {
     }
 }
 
-# https://stackoverflow.com/a/36266735
-$AllProtocols = [System.Net.SecurityProtocolType]'Ssl3,Tls,Tls11,Tls12'
-[System.Net.ServicePointManager]::SecurityProtocol = $AllProtocols
-
 #
 # Download and extract MinGW-w64
 #
@@ -32,11 +28,12 @@ if ($target -eq 'mingw64') {
 $MINGW_ARCHIVE = Split-Path -leaf $MINGW_URL
 if (!(Test-Path $MINGW_ARCHIVE -PathType Leaf)) {
     Write-Host "Downloading $MINGW_URL"
-    Invoke-WebRequest -Uri $MINGW_URL -OutFile $MINGW_ARCHIVE -UserAgent [Microsoft.PowerShell.Commands.PSUserAgent]::FireFox
+    Invoke-WebRequest -Uri $MINGW_URL -OutFile $MINGW_ARCHIVE -UserAgent NativeHost
+    Get-Item $MINGW_ARCHIVE
 }
 if (!(Test-Path $target -PathType Container)) {
     Write-Host "Extracting $MINGW_ARCHIVE"
-    & 7z x -y $MINGW_ARCHIVE | Out-Null
+    Exec { 7z x -y $MINGW_ARCHIVE | Out-Null }
 }
 
 #
