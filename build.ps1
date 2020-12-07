@@ -20,7 +20,7 @@ function Exec {
 #
 # Download and extract MinGW-w64
 #
-New-Item -ItemType Directory -Force -Path downloads
+New-Item -ItemType Directory -Force -Path downloads | Out-Null
 if ($target -eq 'mingw64') {
     $MINGW_URL = 'https://downloads.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/7.3.0/threads-win32/seh/x86_64-7.3.0-release-win32-seh-rt_v5-rev0.7z'
 } else {
@@ -33,10 +33,14 @@ if (!(Test-Path $MINGW_ARCHIVE -PathType Leaf)) {
     Invoke-WebRequest -Uri $MINGW_URL -OutFile $MINGW_ARCHIVE -UserAgent NativeHost
     Get-Item $MINGW_ARCHIVE
 }
-if (!(Test-Path $target -PathType Container)) {
+New-Item -ItemType Directory -Force -Path "$buildRoot\toolchain" | Out-Null
+$toolchain = "$buildRoot\toolchain\$target"
+if (!(Test-Path $toolchain -PathType Container)) {
     Write-Host "Extracting $MINGW_ARCHIVE"
-    Exec { 7z x -y $MINGW_ARCHIVE | Out-Null }
+    Exec { 7z x -y -o"$buildRoot\toolchain" $MINGW_ARCHIVE | Out-Null }
 }
+$Env:Path = "$toolchain\bin;$Env:Path"
+Exec { g++ --version }
 
 #
 # Setup environment
@@ -44,12 +48,10 @@ if (!(Test-Path $target -PathType Container)) {
 $cwd = Get-Location
 try {
     Get-Command python.exe -CommandType Application | Out-Null
-} catch {
+} catch [System.Management.Automation.CommandNotFoundException] {
     $Env:Path = "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Shared\Python37_64;$Env:Path"
 }
-$Env:Path = "$cwd\$target\bin;$Env:Path"
 
-Exec { g++ --version }
 Exec { mingw32-make --version }
 Exec { cmake --version }
 Exec { python --version }
@@ -59,7 +61,7 @@ if ($target -eq 'mingw64') {
 } else {
     $WINDBG_DIR = "${Env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x86"
 }
-(Get-Item "$WINDBG_DIR\dbghelp.dll").VersionInfo
+(Get-Item "$WINDBG_DIR\dbghelp.dll").VersionInfo.FileVersion
 
 #
 # Configure
