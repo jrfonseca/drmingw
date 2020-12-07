@@ -25,27 +25,22 @@
 
 #include <windows.h>
 #include <dbghelp.h>
+#include <shlwapi.h>
 
 
 static bool
 comparePath(const char *s1, const char *s2)
 {
-    while (true) {
-        char c1 = *s1++;
-        char c2 = *s2++;
-        if (c1 == '/') {
-            c1 = '\\';
-        }
-        if (c2 == '/') {
-            c2 = '\\';
-        }
-        if (c2 != c1) {
-            return false;
-        }
-        if (c1 == 0) {
-            return true;
-        }
+    fprintf(stderr, "%s vs %s\n", s1, s2);
+    if (strcmp(s1, s2) == 0) {
+        return true;
     }
+
+    s1 = PathFindFileNameA(s1);
+    s2 = PathFindFileNameA(s2);
+    fprintf(stderr, "  %s vs %s\n", s1, s2);
+
+    return strcmp(s1, s2) == 0;
 }
 
 

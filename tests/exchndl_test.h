@@ -25,6 +25,7 @@
 #include <setjmp.h>
 
 #include <windows.h>
+#include <shlwapi.h>
 
 #include "macros.h"
 #include "tap.h"
@@ -120,7 +121,8 @@ main(int argc, char **argv)
     _snprintf(g_szExceptionFunctionPattern, sizeof g_szExceptionFunctionPattern, " %s!%s ", PROG_NAME ".exe", __FUNCTION__);
 
     if (!setjmp(g_JmpBuf) ) {
-        _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "[%s @ %u]",  __FILE__, __LINE__); *((int *)0) = 0; LINE_BARRIER
+        _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "%s @ %u]",
+                  PathFindFileNameA(__FILE__), __LINE__); *((int *)0) = 0; LINE_BARRIER
         test_line(false, "longjmp"); exit(1);
     } else {
         test_line(true, "longjmp");
