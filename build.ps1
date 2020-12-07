@@ -22,21 +22,22 @@ function Exec {
 #
 New-Item -ItemType Directory -Force -Path downloads | Out-Null
 if ($target -eq 'mingw64') {
-    $MINGW_URL = 'https://downloads.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/7.3.0/threads-win32/seh/x86_64-7.3.0-release-win32-seh-rt_v5-rev0.7z'
+    $MINGW_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-win32/seh/x86_64-8.1.0-release-win32-seh-rt_v6-rev0.7z'
 } else {
-    $MINGW_URL = 'https://downloads.sourceforge.net/project/mingw-w64/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/7.3.0/threads-win32/dwarf/i686-7.3.0-release-win32-dwarf-rt_v5-rev0.7z'
+
+    $MINGW_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-win32/dwarf/i686-8.1.0-release-win32-dwarf-rt_v6-rev0.7z'
 }
 $MINGW_ARCHIVE = Split-Path -leaf $MINGW_URL
 $MINGW_ARCHIVE = "downloads\$MINGW_ARCHIVE"
 if (!(Test-Path $MINGW_ARCHIVE -PathType Leaf)) {
-    Write-Host "Downloading $MINGW_URL"
+    Write-Host "Downloading $MINGW_URL ..."
     Invoke-WebRequest -Uri $MINGW_URL -OutFile $MINGW_ARCHIVE -UserAgent NativeHost
     Get-Item $MINGW_ARCHIVE
 }
 New-Item -ItemType Directory -Force -Path "$buildRoot\toolchain" | Out-Null
 $toolchain = "$buildRoot\toolchain\$target"
 if (!(Test-Path $toolchain -PathType Container)) {
-    Write-Host "Extracting $MINGW_ARCHIVE"
+    Write-Host "Extracting $MINGW_ARCHIVE to $buildRoot\toolchain ..."
     Exec { 7z x -y -o"$buildRoot\toolchain" $MINGW_ARCHIVE | Out-Null }
 }
 $Env:Path = "$toolchain\bin;$Env:Path"

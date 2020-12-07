@@ -9,8 +9,8 @@ branches:
 clone_depth: 5
 
 cache:
-- downloads/x86_64-7.3.0-release-win32-seh-rt_v5-rev0.7z
-- downloads/i686-7.3.0-release-win32-dwarf-rt_v5-rev0.7z
+- downloads/x86_64-8.1.0-release-win32-seh-rt_v6-rev0.7z
+- downloads/i686-8.1.0-release-win32-dwarf-rt_v6-rev0.7z
 
 # https://www.appveyor.com/docs/build-environment/#build-worker-images
 image: Visual Studio 2019
