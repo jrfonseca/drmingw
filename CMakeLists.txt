@@ -102,12 +102,16 @@ if (HAVE_STATIC_LIBSTDCXX_FLAG)
 endif ()
 
 # Enable stack protection
-add_compiler_flags (-fstack-protector-all)
-# MinGW doesn't link against libssp automatically, and furthermore
-# we want static linking.
-set (SSP_LIBRARY "-Wl,-Bstatic -lssp -Wl,-Bdynamic")
-set (CMAKE_C_STANDARD_LIBRARIES "${SSP_LIBRARY} ${CMAKE_C_STANDARD_LIBRARIES}")
-set (CMAKE_CXX_STANDARD_LIBRARIES "${SSP_LIBRARY} ${CMAKE_CXX_STANDARD_LIBRARIES}")
+# XXX: Broken on https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86832
+if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.0" OR
+    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "8.3")
+    add_compiler_flags (-fstack-protector-all)
+    # MinGW doesn't link against libssp automatically, and furthermore
+    # we want static linking.
+    set (SSP_LIBRARY "-Wl,-Bstatic -lssp -Wl,-Bdynamic")
+    set (CMAKE_C_STANDARD_LIBRARIES "${SSP_LIBRARY} ${CMAKE_C_STANDARD_LIBRARIES}")
+    set (CMAKE_CXX_STANDARD_LIBRARIES "${SSP_LIBRARY} ${CMAKE_CXX_STANDARD_LIBRARIES}")
+endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     add_definitions (-DHAVE_WIN64=1)
