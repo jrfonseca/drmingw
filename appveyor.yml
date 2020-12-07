@@ -39,6 +39,8 @@ build_script:
 - powershell -NoProfile -ExecutionPolicy Bypass -file build.ps1 -buildRoot %CD%\build -target %MINGW_TARGET%
 
 on_success:
+- set Path=%CD%\build\toolchain\%MINGW_TARGET%\bin;%Path%
+- gcov --version
 - if "%COVERALLS_REPO_TOKEN%"=="" set ENABLE_COVERAGE=no
 - if "%ENABLE_COVERAGE%"=="yes" C:\Python36\Scripts\coveralls --include src --gcov-options="-lp"
 
