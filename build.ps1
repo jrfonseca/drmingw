@@ -1,6 +1,7 @@
 param (
     [ValidateSet('mingw64','mingw32')][string]$target = 'mingw64',
-    [string]$buildRoot = 'build'
+    [string]$buildRoot = 'build',
+    [switch]$coverage = $false  # https://stackoverflow.com/q/5079413
 )
 
 # https://stackoverflow.com/a/48999101
@@ -18,7 +19,7 @@ function Exec {
 }
 
 #
-# Download and extract MinGW-w64
+# Download and extract MinGW-w64 toolchain
 #
 New-Item -ItemType Directory -Force -Path downloads | Out-Null
 if ($target -eq 'mingw64') {
@@ -36,11 +37,13 @@ if (!(Test-Path $MINGW_ARCHIVE -PathType Leaf)) {
 }
 New-Item -ItemType Directory -Force -Path "$buildRoot\toolchain" | Out-Null
 $toolchain = "$buildRoot\toolchain\$target"
+$toolchain = [System.IO.Path]::GetFullPath($toolchain)
 if (!(Test-Path $toolchain -PathType Container)) {
-    Write-Host "Extracting $MINGW_ARCHIVE to $buildRoot\toolchain ..."
-    Exec { 7z x -y -o"$buildRoot\toolchain" $MINGW_ARCHIVE | Out-Null }
+    Write-Host "Extracting $MINGW_ARCHIVE to $toolchain ..."
+    Exec { 7z x -y "-o$buildRoot\toolchain" $MINGW_ARCHIVE | Out-Null }
 }
 $Env:Path = "$toolchain\bin;$Env:Path"
+(Get-Command 'g++.exe').Source
 Exec { g++ --version }
 
 #
@@ -69,16 +72,12 @@ if ($target -eq 'mingw64') {
 #
 if ($Env:APPVEYOR_REPO_TAG -eq "true") {
     $CMAKE_BUILD_TYPE = 'Release'
+    $coverage = $false
 } else {
     $CMAKE_BUILD_TYPE = 'Debug'
 }
-if (Test-Path Env:ENABLE_COVERAGE) {
-    $ENABLE_COVERAGE = ${Env:ENABLE_COVERAGE}
-} else {
-    $ENABLE_COVERAGE = "no"
-}
 $buildDir = "$buildRoot\$target"
-Exec { cmake "-H." "-B$buildDir" -G "MinGW Makefiles" "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DENABLE_COVERAGE=$ENABLE_COVERAGE" "-DWINDBG_DIR=$WINDBG_DIR" }
+Exec { cmake "-H." "-B$buildDir" -G 'MinGW Makefiles' "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DENABLE_COVERAGE=$coverage" "-DWINDBG_DIR=$WINDBG_DIR" }
 
 #
 # Build
@@ -89,6 +88,7 @@ Exec { cmake --build $buildDir --use-stderr --target all "--" "-j${Env:NUMBER_OF
 # Test
 #
 $Env:Path = "$WINDBG_DIR;$Env:Path"
+$Env:CTEST_OUTPUT_ON_FAILURE = '1'
 Exec { cmake --build $buildDir --use-stderr --target test }
 Exec { cmake -Htests\apps "-B$buildRoot\msvc32" -G "Visual Studio 16 2019" -A Win32 "-DCMAKE_SYSTEM_VERSION=10.0.16299.0" }
 Exec { cmake --build "$buildRoot\msvc32" --config Debug "--" /verbosity:minimal /maxcpucount }
@@ -98,6 +98,19 @@ if ($target -eq "mingw64") {
     Exec { python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\msvc32\Debug" "$buildRoot\msvc64\Debug" }
 } else {
     Exec { python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\msvc32\Debug" }
+}
+
+#
+# Code coverage
+#
+if ($coverage) {
+    Exec { gcov --version }
+    if (Test-Path Env:CODECOV_TOKEN) {
+        Exec { gcovr --object-directory $buildDir --xml -o "cobertura.xml" }
+        Exec { codecov --file cobertura.xml -X gcov search }
+    } else {
+        Exec { gcovr --object-directory $buildDir --html-details -o "$buildDir\coverage.html" }
+    }
 }
 
 #

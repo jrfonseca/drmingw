@@ -1,7 +1,8 @@
 # Dr. Mingw
 
-[![Build status](https://ci.appveyor.com/api/projects/status/9q3o5w85s5o5yup5?svg=true)](https://ci.appveyor.com/project/jrfonseca/drmingw)
+[![Build status](https://ci.appveyor.com/api/projects/status/9q3o5w85s5o5yup5/branch/master?svg=true)](https://ci.appveyor.com/project/jrfonseca/drmingw)
 [![Build](https://github.com/jrfonseca/drmingw/workflows/build/badge.svg?branch=master)](https://github.com/jrfonseca/drmingw/actions)
+[![codecov](https://codecov.io/gh/jrfonseca/drmingw/branch/codecov/graph/badge.svg?token=nR3cxxP8zB)](https://codecov.io/gh/jrfonseca/drmingw)
 
 ## About
 

@@ -12,23 +12,25 @@ cache:
 - downloads/x86_64-8.1.0-release-win32-seh-rt_v6-rev0.7z
 - downloads/i686-8.1.0-release-win32-dwarf-rt_v6-rev0.7z
 
-# https://www.appveyor.com/docs/windows-images-software/
+# https://www.appveyor.com/docs/build-environment/#build-worker-images
 image: Visual Studio 2019
 
 environment:
-  CTEST_OUTPUT_ON_FAILURE: 1
-  ENABLE_COVERAGE: no
+  CODECOV_TOKEN:
+    secure: moB+iq7H6hWaJVNj0gToUOVs7chXbS4yh6hXODmszucIDwkFYDTHHDRIi3HVVEqp
   matrix:
   - MINGW_TARGET: mingw64
   - MINGW_TARGET: mingw32
 
 install:
-- set Path=C:\Python36-x64;C:\Python36-x64\Scripts;%Path%
+- set Path=C:\Python36;C:\Python36\Scripts;%Path%
+- python -m ensurepip
+- python -m pip install gcovr codecov
 # CMake refuses to generate MinGW Makefiles if sh.exe is in the Path
 - ps: Get-Command sh.exe -All | Remove-Item
 
 build_script:
-- powershell -NoProfile -ExecutionPolicy Bypass -file build.ps1 -buildRoot %CD%\build -target %MINGW_TARGET%
+- powershell -NoProfile -ExecutionPolicy Bypass -file build.ps1 -target %MINGW_TARGET% -coverage
 
 artifacts:
 - path: build\mingw??\drmingw-*.7z
