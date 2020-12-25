@@ -53,6 +53,7 @@ static HANDLE g_hTimerQueue = NULL;
 static DWORD g_ElapsedTime = 0;
 static BOOL g_TimerIgnore = FALSE;
 static DWORD g_Period = 1000;
+static BOOL g_ModalDialogIgnore = FALSE;
 
 
 static void
@@ -115,7 +116,9 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
         return;
     }
 
-    EnumWindows(EnumWindowCallback, (LPARAM)dwProcessId);
+    if (!g_ModalDialogIgnore) {
+        EnumWindows(EnumWindowCallback, (LPARAM)dwProcessId);
+    }
 
     if (g_TimerIgnore) {
         return;
@@ -146,6 +149,7 @@ Usage(void)
           "  -d           enables debugging output (for debugging catchsegv itself)\n"
           "  -t SECONDS   specifies a timeout in seconds\n"
           "  -1           dump stack on first chance exceptions\n"
+          "  -m           ignore modal dialogs\n"
           "  -z           write minidumps\n"
           "  -Z DIRECTORY write minidumps to specified directory\n"
           "  -H           use debug heap\n",
@@ -261,7 +265,7 @@ main(int argc, char **argv)
 
     bool debugHeap = false;
     while (1) {
-        int opt = getopt(argc, argv, "?1dhHt:zZ:v");
+        int opt = getopt(argc, argv, "?1dhHmt:zZ:v");
 
         switch (opt) {
         case 'h':
@@ -275,6 +279,9 @@ main(int argc, char **argv)
             break;
         case '1':
             debugOptions.first_chance = true;
+            break;
+        case 'm':
+            g_ModalDialogIgnore = TRUE;
             break;
         case 't':
             g_TimeOut = strtoul(optarg, NULL, 0);
