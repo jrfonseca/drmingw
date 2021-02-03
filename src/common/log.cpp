@@ -35,11 +35,14 @@
 #include "wine.h"
 
 
+#ifndef STATUS_FATAL_USER_CALLBACK_EXCEPTION
+#define STATUS_FATAL_USER_CALLBACK_EXCEPTION ((NTSTATUS)0xC000041DL)
+#endif
 #ifndef STATUS_CPP_EH_EXCEPTION
-#define STATUS_CPP_EH_EXCEPTION ((NTSTATUS)0xE06D7363)
+#define STATUS_CPP_EH_EXCEPTION ((NTSTATUS)0xE06D7363L)
 #endif
 #ifndef STATUS_CLR_EXCEPTION
-#define STATUS_CLR_EXCEPTION ((NTSTATUS)0xE0434f4D)
+#define STATUS_CLR_EXCEPTION ((NTSTATUS)0xE0434f4DL)
 #endif
 
 
@@ -328,6 +331,8 @@ getExceptionString(NTSTATUS ExceptionCode)
         return "Stack Overflow";
     case EXCEPTION_POSSIBLE_DEADLOCK: // 0xC0000194
         return "Possible deadlock condition";
+    case STATUS_FATAL_USER_CALLBACK_EXCEPTION: // 0xC000041D
+        return "Fatal User Callback Exception";
     case STATUS_ASSERTION_FAILURE: // 0xC0000420
         return "Assertion failure";
 
