@@ -87,13 +87,19 @@ You can use ExcHndl by:
 
   * including `exchndl.dll`, `mgwhelp.dll`, `dbghelp.dll`, `dbgcore.dll`, `symsrv.dll`, and `symsrv.yes` with your application binaries
 
-  * pass `-lexchndl` to GNU LD when linking your program
+  * then either:
 
-  * call `ExcHndlInit()` from your main program
+      * pass `-lexchndl` to GNU LD when linking your program and call `ExcHndlInit`
+
+      * or use `LoadLibrary`/`GetProcAddress` like
+
+            LoadLibrary("exchndl.dll");
+            pfnExcHndlInit = GetProcAddress("ExcHndlInit");
+            pfnExcHndlInit()
 
   * you can also override the report location by invoking the exported `ExcHndlSetLogFileNameA` entry-point.
 
-You can also use ExcHndl by merely calling `LoadLibraryA("exchndl.dll")` for historical reasons, but that's no longer recommended.
+Note that currently [only unhandled exceptions on the thread which called ExcHndlInit() which be caught and logged](https://github.com/jrfonseca/drmingw/issues/54).
 
 ### Example
 
