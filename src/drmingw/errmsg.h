@@ -24,25 +24,19 @@
 
 // XXX: This leaks the error message
 #define FormatErrorMessage(n) \
-({ \
-    LPVOID lpMsgBuf; \
- \
-    FormatMessageA( \
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | \
-        FORMAT_MESSAGE_FROM_SYSTEM | \
-        FORMAT_MESSAGE_IGNORE_INSERTS, \
-        NULL, \
-        n, \
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), \
-        (LPSTR) &lpMsgBuf, \
-        0, \
-        NULL \
-    ); \
- \
-    (LPSTR) lpMsgBuf; \
-})
+    ({ \
+        LPVOID lpMsgBuf; \
+\
+        FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | \
+                           FORMAT_MESSAGE_IGNORE_INSERTS, \
+                       NULL, n, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&lpMsgBuf, 0, \
+                       NULL); \
+\
+        (LPSTR) lpMsgBuf; \
+    })
 
 #define LastErrorMessage() FormatErrorMessage(GetLastError())
 
-void _ErrorMessageBox (LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ... );
-#define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ## args)
+void
+_ErrorMessageBox(LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ...);
+#define ErrorMessageBox(e, args...) _ErrorMessageBox(__FILE__, __LINE__, e, ##args)

@@ -28,12 +28,13 @@
 
 
 static inline const char *
-getSeparator(const char *szFilename) {
+getSeparator(const char *szFilename)
+{
     const char *p, *q;
     p = NULL;
     q = szFilename;
     char c;
-    do  {
+    do {
         c = *q++;
         if (c == '\\' || c == '/' || c == ':') {
             p = q;
@@ -44,7 +45,8 @@ getSeparator(const char *szFilename) {
 
 
 static inline const char *
-getBaseName(const char *szFilename) {
+getBaseName(const char *szFilename)
+{
     const char *pSeparator = getSeparator(szFilename);
     if (!pSeparator) {
         return szFilename;
@@ -54,11 +56,10 @@ getBaseName(const char *szFilename) {
 
 
 static inline void
-getDirName(char *szFilename) {
+getDirName(char *szFilename)
+{
     char *pSeparator = (char *)getSeparator(szFilename);
     if (pSeparator) {
         *pSeparator = '\0';
     }
 }
-
-

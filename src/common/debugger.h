@@ -29,12 +29,15 @@ struct DebugOptions {
     bool first_chance = false;
     bool minidump = false;
     const char *minidumpDir = nullptr;
-    HANDLE hEvent = nullptr;      // Signal an event after process is attached
-    DWORD dwThreadId = 0;         // Resume thread after process is attached
+    HANDLE hEvent = nullptr; // Signal an event after process is attached
+    DWORD dwThreadId = 0;    // Resume thread after process is attached
 };
 
 EXTERN_C DebugOptions debugOptions;
 
-EXTERN_C BOOL ObtainSeDebugPrivilege(void);
-EXTERN_C BOOL DebugMainLoop(void);
-EXTERN_C BOOL TrapThread(DWORD dwProcessId, DWORD dwThreadId);
+EXTERN_C BOOL
+ObtainSeDebugPrivilege(void);
+EXTERN_C BOOL
+DebugMainLoop(void);
+EXTERN_C BOOL
+TrapThread(DWORD dwProcessId, DWORD dwThreadId);

@@ -83,7 +83,8 @@ lprintf(const char *format, ...)
 }
 
 
-static BOOL dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
+static BOOL
+dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
 
 
 #define MAX_SYM_NAME_SIZE 512

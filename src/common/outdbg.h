@@ -24,9 +24,7 @@
 #include <stdarg.h>
 
 
-static inline void
-    __attribute__ ((format (printf, 1, 2)))
-OutputDebug(const char *format, ... )
+static inline void __attribute__((format(printf, 1, 2))) OutputDebug(const char *format, ...)
 {
     char buf[512];
     va_list ap;

@@ -64,7 +64,8 @@ struct mgwhelp_process {
 struct mgwhelp_process *processes = NULL;
 
 
-static DWORD64 WINAPI GetModuleBase(HANDLE hProcess, DWORD64 dwAddress);
+static DWORD64 WINAPI
+GetModuleBase(HANDLE hProcess, DWORD64 dwAddress);
 
 
 /* We must use a memory map of the file, not read memory directly, as the
@@ -335,7 +336,8 @@ mgwhelp_module_destroy(struct mgwhelp_module *module)
 }
 
 
-static struct mgwhelp_process *mgwhelp_process_lookup(HANDLE hProcess);
+static struct mgwhelp_process *
+mgwhelp_process_lookup(HANDLE hProcess);
 
 static struct mgwhelp_module *
 mgwhelp_module_lookup(HANDLE hProcess, HANDLE hFile, PCSTR ImageName, DWORD64 Base)

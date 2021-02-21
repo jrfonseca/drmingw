@@ -19,7 +19,8 @@ AllowShortFunctionsOnASingleLine: Inline
 AllowShortLambdasOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterReturnType: AllDefinitions
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: All
 AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: MultiLine
 BinPackArguments: true
@@ -60,6 +61,7 @@ Cpp11BracedListStyle: true
 DeriveLineEnding: true
 DerivePointerAlignment: false
 DisableFormat:   false
+ExperimentalAutoDetectBinPacking: false
 FixNamespaceComments: true
 ForEachMacros:
   - foreach

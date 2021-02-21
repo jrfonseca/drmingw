@@ -39,5 +39,3 @@ isInsideWine(void)
     }
     return GetProcAddress(hNtDll, "wine_get_version") != NULL;
 }
-
-

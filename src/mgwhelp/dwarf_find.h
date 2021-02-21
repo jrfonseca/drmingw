@@ -32,36 +32,29 @@ extern "C" {
 #endif
 
 
-struct dwarf_symbol_info
-{
+struct dwarf_symbol_info {
     std::string functionname;
 };
 
-struct dwarf_line_info
-{
+struct dwarf_line_info {
     std::string filename;
     unsigned int line = 0;
 };
 
-struct dwarf_module
-{
+struct dwarf_module {
     Dwarf_Debug dbg;
 
-    //cached aranges
-    Dwarf_Arange* aranges;
+    // cached aranges
+    Dwarf_Arange *aranges;
     Dwarf_Signed arange_count;
 };
 
 
 bool
-dwarf_find_symbol(dwarf_module* dwarf,
-                  Dwarf_Addr addr,
-                  struct dwarf_symbol_info *info);
+dwarf_find_symbol(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_symbol_info *info);
 
 bool
-dwarf_find_line(dwarf_module* dwarf,
-                  Dwarf_Addr addr,
-                  struct dwarf_line_info *info);
+dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *info);
 
 #ifdef __cplusplus
 }

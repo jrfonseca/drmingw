@@ -28,7 +28,11 @@ EXTERN_C BOOL
 InitializeSym(HANDLE hProcess, BOOL fInvadeProcess);
 
 EXTERN_C BOOL
-GetSymFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD nSize );
+GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD nSize);
 
 EXTERN_C BOOL
-GetLineFromAddr (HANDLE hProcess, DWORD64 dwAddress, LPSTR lpFileName, DWORD nSize, LPDWORD lpLineNumber );
+GetLineFromAddr(HANDLE hProcess,
+                DWORD64 dwAddress,
+                LPSTR lpFileName,
+                DWORD nSize,
+                LPDWORD lpLineNumber);

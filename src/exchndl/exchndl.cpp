@@ -259,7 +259,8 @@ ExcHndlSetLogFileNameA(const char *szLogFileName)
 }
 
 
-EXTERN_C BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved);
+EXTERN_C BOOL APIENTRY
+DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved);
 
 BOOL APIENTRY
 DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved)

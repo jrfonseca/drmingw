@@ -31,19 +31,39 @@ EXTERN_C DWORD WINAPI
 MgwSymSetOptions(DWORD SymOptions);
 
 EXTERN_C DWORD64 WINAPI
-MgwSymLoadModuleEx(HANDLE hProcess, HANDLE hFile, PCSTR ImageName, PCSTR ModuleName, DWORD64 BaseOfDll, DWORD DllSize, PMODLOAD_DATA Data, DWORD Flags);
+MgwSymLoadModuleEx(HANDLE hProcess,
+                   HANDLE hFile,
+                   PCSTR ImageName,
+                   PCSTR ModuleName,
+                   DWORD64 BaseOfDll,
+                   DWORD DllSize,
+                   PMODLOAD_DATA Data,
+                   DWORD Flags);
 
 EXTERN_C DWORD64 WINAPI
-MgwSymLoadModuleExW(HANDLE hProcess, HANDLE hFile, PCWSTR ImageName, PCWSTR ModuleName, DWORD64 BaseOfDll, DWORD DllSize, PMODLOAD_DATA Data, DWORD Flags);
+MgwSymLoadModuleExW(HANDLE hProcess,
+                    HANDLE hFile,
+                    PCWSTR ImageName,
+                    PCWSTR ModuleName,
+                    DWORD64 BaseOfDll,
+                    DWORD DllSize,
+                    PMODLOAD_DATA Data,
+                    DWORD Flags);
 
 EXTERN_C BOOL WINAPI
 MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol);
 
 EXTERN_C BOOL WINAPI
-MgwSymGetLineFromAddr64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE64 Line);
+MgwSymGetLineFromAddr64(HANDLE hProcess,
+                        DWORD64 dwAddr,
+                        PDWORD pdwDisplacement,
+                        PIMAGEHLP_LINE64 Line);
 
 EXTERN_C DWORD WINAPI
-MgwUnDecorateSymbolName(PCSTR DecoratedName, PSTR UnDecoratedName, DWORD UndecoratedLength, DWORD Flags);
+MgwUnDecorateSymbolName(PCSTR DecoratedName,
+                        PSTR UnDecoratedName,
+                        DWORD UndecoratedLength,
+                        DWORD Flags);
 
 EXTERN_C BOOL WINAPI
 MgwSymInitializeW(HANDLE hProcess, PCWSTR UserSearchPath, BOOL fInvadeProcess);
@@ -52,4 +72,7 @@ EXTERN_C BOOL WINAPI
 MgwSymFromAddrW(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFOW SymbolW);
 
 EXTERN_C BOOL WINAPI
-MgwSymGetLineFromAddrW64(HANDLE hProcess, DWORD64 dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINEW64 LineW);
+MgwSymGetLineFromAddrW64(HANDLE hProcess,
+                         DWORD64 dwAddr,
+                         PDWORD pdwDisplacement,
+                         PIMAGEHLP_LINEW64 LineW);

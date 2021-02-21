@@ -28,16 +28,15 @@ setDumpCallback(DumpCallback cb);
 
 EXTERN_C int
 #ifdef __GNUC__
-    __attribute__ ((format (printf, 1, 2)))
+    __attribute__((format(printf, 1, 2)))
 #endif
-lprintf(const char * format, ...);
+    lprintf(const char *format, ...);
 
 EXTERN_C void
 dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
 
 EXTERN_C void
-dumpStack(HANDLE hProcess, HANDLE hThread,
-          const CONTEXT *pContext);
+dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext);
 
 EXTERN_C void
 dumpModules(HANDLE hProcess);
