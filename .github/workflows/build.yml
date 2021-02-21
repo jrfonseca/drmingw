@@ -24,3 +24,59 @@ jobs:
       run: .\build.ps1 -target ${{ matrix.target }} -coverage
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: drmingw-${{ matrix.target }}
+        path: build/mingw??/drmingw-*.7z
+        if-no-files-found: error
+
+  # See https://github.com/actions/upload-release-asset
+  release:
+    # https://github.community/t/trigger-job-on-tag-push-only/18076/2
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: windows-latest
+    steps:
+    - uses: actions/download-artifact@v2
+      id: download
+      with:
+        path: artifacts
+    - run: Get-ChildItem -Recurse "${{ steps.download.outputs.download-path }}"
+    - name: Asset names
+      id: assets
+      run: |
+        $asset32 = Get-Item "${{ steps.download.outputs.download-path }}\drmingw-mingw32\mingw32\*.7z"
+        $asset64 = Get-Item "${{ steps.download.outputs.download-path }}\drmingw-mingw64\mingw64\*.7z"
+        Write-Host "::set-output name=mingw32-path::$($asset32.FullName)"
+        Write-Host "::set-output name=mingw64-path::$($asset64.FullName)"
+        Write-Host "::set-output name=mingw32-name::$($asset32.Name)"
+        Write-Host "::set-output name=mingw64-name::$($asset64.Name)"
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: ${{ github.ref }}
+        draft: true
+        prerelease: false
+    - name: Upload Release Asset (32bits)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ steps.assets.outputs.mingw32-path }}
+        asset_name: ${{ steps.assets.outputs.mingw32-name }}
+        asset_content_type: application/x-7z-compressed
+    - name: Upload Release Asset (64bits)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ steps.assets.outputs.mingw64-path }}
+        asset_name: ${{ steps.assets.outputs.mingw64-name }}
+        asset_content_type: application/x-7z-compressed

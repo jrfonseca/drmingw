@@ -79,11 +79,14 @@ if ($target -eq 'mingw64') {
 #
 # Configure
 #
+$CMAKE_BUILD_TYPE = 'Debug'
 if ($Env:APPVEYOR_REPO_TAG -eq "true") {
     $CMAKE_BUILD_TYPE = 'Release'
     $coverage = $false
-} else {
-    $CMAKE_BUILD_TYPE = 'Debug'
+}
+if ($Env:GITHUB_EVENT_NAME -eq "push" -And $Env:GITHUB_REF.StartsWith('refs/tags/')) {
+    $CMAKE_BUILD_TYPE = 'Release'
+    $coverage = $false
 }
 $buildDir = "$buildRoot\$target"
 Exec { cmake "-H." "-B$buildDir" -G $generator "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DENABLE_COVERAGE=$coverage" "-DWINDBG_DIR=$WINDBG_DIR" }
