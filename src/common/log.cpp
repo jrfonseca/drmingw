@@ -155,6 +155,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     }
     if (bWow64) {
         const WOW64_CONTEXT *pWow64Context = reinterpret_cast<const WOW64_CONTEXT *>(pContext);
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         assert((pWow64Context->ContextFlags & WOW64_CONTEXT_FULL) == WOW64_CONTEXT_FULL);
 #ifdef _WIN64
         dumpContext(pWow64Context);
@@ -164,6 +165,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         StackFrame.AddrStack.Offset = pWow64Context->Esp;
         StackFrame.AddrFrame.Offset = pWow64Context->Ebp;
     } else {
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
 #ifndef _WIN64
         MachineType = IMAGE_FILE_MACHINE_I386;

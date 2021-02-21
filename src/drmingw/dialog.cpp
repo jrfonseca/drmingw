@@ -56,7 +56,7 @@ appendText(LPCSTR szText)
 {
     char *szBuf = strdup(szText);
     PostMessage(g_hWnd, WM_USER_APPEND_TEXT, (WPARAM)0, (LPARAM)szBuf);
-}
+} // NOLINT(clang-analyzer-unix.Malloc): szBuf is freed in WndProc
 
 
 static LRESULT CALLBACK
