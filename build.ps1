@@ -80,10 +80,6 @@ if ($target -eq 'mingw64') {
 # Configure
 #
 $CMAKE_BUILD_TYPE = 'Debug'
-if ($Env:APPVEYOR_REPO_TAG -eq "true") {
-    $CMAKE_BUILD_TYPE = 'Release'
-    $coverage = $false
-}
 if ($Env:GITHUB_EVENT_NAME -eq "push" -And $Env:GITHUB_REF.StartsWith('refs/tags/')) {
     $CMAKE_BUILD_TYPE = 'Release'
     $coverage = $false
