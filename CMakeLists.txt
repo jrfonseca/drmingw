@@ -61,6 +61,11 @@ endif ()
 ##############################################################################
 # Set global build options
 
+set (CMAKE_C_STANDARD 99)
+set (CXX_STANDARD_REQUIRED ON)
+set (CMAKE_CXX_STANDARD 11)
+set (CXX_STANDARD_REQUIRED ON)
+
 include (CheckCXXCompilerFlag)
 
 macro (add_compiler_flags)
@@ -75,14 +80,6 @@ macro (add_linker_flags)
     set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${_FLAGS}")
     set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${_FLAGS}")
 endmacro ()
-
-# We require at least GCC 4.9 for decent C++11 support
-if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
-    CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
-    message (FATAL_ERROR "GCC 4.9 or newer required")
-endif ()
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 
 # Adjust warnings
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror=implicit-function-declaration -Werror=missing-prototypes")
