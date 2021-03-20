@@ -70,7 +70,7 @@ MgwHelp is used by Dr.MinGW and ExcHndl below to lookup symbols.
 
 But the hope is that it will eventually be used by third-party Windows development tools (like debuggers, profilers, etc.) to easily resolve symbol on binaries produced by the MinGW toolchain.
 
-MgwHelp relies on [libdwarf](http://reality.sgiweb.org/davea/dwarf.html) to read DWARF debugging information.
+MgwHelp relies on [libdwarf](https://www.prevanders.net/dwarf.html) to read DWARF debugging information.
 
 **NOTE: It's still work in progress, and only exports a limited number of symbols. So it's not a complete solution yet**
 
@@ -191,7 +191,7 @@ or
 
 ### Related tools
 
- * [binutil's addr2line](http://sourceware.org/binutils/docs/binutils/addr2line.html) (included in MinGW)
+ * [binutil's addr2line](https://sourceware.org/binutils/docs/binutils/addr2line.html) (included in MinGW)
  * [cv2pdb - DWARF to PDB converter](https://github.com/rainers/cv2pdb)
  * [Breakpad](https://chromium.googlesource.com/breakpad/breakpad/)
  * [Crashpad](https://crashpad.chromium.org/)
