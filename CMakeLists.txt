@@ -33,12 +33,9 @@ include_directories (
     ${CMAKE_SOURCE_DIR}/thirdparty/elf
     ${CMAKE_SOURCE_DIR}/thirdparty/dwarf
     ${CMAKE_SOURCE_DIR}/thirdparty/libiberty
-    ${CMAKE_SOURCE_DIR}/thirdparty/zlib
 )
 
-add_subdirectory (thirdparty/dwarf)
-add_subdirectory (thirdparty/libiberty)
-add_subdirectory (thirdparty/zlib)
+add_subdirectory (thirdparty)
 
 if (CMAKE_VERSION VERSION_LESS 3.16)
     # Find dlltool
