@@ -31,7 +31,6 @@ set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit
 
 include_directories (
     ${CMAKE_SOURCE_DIR}/thirdparty/elf
-    ${CMAKE_SOURCE_DIR}/thirdparty/dwarf
     ${CMAKE_SOURCE_DIR}/thirdparty/libiberty
 )
 
