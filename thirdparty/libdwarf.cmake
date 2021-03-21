@@ -1,46 +1,46 @@
 add_library (dwarf STATIC
-    dwarf/dwarf_abbrev.c
-    dwarf/dwarf_alloc.c
-    dwarf/dwarf_arange.c
-    dwarf/dwarf_die_deliv.c
-    dwarf/dwarf_dsc.c
-    dwarf/dwarf_dnames.c
-    dwarf/dwarf_error.c
-    dwarf/dwarf_form.c
-    dwarf/dwarf_frame.c
-    dwarf/dwarf_frame2.c
-    dwarf/dwarf_funcs.c
-    dwarf/dwarf_global.c
-    dwarf/dwarf_groups.c
-    dwarf/dwarf_harmless.c
-    dwarf/dwarf_init_finish.c
-    dwarf/dwarf_leb.c
-    dwarf/dwarf_line.c
-    dwarf/dwarf_loc.c
-    dwarf/dwarf_macro.c
-    dwarf/dwarf_macro5.c
-    dwarf/dwarf_names.c
-    dwarf/dwarf_print_lines.c
-    dwarf/dwarf_pubtypes.c
-    dwarf/dwarf_query.c
-    dwarf/dwarf_ranges.c
-    dwarf/dwarf_rnglists.c
-    dwarf/dwarfstring.c
-    dwarf/dwarf_stubs.c
-    dwarf/dwarf_tied.c
-    dwarf/dwarf_tsearchhash.c
-    dwarf/dwarf_types.c
-    dwarf/dwarf_util.c
-    dwarf/dwarf_vars.c
-    dwarf/dwarf_weaks.c
-    dwarf/dwarf_xu_index.c
-    dwarf/malloc_check.c
-    dwarf/pro_encode_nm.c
+    libdwarf/libdwarf/dwarf_abbrev.c
+    libdwarf/libdwarf/dwarf_alloc.c
+    libdwarf/libdwarf/dwarf_arange.c
+    libdwarf/libdwarf/dwarf_die_deliv.c
+    libdwarf/libdwarf/dwarf_dsc.c
+    libdwarf/libdwarf/dwarf_dnames.c
+    libdwarf/libdwarf/dwarf_error.c
+    libdwarf/libdwarf/dwarf_form.c
+    libdwarf/libdwarf/dwarf_frame.c
+    libdwarf/libdwarf/dwarf_frame2.c
+    libdwarf/libdwarf/dwarf_funcs.c
+    libdwarf/libdwarf/dwarf_global.c
+    libdwarf/libdwarf/dwarf_groups.c
+    libdwarf/libdwarf/dwarf_harmless.c
+    libdwarf/libdwarf/dwarf_init_finish.c
+    libdwarf/libdwarf/dwarf_leb.c
+    libdwarf/libdwarf/dwarf_line.c
+    libdwarf/libdwarf/dwarf_loc.c
+    libdwarf/libdwarf/dwarf_macro.c
+    libdwarf/libdwarf/dwarf_macro5.c
+    libdwarf/libdwarf/dwarf_names.c
+    libdwarf/libdwarf/dwarf_print_lines.c
+    libdwarf/libdwarf/dwarf_pubtypes.c
+    libdwarf/libdwarf/dwarf_query.c
+    libdwarf/libdwarf/dwarf_ranges.c
+    libdwarf/libdwarf/dwarf_rnglists.c
+    libdwarf/libdwarf/dwarfstring.c
+    libdwarf/libdwarf/dwarf_stubs.c
+    libdwarf/libdwarf/dwarf_tied.c
+    libdwarf/libdwarf/dwarf_tsearchhash.c
+    libdwarf/libdwarf/dwarf_types.c
+    libdwarf/libdwarf/dwarf_util.c
+    libdwarf/libdwarf/dwarf_vars.c
+    libdwarf/libdwarf/dwarf_weaks.c
+    libdwarf/libdwarf/dwarf_xu_index.c
+    libdwarf/libdwarf/malloc_check.c
+    libdwarf/libdwarf/pro_encode_nm.c
 )
 
 target_include_directories (dwarf PUBLIC
     support/libdwarf
-    dwarf
+    libdwarf/libdwarf
 )
 
 target_compile_definitions (dwarf PRIVATE
@@ -55,7 +55,7 @@ target_compile_options (dwarf PRIVATE
 target_link_libraries (dwarf z)
 
 install (
-    FILES dwarf/LIBDWARFCOPYRIGHT
+    FILES libdwarf/libdwarf/LIBDWARFCOPYRIGHT
     DESTINATION doc
     RENAME LICENSE-libdwarf.txt
 )
