@@ -19,6 +19,6 @@ if (WIN32)
         DOC "Microsoft Debugging Tools"
     )
     mark_as_advanced (WINDBG_DIR)
-endif (WIN32)
+endif ()
 
 find_package_handle_standard_args (WinDbg DEFAULT_MSG WINDBG_DIR)
