@@ -78,8 +78,7 @@ def haveAnsiEscapes():
             if ctypes.windll.kernel32.SetConsoleMode(hConsoleHandle, dwMode):
                 return True
 
-    if os.environ.get('APPVEYOR', 'False') == 'True':
-        # https://help.appveyor.com/discussions/suggestions/197-support-ansi-color-codes
+    if os.environ.get('GITHUB_ACTIONS', 'false') == 'true':
         return True;
 
     return False
