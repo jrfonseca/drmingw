@@ -66,14 +66,15 @@ add_test (
 
 add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
-    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test.debug
+    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     DEPENDS mgwhelp_test
     VERBATIM
 )
 add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test${CMAKE_EXECUTABLE_SUFFIX}
     COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_split_subdir_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test${CMAKE_EXECUTABLE_SUFFIX}
-    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
     VERBATIM
 )
