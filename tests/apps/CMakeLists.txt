@@ -7,6 +7,10 @@ include (CheckCSourceCompiles)
 unset (CMAKE_RUNTIME_OUTPUT_DIRECTORY)
 unset (CMAKE_LIBRARY_OUTPUT_DIRECTORY)
 
+set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../cmake)
+
+include (StaticCRT)
+
 if (MINGW)
     check_c_source_compiles ("#include <windows.h>\nstruct _EXCEPTION_REGISTRATION_RECORD r; int main() { return 0; }" HAVE_EXCEPTION_REGISTRATION_RECORD)
     if (HAVE_EXCEPTION_REGISTRATION_RECORD)
@@ -16,22 +20,18 @@ if (MINGW)
     # Match MSVC default stack size of 1MB
     # https://msdn.microsoft.com/en-us/library/8cxs58a6.aspx
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,1048576")
+
+    # Ensure frame-pointer is never omitted on debug builds
+    set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fno-omit-frame-pointer")
+    set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
+    set (CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
+    set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
 endif ()
 
 if (MSVC)
     if (CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION)
         message (STATUS "Using Windows SDK ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
     endif ()
-
-    # http://www.cmake.org/Wiki/CMake_FAQ#How_can_I_build_my_MSVC_application_with_a_static_runtime.3F
-    foreach (flag_var
-        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    )
-        if (${flag_var} MATCHES "/MD")
-            string (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-        endif ()
-    endforeach ()
 
     # Allows expansion only of functions marked inline, __inline, or
     # __forceinline, or in a C++ member function defined in a class

@@ -23,12 +23,6 @@ set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package (WinDbg)
 
-# Ensure frame-pointer is never omitted on debug builds
-set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -fno-omit-frame-pointer")
-set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
-set (CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
-set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
-
 include_directories (
     ${CMAKE_SOURCE_DIR}/thirdparty/elf
     ${CMAKE_SOURCE_DIR}/thirdparty/libiberty
@@ -84,15 +78,7 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 # Disable strict aliasing rules
 add_compiler_flags (-fno-strict-aliasing)
 
-# Avoid depending on MinGW runtime DLLs
-check_cxx_compiler_flag (-static-libgcc HAVE_STATIC_LIBGCC_FLAG)
-if (HAVE_STATIC_LIBGCC_FLAG)
-    add_linker_flags (-static-libgcc)
-endif ()
-check_cxx_compiler_flag (-static-libstdc++ HAVE_STATIC_LIBSTDCXX_FLAG)
-if (HAVE_STATIC_LIBSTDCXX_FLAG)
-    add_linker_flags (-static-libstdc++)
-endif ()
+include (StaticCRT)
 
 # Enable stack protection
 # XXX: Broken on https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86832
