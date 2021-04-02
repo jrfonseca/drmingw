@@ -65,10 +65,14 @@ add_test (
 #
 
 add_custom_command (
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
+)
+add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
     COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    DEPENDS mgwhelp_test
+    DEPENDS mgwhelp_test ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
     VERBATIM
 )
 add_custom_command (
