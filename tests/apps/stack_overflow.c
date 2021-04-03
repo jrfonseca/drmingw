@@ -42,10 +42,27 @@ static double factorial(int depth, void *inBuf)
 }
 
 
+static LONG CALLBACK
+unhandledExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
+{
+    PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
+    DWORD ExceptionCode = pExceptionRecord->ExceptionCode;
+    if (ExceptionCode = EXCEPTION_STACK_OVERFLOW) {
+        TerminateProcess(GetCurrentProcess(), EXCEPTION_STACK_OVERFLOW);
+    }
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+
 int main()
 {
+    // Wine exits with status 0, and without giving the debugger 2nd chance.
     if (insideWine()) {
+#ifdef _WIN64
+        // unhandledExceptionHandler never gets called
         return EXIT_SKIP;
+#endif
+        AddVectoredExceptionHandler(0, unhandledExceptionHandler);
     }
 
     int x = INT_MAX;
@@ -55,5 +72,5 @@ int main()
 }
 
 // CHECK_STDERR: /  stack_overflow\.exe\!factorial  \[.*\bstack_overflow\.c @ 38\]/
-// CHECK_STDERR: /  stack_overflow\.exe\!main  \[.*\bstack_overflow\.c @ 52\]/
+// CHECK_STDERR: /  stack_overflow\.exe\!main  \[.*\bstack_overflow\.c @ 69\]/
 // CHECK_EXIT_CODE: 0xc00000fd

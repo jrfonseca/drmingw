@@ -32,6 +32,7 @@
 #include "outdbg.h"
 #include "symbols.h"
 #include "paths.h"
+#include "wine.h"
 
 
 DebugOptions debugOptions;
@@ -509,6 +510,10 @@ DebugMainLoop(void)
 
                 if (ExceptionCode == DBG_CONTROL_C || ExceptionCode == DBG_CONTROL_BREAK) {
                     dwContinueStatus = DBG_CONTINUE;
+                } else if (ExceptionCode == EXCEPTION_STACK_OVERFLOW &&
+                           isInsideWine()) {
+                    // Wine never seems to throw a 2nd chance exception for
+                    // stack overflows, so dump stack on 1st chance
                 } else if (!debugOptions.first_chance) {
                     // Ignore other first change exceptions
                     break;
