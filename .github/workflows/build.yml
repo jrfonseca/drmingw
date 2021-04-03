@@ -12,10 +12,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 1
-        # XXX: git.code.sf.net doesn't support shallow clones
-        submodules: false
-    - run: git submodule init
-    - run: git submodule update --checkout
+        submodules: recursive
     - name: Cache Downloads
       id: cache-downloads
       uses: actions/cache@v2

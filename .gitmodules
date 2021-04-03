@@ -4,5 +4,5 @@
 	shallow = true
 [submodule "thirdparty/libdwarf"]
 	path = thirdparty/libdwarf
-	url = https://git.code.sf.net/p/libdwarf/code
-	shallow = false
+	url = https://github.com/jrfonseca/libdwarf
+	shallow = true
