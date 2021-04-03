@@ -142,8 +142,9 @@ def test(args):
 
     if options.verbose:
         with stdoutLock:
-            sys.stderr.write(stderr)
-            sys.stderr.write(stdout)
+            sys.stdout.write(stderr)
+            sys.stdout.write(stdout)
+            sys.stdout.flush()
 
     # Adjust return code
     exitCode = p.returncode
@@ -194,10 +195,11 @@ def test(args):
                 writeStdout('%s - %s %s %s%s\n' % (ok_or_not[int(bool(ok))], testExe, 'CHECK_' + checkName, checkExpr, NORMAL))
                 if not ok:
                     result = False
-    
+
     if not result and not options.verbose:
-        sys.stderr.write(stderr)
-        sys.stderr.write(stdout)
+        sys.stdout.write(stderr)
+        sys.stdout.write(stdout)
+        sys.stdout.flush()
 
     return testExe, result
 
