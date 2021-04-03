@@ -33,6 +33,18 @@ jobs:
         path: build/mingw??/drmingw-*.7z
         if-no-files-found: error
 
+  build-cross:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+        submodules: recursive
+    - run: sudo dpkg --add-architecture i386
+    - run: sudo apt-get update
+    - run: sudo apt-get install -qq -y mingw-w64 ninja-build cmake xinit xvfb wine wine64 wine32:i386
+    - run: ./build.sh
+
   # See https://github.com/actions/upload-release-asset
   release:
     # https://github.community/t/trigger-job-on-tag-push-only/18076/2
