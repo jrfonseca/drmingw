@@ -1,3 +1,7 @@
+configure_file (libdwarf/libdwarf/libdwarf.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/support/libdwarf/libdwarf.h
+    COPYONLY)
+
 add_library (dwarf STATIC
     libdwarf/libdwarf/dwarf_abbrev.c
     libdwarf/libdwarf/dwarf_alloc.c
@@ -39,7 +43,8 @@ add_library (dwarf STATIC
 )
 
 target_include_directories (dwarf PUBLIC
-    support/libdwarf
+    ${CMAKE_CURRENT_BINARY_DIR}/support/libdwarf
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/libdwarf
     libdwarf/libdwarf
 )
 
