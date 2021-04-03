@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "wine.h"
+
 int main()
 {
     // Disable assertion failure message box
@@ -40,7 +42,15 @@ int main()
     // http://msdn.microsoft.com/en-us/library/e631wekh.aspx
     _set_abort_behavior(0, _WRITE_ABORT_MSG);
 #endif
+
+    // Old Wine versions write the assert to console
+    // https://source.winehq.org/git/wine.git/commitdiff/3533605293e8083dae19c5fbd41e2077faf5adc6
+    if (insideWineOlderThan(5, 12)) {
+        return EXIT_SKIP;
+    }
+
     assert(2 + 2 == 5);
+
     return 0;
 }
 

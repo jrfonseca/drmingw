@@ -28,6 +28,9 @@
 #pragma once
 
 #include <windows.h>
+#include <stdio.h>
+
+typedef const char * (CDECL *WINE_GET_VERSION)(void);
 
 // http://wiki.winehq.org/DeveloperFaq#detect-wine
 static __inline BOOL
@@ -38,4 +41,24 @@ insideWine(void)
         return FALSE;
     }
     return GetProcAddress(hNtDll, "wine_get_version") != NULL;
+}
+
+static __inline BOOL
+insideWineOlderThan(unsigned refMajor, unsigned refMinor)
+{
+    HMODULE hNtDll = GetModuleHandleA("ntdll");
+    if (hNtDll) {
+        WINE_GET_VERSION wine_get_version;
+        wine_get_version = (WINE_GET_VERSION)GetProcAddress(hNtDll, "wine_get_version");
+        if (wine_get_version) {
+            const char *wine_version = wine_get_version();
+            unsigned major = 0, minor = 0;
+            if (sscanf(wine_version, "%u.%u", &major, &minor) == 2 &&
+                (major < refMajor ||
+                 (major == refMajor && minor < refMinor))) {
+                return TRUE;
+            }
+        }
+    }
+    return FALSE;
 }
