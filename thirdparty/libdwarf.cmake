@@ -2,6 +2,33 @@ configure_file (libdwarf/libdwarf/libdwarf.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/support/libdwarf/libdwarf.h
     COPYONLY)
 
+set (HAVE_ALLOCA YES)
+set (HAVE_ELF64_RELA YES)
+set (HAVE_ELF64_R_INFO YES)
+set (HAVE_ELF64_SYM YES)
+set (HAVE_ELF_H YES)
+set (HAVE_MALLOC_H YES)
+set (HAVE_MEMORY_H YES)
+set (HAVE_NONSTANDARD_PRINTF_64_FORMAT YES)
+set (HAVE_STDINT_H YES)
+set (HAVE_STDLIB_H YES)
+set (HAVE_STRINGS_H YES)
+set (HAVE_STRING_H YES)
+set (HAVE_SYS_TYPES_H YES)
+set (HAVE_SYS_STAT_H YES)
+set (HAVE_UINTPTR_T YES)
+set (HAVE_INTPTR_T YES)
+set (HAVE_UNISTD_H YES)
+set (HAVE_UNUSED_ATTRIBUTE YES)
+set (HAVE_WINDOWS_H YES)
+set (HAVE_WINDOWS_PATH_H YES)
+set (HAVE_ZLIB YES)
+set (HAVE_ZLIB_H YES)
+set (STDC_HEADERS YES)
+
+configure_file (libdwarf/config.h.in.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/support/libdwarf/config.h)
+
 add_library (dwarf STATIC
     libdwarf/libdwarf/dwarf_abbrev.c
     libdwarf/libdwarf/dwarf_alloc.c
@@ -44,7 +71,6 @@ add_library (dwarf STATIC
 
 target_include_directories (dwarf PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}/support/libdwarf
-    ${CMAKE_CURRENT_SOURCE_DIR}/support/libdwarf
     libdwarf/libdwarf
 )
 
