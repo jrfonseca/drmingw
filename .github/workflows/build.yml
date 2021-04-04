@@ -42,7 +42,7 @@ jobs:
         submodules: recursive
     - run: sudo dpkg --add-architecture i386
     - run: sudo apt-get update
-    - run: sudo apt-get install -qq -y mingw-w64 ninja-build cmake xinit xvfb wine wine64 wine32:i386
+    - run: sudo apt-get install -qq -y --install-recommends mingw-w64 ninja-build cmake xinit xvfb wine wine64 wine32:i386
     - run: ./build.sh
 
   # See https://github.com/actions/upload-release-asset
