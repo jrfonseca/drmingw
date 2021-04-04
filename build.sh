@@ -30,6 +30,11 @@ $WINE --version
 mkdir -p build
 
 export WINEPREFIX=$PWD/build/wine
+
+# Prevent Gecko/Mono installation dialogues
+# https://forum.winehq.org/viewtopic.php?f=2&t=16320#p78458
+export WINEDLLOVERRIDES="mscoree,mshtml="
+
 test -d $WINEPREFIX || xvfb_run $WINE wineboot.exe --init
 
 build_mingw64 -B build/mingw64 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} -DWINE_PROGRAM=$WINE
