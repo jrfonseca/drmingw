@@ -122,7 +122,7 @@ main(int argc, char **argv)
 
     if (!setjmp(g_JmpBuf) ) {
         _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "%s @ %u]",
-                  PathFindFileNameA(__FILE__), __LINE__); *((int *)0) = 0; LINE_BARRIER
+                  PathFindFileNameA(__FILE__), __LINE__); *((volatile int *)0) = 0; LINE_BARRIER
         test_line(false, "longjmp"); exit(1);
     } else {
         test_line(true, "longjmp");
