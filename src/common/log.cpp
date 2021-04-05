@@ -454,17 +454,9 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
 {
     FILE *fp;
     unsigned i;
-    char szFileName[MAX_PATH] = "";
     DWORD dwContext = 2;
 
-    if (lpFileName[0] == '/' && lpFileName[1] == '/') {
-        szFileName[0] = lpFileName[2];
-        szFileName[1] = ':';
-        strcpy(szFileName + 2, lpFileName + 3);
-    } else
-        strcpy(szFileName, lpFileName);
-
-    if ((fp = fopen(szFileName, "r")) == NULL)
+    if ((fp = fopen(lpFileName, "r")) == NULL)
         return FALSE;
 
     i = 0;
