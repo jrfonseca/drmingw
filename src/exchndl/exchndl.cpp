@@ -32,7 +32,7 @@
 
 // Declare the static variables
 static BOOL g_bHandlerSet = FALSE;
-static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
+static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = nullptr;
 static char g_szLogFileName[MAX_PATH] = "";
 static HANDLE g_hReportFile;
 static BOOL g_bOwnReportFile;
@@ -173,7 +173,7 @@ Setup(void)
     setDumpCallback(writeReport);
 
     // Figure out what the report file will be named, and store it away
-    if (GetModuleFileNameA(NULL, g_szLogFileName, MAX_PATH)) {
+    if (GetModuleFileNameA(nullptr, g_szLogFileName, MAX_PATH)) {
         LPSTR lpszDot;
 
         // Look for the '.' before the "EXE" extension.  Replace the extension
@@ -206,7 +206,7 @@ SetupHandler(void)
 {
     // Install the unhandled exception filter function
     if (!g_bHandlerSet) {
-        assert(g_prevExceptionFilter == NULL);
+        assert(g_prevExceptionFilter == nullptr);
         g_prevExceptionFilter = SetUnhandledExceptionFilter(TopLevelExceptionFilter);
         assert(g_prevExceptionFilter != TopLevelExceptionFilter);
         g_bHandlerSet = TRUE;
@@ -219,7 +219,7 @@ CleanupHandler(void)
 {
     if (g_bHandlerSet) {
         SetUnhandledExceptionFilter(g_prevExceptionFilter);
-        g_prevExceptionFilter = NULL;
+        g_prevExceptionFilter = nullptr;
         g_bHandlerSet = FALSE;
     }
 }
@@ -255,7 +255,7 @@ DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpvReserved)
     switch (dwReason) {
     case DLL_PROCESS_ATTACH:
         Setup();
-        if (lpvReserved == NULL) {
+        if (lpvReserved == nullptr) {
             SetupHandler();
         }
         break;
