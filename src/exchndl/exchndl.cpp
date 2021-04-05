@@ -25,6 +25,10 @@
 #include <malloc.h>
 #include <dbghelp.h>
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 #include "symbols.h"
 #include "log.h"
 #include "outdbg.h"
@@ -33,9 +37,9 @@
 // Declare the static variables
 static BOOL g_bHandlerSet = FALSE;
 static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = nullptr;
-static char g_szLogFileName[MAX_PATH] = "";
-static HANDLE g_hReportFile;
-static BOOL g_bOwnReportFile;
+static std::string g_szLogFileName;
+static HANDLE g_hReportFile = nullptr;
+static BOOL g_bOwnReportFile = FALSE;
 
 static void
 writeReport(const char *szText)
@@ -137,12 +141,12 @@ TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
             SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
         if (!g_hReportFile) {
-            if (strcmp(g_szLogFileName, "-") == 0) {
+            if (g_szLogFileName == "-") {
                 g_hReportFile = GetStdHandle(STD_ERROR_HANDLE);
                 g_bOwnReportFile = FALSE;
             } else {
                 g_hReportFile =
-                    CreateFileA(g_szLogFileName, GENERIC_WRITE,
+                    CreateFileA(g_szLogFileName.c_str(), GENERIC_WRITE,
                                 FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, 0, 0);
                 g_bOwnReportFile = TRUE;
             }
@@ -173,18 +177,29 @@ Setup(void)
     setDumpCallback(writeReport);
 
     // Figure out what the report file will be named, and store it away
-    if (GetModuleFileNameA(nullptr, g_szLogFileName, MAX_PATH)) {
-        LPSTR lpszDot;
-
+    DWORD nSize = MAX_PATH;
+    std::vector<char> path(nSize);
+    DWORD dwRet;
+    while ((dwRet = GetModuleFileNameA(nullptr, &path[0], nSize)) == nSize) {
+        nSize *= 2;
+        path.resize(nSize);
+    }
+    if (dwRet) {
         // Look for the '.' before the "EXE" extension.  Replace the extension
         // with "RPT"
-        if ((lpszDot = strrchr(g_szLogFileName, '.'))) {
-            lpszDot++;              // Advance past the '.'
-            strcpy(lpszDot, "RPT"); // "RPT" -> "Report"
-        } else
-            strcat(g_szLogFileName, ".RPT");
-    } else if (GetWindowsDirectoryA(g_szLogFileName, MAX_PATH)) {
-        strcat(g_szLogFileName, "EXCHNDL.RPT");
+        path.resize(nSize);
+        auto found = std::find(path.crbegin(), path.crend(), '.');
+        if (found != path.crend()) {
+            path.resize(found - path.crbegin());
+        }
+        path.push_back('.');
+        path.push_back('R');
+        path.push_back('P');
+        path.push_back('T');
+        g_szLogFileName.replace(g_szLogFileName.begin(), g_szLogFileName.end(), &path[0],
+                                path.size());
+    } else {
+        g_szLogFileName = "EXCHNDL.RPT";
     }
 }
 
@@ -196,7 +211,7 @@ Cleanup(void)
         if (g_bOwnReportFile) {
             CloseHandle(g_hReportFile);
         }
-        g_hReportFile = 0;
+        g_hReportFile = nullptr;
     }
 }
 
@@ -235,13 +250,11 @@ ExcHndlInit(void)
 BOOL APIENTRY
 ExcHndlSetLogFileNameA(const char *szLogFileName)
 {
-    size_t size = _countof(g_szLogFileName);
-    if (!szLogFileName || strlen(szLogFileName) > size - 1) {
-        OutputDebug("EXCHNDL: specified log name is too long or invalid (%s)\n", szLogFileName);
+    if (!szLogFileName) {
+        OutputDebug("EXCHNDL: specified log name is invalid (%s)\n", szLogFileName);
         return FALSE;
     }
-    strncpy(g_szLogFileName, szLogFileName, size - 1);
-    g_szLogFileName[size - 1] = '\0';
+    g_szLogFileName = szLogFileName;
     return TRUE;
 }
 
