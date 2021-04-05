@@ -30,9 +30,6 @@
 #include "outdbg.h"
 
 
-#define REPORT_FILE 1
-
-
 // Declare the static variables
 static BOOL g_bHandlerSet = FALSE;
 static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = NULL;
@@ -43,22 +40,18 @@ static BOOL g_bOwnReportFile;
 static void
 writeReport(const char *szText)
 {
-    if (REPORT_FILE) {
-        DWORD cbWritten;
-        while (*szText != '\0') {
-            const char *p = szText;
-            while (*p != '\0' && *p != '\n') {
-                ++p;
-            }
-            WriteFile(g_hReportFile, szText, p - szText, &cbWritten, 0);
-            if (*p == '\n') {
-                WriteFile(g_hReportFile, "\r\n", 2, &cbWritten, 0);
-                ++p;
-            }
-            szText = p;
+    DWORD cbWritten;
+    while (*szText != '\0') {
+        const char *p = szText;
+        while (*p != '\0' && *p != '\n') {
+            ++p;
         }
-    } else {
-        OutputDebugStringA(szText);
+        WriteFile(g_hReportFile, szText, p - szText, &cbWritten, 0);
+        if (*p == '\n') {
+            WriteFile(g_hReportFile, "\r\n", 2, &cbWritten, 0);
+            ++p;
+        }
+        szText = p;
     }
 }
 
@@ -143,28 +136,24 @@ TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
         fuOldErrorMode =
             SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
-        if (REPORT_FILE) {
-            if (!g_hReportFile) {
-                if (strcmp(g_szLogFileName, "-") == 0) {
-                    g_hReportFile = GetStdHandle(STD_ERROR_HANDLE);
-                    g_bOwnReportFile = FALSE;
-                } else {
-                    g_hReportFile =
-                        CreateFileA(g_szLogFileName, GENERIC_WRITE,
-                                    FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, 0, 0);
-                    g_bOwnReportFile = TRUE;
-                }
+        if (!g_hReportFile) {
+            if (strcmp(g_szLogFileName, "-") == 0) {
+                g_hReportFile = GetStdHandle(STD_ERROR_HANDLE);
+                g_bOwnReportFile = FALSE;
+            } else {
+                g_hReportFile =
+                    CreateFileA(g_szLogFileName, GENERIC_WRITE,
+                                FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, 0, 0);
+                g_bOwnReportFile = TRUE;
             }
+        }
 
-            if (g_hReportFile) {
-                SetFilePointer(g_hReportFile, 0, 0, FILE_END);
+        if (g_hReportFile) {
+            SetFilePointer(g_hReportFile, 0, 0, FILE_END);
 
-                GenerateExceptionReport(pExceptionInfo);
-
-                FlushFileBuffers(g_hReportFile);
-            }
-        } else {
             GenerateExceptionReport(pExceptionInfo);
+
+            FlushFileBuffers(g_hReportFile);
         }
 
         SetErrorMode(fuOldErrorMode);
@@ -183,21 +172,19 @@ Setup(void)
 {
     setDumpCallback(writeReport);
 
-    if (REPORT_FILE) {
-        // Figure out what the report file will be named, and store it away
-        if (GetModuleFileNameA(NULL, g_szLogFileName, MAX_PATH)) {
-            LPSTR lpszDot;
+    // Figure out what the report file will be named, and store it away
+    if (GetModuleFileNameA(NULL, g_szLogFileName, MAX_PATH)) {
+        LPSTR lpszDot;
 
-            // Look for the '.' before the "EXE" extension.  Replace the extension
-            // with "RPT"
-            if ((lpszDot = strrchr(g_szLogFileName, '.'))) {
-                lpszDot++;              // Advance past the '.'
-                strcpy(lpszDot, "RPT"); // "RPT" -> "Report"
-            } else
-                strcat(g_szLogFileName, ".RPT");
-        } else if (GetWindowsDirectoryA(g_szLogFileName, MAX_PATH)) {
-            strcat(g_szLogFileName, "EXCHNDL.RPT");
-        }
+        // Look for the '.' before the "EXE" extension.  Replace the extension
+        // with "RPT"
+        if ((lpszDot = strrchr(g_szLogFileName, '.'))) {
+            lpszDot++;              // Advance past the '.'
+            strcpy(lpszDot, "RPT"); // "RPT" -> "Report"
+        } else
+            strcat(g_szLogFileName, ".RPT");
+    } else if (GetWindowsDirectoryA(g_szLogFileName, MAX_PATH)) {
+        strcat(g_szLogFileName, "EXCHNDL.RPT");
     }
 }
 
