@@ -5,7 +5,7 @@
 
 - Unwind stack with DWARF
 
-  - https://github.com/gcc-mirror/gcc/tree/master/libbacktrace
+  - https://github.com/ianlancetaylor/libbacktrace
   - http://www.nongnu.org/libunwind/
   - http://blog.reverberate.org/2013/05/deep-wizardry-stack-unwinding.html
 
