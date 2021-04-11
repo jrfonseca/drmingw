@@ -28,8 +28,9 @@ _ErrorMessageBox(LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ...)
     char szErrorMsg[1024], szModule[MAX_PATH], szMsg[4096];
     va_list ap;
 
-    if (!GetModuleFileNameA(NULL, szModule, MAX_PATH))
-        strcpy(szModule, "");
+    if (!GetModuleFileNameA(NULL, szModule, MAX_PATH)) {
+        szModule[0] = 0;
+    }
 
     va_start(ap, lpszFormat);
     vsprintf(szErrorMsg, lpszFormat, ap);
