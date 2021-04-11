@@ -23,12 +23,14 @@ Recommended:
 
 It is also possible to build with a native MinGW toolchain, by doing:
 
-    powershell -NoProfile -ExecutionPolicy Bypass -file build.ps1
+    powershell -NoProfile -ExecutionPolicy Bypass -File ci\build.ps1
 
 Note that building with MSYS or Cygwin is not necessary nor *supported*.
 
 
 ## Cross-compilation toolchain
 
-I always build DrMinGW from Linux with MinGW cross-compilation toolchain.  See
-[here](http://www.vtk.org/Wiki/CmakeMingw) for details.
+I always build DrMinGW from Linux with MinGW cross-compilation toolchain, by
+doing:
+
+    .ci/build.sh
