@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.16)
 
 
 project (drmingw)
@@ -29,23 +29,6 @@ include_directories (
 )
 
 add_subdirectory (thirdparty)
-
-if (CMAKE_VERSION VERSION_LESS 3.16)
-    # Find dlltool
-    get_filename_component (GCC_NAME ${CMAKE_C_COMPILER} NAME)
-    string (REGEX REPLACE g?cc dlltool DLLTOOL_NAME ${GCC_NAME})
-    if (NOT DLLTOOL_NAME MATCHES dlltool)
-        message (FATAL_ERROR "Best guessing the file name of dlltool failed: ${DLLTOOL_NAME}")
-    endif ()
-    find_program (DLLTOOL NAMES ${DLLTOOL_NAME})
-    if (DLLTOOL)
-        message (STATUS "Found dlltool: ${DLLTOOL}")
-    else ()
-        message (FATAL_ERROR "dlltool not found")
-    endif ()
-else ()
-    set (DLLTOOL "${CMAKE_DLLTOOL}")
-endif ()
 
 
 ##############################################################################

@@ -29,7 +29,7 @@ install (TARGETS mgwhelp LIBRARY DESTINATION bin)
 
 add_custom_command (
     OUTPUT ${MGWHELP_IMPLIB}
-    COMMAND ${DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def=${CMAKE_CURRENT_SOURCE_DIR}/${MGWHELP_IMP_DEF}
+    COMMAND ${CMAKE_DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def=${CMAKE_CURRENT_SOURCE_DIR}/${MGWHELP_IMP_DEF}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${MGWHELP_IMP_DEF}
 )
 add_custom_target (mgwhelp_implib DEPENDS mgwhelp ${MGWHELP_IMPLIB})
