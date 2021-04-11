@@ -51,9 +51,9 @@ endif ()
 ##############################################################################
 # Set global build options
 
-set (CMAKE_C_STANDARD 99)
+set (CMAKE_C_STANDARD 11)
 set (CXX_STANDARD_REQUIRED ON)
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
 set (CXX_STANDARD_REQUIRED ON)
 
 include (CheckCXXCompilerFlag)
