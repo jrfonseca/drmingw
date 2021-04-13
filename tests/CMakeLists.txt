@@ -175,7 +175,7 @@ include_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}/apps
 )
 add_executable (exchndl_static_test
-    exchndl_static_test.c
+    exchndl_static_test.cpp
 )
 add_dependencies (exchndl_static_test exchndl_implib)
 target_link_libraries (exchndl_static_test ${EXCHNDL_IMPLIB} shlwapi)
@@ -195,7 +195,7 @@ include_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}/apps
 )
 add_executable (exchndl_dynamic_test
-    exchndl_dynamic_test.c
+    exchndl_dynamic_test.cpp
 )
 target_link_libraries (exchndl_dynamic_test shlwapi)
 add_dependencies (exchndl_dynamic_test exchndl)
@@ -212,7 +212,7 @@ add_test (
 #
 
 add_executable (addr2line_test
-    addr2line_test.c
+    addr2line_test.cpp
 )
 add_dependencies (addr2line_test addr2line)
 add_dependencies (check addr2line_test)
