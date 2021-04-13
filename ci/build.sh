@@ -18,6 +18,8 @@ xvfb_run() {
 	xvfb-run -a -s '-screen 0 1024x768x24' "$@"
 }
 
+test ! -d /usr/lib/ccache || export PATH="/usr/lib/ccache:$PATH"
+
 WINE=${WINE:-$(which wine)}
 
 x86_64-w64-mingw32-g++ --version
