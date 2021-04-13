@@ -19,6 +19,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include <string>
+
 #include <windows.h>
 #include <psapi.h>
 #include <shlobj.h>
@@ -66,16 +68,18 @@ InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
     // Provide default symbol search path
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms680689.aspx
     // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
-    char szSymSearchPathBuf[MAX_PATH * 2];
-    const char *szSymSearchPath = NULL;
-    if (getenv("_NT_SYMBOL_PATH") == NULL && getenv("_NT_ALT_SYMBOL_PATH") == NULL) {
+    std::string sSymSearchPathBuf;
+    const char *szSymSearchPath = nullptr;
+    if (getenv("_NT_SYMBOL_PATH") == nullptr && getenv("_NT_ALT_SYMBOL_PATH") == nullptr) {
         char szLocalAppData[MAX_PATH];
-        HRESULT hr = SHGetFolderPathA(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szLocalAppData);
+        HRESULT hr = SHGetFolderPathA(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, szLocalAppData);
         assert(SUCCEEDED(hr));
         if (SUCCEEDED(hr)) {
-            _snprintf(szSymSearchPathBuf, sizeof szSymSearchPathBuf,
-                      "srv*%s\\drmingw*http://msdl.microsoft.com/download/symbols", szLocalAppData);
-            szSymSearchPath = szSymSearchPathBuf;
+            // Cache symbols in %APPDATA%\drmingw
+            sSymSearchPathBuf += "srv*";
+            sSymSearchPathBuf += szLocalAppData;
+            sSymSearchPathBuf += "\\drmingw*http://msdl.microsoft.com/download/symbols";
+            szSymSearchPath = sSymSearchPathBuf.c_str();
         } else {
             // No cache
             szSymSearchPath = "srv*http://msdl.microsoft.com/download/symbols";
