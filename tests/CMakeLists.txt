@@ -132,30 +132,31 @@ add_test (
 #
 
 option (ENABLE_ZDEBUG_TEST "Enable compressed debug sections test." OFF)
-if (ENABLE_ZDEBUG_TEST)
-    add_custom_command (
-        OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-        COMMAND ${CMAKE_OBJCOPY} --only-keep-debug --compress-debug-sections $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-        DEPENDS mgwhelp_test
-        VERBATIM
-    )
-    add_custom_command (
-        OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-        COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_zdebug_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-        WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-        DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-        VERBATIM
-    )
-    add_custom_target (mgwhelp_zdebug_test ALL
-        DEPENDS
-            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-    )
-    add_dependencies (check mgwhelp_zdebug_test)
-    add_test (
-        NAME test_mgwhelp_zdebug
-        COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-    )
+add_custom_command (
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug --compress-debug-sections $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+    DEPENDS mgwhelp_test
+    VERBATIM
+)
+add_custom_command (
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_zdebug_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+    VERBATIM
+)
+add_custom_target (mgwhelp_zdebug_test ALL
+    DEPENDS
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+)
+add_dependencies (check mgwhelp_zdebug_test)
+add_test (
+    NAME test_mgwhelp_zdebug
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+)
+if (NOT ENABLE_ZDEBUG_TEST)
+    set_tests_properties (test_mgwhelp_zdebug PROPERTIES DISABLED ON)
 endif ()
 
 
