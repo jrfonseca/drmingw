@@ -39,8 +39,10 @@ export WINEDLLOVERRIDES="mscoree,mshtml="
 
 test -d $WINEPREFIX || xvfb_run $WINE wineboot.exe --init
 
-cmake_mingw64 -B $BUILD_DIR/mingw64 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} -DWINE_PROGRAM=$WINE
-cmake_mingw32 -B $BUILD_DIR/mingw32 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} -DWINE_PROGRAM=$WINE
+export WINEDEBUG="${WINEDEBUG:-+debugstr}"
+
+cmake_mingw64 -B $BUILD_DIR/mingw64 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} -DCMAKE_CROSSCOMPILING_EMULATOR=$WINE
+cmake_mingw32 -B $BUILD_DIR/mingw32 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} -DCMAKE_CROSSCOMPILING_EMULATOR=$WINE
 cmake --build $BUILD_DIR/mingw64 --target all
 cmake --build $BUILD_DIR/mingw32 --target all
 xvfb_run cmake --build $BUILD_DIR/mingw64 --target check

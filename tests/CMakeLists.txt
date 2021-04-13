@@ -1,11 +1,3 @@
-if (CMAKE_CROSSCOMPILING)
-    find_program (WINE_PROGRAM wine)
-    set (WINE_COMMAND env "WINEDEBUG=+debugstr" "${WINE_PROGRAM}")
-else ()
-    set (WINE_COMMAND)
-endif ()
-
-
 force_debug ()
 
 
@@ -24,7 +16,7 @@ target_link_libraries (mgwhelp_test
 add_dependencies (check mgwhelp_test)
 add_test (
     NAME test_mgwhelp
-    COMMAND ${WINE_COMMAND} $<TARGET_FILE:mgwhelp_test>
+    COMMAND mgwhelp_test
 )
 
 #
@@ -54,7 +46,7 @@ add_custom_target (mgwhelp_split_test ALL
 add_dependencies (check mgwhelp_split_test)
 add_test (
     NAME test_mgwhelp_split
-    COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test${CMAKE_EXECUTABLE_SUFFIX}
 )
 
 
@@ -90,7 +82,7 @@ add_custom_target (mgwhelp_split_subdir_test ALL
 add_dependencies (check mgwhelp_split_subdir_test)
 add_test (
     NAME test_mgwhelp_split_subdir
-    COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test${CMAKE_EXECUTABLE_SUFFIX}
 )
 
 
@@ -112,7 +104,7 @@ add_custom_target (mgwhelp_stripped_test ALL
 add_dependencies (check mgwhelp_stripped_test)
 add_test (
     NAME test_mgwhelp_stripped
-    COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
 )
 
 
@@ -162,7 +154,7 @@ if (ENABLE_ZDEBUG_TEST)
     add_dependencies (check mgwhelp_zdebug_test)
     add_test (
         NAME test_mgwhelp_zdebug
-        COMMAND ${WINE_COMMAND} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+        COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
     )
 endif ()
 
@@ -182,7 +174,7 @@ target_link_libraries (exchndl_static_test ${EXCHNDL_IMPLIB} shlwapi)
 add_dependencies (check exchndl_static_test)
 add_test (
     NAME test_exchndl_static
-    COMMAND ${WINE_COMMAND} $<TARGET_FILE:exchndl_static_test>
+    COMMAND exchndl_static_test
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
@@ -202,7 +194,7 @@ add_dependencies (exchndl_dynamic_test exchndl)
 add_dependencies (check exchndl_dynamic_test)
 add_test (
     NAME test_exchndl_dynamic
-    COMMAND ${WINE_COMMAND} $<TARGET_FILE:exchndl_dynamic_test>
+    COMMAND exchndl_dynamic_test
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
@@ -218,6 +210,6 @@ add_dependencies (addr2line_test addr2line)
 add_dependencies (check addr2line_test)
 add_test (
     NAME test_addr2line
-    COMMAND ${WINE_COMMAND} $<TARGET_FILE:addr2line_test>
+    COMMAND addr2line_test
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
