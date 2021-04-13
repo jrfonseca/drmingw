@@ -166,7 +166,7 @@ main(int argc, char **argv)
     HANDLE hProcess = GetCurrentProcess();
     bool ok;
 
-    if (strstr(argv[0], "_stripped_")) {
+    if (strstr(argv[0], "test_mgwhelp_stripped")) {
         g_bStripped = TRUE;
     }
 

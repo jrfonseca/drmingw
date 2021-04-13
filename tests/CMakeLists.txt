@@ -5,18 +5,18 @@ force_debug ()
 # test_mgwhelp
 #
 
-add_executable (mgwhelp_test
-    mgwhelp_test.cpp
+add_executable (test_mgwhelp
+    test_mgwhelp.cpp
 )
-add_dependencies (mgwhelp_test mgwhelp_implib)
-target_link_libraries (mgwhelp_test
+add_dependencies (test_mgwhelp mgwhelp_implib)
+target_link_libraries (test_mgwhelp
     ${MGWHELP_IMPLIB}
     shlwapi
 )
-add_dependencies (check mgwhelp_test)
+add_dependencies (check test_mgwhelp)
 add_test (
     NAME test_mgwhelp
-    COMMAND mgwhelp_test
+    COMMAND test_mgwhelp
 )
 
 #
@@ -26,27 +26,27 @@ add_test (
 #
 
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test.debug
-    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test.debug
-    DEPENDS mgwhelp_test
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
+    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:test_mgwhelp> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
+    DEPENDS test_mgwhelp
     VERBATIM
 )
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_split_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split${CMAKE_EXECUTABLE_SUFFIX}
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test.debug
+    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
     VERBATIM
 )
-add_custom_target (mgwhelp_split_test ALL
+add_custom_target (test_mgwhelp_split ALL
     DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test${CMAKE_EXECUTABLE_SUFFIX}
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test.debug
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
 )
-add_dependencies (check mgwhelp_split_test)
+add_dependencies (check test_mgwhelp_split)
 add_test (
     NAME test_mgwhelp_split
-    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split${CMAKE_EXECUTABLE_SUFFIX}
 )
 
 
@@ -61,28 +61,28 @@ add_custom_command (
     COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
 )
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
-    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/test_mgwhelp_split_subdir.debug
+    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug $<TARGET_FILE:test_mgwhelp> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/test_mgwhelp_split_subdir.debug
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    DEPENDS mgwhelp_test ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
+    DEPENDS test_mgwhelp ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
     VERBATIM
 )
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_split_subdir_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split_subdir.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir${CMAKE_EXECUTABLE_SUFFIX}
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
-    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
+    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/test_mgwhelp_split_subdir.debug
     VERBATIM
 )
-add_custom_target (mgwhelp_split_subdir_test ALL
+add_custom_target (test_mgwhelp_split_subdir ALL
     DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test${CMAKE_EXECUTABLE_SUFFIX}
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/mgwhelp_split_subdir_test.debug
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/test_mgwhelp_split_subdir.debug
 )
-add_dependencies (check mgwhelp_split_subdir_test)
+add_dependencies (check test_mgwhelp_split_subdir)
 add_test (
     NAME test_mgwhelp_split_subdir
-    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_split_subdir_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir${CMAKE_EXECUTABLE_SUFFIX}
 )
 
 
@@ -91,20 +91,20 @@ add_test (
 #
 
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped${CMAKE_EXECUTABLE_SUFFIX}
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    DEPENDS mgwhelp_test
+    DEPENDS test_mgwhelp
     VERBATIM
 )
-add_custom_target (mgwhelp_stripped_test ALL
+add_custom_target (test_mgwhelp_stripped ALL
     DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped${CMAKE_EXECUTABLE_SUFFIX}
 )
-add_dependencies (check mgwhelp_stripped_test)
+add_dependencies (check test_mgwhelp_stripped)
 add_test (
     NAME test_mgwhelp_stripped
-    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_stripped_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped${CMAKE_EXECUTABLE_SUFFIX}
 )
 
 
@@ -120,7 +120,7 @@ add_test (
 # - others (e.g the ppa:tobydox/mingw-x-trusty used in Travis) fail when
 #   compressing the debug sections with:
 #
-#     BFD: mgwhelp_test.exe: unable to initialize compress status for section .debug_aranges
+#     BFD: test_mgwhelp.exe: unable to initialize compress status for section .debug_aranges
 #
 # - others (e.g, Ubuntu 15.10's) appear to work but cause libdwarf to fail with
 #   DW_DLE_ARANGE_OFFSET_BAD
@@ -133,27 +133,27 @@ add_test (
 
 option (ENABLE_ZDEBUG_TEST "Enable compressed debug sections test." OFF)
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug --compress-debug-sections $<TARGET_FILE:mgwhelp_test> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
-    DEPENDS mgwhelp_test
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
+    COMMAND ${CMAKE_OBJCOPY} --only-keep-debug --compress-debug-sections $<TARGET_FILE:test_mgwhelp> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
+    DEPENDS test_mgwhelp
     VERBATIM
 )
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:mgwhelp_test> --add-gnu-debuglink=mgwhelp_zdebug_test.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_zdebug.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+    DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
     VERBATIM
 )
-add_custom_target (mgwhelp_zdebug_test ALL
+add_custom_target (test_mgwhelp_zdebug ALL
     DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test.debug
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
 )
-add_dependencies (check mgwhelp_zdebug_test)
+add_dependencies (check test_mgwhelp_zdebug)
 add_test (
     NAME test_mgwhelp_zdebug
-    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/mgwhelp_zdebug_test${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
 )
 if (NOT ENABLE_ZDEBUG_TEST)
     set_tests_properties (test_mgwhelp_zdebug PROPERTIES DISABLED ON)
@@ -167,15 +167,15 @@ endif ()
 include_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}/apps
 )
-add_executable (exchndl_static_test
-    exchndl_static_test.cpp
+add_executable (test_exchndl_static
+    test_exchndl_static.cpp
 )
-add_dependencies (exchndl_static_test exchndl_implib)
-target_link_libraries (exchndl_static_test ${EXCHNDL_IMPLIB} shlwapi)
-add_dependencies (check exchndl_static_test)
+add_dependencies (test_exchndl_static exchndl_implib)
+target_link_libraries (test_exchndl_static ${EXCHNDL_IMPLIB} shlwapi)
+add_dependencies (check test_exchndl_static)
 add_test (
     NAME test_exchndl_static
-    COMMAND exchndl_static_test
+    COMMAND test_exchndl_static
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
@@ -187,15 +187,15 @@ add_test (
 include_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}/apps
 )
-add_executable (exchndl_dynamic_test
-    exchndl_dynamic_test.cpp
+add_executable (test_exchndl_dynamic
+    test_exchndl_dynamic.cpp
 )
-target_link_libraries (exchndl_dynamic_test shlwapi)
-add_dependencies (exchndl_dynamic_test exchndl)
-add_dependencies (check exchndl_dynamic_test)
+target_link_libraries (test_exchndl_dynamic shlwapi)
+add_dependencies (test_exchndl_dynamic exchndl)
+add_dependencies (check test_exchndl_dynamic)
 add_test (
     NAME test_exchndl_dynamic
-    COMMAND exchndl_dynamic_test
+    COMMAND test_exchndl_dynamic
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
@@ -204,13 +204,13 @@ add_test (
 # test_addr2line
 #
 
-add_executable (addr2line_test
-    addr2line_test.cpp
+add_executable (test_addr2line
+    test_addr2line.cpp
 )
-add_dependencies (addr2line_test addr2line)
-add_dependencies (check addr2line_test)
+add_dependencies (test_addr2line addr2line)
+add_dependencies (check test_addr2line)
 add_test (
     NAME test_addr2line
-    COMMAND addr2line_test
+    COMMAND test_addr2line
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
