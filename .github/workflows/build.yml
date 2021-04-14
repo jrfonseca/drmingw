@@ -18,7 +18,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: downloads/*.7z
-        key: ${{ runner.os }}-${{ matrix.target }}-mingw-8.1.0-v6
+        key: ${{ runner.os }}-${{ matrix.target }}-mingw-10.2.0
     - run: Get-Host | Select-Object Version
     - run: python -m pip install gcovr codecov
     - name: Build

@@ -18,10 +18,10 @@ function Exec {
     }
 }
 
-$MINGW_64_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-win32/seh/x86_64-8.1.0-release-win32-seh-rt_v6-rev0.7z'
-$MINGW_32_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-win32/dwarf/i686-8.1.0-release-win32-dwarf-rt_v6-rev0.7z'
-$MINGW_64_SUM = '7e788dcc3d04c465d1721e805a7180cbafad42aeb1c35799f46bf7e90b11c17d'
-$MINGW_32_SUM = '28d0a0608d9524868f7feaf9f9ec5daf69669076eafc9e776af02d60ebfba93c'
+$MINGW_64_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/ray_linn/GCC-10.X-with-ada/GCC-10.2.0-crt-8.0.0-with-ada-20201019.7z'
+$MINGW_32_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/ray_linn/GCC-10.x-with-ada/mingw32-10.2.0-crt-8.0.0-with-ada.7z'
+$MINGW_64_SUM = '5c3fc254494bc24eb201870f4b781d401cf7279bd03ea1aba6f2ffae771ded44'
+$MINGW_32_SUM = '767fa9ed3d5b236aacca96e7e510d09af5f30ad37376a5258e5a875523ca45c3'
 
 #
 # Download and extract MinGW-w64 toolchain
