@@ -111,25 +111,6 @@ add_test (
 #
 # test_mgwhelp_zdebug
 #
-# XXX: MinGW support for objcopy --compress-debug-sections flag is very flaky,
-# depending on the exact toolchain:
-#
-# - some (e.g, the x86_64-4.9.2-release-win32-seh-rt_v4-rev4 used in Appveyor)
-#   just works
-#
-# - others (e.g the ppa:tobydox/mingw-x-trusty used in Travis) fail when
-#   compressing the debug sections with:
-#
-#     BFD: test_mgwhelp.exe: unable to initialize compress status for section .debug_aranges
-#
-# - others (e.g, Ubuntu 15.10's) appear to work but cause libdwarf to fail with
-#   DW_DLE_ARANGE_OFFSET_BAD
-#
-# See also:
-# - https://bugs.kde.org/show_bug.cgi?id=303877
-# - https://sourceware.org/bugzilla/show_bug.cgi?id=14067
-# - https://bugzilla.redhat.com/show_bug.cgi?id=679777
-#
 
 option (ENABLE_ZDEBUG_TEST "Enable compressed debug sections test." OFF)
 add_custom_command (
@@ -155,7 +136,46 @@ add_test (
     NAME test_mgwhelp_zdebug
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
 )
-if (NOT ENABLE_ZDEBUG_TEST)
+
+# XXX: MinGW support for objcopy --compress-debug-sections flag is very flaky,
+# depending on the exact toolchain:
+#
+# - some (e.g, the x86_64-4.9.2-release-win32-seh-rt_v4-rev4 used in Appveyor)
+#   just works
+#
+# - others (e.g the ppa:tobydox/mingw-x-trusty used in Travis) fail when
+#   compressing the debug sections with:
+#
+#     BFD: test_mgwhelp.exe: unable to initialize compress status for section .debug_aranges
+#
+# - others (e.g, Ubuntu 15.10's) appear to work but cause libdwarf to fail with
+#   DW_DLE_ARANGE_OFFSET_BAD
+#
+# See also:
+# - https://bugs.kde.org/show_bug.cgi?id=303877
+# - https://sourceware.org/bugzilla/show_bug.cgi?id=14067
+# - https://bugzilla.redhat.com/show_bug.cgi?id=679777
+#
+if (NOT DEFINED OBJCOPY_VERSION)
+    execute_process (
+        COMMAND ${CMAKE_OBJCOPY} --version
+        OUTPUT_VARIABLE OBJCOPY_VERSION_OUTPUT
+        RESULT_VARIABLE OBJCOPY_VERSION_RESULT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (NOT ${OBJCOPY_VERSION_RESULT} EQUAL 0)
+        message (SEND_ERROR "Command \"${CMAKE_OBJCOPY} --version\" failed")
+    else ()
+        # e.g., "GNU objcopy (GNU Binutils) 2.34"
+        if ("${OBJCOPY_VERSION_OUTPUT}" MATCHES "^GNU objcopy \\(GNU Binutils\\) ([^\n]+)")
+            set (OBJCOPY_VERSION "${CMAKE_MATCH_1}" CACHE STRING "" FORCE)
+            message (STATUS "objcopy version: ${OBJCOPY_VERSION}")
+        else ()
+            message (SEND_ERROR "Failed to parse ${CMAKE_OBJCOPY} version")
+        endif ()
+    endif ()
+endif ()
+if (NOT OBJCOPY_VERSION VERSION_GREATER_EQUAL "2.34")
     set_tests_properties (test_mgwhelp_zdebug PROPERTIES DISABLED ON)
 endif ()
 
