@@ -32,21 +32,21 @@ add_custom_command (
     VERBATIM
 )
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
     VERBATIM
 )
 add_custom_target (test_mgwhelp_split ALL
     DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
 )
 add_dependencies (check test_mgwhelp_split)
 add_test (
     NAME test_mgwhelp_split
-    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
 )
 
 
@@ -68,21 +68,21 @@ add_custom_command (
     VERBATIM
 )
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split_subdir.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split_subdir.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/test_mgwhelp_split_subdir.debug
     VERBATIM
 )
 add_custom_target (test_mgwhelp_split_subdir ALL
     DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/test_mgwhelp_split_subdir.debug
 )
 add_dependencies (check test_mgwhelp_split_subdir)
 add_test (
     NAME test_mgwhelp_split_subdir
-    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
 )
 
 
@@ -91,20 +91,20 @@ add_test (
 #
 
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped.exe
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped.exe
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     DEPENDS test_mgwhelp
     VERBATIM
 )
 add_custom_target (test_mgwhelp_stripped ALL
     DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped.exe
 )
 add_dependencies (check test_mgwhelp_stripped)
 add_test (
     NAME test_mgwhelp_stripped
-    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped.exe
 )
 
 
@@ -120,21 +120,21 @@ add_custom_command (
     VERBATIM
 )
 add_custom_command (
-    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_zdebug.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
+    OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
+    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_zdebug.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
     VERBATIM
 )
 add_custom_target (test_mgwhelp_zdebug ALL
     DEPENDS
-        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
 )
 add_dependencies (check test_mgwhelp_zdebug)
 add_test (
     NAME test_mgwhelp_zdebug
-    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug${CMAKE_EXECUTABLE_SUFFIX}
+    COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
 )
 
 # XXX: MinGW support for objcopy --compress-debug-sections flag is very flaky,
