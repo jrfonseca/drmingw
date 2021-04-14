@@ -18,21 +18,32 @@ function Exec {
     }
 }
 
+$MINGW_64_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-win32/seh/x86_64-8.1.0-release-win32-seh-rt_v6-rev0.7z'
+$MINGW_32_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-win32/dwarf/i686-8.1.0-release-win32-dwarf-rt_v6-rev0.7z'
+$MINGW_64_SUM = '7e788dcc3d04c465d1721e805a7180cbafad42aeb1c35799f46bf7e90b11c17d'
+$MINGW_32_SUM = '28d0a0608d9524868f7feaf9f9ec5daf69669076eafc9e776af02d60ebfba93c'
+
 #
 # Download and extract MinGW-w64 toolchain
 #
 New-Item -ItemType Directory -Force -Path downloads | Out-Null
 if ($target -eq 'mingw64') {
-    $MINGW_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/mingw-builds/8.1.0/threads-win32/seh/x86_64-8.1.0-release-win32-seh-rt_v6-rev0.7z'
+    $MINGW_URL = $MINGW_64_URL
+    $MINGW_SUM = $MINGW_64_SUM
 } else {
-    $MINGW_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/8.1.0/threads-win32/dwarf/i686-8.1.0-release-win32-dwarf-rt_v6-rev0.7z'
+    $MINGW_URL = $MINGW_32_URL
+    $MINGW_SUM = $MINGW_32_SUM
 }
 $MINGW_ARCHIVE = Split-Path -leaf $MINGW_URL
 $MINGW_ARCHIVE = "downloads\$MINGW_ARCHIVE"
 if (!(Test-Path $MINGW_ARCHIVE -PathType Leaf)) {
     Write-Host "Downloading $MINGW_URL ..."
     Invoke-WebRequest -Uri $MINGW_URL -OutFile $MINGW_ARCHIVE -UserAgent NativeHost
-    Get-Item $MINGW_ARCHIVE
+    $hash = (Get-FileHash $MINGW_ARCHIVE -Algorithm SHA256).Hash
+    if ($hash -ne $MINGW_SUM) {
+        echo "error: ${MINGW_ARCHIVE}: wrong hash: ${hash}"
+        exit 1
+    }
 }
 New-Item -ItemType Directory -Force -Path "$buildRoot\toolchain" | Out-Null
 $toolchain = "$buildRoot\toolchain\$target"
