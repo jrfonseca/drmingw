@@ -192,10 +192,12 @@ or
 ### Related tools
 
  * [binutil's addr2line](https://sourceware.org/binutils/docs/binutils/addr2line.html) (included in MinGW)
- * [cv2pdb - DWARF to PDB converter](https://github.com/rainers/cv2pdb)
+ * [cv2pdb](https://github.com/rainers/cv2pdb) - DWARF to PDB converter
  * [Breakpad](https://chromium.googlesource.com/breakpad/breakpad/)
  * [Crashpad](https://crashpad.chromium.org/)
- * [CrashRpt](http://crashrpt.sourceforge.net/)
+ * [dwarfstack](https://github.com/ssbssa/dwarfstack)
+ * [libbacktrace](https://github.com/ianlancetaylor/libbacktrace)
+ * [boost stacktrace](https://github.com/boostorg/stacktrace)
 
 ### Suggested Reading
 
