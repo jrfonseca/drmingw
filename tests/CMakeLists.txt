@@ -24,6 +24,8 @@ add_test (
 #
 # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
 #
+# Use --strip-all to also strip the PE symbol table.
+#
 
 add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
@@ -33,7 +35,7 @@ add_custom_command (
 )
 add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
+    COMMAND ${CMAKE_OBJCOPY} --strip-all $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
     VERBATIM
@@ -69,7 +71,7 @@ add_custom_command (
 )
 add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split_subdir.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
+    COMMAND ${CMAKE_OBJCOPY} --strip-all $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_split_subdir.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug
     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/test_mgwhelp_split_subdir.debug
     VERBATIM
@@ -88,6 +90,8 @@ add_test (
 
 #
 # test_mgwhelp_stripped
+#
+# Use --strip-debug instad of --strip-all to keep PE symbol table.
 #
 
 add_custom_command (
@@ -121,7 +125,7 @@ add_custom_command (
 )
 add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
-    COMMAND ${CMAKE_OBJCOPY} --strip-debug $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_zdebug.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
+    COMMAND ${CMAKE_OBJCOPY} --strip-all $<TARGET_FILE:test_mgwhelp> --add-gnu-debuglink=test_mgwhelp_zdebug.debug ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     DEPENDS ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
     VERBATIM
