@@ -47,7 +47,7 @@ unhandledExceptionHandler(PEXCEPTION_POINTERS pExceptionInfo)
 {
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
     DWORD ExceptionCode = pExceptionRecord->ExceptionCode;
-    if (ExceptionCode = EXCEPTION_STACK_OVERFLOW) {
+    if (ExceptionCode == EXCEPTION_STACK_OVERFLOW) {
         TerminateProcess(GetCurrentProcess(), EXCEPTION_STACK_OVERFLOW);
     }
     return EXCEPTION_CONTINUE_SEARCH;
