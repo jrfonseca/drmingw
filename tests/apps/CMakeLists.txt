@@ -17,6 +17,14 @@ if (MINGW)
         add_definitions (-DHAVE_EXCEPTION_REGISTRATION_RECORD=1)
     endif ()
 
+    # Adjust warnings
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror=implicit-function-declaration -Werror=missing-prototypes")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+
+    # Disable strict aliasing rules
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
+
     # Match MSVC default stack size of 1MB
     # https://msdn.microsoft.com/en-us/library/8cxs58a6.aspx
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,1048576")
@@ -39,8 +47,11 @@ if (MSVC)
     string (REGEX REPLACE "/Ob0" "/Ob1" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
     string (REGEX REPLACE "/Ob0" "/Ob1" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
 
+    # Adjust warnings
     add_definitions (-D_CRT_SECURE_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS)
     add_definitions (-D_SCL_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_WARNINGS)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W3")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W3")
 endif ()
 
 add_definitions (-DEXIT_SKIP=125)
