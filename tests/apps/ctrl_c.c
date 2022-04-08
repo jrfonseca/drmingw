@@ -38,5 +38,5 @@ main(int argc, char *argv[])
 }
 
 // CHECK_STDERR: /^catchsegv: warning: caught Ctrl-C event/
-// CHECK_STDERR: /  ctrl_c\.exe\!main  \[.*\bctrl_c\.c @ 36\]/
+// CHECK_STDERR: /  ctrl_c\.exe\!main\+0x[0-9a-f]+  \[.*\bctrl_c\.c @ 36\]/
 // CHECK_EXIT_CODE: 0

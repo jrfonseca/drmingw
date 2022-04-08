@@ -71,6 +71,6 @@ int main()
     return 0;
 }
 
-// CHECK_STDERR: /  stack_overflow\.exe\!factorial  \[.*\bstack_overflow\.c @ 38\]/
-// CHECK_STDERR: /  stack_overflow\.exe\!main  \[.*\bstack_overflow\.c @ 69\]/
+// CHECK_STDERR: /  stack_overflow\.exe\!factorial\+0x[0-9a-f]+  \[.*\bstack_overflow\.c @ 38\]/
+// CHECK_STDERR: /  stack_overflow\.exe\!main\+0x[0-9a-f]+  \[.*\bstack_overflow\.c @ 69\]/
 // CHECK_EXIT_CODE: 0xc00000fd

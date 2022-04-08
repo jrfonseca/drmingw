@@ -29,5 +29,5 @@ int main()
     return l != 0;
 }
 
-// CHECK_STDERR: /  cxx_inline\.exe\!main  \[.*\bcxx_inline\.cpp @ (21|28)\]/
+// CHECK_STDERR: /  cxx_inline\.exe\!main\+0x[0-9a-f]+  \[.*\bcxx_inline\.cpp @ (21|28)\]/
 // CHECK_EXIT_CODE: 0xc0000005

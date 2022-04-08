@@ -41,5 +41,5 @@ int main()
     return 125;
 }
 
-// CHECK_STDERR: /!_invalid_parameter  /
+// CHECK_STDERR: /!_invalid_parameter\+0x[0-9a-f]+  /
 // CHECK_EXIT_CODE: !0

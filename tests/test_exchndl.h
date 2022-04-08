@@ -118,7 +118,7 @@ main(int argc, char **argv)
 
 #endif
 
-    _snprintf(g_szExceptionFunctionPattern, sizeof g_szExceptionFunctionPattern, " %s!%s ", PROG_NAME ".exe", __FUNCTION__);
+    _snprintf(g_szExceptionFunctionPattern, sizeof g_szExceptionFunctionPattern, " %s!%s+0x", PROG_NAME ".exe", __FUNCTION__);
 
     if (!setjmp(g_JmpBuf) ) {
         _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "%s @ %u]",

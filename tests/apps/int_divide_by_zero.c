@@ -36,5 +36,5 @@ main(int argc, char *argv[])
     return res.quot;
 }
 
-// CHECK_STDERR: /  int_divide_by_zero\.exe\!main  \[.*\bint_divide_by_zero\.c @ 35\]/
+// CHECK_STDERR: /  int_divide_by_zero\.exe\!main\+0x[0-9a-f]+  \[.*\bint_divide_by_zero\.c @ 35\]/
 // CHECK_EXIT_CODE: 0xC0000094

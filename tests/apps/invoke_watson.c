@@ -41,5 +41,5 @@ int main()
     return 125;
 }
 
-// CHECK_STDERR: /!_invoke_watson  /
+// CHECK_STDERR: /!_invoke_watson\+0x[0-9a-f]+  /
 // CHECK_EXIT_CODE: !0
