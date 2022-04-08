@@ -91,7 +91,11 @@ InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
 
 
 BOOL
-GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD nSize)
+GetSymFromAddr(HANDLE hProcess,
+               DWORD64 dwAddress,
+               LPSTR lpSymName,
+               DWORD nSize,
+               LPDWORD lpdwDisplacement)
 {
     PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + nSize * sizeof(char));
 
@@ -111,6 +115,9 @@ GetSymFromAddr(HANDLE hProcess, DWORD64 dwAddress, LPSTR lpSymName, DWORD nSize)
         if ((dwOptions & SYMOPT_UNDNAME) ||
             UnDecorateSymbolName(pSymbol->Name, lpSymName, nSize, UNDNAME_NAME_ONLY) == 0) {
             strncpy(lpSymName, pSymbol->Name, nSize);
+        }
+        if (lpdwDisplacement) {
+            *lpdwDisplacement = dwDisplacement;
         }
     }
 
