@@ -42,6 +42,8 @@ jobs:
         submodules: recursive
     - run: sudo dpkg --add-architecture i386
     - run: sudo apt-get update
+    # Workaround https://github.com/actions/virtual-environments/issues/4589
+    - run: sudo apt-get install -y --allow-downgrades libpcre2-8-0=10.34-7
     - run: sudo apt-get install -qq -y --install-recommends mingw-w64 ninja-build cmake xinit xvfb wine wine64 wine32:i386
     - run: ci/build.sh
 
