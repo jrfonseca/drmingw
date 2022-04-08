@@ -28,7 +28,7 @@ install (TARGETS exchndl LIBRARY DESTINATION bin)
 
 add_custom_command (
     OUTPUT ${EXCHNDL_IMPLIB}
-    COMMAND ${CMAKE_DLLTOOL} --output-lib ${EXCHNDL_IMPLIB} --kill-at --input-def=${CMAKE_CURRENT_SOURCE_DIR}/${EXCHNDL_IMP_DEF}
+    COMMAND ${CMAKE_DLLTOOL} --output-lib ${EXCHNDL_IMPLIB} --kill-at --input-def ${CMAKE_CURRENT_SOURCE_DIR}/${EXCHNDL_IMP_DEF}
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${EXCHNDL_IMP_DEF}
 )
 add_custom_target (exchndl_implib ALL DEPENDS exchndl ${EXCHNDL_IMPLIB})
