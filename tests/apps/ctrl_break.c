@@ -38,5 +38,5 @@ main(int argc, char *argv[])
 }
 
 // CHECK_STDERR: /^catchsegv: warning: caught Ctrl-Break event/
-// CHECK_STDERR: /  ctrl_break\.exe\!main  \[.*\bctrl_break\.c @ 36\]/
+// CHECK_STDERR: /  ctrl_break\.exe\!main\+0x[0-9a-f]+  \[.*\bctrl_break\.c @ 36\]/
 // CHECK_EXIT_CODE: 0

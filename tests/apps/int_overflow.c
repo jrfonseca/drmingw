@@ -36,4 +36,4 @@ main(int argc, char *argv[])
     return res.quot;
 }
 
-// CHECK_STDERR: /  int_overflow\.exe\!main  \[.*\bint_overflow\.c @ 35\]/
+// CHECK_STDERR: /  int_overflow\.exe\!main\+0x[0-9a-f]+  \[.*\bint_overflow\.c @ 35\]/
