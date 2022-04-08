@@ -40,7 +40,11 @@ static char unknown[] = {'?', '?', '\0'};
 
 
 static bool
-search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, std::string &rlt_func)
+search_func(Dwarf_Debug dbg,
+            Dwarf_Die *die,
+            Dwarf_Addr addr,
+            unsigned int *offset_addr,
+            std::string &rlt_func)
 {
     Dwarf_Die spec_die;
     Dwarf_Die child_die;
@@ -72,6 +76,7 @@ search_func(Dwarf_Debug dbg, Dwarf_Die *die, Dwarf_Addr addr, std::string &rlt_f
 
             /* Found it! */
 
+            *offset_addr = addr - lopc;
             rlt_func = unknown;
             ret = dwarf_attr(*die, DW_AT_name, &sub_at, &de);
             if (ret == DW_DLV_ERROR)
@@ -132,7 +137,7 @@ cont_search:
         if (ret == DW_DLV_ERROR)
             OutputDebug("MGWHELP: dwarf_child failed - %s\n", dwarf_errmsg(de));
         else if (ret == DW_DLV_OK) {
-            result = search_func(dbg, &child_die, addr, rlt_func);
+            result = search_func(dbg, &child_die, addr, offset_addr, rlt_func);
             dwarf_dealloc(dbg, child_die, DW_DLA_DIE);
             if (result) {
                 return true;
@@ -175,7 +180,7 @@ dwarf_find_symbol(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_symbol_info
         goto no_cu_die;
     }
 
-    result = search_func(dbg, &cu_die, addr, info->functionname);
+    result = search_func(dbg, &cu_die, addr, &info->offset_addr, info->functionname);
 
     dwarf_dealloc(dbg, cu_die, DW_DLA_DIE);
 no_cu_die:;
@@ -193,6 +198,7 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
     bool result = false;
     Dwarf_Error error = 0;
     std::string symbol_name;
+    unsigned int offset_addr;
 
     Dwarf_Debug dbg = dwarf->dbg;
 
@@ -213,7 +219,7 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
 
     Dwarf_Line *linebuf;
     Dwarf_Signed linecount;
-    if (search_func(dbg, &cu_die, addr, symbol_name) &&
+    if (search_func(dbg, &cu_die, addr, &offset_addr, symbol_name) &&
         dwarf_srclines(cu_die, &linebuf, &linecount, &error) == DW_DLV_OK) {
         Dwarf_Unsigned lineno, plineno;
         Dwarf_Addr lineaddr, plineaddr;
@@ -289,6 +295,7 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
         if (result && file) {
             info->filename = file;
             info->line = lineno;
+            info->offset_addr = offset_addr;
         }
         if (file) {
             dwarf_dealloc(dbg, file, DW_DLA_STRING);
