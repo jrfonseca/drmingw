@@ -104,7 +104,7 @@ test_diagnostic_last_error(void)
                                FORMAT_MESSAGE_IGNORE_INSERTS,
                                NULL,
                                dwLastError,
-                               MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                               MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US),
                                (LPSTR) &lpErrorMsg,
                                0, NULL);
 
