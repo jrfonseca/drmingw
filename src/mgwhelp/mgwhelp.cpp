@@ -594,8 +594,7 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
                 }
             }
             if (Displacement) {
-                /* TODO */
-                *Displacement = 0;
+                *Displacement = info.offset_addr;
             }
             return TRUE;
         }
@@ -623,8 +622,7 @@ MgwSymGetLineFromAddr64(HANDLE hProcess,
             Line->LineNumber = info.line;
 
             if (pdwDisplacement) {
-                /* TODO */
-                *pdwDisplacement = 0;
+                *pdwDisplacement = info.offset_addr;
             }
             return TRUE;
         }
