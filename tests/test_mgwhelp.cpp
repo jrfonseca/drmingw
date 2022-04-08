@@ -49,14 +49,15 @@ g_bStripped = FALSE;
 static void
 checkSym(HANDLE hProcess,
          PVOID pvSymbol,
-         const char *szSymbolName)
+         const char *szSymbolName,
+         DWORD64 dwExpectDisplacement)
 {
     bool ok;
 
     DWORD64 dwAddr = (DWORD64)(UINT_PTR)pvSymbol;
 
     // Test SymFromAddr
-    DWORD64 Displacement = 0;
+    DWORD64 Displacement = -1;
     struct {
         SYMBOL_INFO Symbol;
         CHAR Name[256];
@@ -80,6 +81,12 @@ checkSym(HANDLE hProcess,
             test_diagnostic("Name = \"%s\" != \"%s\"",
                             s.Symbol.Name, szSymbolName);
         }
+        ok = Displacement == dwExpectDisplacement;
+        test_line(ok, "SymFromAddr(&%s).Displacement", szSymbolName);
+        if (!ok) {
+            test_diagnostic("Displacement = %I64x != %I64x",
+                            Displacement, dwExpectDisplacement);
+        }
     }
 }
 
@@ -89,13 +96,14 @@ checkSymLine(HANDLE hProcess,
              PVOID pvSymbol,
              const char *szSymbolName,
              const char *szFileName,
-             DWORD dwLineNumber)
+             DWORD dwLineNumber,
+             DWORD64 dwExpectDisplacement)
 {
     bool ok;
 
     DWORD64 dwAddr = (DWORD64)(UINT_PTR)pvSymbol;
 
-    checkSym(hProcess, pvSymbol, szSymbolName);
+    checkSym(hProcess, pvSymbol, szSymbolName, dwExpectDisplacement);
 
     if (g_bStripped) {
         // Don't check line nos
@@ -124,6 +132,12 @@ checkSymLine(HANDLE hProcess,
             test_diagnostic("LineNumber = %lu != %lu",
                             Line.LineNumber, dwLineNumber);
         }
+        ok = dwDisplacement == dwExpectDisplacement;
+        test_line(ok, "SymGetLineFromAddr64(&%s).Displacement", szSymbolName);
+        if (!ok) {
+            test_diagnostic("Displacement = %lx != %I64x",
+                            dwDisplacement, dwExpectDisplacement);
+        }
     }
 }
 
@@ -131,12 +145,14 @@ checkSymLine(HANDLE hProcess,
 static void
     __attribute__ ((noinline))
 checkCaller(HANDLE hProcess,
+            PVOID pvCaller,
             const char *szSymbolName,
             const char *szFileName,
             DWORD dwLineNumber)
 {
     void *addr = __builtin_return_address(0);
-    checkSymLine(hProcess, addr, szSymbolName, szFileName, dwLineNumber);
+    DWORD64 displacement = (DWORD64)addr - (DWORD64)pvCaller;
+    checkSymLine(hProcess, addr, szSymbolName, szFileName, dwLineNumber, displacement);
 }
 
 
@@ -147,7 +163,7 @@ checkExport(HANDLE hProcess,
 {
     HMODULE hModule = GetModuleHandleA(szModuleName);
     const PVOID pvSymbol = (PVOID)GetProcAddress(hModule, szSymbolName);
-    checkSym(hProcess, pvSymbol, szSymbolName);
+    checkSym(hProcess, pvSymbol, szSymbolName, 0);
 }
 
 
@@ -183,9 +199,9 @@ main(int argc, char **argv)
     if (!ok) {
         test_diagnostic_last_error();
     } {
-        checkSymLine(hProcess, (PVOID)&foo, "foo", __FILE__, foo_line);
+        checkSymLine(hProcess, (PVOID)&foo, "foo", __FILE__, foo_line, 0);
 
-        checkCaller(hProcess, "main", __FILE__, __LINE__); LINE_BARRIER
+        checkCaller(hProcess, (PVOID)&main, "main", __FILE__, __LINE__); LINE_BARRIER
 
         // Test DbgHelp fallback
         // XXX: Doesn't work reliably on Wine
