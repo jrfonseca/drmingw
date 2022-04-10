@@ -148,10 +148,15 @@ Here's the how to use it:
     usage: catchsegv [options] <command-line>
     
     options:
-      -? displays command line help text
-      -v enables verbose output from the debugger
-      -t <seconds> specifies a timeout in seconds
-      -1 dump stack on first chance exceptions
+      -?|-h        displays command line help text
+      -v           enables verbose output from the debugger
+      -d           enables debugging output (for debugging catchsegv itself)
+      -t SECONDS   specifies a timeout in seconds
+      -1           dump stack on first chance exceptions
+      -m           ignore modal dialogs
+      -z           write minidumps
+      -Z DIRECTORY write minidumps to specified directory
+      -H           use debug heap
 
 ## Frequently Asked Questions
 
