@@ -31,9 +31,9 @@
 int
 main(int argc, char *argv[])
 {
-    fprintf(stderr, "before...\n");
+    fputs("before...\n", stderr);
     DebugBreak();
-    fprintf(stderr, "after...\n");
+    fputs("after...\n", stderr);
 
     return 0;
 }

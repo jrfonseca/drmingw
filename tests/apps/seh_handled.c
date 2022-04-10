@@ -100,14 +100,14 @@ main()
 {
     setvbuf(stderr, NULL, _IONBF, 0);
 
-    fprintf(stderr, "before\n");
+    fputs("before\n", stderr);
     fflush(stderr);
 
 #ifdef _MSC_VER
 
     __try {
         RaiseException(EXCEPTION_CODE, 0, 0, NULL);
-        fprintf(stderr, "unreachable\n");
+        fputs("unreachable\n", stderr);
         fflush(stderr);
         _exit(1);
     }
@@ -132,7 +132,7 @@ main()
 
 #endif
 
-    fprintf(stderr, "after\n");
+    fputs("after\n", stderr);
     fflush(stderr);
 
     return 0;
