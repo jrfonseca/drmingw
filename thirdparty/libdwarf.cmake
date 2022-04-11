@@ -1,13 +1,10 @@
-set (HAVE_ALLOCA YES)
 set (HAVE_MALLOC_H YES)
+set (HAVE_FCNTL_H YES)
 set (HAVE_MEMORY_H YES)
 set (HAVE_NONSTANDARD_PRINTF_64_FORMAT YES)
 set (HAVE_STDINT_H YES)
 set (HAVE_INTTYPES_H YES)
-set (HAVE_STDDEF_H YES)
-set (HAVE_STDLIB_H YES)
 set (HAVE_STRINGS_H YES)
-set (HAVE_STRING_H YES)
 set (HAVE_SYS_TYPES_H YES)
 set (HAVE_SYS_STAT_H YES)
 set (HAVE_UINTPTR_T YES)
@@ -69,6 +66,7 @@ add_library (dwarf STATIC
     libdwarf/src/lib/libdwarf/dwarf_query.c
     libdwarf/src/lib/libdwarf/dwarf_ranges.c
     libdwarf/src/lib/libdwarf/dwarf_rnglists.c
+    libdwarf/src/lib/libdwarf/dwarf_safe_strcpy.c
     libdwarf/src/lib/libdwarf/dwarf_string.c
     libdwarf/src/lib/libdwarf/dwarf_string.h
     libdwarf/src/lib/libdwarf/dwarf_stringsection.c
