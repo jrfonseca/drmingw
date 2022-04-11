@@ -24,7 +24,6 @@ configure_file (libdwarf/cmake/config.h.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/support/libdwarf/config.h)
 
 add_library (dwarf STATIC
-    libdwarf/src/lib/libdwarf/crc32.c
     libdwarf/src/lib/libdwarf/dwarf_abbrev.c
     libdwarf/src/lib/libdwarf/dwarf_alloc.c
     libdwarf/src/lib/libdwarf/dwarf_arange.c
@@ -60,6 +59,7 @@ add_library (dwarf STATIC
     libdwarf/src/lib/libdwarf/dwarf_machoread.c
     libdwarf/src/lib/libdwarf/dwarf_macro5.c
     libdwarf/src/lib/libdwarf/dwarf_macro.c
+    libdwarf/src/lib/libdwarf/dwarf_memcpy_swap.c
     libdwarf/src/lib/libdwarf/dwarf_names.c
     #libdwarf/src/lib/libdwarf/dwarf_object_detector.c
     #libdwarf/src/lib/libdwarf/dwarf_object_read_common.c
@@ -69,8 +69,8 @@ add_library (dwarf STATIC
     libdwarf/src/lib/libdwarf/dwarf_query.c
     libdwarf/src/lib/libdwarf/dwarf_ranges.c
     libdwarf/src/lib/libdwarf/dwarf_rnglists.c
-    libdwarf/src/lib/libdwarf/dwarfstring.c
-    libdwarf/src/lib/libdwarf/dwarfstring.h
+    libdwarf/src/lib/libdwarf/dwarf_string.c
+    libdwarf/src/lib/libdwarf/dwarf_string.h
     libdwarf/src/lib/libdwarf/dwarf_stringsection.c
     libdwarf/src/lib/libdwarf/dwarf_str_offsets.c
     libdwarf/src/lib/libdwarf/dwarf_tied.c
@@ -89,6 +89,10 @@ target_include_directories (dwarf PUBLIC
 
 target_compile_definitions (dwarf PRIVATE
     "PACKAGE_VERSION=\"drmingw\""
+)
+
+target_compile_definitions (dwarf PUBLIC
+    LIBDWARF_BUILD
 )
 
 target_compile_options (dwarf PRIVATE
