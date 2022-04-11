@@ -6,7 +6,7 @@ project (drmingw)
 
 set (CPACK_PACKAGE_VERSION_MAJOR "0")
 set (CPACK_PACKAGE_VERSION_MINOR "9")
-set (CPACK_PACKAGE_VERSION_PATCH "4")
+set (CPACK_PACKAGE_VERSION_PATCH "5")
 
 
 option (ENABLE_COVERAGE "Enable code coverage." OFF)
