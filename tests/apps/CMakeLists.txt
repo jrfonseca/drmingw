@@ -36,6 +36,14 @@ if (MINGW)
     set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
 endif ()
 
+# https://github.com/jrfonseca/drmingw/issues/42
+if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
+endif ()
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
+endif ()
+
 if (MSVC)
     if (CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION)
         message (STATUS "Using Windows SDK ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}")
