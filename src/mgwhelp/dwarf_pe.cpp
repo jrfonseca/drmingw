@@ -17,6 +17,7 @@
  */
 
 
+#include "libdwarf_private.h"
 #include "dwarf_pe.h"
 
 #include <assert.h>
@@ -27,8 +28,10 @@
 #include <string>
 #include <vector>
 
-#include "config.h"
-#include "dwarf_incl.h"
+#include "dwarf.h"
+#include "libdwarf.h"
+#include "dwarf_base_types.h"
+#include "dwarf_opaque.h"  // for Dwarf_Debug_s
 
 #include "outdbg.h"
 #include "paths.h"
