@@ -62,6 +62,23 @@ if (MSVC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W3")
 endif ()
 
+# Enable Data Execution Prevention and Address Space Layout Randomization
+if (MSVC)
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /NXCOMPAT /DYNAMICBASE")
+else ()
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--nxcompat")
+
+    # `--dynamicbase` causes ld segmentation fault with Ubuntu 20.04 MinGW
+    # cross compilation toolchain, unless it's paired with
+    # `--export-all-symbols`
+    set (CMAKE_REQUIRED_LINK_OPTIONS "-Wl,--dynamicbase")
+    check_cxx_source_compiles("int main() { return 0; }" HAVE_DYNAMICBASE)
+    unset (CMAKE_REQUIRED_LINK_OPTIONS)
+    if (HAVE_DYNAMICBASE)
+        set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--dynamicbase")
+    endif ()
+endif ()
+
 add_definitions (-DEXIT_SKIP=125)
 
 macro (add_test_executable)
