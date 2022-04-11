@@ -252,7 +252,7 @@ dwarf_pe_init(HANDLE hFile,
         intfc->object = pe_obj;
         intfc->methods = &pe_methods;
 
-        res = dwarf_object_init(intfc, errhand, errarg, ret_dbg, error);
+        res = dwarf_object_init_b(intfc, errhand, errarg, DW_GROUPNUMBER_ANY, ret_dbg, error);
         if (res == DW_DLV_OK) {
             return res;
         }

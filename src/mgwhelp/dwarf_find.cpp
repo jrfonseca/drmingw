@@ -119,7 +119,7 @@ search_func(Dwarf_Debug dbg,
                 dwarf_dealloc(dbg, spec_at, DW_DLA_ATTR);
                 return false;
             }
-            if (dwarf_offdie(dbg, ref, &spec_die, &de) != DW_DLV_OK) {
+            if (dwarf_offdie_b(dbg, ref, 1, &spec_die, &de) != DW_DLV_OK) {
                 dwarf_dealloc(dbg, spec_at, DW_DLA_ATTR);
                 return false;
             }
@@ -145,10 +145,10 @@ cont_search:
         }
 
         /* Advance to next sibling. */
-        ret = dwarf_siblingof(dbg, *die, &sibling_die, &de);
+        ret = dwarf_siblingof_b(dbg, *die, 1, &sibling_die, &de);
         if (ret != DW_DLV_OK) {
             if (ret == DW_DLV_ERROR)
-                OutputDebug("MGWHELP: dwarf_siblingof failed - %s\n", dwarf_errmsg(de));
+                OutputDebug("MGWHELP: dwarf_siblingof_b failed - %s\n", dwarf_errmsg(de));
             return false;
         }
         dwarf_dealloc(dbg, *die, DW_DLA_DIE);
@@ -217,96 +217,113 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
         goto no_cu_die;
     }
 
+    if (!search_func(dbg, &cu_die, addr, &offset_addr, symbol_name)) {
+        goto no_func;
+    }
+
+    Dwarf_Unsigned version;
+    Dwarf_Small table_count;
+    Dwarf_Line_Context context;
+    version = 0;
+    table_count = 0;
+    context = 0;
+    if (dwarf_srclines_b(cu_die, &version, &table_count, &context, &error) != DW_DLV_OK) {
+        goto no_linecontext;
+    }
+
     Dwarf_Line *linebuf;
     Dwarf_Signed linecount;
-    if (search_func(dbg, &cu_die, addr, &offset_addr, symbol_name) &&
-        dwarf_srclines(cu_die, &linebuf, &linecount, &error) == DW_DLV_OK) {
-        Dwarf_Unsigned lineno, plineno;
-        Dwarf_Addr lineaddr, plineaddr;
-        char *file, *pfile;
-        plineaddr = ~0ULL;
-        plineno = lineno = 0;
-        pfile = file = nullptr;
-        Dwarf_Signed i;
+    if (dwarf_srclines_from_linecontext(context, &linebuf, &linecount, &error) != DW_DLV_OK) {
+        goto no_srclines;
+    }
 
-        i = 0;
-        while (i < linecount) {
-            if (dwarf_lineaddr(linebuf[i], &lineaddr, &error) != DW_DLV_OK) {
-                OutputDebug("MGWHELP: dwarf_lineaddr failed - %s\n", dwarf_errmsg(error));
-                break;
-            }
+    Dwarf_Unsigned lineno, plineno;
+    Dwarf_Addr lineaddr, plineaddr;
+    char *file, *pfile;
+    plineaddr = ~0ULL;
+    plineno = lineno = 0;
+    pfile = file = nullptr;
+    Dwarf_Signed i;
 
-            if (lineaddr == 0) {
-                /* Per dwarfdump/print_lines.c, The SN Systems Linker generates
-                 * line records with addr=0, when dealing with linkonce symbols
-                 * and no stripping.  We need to skip records that do not have
-                 * ís_addr_set.
-                 */
-                ++i;
-                while (i < linecount) {
-                    Dwarf_Bool has_is_addr_set = FALSE;
-                    if (dwarf_line_is_addr_set(linebuf[i], &has_is_addr_set, &error) != DW_DLV_OK) {
-                        OutputDebug("MGWHELP: dwarf_line_is_addr_set failed - %s\n",
-                                    dwarf_errmsg(error));
-                        has_is_addr_set = FALSE;
-                    }
-                    if (has_is_addr_set) {
-                        break;
-                    }
-                    ++i;
-                }
-                continue;
-            }
+    i = 0;
+    while (i < linecount) {
+        if (dwarf_lineaddr(linebuf[i], &lineaddr, &error) != DW_DLV_OK) {
+            OutputDebug("MGWHELP: dwarf_lineaddr failed - %s\n", dwarf_errmsg(error));
+            break;
+        }
 
-            if (addr > plineaddr && addr < lineaddr) {
-                // Lines are past the address
-                lineno = plineno;
-                file = pfile;
-                pfile = nullptr;
-                result = true;
-                break;
-            }
-
-            if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
-                OutputDebug("MGWHELP: dwarf_lineno failed - %s\n", dwarf_errmsg(error));
-                break;
-            }
-
-            if (dwarf_linesrc(linebuf[i], &file, &error) != DW_DLV_OK) {
-                OutputDebug("MGWHELP: dwarf_linesrc failed - %s\n", dwarf_errmsg(error));
-            }
-
-            if (addr == lineaddr) {
-                // Exact match
-                result = true;
-                break;
-            }
-
-            plineaddr = lineaddr;
-            plineno = lineno;
-            if (pfile) {
-                dwarf_dealloc(dbg, pfile, DW_DLA_STRING);
-            }
-            pfile = file;
-            file = NULL;
+        if (lineaddr == 0) {
+            /* Per dwarfdump/print_lines.c, The SN Systems Linker generates
+             * line records with addr=0, when dealing with linkonce symbols
+             * and no stripping.  We need to skip records that do not have
+             * ís_addr_set.
+             */
             ++i;
+            while (i < linecount) {
+                Dwarf_Bool has_is_addr_set = FALSE;
+                if (dwarf_line_is_addr_set(linebuf[i], &has_is_addr_set, &error) != DW_DLV_OK) {
+                    OutputDebug("MGWHELP: dwarf_line_is_addr_set failed - %s\n",
+                                dwarf_errmsg(error));
+                    has_is_addr_set = FALSE;
+                }
+                if (has_is_addr_set) {
+                    break;
+                }
+                ++i;
+            }
+            continue;
         }
 
-        if (result && file) {
-            info->filename = file;
-            info->line = lineno;
-            info->offset_addr = offset_addr;
+        if (addr > plineaddr && addr < lineaddr) {
+            // Lines are past the address
+            lineno = plineno;
+            file = pfile;
+            pfile = nullptr;
+            result = true;
+            break;
         }
-        if (file) {
-            dwarf_dealloc(dbg, file, DW_DLA_STRING);
+
+        if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
+            OutputDebug("MGWHELP: dwarf_lineno failed - %s\n", dwarf_errmsg(error));
+            break;
         }
+
+        if (dwarf_linesrc(linebuf[i], &file, &error) != DW_DLV_OK) {
+            OutputDebug("MGWHELP: dwarf_linesrc failed - %s\n", dwarf_errmsg(error));
+        }
+
+        if (addr == lineaddr) {
+            // Exact match
+            result = true;
+            break;
+        }
+
+        plineaddr = lineaddr;
+        plineno = lineno;
         if (pfile) {
             dwarf_dealloc(dbg, pfile, DW_DLA_STRING);
         }
-
-        dwarf_srclines_dealloc(dbg, linebuf, linecount);
+        pfile = file;
+        file = NULL;
+        ++i;
     }
 
+    if (result && file) {
+        info->filename = file;
+        info->line = lineno;
+        info->offset_addr = offset_addr;
+    }
+    if (file) {
+        dwarf_dealloc(dbg, file, DW_DLA_STRING);
+    }
+    if (pfile) {
+        dwarf_dealloc(dbg, pfile, DW_DLA_STRING);
+    }
+
+no_srclines:;
+    dwarf_srclines_dealloc_b(context);
+no_linecontext:;
+no_func:
     dwarf_dealloc(dbg, cu_die, DW_DLA_DIE);
 no_cu_die:;
 no_die_offset:;
