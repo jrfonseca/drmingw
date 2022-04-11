@@ -3,10 +3,6 @@ configure_file (libdwarf/libdwarf/libdwarf.h.in
     COPYONLY)
 
 set (HAVE_ALLOCA YES)
-set (HAVE_ELF64_RELA YES)
-set (HAVE_ELF64_R_INFO YES)
-set (HAVE_ELF64_SYM YES)
-set (HAVE_ELF_H YES)
 set (HAVE_MALLOC_H YES)
 set (HAVE_MEMORY_H YES)
 set (HAVE_NONSTANDARD_PRINTF_64_FORMAT YES)

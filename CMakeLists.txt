@@ -25,7 +25,6 @@ set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package (WinDbg)
 
 include_directories (
-    ${CMAKE_SOURCE_DIR}/thirdparty/elf
     ${CMAKE_SOURCE_DIR}/thirdparty/libiberty
 )
 
