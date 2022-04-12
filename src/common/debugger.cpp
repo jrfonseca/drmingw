@@ -173,7 +173,11 @@ GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
         }
     }
     if (pfnGetFinalPathNameByHandle) {
-        return pfnGetFinalPathNameByHandle(hFile, lpszFilePath, cchFilePath, 0) < cchFilePath;
+        DWORD dwRet = pfnGetFinalPathNameByHandle(hFile, lpszFilePath, cchFilePath, 0);
+        if (dwRet == 0) {
+            OutputDebug("GetFinalPathNameByHandle failed with 0x%08lx\n", GetLastError());
+        }
+        return dwRet > 0 && dwRet < cchFilePath;
     }
 
     DWORD dwFileSizeHi = 0;
