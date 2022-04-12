@@ -102,7 +102,8 @@ def test(args):
 
     cmd = [
         catchsegvExe,
-        '-v',
+        # XXX: This causes races on stderr output with seh_handled
+        #'-v',
         '-t', '30',
         testExe
     ]
