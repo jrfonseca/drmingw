@@ -162,27 +162,15 @@ symCallback(HANDLE hProcess, ULONG ActionCode, ULONG64 CallbackData, ULONG64 Use
 static BOOL
 GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
 {
-    static HMODULE hKernel32;
-    typedef DWORD(WINAPI * PFNGETFINALPATHNAMEBYHANDLE)(HANDLE, LPSTR, DWORD, DWORD);
-    static PFNGETFINALPATHNAMEBYHANDLE pfnGetFinalPathNameByHandle = NULL;
-    if (!hKernel32) {
-        hKernel32 = GetModuleHandleA("kernel32.dll");
-        if (hKernel32) {
-            pfnGetFinalPathNameByHandle =
-                (PFNGETFINALPATHNAMEBYHANDLE)GetProcAddress(hKernel32, "GetFinalPathNameByHandleA");
-        }
-    }
-    if (pfnGetFinalPathNameByHandle) {
-        // FILE_NAME_NORMALIZED (the default) can fail on SMB files with
-        // ERROR_ACCESS_DENIED.  Use FILE_NAME_OPENED instead.
-        // https://github.com/jrfonseca/drmingw/issues/65
-        DWORD dwRet = pfnGetFinalPathNameByHandle(hFile, lpszFilePath, cchFilePath, FILE_NAME_OPENED);
-        if (dwRet == 0) {
-            OutputDebug("GetFinalPathNameByHandle failed with 0x%08lx\n", GetLastError());
-            // fallback to MapViewOfFile
-        } else {
-            return dwRet < cchFilePath;
-        }
+    // FILE_NAME_NORMALIZED (the default) can fail on SMB files with
+    // ERROR_ACCESS_DENIED.  Use FILE_NAME_OPENED instead.
+    // https://github.com/jrfonseca/drmingw/issues/65
+    DWORD dwRet = GetFinalPathNameByHandleA(hFile, lpszFilePath, cchFilePath, FILE_NAME_OPENED);
+    if (dwRet == 0) {
+        OutputDebug("GetFinalPathNameByHandle failed with 0x%08lx\n", GetLastError());
+        // fallback to MapViewOfFile
+    } else {
+        return dwRet < cchFilePath;
     }
 
     DWORD dwFileSizeHi = 0;
