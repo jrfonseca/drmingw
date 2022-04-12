@@ -584,11 +584,9 @@ DebugMainLoop(void)
             }
 
             if (debugOptions.verbose_flag) {
-                PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
-
                 lprintf("CREATE_PROCESS PID=%lu TID=%lu lpBaseOfImage=%p %s\n",
                         DebugEvent.dwProcessId, DebugEvent.dwThreadId,
-                        DebugEvent.u.CreateProcessInfo.lpBaseOfImage, lpModuleName);
+                        DebugEvent.u.CreateProcessInfo.lpBaseOfImage, lpImageName);
             }
 
             HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
@@ -680,10 +678,8 @@ DebugMainLoop(void)
             }
 
             if (debugOptions.verbose_flag) {
-                PCSTR lpModuleName = lpImageName ? getBaseName(lpImageName) : "";
-
                 lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %s\n", DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId, DebugEvent.u.LoadDll.lpBaseOfDll, lpModuleName);
+                        DebugEvent.dwThreadId, DebugEvent.u.LoadDll.lpBaseOfDll, lpImageName);
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
