@@ -173,11 +173,16 @@ GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
         }
     }
     if (pfnGetFinalPathNameByHandle) {
-        DWORD dwRet = pfnGetFinalPathNameByHandle(hFile, lpszFilePath, cchFilePath, 0);
+        // FILE_NAME_NORMALIZED (the default) can fail on SMB files with
+        // ERROR_ACCESS_DENIED.  Use FILE_NAME_OPENED instead.
+        // https://github.com/jrfonseca/drmingw/issues/65
+        DWORD dwRet = pfnGetFinalPathNameByHandle(hFile, lpszFilePath, cchFilePath, FILE_NAME_OPENED);
         if (dwRet == 0) {
             OutputDebug("GetFinalPathNameByHandle failed with 0x%08lx\n", GetLastError());
+            // fallback to MapViewOfFile
+        } else {
+            return dwRet < cchFilePath;
         }
-        return dwRet > 0 && dwRet < cchFilePath;
     }
 
     DWORD dwFileSizeHi = 0;
