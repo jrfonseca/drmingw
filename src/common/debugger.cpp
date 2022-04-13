@@ -164,11 +164,11 @@ GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
 {
     // FILE_NAME_NORMALIZED (the default) can fail on SMB files with
     // ERROR_ACCESS_DENIED.  Use FILE_NAME_OPENED instead.
-    // https://github.com/jrfonseca/drmingw/issues/65
     DWORD dwRet = GetFinalPathNameByHandleA(hFile, lpszFilePath, cchFilePath, FILE_NAME_OPENED);
     if (dwRet == 0) {
         OutputDebug("GetFinalPathNameByHandle failed with 0x%08lx\n", GetLastError());
         // fallback to MapViewOfFile
+        // https://github.com/jrfonseca/drmingw/issues/65
     } else {
         return dwRet < cchFilePath;
     }
@@ -186,8 +186,40 @@ GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
         LPVOID pMem = MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 1);
         if (pMem) {
             if (GetMappedFileNameA(GetCurrentProcess(), pMem, lpszFilePath, cchFilePath)) {
-                // Unlike the example, we don't bother translating the path with device name to
-                // drive letters.
+                // Translate path with device name to drive letters.
+                char szDriveStrings[512] = "";
+                if (GetLogicalDriveStrings(_countof(szDriveStrings) - 1, szDriveStrings)) {
+                    char szDrive[3] = " :";
+                    BOOL bFound = FALSE;
+                    char *p = szDriveStrings;
+
+                    do {
+                        // Copy the drive letter to the template string
+                        *szDrive = *p;
+
+                        // Look up each device name
+                        char szName[MAX_PATH];
+                        if (QueryDosDevice(szDrive, szName, _countof(szName))) {
+                            size_t uNameLen = strlen(szName);
+                            if (uNameLen < MAX_PATH) {
+                                bFound = _strnicmp(lpszFilePath, szName, uNameLen) == 0 &&
+                                         lpszFilePath[uNameLen] == '\\';
+                                if (bFound) {
+                                    // Replace device path with DOS path
+                                    std::string s("\\\\?\\");
+                                    s.append(szDrive);
+                                    s.append(&lpszFilePath[uNameLen]);
+                                    strncpy(lpszFilePath, s.c_str(), cchFilePath);
+                                    lpszFilePath[cchFilePath - 1] = '\0';
+                                }
+                            }
+                        }
+
+                        // Go to the next NULL character.
+                        while (*p++);
+                    } while (!bFound && *p); // end of string
+                }
+
                 bSuccess = TRUE;
             }
             UnmapViewOfFile(pMem);
