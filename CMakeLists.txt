@@ -106,11 +106,12 @@ set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 add_definitions (
-    # minimum required OS version
+    # Require Windows 7
+    # http://msdn.microsoft.com/en-us/library/aa383745.aspx
     -D_WIN32_WINNT=0x0601
     -DWINVER=0x0601
     # https://msdn.microsoft.com/en-gb/library/windows/desktop/ms683198.aspx
-    -DPSAPI_VERSION=1
+    -DPSAPI_VERSION=2
 
     # version
     -DPACKAGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR}
