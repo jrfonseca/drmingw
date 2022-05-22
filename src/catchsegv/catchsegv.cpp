@@ -30,13 +30,12 @@
 #include <windows.h>
 #include <dbghelp.h>
 
-#include <getopt.h>
-
 #include <string>
 
 #include "log.h"
 #include "debugger.h"
 #include "symbols.h"
+#include "getoptW.h"
 
 
 static void
@@ -86,12 +85,12 @@ EnumWindowCallback(HWND hWnd, LPARAM lParam)
     dwThreadId = GetWindowThreadProcessId(hWnd, &dwProcessId);
     if (dwProcessId == (DWORD)lParam) {
         if (GetWindowLong(hWnd, GWL_STYLE) & DS_MODALFRAME) {
-            char szWindowText[256];
-            if (GetWindowTextA(hWnd, szWindowText, _countof(szWindowText)) <= 0) {
+            wchar_t szWindowText[256];
+            if (GetWindowTextW(hWnd, szWindowText, _countof(szWindowText)) <= 0) {
                 szWindowText[0] = 0;
             }
 
-            fprintf(stderr, "catchsegv: error: message dialog detected (%s)\n", szWindowText);
+            fprintf(stderr, "catchsegv: error: message dialog detected (%ls)\n", szWindowText);
 
             g_TimerIgnore = TRUE;
 
@@ -184,23 +183,23 @@ consoleCtrlHandler(DWORD fdwCtrlType)
  * Determine whether an argument should be quoted.
  */
 static bool
-needsQuote(const char *arg)
+needsQuote(const wchar_t *arg)
 {
-    char c;
+    wchar_t c;
     while (true) {
         c = *arg++;
-        if (c == '\0') {
+        if (c == L'\0') {
             break;
         }
-        if (c == ' ' || c == '\t' || c == '\"') {
+        if (c == L' ' || c == L'\t' || c == L'\"') {
             return true;
         }
-        if (c == '\\') {
+        if (c == L'\\') {
             c = *arg++;
-            if (c == '\0') {
+            if (c == L'\0') {
                 break;
             }
-            if (c == '"') {
+            if (c == L'"') {
                 return true;
             }
         }
@@ -210,24 +209,24 @@ needsQuote(const char *arg)
 
 
 static void
-quoteArg(std::string &s, const char *arg)
+quoteArg(std::wstring &s, const wchar_t *arg)
 {
-    char c;
+    wchar_t c;
     unsigned backslashes = 0;
 
-    s.push_back('"');
+    s.push_back(L'"');
     while (true) {
         c = *arg++;
-        if (c == '\0') {
+        if (c == L'\0') {
             break;
-        } else if (c == '"') {
+        } else if (c == L'"') {
             while (backslashes) {
-                s.push_back('\\');
+                s.push_back(L'\\');
                 --backslashes;
             }
-            s.push_back('\\');
+            s.push_back(L'\\');
         } else {
-            if (c == '\\') {
+            if (c == L'\\') {
                 ++backslashes;
             } else {
                 backslashes = 0;
@@ -235,12 +234,12 @@ quoteArg(std::string &s, const char *arg)
         }
         s.push_back(c);
     }
-    s.push_back('"');
+    s.push_back(L'"');
 }
 
 
 int
-main(int argc, char **argv)
+wmain(int argc, wchar_t **argv)
 {
     /*
      * Disable error message boxes.
@@ -265,39 +264,39 @@ main(int argc, char **argv)
 
     bool debugHeap = false;
     while (1) {
-        int opt = getopt(argc, argv, "?1dhHmt:zZ:v");
+        int opt = getoptW(argc, argv, L"?1dhHmt:zZ:v");
 
         switch (opt) {
-        case 'h':
+        case L'h':
             Usage();
             return 0;
-        case 'v':
+        case L'v':
             debugOptions.verbose_flag = true;
             break;
-        case 'd':
+        case L'd':
             debugOptions.debug_flag = true;
             break;
-        case '1':
+        case L'1':
             debugOptions.first_chance = true;
             break;
-        case 'm':
+        case L'm':
             g_ModalDialogIgnore = TRUE;
             break;
-        case 't':
-            g_TimeOut = strtoul(optarg, NULL, 0);
+        case L't':
+            g_TimeOut = wcstoul(optarg, NULL, 0);
             break;
-        case 'H':
+        case L'H':
             debugHeap = true;
             break;
-        case 'z':
+        case L'z':
             debugOptions.minidump = true;
             break;
-        case 'Z':
+        case L'Z':
             debugOptions.minidump = true;
             debugOptions.minidumpDir = optarg;
             break;
-        case '?':
-            if (optopt == '?') {
+        case L'?':
+            if (optopt == L'?') {
                 Usage();
                 return 0;
             }
@@ -316,11 +315,11 @@ main(int argc, char **argv)
      * Concatenate remaining arguments into a command line
      */
 
-    std::string commandLine;
+    std::wstring commandLine;
 
     char sep = 0;
     while (optind < argc) {
-        const char *arg = argv[optind];
+        const wchar_t *arg = argv[optind];
 
         if (sep) {
             commandLine.push_back(sep);
@@ -350,10 +349,10 @@ main(int argc, char **argv)
     // Disable debug heap
     // https://msdn.microsoft.com/en-us/library/windows/desktop/aa366705.aspx
     if (!debugHeap) {
-        SetEnvironmentVariableA("_NO_DEBUG_HEAP", "1");
+        SetEnvironmentVariableW(L"_NO_DEBUG_HEAP", L"1");
     }
 
-    STARTUPINFOA StartupInfo;
+    STARTUPINFOW StartupInfo;
     ZeroMemory(&StartupInfo, sizeof StartupInfo);
     StartupInfo.cb = sizeof StartupInfo;
     StartupInfo.dwFlags = STARTF_USESHOWWINDOW;
@@ -362,8 +361,8 @@ main(int argc, char **argv)
     PROCESS_INFORMATION ProcessInformation;
     ZeroMemory(&ProcessInformation, sizeof ProcessInformation);
 
-    if (!CreateProcessA(NULL, // lpApplicationName
-                        const_cast<char *>(commandLine.c_str()),
+    if (!CreateProcessW(NULL, // lpApplicationName
+                        const_cast<wchar_t *>(commandLine.c_str()),
                         NULL, // lpProcessAttributes
                         NULL, // lpThreadAttributes
                         TRUE, // bInheritHandles

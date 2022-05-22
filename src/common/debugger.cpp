@@ -216,7 +216,8 @@ GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
                         }
 
                         // Go to the next NULL character.
-                        while (*p++);
+                        while (*p++)
+                            ;
                     } while (!bFound && *p); // end of string
                 }
 
@@ -328,17 +329,17 @@ writeDump(DWORD dwProcessId,
     }
     pProcessInfo->fDumpWritten = TRUE;
 
-    std::string filePath;
+    std::wstring filePath;
     if (debugOptions.minidumpDir) {
         filePath += debugOptions.minidumpDir;
-        filePath += '\\';
+        filePath += L'\\';
     }
-    filePath += std::to_string(dwProcessId);
-    filePath += ".dmp";
-    LPCSTR szFilePath = filePath.c_str();
+    filePath += std::to_wstring(dwProcessId);
+    filePath += L".dmp";
+    LPCWSTR szFilePath = filePath.c_str();
 
-    HANDLE hFile = CreateFile(szFilePath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
-                              FILE_ATTRIBUTE_NORMAL, nullptr);
+    HANDLE hFile = CreateFileW(szFilePath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
+                               FILE_ATTRIBUTE_NORMAL, nullptr);
 
     /*
      * http://www.debuginfo.com/articles/effminidumps2.html#minidump
@@ -377,10 +378,10 @@ writeDump(DWORD dwProcessId,
     }
 
     if (bSuccess) {
-        lprintf("info: minidump written to %s\n", szFilePath);
+        lprintf("info: minidump written to %hs\n", szFilePath);
 
     } else {
-        lprintf("error: failed to write minidump to %s\n", szFilePath);
+        lprintf("error: failed to write minidump to %hs\n", szFilePath);
     }
 }
 
