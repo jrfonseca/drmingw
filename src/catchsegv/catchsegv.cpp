@@ -362,7 +362,7 @@ wmain(int argc, wchar_t **argv)
     ZeroMemory(&ProcessInformation, sizeof ProcessInformation);
 
     if (!CreateProcessW(NULL, // lpApplicationName
-                        const_cast<wchar_t *>(commandLine.c_str()),
+                        &commandLine[0],
                         NULL, // lpProcessAttributes
                         NULL, // lpThreadAttributes
                         TRUE, // bInheritHandles
