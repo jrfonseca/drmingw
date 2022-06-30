@@ -30,14 +30,25 @@
 #include <windows.h>
 
 #include "macros.h"
-
-#ifdef __MINGW32__
-
 #define PF_FASTFAIL_AVAILABLE 23
 
 BOOL WINAPI IsProcessorFeaturePresent(DWORD ProcessorFeature);
 
 #define FAST_FAIL_FATAL_APP_EXIT 7
+
+#if defined(__MINGW64__) && defined(_M_ARM64)
+static NO_RETURN FORCE_INLINE
+void __fastfail(unsigned int code) {
+    register unsigned int w0 __asm__ ("w0") = code;
+    asm volatile (
+        "brk #0xF003"
+         :
+         : "r" (w0)
+     );
+    __builtin_unreachable();
+}
+
+#elif defined(__MINGW32__)
 
 static NO_RETURN FORCE_INLINE
 void __fastfail(unsigned int code) {

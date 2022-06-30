@@ -90,7 +90,9 @@ GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
         // XXX: In 64-bits WINE we can get context record that don't match the
         // exception record somehow
-#ifdef _WIN64
+#if defined(_M_ARM64)
+        PVOID ip = (PVOID)pContext->Pc;
+#elif defined(_WIN64)
         PVOID ip = (PVOID)pContext->Rip;
 #else
         PVOID ip = (PVOID)pContext->Eip;

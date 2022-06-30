@@ -92,7 +92,9 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
 
 static void
 dumpContext(
-#ifdef _WIN64
+#if defined(_M_ARM64)
+    const CONTEXT *pContext
+#elif defined(_WIN64)
     const WOW64_CONTEXT *pContext
 #else
     const CONTEXT *pContext
@@ -101,6 +103,20 @@ dumpContext(
 {
     // Show the registers
     lprintf("Registers:\n");
+#ifdef _M_ARM64
+    if (pContext->ContextFlags & CONTEXT_INTEGER) {
+        for(int i = 0 ; i < 29 ; ++i)
+        {
+            lprintf("X%d=%08lx ", i, pContext->X[i]);
+        }
+        lprintf("\n");
+    }
+
+    if (pContext->ContextFlags & CONTEXT_CONTROL) {
+         lprintf("pc=%08lx sp=%08lx fp=%08lx\n",
+            pContext->Pc, pContext->Sp, pContext->Fp);
+    }
+#else    
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
         lprintf("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n", pContext->Eax,
                 pContext->Ebx, pContext->Ecx, pContext->Edx, pContext->Esi, pContext->Edi);
@@ -135,6 +151,7 @@ dumpContext(
                     pContext->EFlags);
         }
     }
+#endif    
     lprintf("\n\n");
 }
 
@@ -149,6 +166,18 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     STACKFRAME64 StackFrame;
     ZeroMemory(&StackFrame, sizeof StackFrame);
 
+#ifdef _M_ARM64
+    USHORT processArch = 0;
+    USHORT machineArch = 0;
+    IsWow64Process2(hProcess, &processArch, &machineArch);
+
+    assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
+    MachineType = IMAGE_FILE_MACHINE_ARM64;
+    dumpContext(pContext);
+    StackFrame.AddrPC.Offset = pContext->Pc;
+    StackFrame.AddrStack.Offset = pContext->Sp;
+    StackFrame.AddrFrame.Offset = pContext->Fp;
+#else
     BOOL bWow64 = FALSE;
     if (HAVE_WIN64) {
         IsWow64Process(hProcess, &bWow64);
@@ -183,6 +212,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     StackFrame.AddrPC.Mode = AddrModeFlat;
     StackFrame.AddrStack.Mode = AddrModeFlat;
     StackFrame.AddrFrame.Mode = AddrModeFlat;
+#endif
 
     /*
      * StackWalk64 modifies Context, so pass a copy.

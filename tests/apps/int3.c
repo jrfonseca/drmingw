@@ -29,7 +29,9 @@
 
 #include "macros.h"
 
-#ifdef __MINGW32__
+#if defined(__MINGW64__) && defined(_M_ARM64)
+#define __debugbreak()  asm volatile ("brk #0xf000")
+#elif defined(__MINGW32__)
 #define __debugbreak()  asm volatile ("int3")
 #endif
 
