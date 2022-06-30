@@ -105,18 +105,20 @@ dumpContext(
     lprintf("Registers:\n");
 #ifdef _M_ARM64
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
-        for(int i = 0 ; i < 29 ; ++i)
+        for(int i = 0 ; i < 28 ; i += 4)
         {
-            lprintf("X%d=%08lx ", i, pContext->X[i]);
+            lprintf("X%d=%016I64X X%d=%016I64X X%d=%016I64X X%d=%016I64X\n", i, pContext->X[i],
+                i+1, pContext->X[i+1], i+2, pContext->X[i+2], i+3, pContext->X[i+3]);
         }
-        lprintf("\n");
+        lprintf("X%d=%016I64X\n", 28, pContext->X[28]);
     }
 
     if (pContext->ContextFlags & CONTEXT_CONTROL) {
-         lprintf("pc=%08lx sp=%08lx fp=%08lx\n",
+         lprintf("pc=%016I64X sp=%016I64X fp=%016I64X \n",
             pContext->Pc, pContext->Sp, pContext->Fp);
     }
-#else    
+
+#else
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
         lprintf("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n", pContext->Eax,
                 pContext->Ebx, pContext->Ecx, pContext->Edx, pContext->Esi, pContext->Edi);
@@ -209,10 +211,11 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         StackFrame.AddrFrame.Offset = pContext->Rbp;
 #endif
     }
+#endif
+
     StackFrame.AddrPC.Mode = AddrModeFlat;
     StackFrame.AddrStack.Mode = AddrModeFlat;
     StackFrame.AddrFrame.Mode = AddrModeFlat;
-#endif
 
     /*
      * StackWalk64 modifies Context, so pass a copy.
