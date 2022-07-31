@@ -33,4 +33,4 @@ Note that building with MSYS or Cygwin is not necessary nor *supported*.
 I always build DrMinGW from Linux with MinGW cross-compilation toolchain, by
 doing:
 
-    .ci/build.sh
+    ci/build.sh
