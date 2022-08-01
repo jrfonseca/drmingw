@@ -100,16 +100,22 @@ else ()
     add_definitions (-DHAVE_WIN64=0)
 endif ()
 
+# Require Windows 10 for Windows on ARM, Windows 7 for all else
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*|arm64.*|ARM64.*)")
+    SET(WINNT 0x0A00)
+else()
+    SET(WINNT 0x0601)
+endif()
+
 # Put all executables into top-level bin subdirectory
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 add_definitions (
-    # Require Windows 7
     # http://msdn.microsoft.com/en-us/library/aa383745.aspx
-    -D_WIN32_WINNT=0x0601
-    -DWINVER=0x0601
+    -D_WIN32_WINNT=${WINNT}
+    -DWINVER=${WINNT}
     # https://msdn.microsoft.com/en-gb/library/windows/desktop/ms683198.aspx
     -DPSAPI_VERSION=2
 

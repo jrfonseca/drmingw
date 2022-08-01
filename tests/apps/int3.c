@@ -29,7 +29,9 @@
 
 #include "macros.h"
 
-#ifdef __MINGW32__
+#if defined(__MINGW64__) && defined(_M_ARM64)
+#define __debugbreak()  asm volatile ("brk #0xf000")
+#elif defined(__MINGW32__)
 #define __debugbreak()  asm volatile ("int3")
 #endif
 
@@ -41,5 +43,5 @@ main(int argc, char *argv[])
     return 0;
 }
 
-// CHECK_STDERR: /  int3\.exe\!main\+0x[0-9a-f]+  \[.*\bint3\.c @ 39\]/
+// CHECK_STDERR: /  int3\.exe\!main\+0x[0-9a-f]+  \[.*\bint3\.c @ 41\]/
 // CHECK_EXIT_CODE: 0x80000003
