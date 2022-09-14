@@ -192,7 +192,8 @@ Setup(void)
         path.resize(nSize);
         auto found = std::find(path.crbegin(), path.crend(), '.');
         if (found != path.crend()) {
-            path.resize(found - path.crbegin());
+            // Reverse iterators here, hence crend() points to string start
+            path.resize(path.crend() - found - 1);
         }
         path.push_back('.');
         path.push_back('R');
