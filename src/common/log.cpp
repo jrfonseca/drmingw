@@ -393,6 +393,8 @@ getExceptionString(NTSTATUS ExceptionCode)
 
     case STATUS_WX86_BREAKPOINT: // 0x4000001F
         return "Breakpoint";
+    case STATUS_FATAL_APP_EXIT: // 0x40000015
+        return "Fast Application Exit";
     case DBG_TERMINATE_THREAD: // 0x40010003
         return "Terminate Thread";
     case DBG_TERMINATE_PROCESS: // 0x40010004
