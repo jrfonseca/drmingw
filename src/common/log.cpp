@@ -369,6 +369,9 @@ getExceptionString(NTSTATUS ExceptionCode)
         return "Stack Overflow";
     case EXCEPTION_POSSIBLE_DEADLOCK: // 0xC0000194
         return "Possible deadlock condition";
+    case STATUS_STACK_BUFFER_OVERRUN: // 0xC0000409
+        // https://devblogs.microsoft.com/oldnewthing/20190108-00/?p=100655
+        return "Fast Fail";
     case STATUS_FATAL_USER_CALLBACK_EXCEPTION: // 0xC000041D
         return "Fatal User Callback Exception";
     case STATUS_ASSERTION_FAILURE: // 0xC0000420
@@ -480,6 +483,32 @@ dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord)
         }
 
         lprintf(" %s location %p", lpszVerb, (PVOID)pExceptionRecord->ExceptionInformation[1]);
+    }
+
+    // https://devblogs.microsoft.com/oldnewthing/20190108-00/
+    if (ExceptionCode == STATUS_STACK_BUFFER_OVERRUN &&
+        pExceptionRecord->NumberParameters >= 1) {
+        UINT uCode = pExceptionRecord->ExceptionInformation[0];
+        static LPCSTR szCodes[] = {
+            "LEGACY_GS_VIOLATION",         // FAST_FAIL_LEGACY_GS_VIOLATION
+            "VTGUARD_CHECK_FAILURE",       // FAST_FAIL_VTGUARD_CHECK_FAILURE
+            "STACK_COOKIE_CHECK_FAILURE",  // FAST_FAIL_STACK_COOKIE_CHECK_FAILURE
+            "CORRUPT_LIST_ENTRY",          // FAST_FAIL_CORRUPT_LIST_ENTRY
+            "INCORRECT_STACK",             // FAST_FAIL_INCORRECT_STACK
+            "INVALID_ARG",                 // FAST_FAIL_INVALID_ARG
+            "GS_COOKIE_INIT",              // FAST_FAIL_GS_COOKIE_INIT
+            "FATAL_APP_EXIT",              // FAST_FAIL_FATAL_APP_EXIT
+            "RANGE_CHECK_FAILURE",         // FAST_FAIL_RANGE_CHECK_FAILURE
+            "UNSAFE_REGISTRY_ACCESS",      // FAST_FAIL_UNSAFE_REGISTRY_ACCESS
+        };
+        LPCSTR szCode;
+        if (uCode < _countof(szCodes)) {
+            szCode = szCodes[uCode];
+        } else{
+            szCode = "INVALID_FAST_FAIL_CODE";  // FAST_FAIL_INVALID_FAST_FAIL_CODE
+        }
+
+        lprintf(" with code %u (%s)", uCode, szCode);
     }
 
     lprintf(".\n\n");
