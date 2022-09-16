@@ -34,7 +34,7 @@ jobs:
         if-no-files-found: error
 
   build-cross:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v2
       with:
@@ -45,8 +45,8 @@ jobs:
     - run: |
         sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
         sudo apt-get update -qq
-        sudo apt-get install -yqq --allow-downgrades libgd3/focal libpcre2-8-0/focal libpcre2-16-0/focal libpcre2-32-0/focal libpcre2-posix2/focal
-        sudo apt-get purge -yqq libmono* moby* mono* php* libgdiplus libpcre2-posix3 libzip4
+        sudo apt-get install -yqq --allow-downgrades libgd3/jammy libpcre2-8-0/jammy libpcre2-16-0/jammy libpcre2-32-0/jammy libpcre2-posix3/jammy
+        sudo apt-get purge -yqq libmono* moby* mono* php* libgdiplus libzip4
     - run: sudo apt-get install -yqq --install-recommends mingw-w64 ninja-build cmake xinit xvfb wine wine64 wine32:i386
     - run: ci/build.sh
 
