@@ -96,7 +96,7 @@ You can use ExcHndl by:
             pfnExcHndlInit = GetProcAddress("ExcHndlInit");
             pfnExcHndlInit()
 
-  * you can also override the report location by invoking the exported `ExcHndlSetLogFileNameA` entry-point.
+  * you can also override the report location by invoking the exported `ExcHndlSetLogFileNameA`/`ExcHndlSetLogFileNameW` entry-point.
 
 Note that currently [only unhandled exceptions on the thread which called ExcHndlInit() which be caught and logged](https://github.com/jrfonseca/drmingw/issues/54).
 

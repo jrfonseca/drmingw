@@ -37,7 +37,7 @@
 // Declare the static variables
 static BOOL g_bHandlerSet = FALSE;
 static LPTOP_LEVEL_EXCEPTION_FILTER g_prevExceptionFilter = nullptr;
-static std::string g_szLogFileName;
+static std::wstring g_szLogFileName = L"";
 static HANDLE g_hReportFile = nullptr;
 static BOOL g_bOwnReportFile = FALSE;
 
@@ -143,12 +143,12 @@ TopLevelExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo)
             SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
         if (!g_hReportFile) {
-            if (g_szLogFileName == "-") {
+            if (g_szLogFileName == L"-") {
                 g_hReportFile = GetStdHandle(STD_ERROR_HANDLE);
                 g_bOwnReportFile = FALSE;
-            } else {
+            } else if (!g_szLogFileName.empty()) {
                 g_hReportFile =
-                    CreateFileA(g_szLogFileName.c_str(), GENERIC_WRITE,
+                    CreateFileW(g_szLogFileName.c_str(), GENERIC_WRITE,
                                 FILE_SHARE_READ | FILE_SHARE_WRITE, 0, OPEN_ALWAYS, 0, 0);
                 g_bOwnReportFile = TRUE;
             }
@@ -180,9 +180,9 @@ Setup(void)
 
     // Figure out what the report file will be named, and store it away
     DWORD nSize = MAX_PATH;
-    std::vector<char> path(nSize);
+    std::vector<WCHAR> path(nSize);
     DWORD dwRet;
-    while ((dwRet = GetModuleFileNameA(nullptr, &path[0], nSize)) == nSize) {
+    while ((dwRet = GetModuleFileNameW(nullptr, &path[0], nSize)) == nSize) {
         nSize *= 2;
         path.resize(nSize);
     }
@@ -190,19 +190,19 @@ Setup(void)
         // Look for the '.' before the "EXE" extension.  Replace the extension
         // with "RPT"
         path.resize(nSize);
-        auto found = std::find(path.crbegin(), path.crend(), '.');
+        auto found = std::find(path.crbegin(), path.crend(), L'.');
         if (found != path.crend()) {
             // Reverse iterators here, hence crend() points to string start
             path.resize(path.crend() - found - 1);
         }
-        path.push_back('.');
-        path.push_back('R');
-        path.push_back('P');
-        path.push_back('T');
+        path.push_back(L'.');
+        path.push_back(L'R');
+        path.push_back(L'P');
+        path.push_back(L'T');
         g_szLogFileName.replace(g_szLogFileName.begin(), g_szLogFileName.end(), &path[0],
                                 path.size());
     } else {
-        g_szLogFileName = "EXCHNDL.RPT";
+        g_szLogFileName = L"EXCHNDL.RPT";
     }
 }
 
@@ -251,13 +251,28 @@ ExcHndlInit(void)
 
 
 BOOL APIENTRY
-ExcHndlSetLogFileNameA(const char *szLogFileName)
+ExcHndlSetLogFileNameA(const char *pszLogFileName)
 {
-    if (!szLogFileName) {
-        OutputDebug("EXCHNDL: specified log name is invalid (%s)\n", szLogFileName);
+    if (!pszLogFileName) {
+        OutputDebug("EXCHNDL: specified log name is invalid (nullptr)\n");
         return FALSE;
     }
-    g_szLogFileName = szLogFileName;
+    int nSize = MultiByteToWideChar(CP_ACP, 0, pszLogFileName, -1, nullptr, 0);
+    std::vector<WCHAR> wideLogFileName(nSize);
+    assert(MultiByteToWideChar(CP_ACP, 0, pszLogFileName, -1, &wideLogFileName[0], nSize) != 0);
+    g_szLogFileName = &wideLogFileName[0];
+    return TRUE;
+}
+
+
+BOOL APIENTRY
+ExcHndlSetLogFileNameW(const WCHAR *pszLogFileName)
+{
+    if (!pszLogFileName) {
+        OutputDebug("EXCHNDL: specified log name is invalid (nullptr)\n");
+        return FALSE;
+    }
+    g_szLogFileName = pszLogFileName;
     return TRUE;
 }
 
