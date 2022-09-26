@@ -55,7 +55,7 @@ jobs:
     # https://github.community/t/trigger-job-on-tag-push-only/18076/2
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     needs: build
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
     - uses: actions/download-artifact@v2
       id: download
