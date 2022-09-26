@@ -31,9 +31,22 @@ ExcHndlInit(void);
 
 
 // Override the report file name.
+// The file name must be encoded for the current Windows code page.
+// The default code page does not support Unicode characters,
+// unless you are targeting Windows Version 1903 or later.
 //
 // Default is prog_name.RPT, in the same directory as the main executable.
 //
 // You can also pass "-" for stderr.
 EXTERN_C BOOL APIENTRY
-ExcHndlSetLogFileNameA(const char *szLogFileName);
+ExcHndlSetLogFileNameA(const char *pszLogFileName);
+
+
+// Override the report file name.
+// The file name is encoded as Unicode wide characters.
+//
+// Default is prog_name.RPT, in the same directory as the main executable.
+//
+// You can also pass L"-" for stderr.
+EXTERN_C BOOL APIENTRY
+ExcHndlSetLogFileNameW(const WCHAR *pszLogFileName);
