@@ -140,7 +140,7 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 static void
 Usage(void)
 {
-    fputs("usage: catchsegv [options] <command-line>\n"
+    fputs("usage: catchsegv [options] -- <command-line>\n"
           "\n"
           "options:\n"
           "  -?|-h        displays command line help text\n"

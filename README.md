@@ -145,7 +145,7 @@ All the above make Dr. Mingw's catchsegv ideally suited for test automation.
 
 Here's the how to use it:
 
-    usage: catchsegv [options] <command-line>
+    usage: catchsegv [options] -- <command-line>
     
     options:
       -?|-h        displays command line help text

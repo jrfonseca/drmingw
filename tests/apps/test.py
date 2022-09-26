@@ -105,6 +105,7 @@ def test(args):
         # XXX: This causes races on stderr output with seh_handled
         #'-v',
         '-t', '30',
+        '--',
         testExe
     ]
 
