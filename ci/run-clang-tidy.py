@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 ###########################################################################
 #
-# Copyright 2021 Jose Fonseca
+# Copyright 2021-2022 Jose Fonseca
 # All Rights Reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,7 +46,7 @@ except IndexError:
 # http://stackoverflow.com/a/19839946
 extra_args = []
 p = subprocess.Popen(
-        ["x86_64-w64-mingw32-g++", "-x", "c", "-E", "-Wp,-v", '-'],
+        ["x86_64-w64-mingw32-g++", "-x", "c++", "-E", "-Wp,-v", '-'],
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
