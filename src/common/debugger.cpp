@@ -378,10 +378,10 @@ writeDump(DWORD dwProcessId,
     }
 
     if (bSuccess) {
-        lprintf("info: minidump written to %hs\n", szFilePath);
+        lprintf("info: minidump written to %ls\n", szFilePath);
 
     } else {
-        lprintf("error: failed to write minidump to %hs\n", szFilePath);
+        lprintf("error: failed to write minidump to %ls\n", szFilePath);
     }
 }
 
