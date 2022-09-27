@@ -58,14 +58,14 @@ for line in p.stderr:
             if os.path.exists(os.path.join(include, 'ia32intrin.h')):
                 # XXX: We must use Clang's intrinsic headers
                 continue
-            extra_args.append('-I' + os.path.normpath(include))
+            extra_args += ['-isystem', os.path.normpath(include)]
 extra_args += [
     '-D__MINGW32__',
     '-D_WIN32',
     '-D_WIN64',
 ]
 extra_args += [
-    '--target=x86_64-pc-mingw32',
+    '-target', 'x86_64-w64-mingw32',
 ]
 
 paths = []
