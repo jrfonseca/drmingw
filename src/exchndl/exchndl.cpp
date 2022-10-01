@@ -110,14 +110,25 @@ GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
     dumpModules(hProcess);
 
-    // TODO: Use GetFileVersionInfo on kernel32.dll as recommended on
-    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms724429.aspx
-    // for Windows 10 detection?
-    OSVERSIONINFO osvi;
-    ZeroMemory(&osvi, sizeof osvi);
-    osvi.dwOSVersionInfoSize = sizeof osvi;
-    GetVersionEx(&osvi);
-    lprintf("Windows %lu.%lu.%lu\n", osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
+    HMODULE hKernelModule = GetModuleHandleA("kernel32");
+    BOOL bSuccess = FALSE;
+    if (hKernelModule) {
+        DWORD nSize = MAX_PATH;
+        std::vector<char> path(nSize);
+        DWORD dwRet;
+        while ((dwRet = GetModuleFileNameA(hKernelModule, &path[0], nSize)) == nSize) {
+            nSize *= 2;
+            path.resize(nSize);
+        }
+        WORD awVInfo[4];
+        if (dwRet && getModuleVersionInfo(&path[0], awVInfo)) {
+            lprintf("Windows %hu.%hu.%hu.%hu\n", awVInfo[0], awVInfo[1], awVInfo[2], awVInfo[3]);
+            bSuccess = TRUE;
+        }
+    }
+    if (!bSuccess) {
+        lprintf("Windows version could not be determined\n");
+    }
 
     lprintf("DrMingw %u.%u.%u\n", PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR,
             PACKAGE_VERSION_PATCH);
