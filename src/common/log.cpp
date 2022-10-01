@@ -548,8 +548,8 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
 }
 
 
-static BOOL
-getModuleVersionInfo(LPCSTR szModule, DWORD *dwVInfo)
+BOOL
+getModuleVersionInfo(LPCSTR szModule, WORD awVInfo[4])
 {
     DWORD dummy, size;
     BOOL success = FALSE;
@@ -559,12 +559,12 @@ getModuleVersionInfo(LPCSTR szModule, DWORD *dwVInfo)
         LPVOID pVer = malloc(size);
         ZeroMemory(pVer, size);
         if (GetFileVersionInfoA(szModule, 0, size, pVer)) {
-            VS_FIXEDFILEINFO *ffi;
-            if (VerQueryValueA(pVer, "\\", (LPVOID *)&ffi, (UINT *)&dummy)) {
-                dwVInfo[0] = ffi->dwFileVersionMS >> 16;
-                dwVInfo[1] = ffi->dwFileVersionMS & 0xFFFF;
-                dwVInfo[2] = ffi->dwFileVersionLS >> 16;
-                dwVInfo[3] = ffi->dwFileVersionLS & 0xFFFF;
+            VS_FIXEDFILEINFO *pFileInfo;
+            if (VerQueryValueA(pVer, "\\", (LPVOID *)&pFileInfo, (UINT *)&dummy)) {
+                awVInfo[0] = HIWORD(pFileInfo->dwFileVersionMS);
+                awVInfo[1] = LOWORD(pFileInfo->dwFileVersionMS);
+                awVInfo[2] = HIWORD(pFileInfo->dwFileVersionLS);
+                awVInfo[3] = LOWORD(pFileInfo->dwFileVersionLS);
                 success = TRUE;
             }
         }
@@ -617,10 +617,10 @@ dumpModules(HANDLE hProcess)
                 );
             }
             const char *szBaseName = getBaseName(me32.szExePath);
-            DWORD dwVInfo[4];
-            if (getModuleVersionInfo(me32.szExePath, dwVInfo)) {
-                lprintf("%-12s\t%lu.%lu.%lu.%lu\n", szBaseName, dwVInfo[0], dwVInfo[1], dwVInfo[2],
-                        dwVInfo[3]);
+            WORD awVInfo[4];
+            if (getModuleVersionInfo(me32.szExePath, awVInfo)) {
+                lprintf("%-12s\t%hu.%hu.%hu.%hu\n", szBaseName, awVInfo[0], awVInfo[1],
+                        awVInfo[2], awVInfo[3]);
             } else {
                 lprintf("%s\n", szBaseName);
             }

@@ -38,5 +38,8 @@ dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
 EXTERN_C void
 dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext);
 
+EXTERN_C BOOL
+getModuleVersionInfo(LPCSTR szModule, WORD awVInfo[4]);
+
 EXTERN_C void
 dumpModules(HANDLE hProcess);
