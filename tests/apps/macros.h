@@ -42,3 +42,10 @@
 #else
 #error Unsupported compiler
 #endif
+
+
+// Define WFILE as a wide-character variant of __FILE__
+// See https://stackoverflow.com/a/14421702/1708371
+#define WIDE2(x) L##x
+#define WIDE1(x) WIDE2(x)
+#define WFILE WIDE1(__FILE__)

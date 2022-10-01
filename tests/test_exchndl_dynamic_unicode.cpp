@@ -17,7 +17,8 @@
  */
 
 
-#define PROG_NAME "test_exchndl_static"
-#define DYNAMIC 0
+#define PROG_NAME "test_exchndl_dynamic_unicode"
+#define DYNAMIC 1
+#define TEST_UNICODE 1
 
 #include "test_exchndl.h"
