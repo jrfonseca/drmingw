@@ -193,41 +193,81 @@ endif ()
 
 
 #
-# test_exchndl
+# test_exchndl_static_unicode
 #
 
 include_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}/apps
 )
-add_executable (test_exchndl_static
-    test_exchndl_static.cpp
+add_executable (test_exchndl_static_unicode
+    test_exchndl_static_unicode.cpp
 )
-add_dependencies (test_exchndl_static exchndl_implib)
-target_link_libraries (test_exchndl_static ${EXCHNDL_IMPLIB} shlwapi)
-add_dependencies (check test_exchndl_static)
+add_dependencies (test_exchndl_static_unicode exchndl_implib)
+target_link_libraries (test_exchndl_static_unicode ${EXCHNDL_IMPLIB} shlwapi)
+add_dependencies (check test_exchndl_static_unicode)
 add_test (
-    NAME test_exchndl_static
-    COMMAND test_exchndl_static
+    NAME test_exchndl_static_unicode
+    COMMAND test_exchndl_static_unicode
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
 
 #
-# test_exchndl
+# test_exchndl_static_ansi
 #
 
 include_directories (
     ${CMAKE_CURRENT_SOURCE_DIR}/apps
 )
-add_executable (test_exchndl_dynamic
-    test_exchndl_dynamic.cpp
+add_executable (test_exchndl_static_ansi
+    test_exchndl_static_ansi.cpp
 )
-target_link_libraries (test_exchndl_dynamic shlwapi)
-add_dependencies (test_exchndl_dynamic exchndl)
-add_dependencies (check test_exchndl_dynamic)
+add_dependencies (test_exchndl_static_ansi exchndl_implib)
+target_link_libraries (test_exchndl_static_ansi ${EXCHNDL_IMPLIB} shlwapi)
+add_dependencies (check test_exchndl_static_ansi)
 add_test (
-    NAME test_exchndl_dynamic
-    COMMAND test_exchndl_dynamic
+    NAME test_exchndl_static_ansi
+    COMMAND test_exchndl_static_ansi
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+)
+
+
+#
+# test_exchndl_dynamic_unicode
+#
+
+include_directories (
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+)
+add_executable (test_exchndl_dynamic_unicode
+    test_exchndl_dynamic_unicode.cpp
+)
+target_link_libraries (test_exchndl_dynamic_unicode shlwapi)
+add_dependencies (test_exchndl_dynamic_unicode exchndl)
+add_dependencies (check test_exchndl_dynamic_unicode)
+add_test (
+    NAME test_exchndl_dynamic_unicode
+    COMMAND test_exchndl_dynamic_unicode
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+)
+
+
+#
+# test_exchndl_dynamic_ansi
+#
+
+include_directories (
+    ${CMAKE_CURRENT_SOURCE_DIR}/apps
+)
+add_executable (test_exchndl_dynamic_ansi
+    test_exchndl_dynamic_ansi.cpp
+)
+target_link_libraries (test_exchndl_dynamic_ansi shlwapi)
+add_dependencies (test_exchndl_dynamic_ansi exchndl)
+add_dependencies (check test_exchndl_dynamic_ansi)
+add_test (
+    NAME test_exchndl_dynamic_ansi
+    COMMAND test_exchndl_dynamic_ansi
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
 
