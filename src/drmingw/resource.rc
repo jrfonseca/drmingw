@@ -20,6 +20,12 @@
 #include <windows.h>
 #include "resource.h"
 
+#define VER_INTERNALNAME_STR        "DrMingw"
+#define VER_FILEDESCRIPTION_STR     VER_PRODUCTNAME_STR " application."
+#define VER_ORIGINALFILENAME_STR    "drmingw.exe"
+
+#include "version.h"
+
 IDI_MAINICON ICON DISCARDABLE "icon.ico"
 
 IDM_MAINMENU MENU
@@ -36,18 +42,17 @@ IDM_MAINMENU MENU
     }
 }
 
-IDD_ABOUT DIALOG 0, 0, 155, 102
+IDD_ABOUT DIALOG 0, 0, 155, 134
 STYLE DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
-CAPTION "About Dr. Mingw"
+CAPTION "About " VER_PRODUCTNAME_STR
 FONT 8, "MS Sans Serif"
 {
-   CONTROL "&OK", IDOK, "BUTTON", BS_DEFPUSHBUTTON | BS_CENTER | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 51, 83, 50, 14
-   CONTROL "About This Program", -1, "button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE | WS_GROUP, 5, 5, 144, 73
-   CONTROL "A JIT debugger that collects debugging information about unhandled exceptions.\r\n\r\nby Jose Fonseca", -1, "static", SS_CENTER | WS_CHILD | WS_VISIBLE, 27, 27, 100, 50
+   CONTROL "&OK", IDOK, "BUTTON", BS_DEFPUSHBUTTON | BS_CENTER | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 51, 115, 50, 14
+   CONTROL "About This Program", -1, "button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE | WS_GROUP, 5, 5, 145, 105
+   CONTROL "A JIT debugger that collects debugging information about unhandled exceptions.\r\n"
+           "\r\n"
+           VER_PRODUCTNAME_STR " version " VER_PRODUCTVERSION_STR "\r\n"
+           "\r\n"
+           VER_LEGALCOPYRIGHT_STR,
+           -1, "static", SS_CENTER | WS_CHILD | WS_VISIBLE, 27, 27, 100, 80
 }
-
-#define VER_INTERNALNAME_STR        "DrMingw"
-#define VER_FILEDESCRIPTION_STR     VER_INTERNALNAME_STR " application."
-#define VER_ORIGINALFILENAME_STR    "drmingw.exe"
-
-#include "version.h"
