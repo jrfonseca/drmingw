@@ -20,14 +20,13 @@ if (MINGW)
     endif ()
 endif ()
 
+# Use static runtime
 if (MSVC)
-    # http://www.cmake.org/Wiki/CMake_FAQ#How_can_I_build_my_MSVC_application_with_a_static_runtime.3F
-    foreach (flag_var
-        CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO
-        CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
-    )
-        if (${flag_var} MATCHES "/MD")
-            string (REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-        endif ()
-    endforeach ()
+    # https://cmake.org/cmake/help/v3.15/policy/CMP0091.html
+    cmake_policy (GET CMP0091 CMP0091_VALUE)
+    if (NOT CMP0091_VALUE STREQUAL NEW)
+        message (SEND_ERROR "CMP0091 policy not set to NEW")
+    endif ()
+    # https://cmake.org/cmake/help/v3.15/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html
+    set (CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif ()
