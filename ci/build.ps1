@@ -128,16 +128,23 @@ $Env:Path = "$DBGHELP_DIR;$Env:Path"
 $Env:CTEST_OUTPUT_ON_FAILURE = '1'
 Exec { cmake --build $buildDir --use-stderr --target test }
 
+# MinGW GCC
 Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\$target" -G $generator "-DCMAKE_BUILD_TYPE=Debug" }
 Exec { cmake --build "$buildRoot\apps\$target" }
+# MinGW Clang
+Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\$target-clang" -G $generator "-DCMAKE_BUILD_TYPE=Debug" "-DCMAKE_C_COMPILER=clang" "-DCMAKE_CXX_COMPILER=clang++" "-DCMAKE_C_FLAGS_DEBUG=-g" "-DCMAKE_CXX_FLAGS_DEBUG=-g" }
+Exec { cmake --build "$buildRoot\apps\$target-clang" }
+# MSVC 32-bits
 Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\msvc32" -G "Visual Studio 17 2022" -A Win32 }
 Exec { cmake --build "$buildRoot\apps\msvc32" --config Debug "--" /verbosity:minimal /maxcpucount }
 if ($target -eq "mingw64") {
+    # MSVC 64-bits
     Exec { cmake -Stests\apps "-B$buildRoot\apps\msvc64" -G "Visual Studio 17 2022" -A x64 }
     Exec { cmake --build "$buildRoot\apps\msvc64" --config Debug "--" /verbosity:minimal /maxcpucount }
-    Exec { python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\msvc32\Debug" "$buildRoot\apps\msvc64\Debug" }
+
+    Exec { python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\$target-clang" "$buildRoot\apps\msvc32\Debug" "$buildRoot\apps\msvc64\Debug" }
 } else {
-    Exec { python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\msvc32\Debug" }
+    Exec { python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\$target-clang" "$buildRoot\apps\msvc32\Debug" }
 }
 
 #
