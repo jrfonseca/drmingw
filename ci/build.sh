@@ -22,8 +22,8 @@ test ! -d /usr/lib/ccache || export PATH="/usr/lib/ccache:$PATH"
 
 WINE=${WINE:-$(which wine)}
 
-x86_64-w64-mingw32-g++ --version
-i686-w64-mingw32-g++ --version
+x86_64-w64-mingw32-g++-posix --version
+i686-w64-mingw32-g++-posix --version
 ninja --version
 cmake --version
 python3 --version
