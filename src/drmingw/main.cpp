@@ -33,6 +33,7 @@
 #include "errmsg.h"
 #include "log.h"
 #include "outdbg.h"
+#include "version.h"
 
 
 static int process_id_given = 0; /* Whether process-id was given.  */
@@ -44,6 +45,9 @@ static void
 help(void)
 {
     MessageBoxA(NULL,
+                VER_PRODUCTNAME_STR " version " VER_PRODUCTVERSION_STR "\r\n"
+                VER_LEGALCOPYRIGHT_STR "\r\n"
+                "\r\n"
                 "Usage: drmingw [OPTIONS]\r\n"
                 "\r\n"
                 "Options:\r\n"
