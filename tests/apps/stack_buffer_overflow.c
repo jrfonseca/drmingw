@@ -29,7 +29,7 @@
 
 int main()
 {
-#if defined(__MINGW32__) && !defined(__MINGW64__)
+#if defined(__MINGW32__) && (!defined(__MINGW64__) || defined(__clang__))
     return EXIT_SKIP;
 #else
     char buf[8];
@@ -38,4 +38,4 @@ int main()
 #endif
 }
 
-// CHECK_STDERR: /  stack_buffer_overflow\.exe\!main\+0x[0-9a-f]+  \[.*\bstack_buffer_overflow\.c @ 39\]/
+// CHECK_STDERR: /  stack_buffer_overflow\.exe\!main\+0x[0-9a-f]+  \[.*\bstack_buffer_overflow\.c @ [0-9]+\]/
