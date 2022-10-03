@@ -65,8 +65,8 @@ $Env:Path = "$toolchain\bin;$Env:Path"
 (Get-Command 'g++.exe').Source
 Exec { g++ --version }
 
-$DBGHELP_ARCHIVE = 'downloads\dbghelp-$target.7z'
-$DBGHELP_DIR = 'downloads\dbghelp\$target'
+$DBGHELP_ARCHIVE = "downloads\dbghelp-$target.7z"
+$DBGHELP_DIR = "downloads\dbghelp\$target"
 if (!(Test-Path $DBGHELP_DIR -PathType Container)) {
     if (!(Test-Path $DBGHELP_ARCHIVE -PathType Leaf)) {
         Invoke-WebRequest -Uri $DBGHELP_URL -OutFile $DBGHELP_ARCHIVE -UserAgent NativeHost
