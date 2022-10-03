@@ -171,7 +171,7 @@ if (NOT DEFINED OBJCOPY_VERSION)
         message (SEND_ERROR "Command \"${CMAKE_OBJCOPY} --version\" failed")
     else ()
         # e.g., "GNU objcopy (GNU Binutils) 2.34"
-        if ("${OBJCOPY_VERSION_OUTPUT}" MATCHES "^GNU objcopy \\(GNU Binutils\\) ([^\n]+)")
+        if ("${OBJCOPY_VERSION_OUTPUT}" MATCHES "^GNU objcopy \\([^)]+\\) ([^\n]+)")
             set (OBJCOPY_VERSION "${CMAKE_MATCH_1}" CACHE STRING "" FORCE)
             message (STATUS "objcopy version: ${OBJCOPY_VERSION}")
         elseif ("${OBJCOPY_VERSION_OUTPUT}" MATCHES "^llvm-objcopy, compatible with GNU objcopy")
