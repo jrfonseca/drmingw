@@ -164,13 +164,15 @@ Here's the how to use it:
 
 Make sure you don't use Dr.Mingw and exchndl at the same time -- the latter seems to interfere with the former by some obscure reason.
 
-### Which options should I pass to gcc when compiling?
+### Which options should I pass to GCC/Clang when compiling?
 
 This options are _essential_ to produce suitable results are:
 
  * **`-g`** : produce debugging information
 
  * **`-fno-omit-frame-pointer`** : use the frame pointer (frame pointer usage is disabled by default in some architectures like `x86_64` and for some optimization levels; and it may be impossible to walk the call stack without it)
+
+ * (Clang only) **`-gdwarf-aranges`** : emit DWARF `.debug_aranges` section ([issue 42](https://github.com/jrfonseca/drmingw/issues/42))
 
 You can choose more detailed debug info, e.g., `-g3`, `-ggdb`. But so far I have seen no evidence this will lead to better results, at least as far as Dr.MinGW is concerned.
 
