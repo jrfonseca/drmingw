@@ -23,8 +23,8 @@ $MINGW_32_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20t
 $MINGW_64_SUM = '5c3fc254494bc24eb201870f4b781d401cf7279bd03ea1aba6f2ffae771ded44'
 $MINGW_32_SUM = '767fa9ed3d5b236aacca96e7e510d09af5f30ad37376a5258e5a875523ca45c3'
 
-$DBGHELP_64_URL = 'https://drive.google.com/uc?export=download&id=1yPSATmwkmmgoGQRA2ot2EHLlocHWhFlA'
-$DBGHELP_32_URL = 'https://drive.google.com/uc?export=download&id=1n60EvRKDKXaGCRLztwwiJacobgnuI-rb'
+$DBGHELP_64_URL = 'https://gist.githubusercontent.com/jrfonseca/55a9a0e0e228ad841032df1624da5e27/raw/8b5f0a1578be701128f09f886f9636389ae60268/dbghelp-win64.7z'
+$DBGHELP_32_URL = 'https://gist.githubusercontent.com/jrfonseca/55a9a0e0e228ad841032df1624da5e27/raw/8b5f0a1578be701128f09f886f9636389ae60268/dbghelp-win32.7z'
 $DBGHELP_64_SUM = '9bdc77e09a9ebdc8f810c46ed2b1171c048d6ebbe1b9ea1f927bfac66220dae5'
 $DBGHELP_32_SUM = 'dfdf39857b76533adb0bffd9ef9d1bc7516280f810ecea6dd5c1b5ca97809706'
 
