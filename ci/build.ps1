@@ -18,10 +18,10 @@ function Exec {
     }
 }
 
-$MINGW_64_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win64/Personal%20Builds/ray_linn/GCC-10.X-with-ada/GCC-10.2.0-crt-8.0.0-with-ada-20201019.7z'
-$MINGW_32_URL = 'https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/ray_linn/GCC-10.x-with-ada/mingw32-10.2.0-crt-8.0.0-with-ada.7z'
-$MINGW_64_SUM = '5c3fc254494bc24eb201870f4b781d401cf7279bd03ea1aba6f2ffae771ded44'
-$MINGW_32_SUM = '767fa9ed3d5b236aacca96e7e510d09af5f30ad37376a5258e5a875523ca45c3'
+$MINGW_64_URL = 'https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-x86_64-posix-seh-gcc-12.2.0-llvm-14.0.6-mingw-w64msvcrt-10.0.0-r2.7z'
+$MINGW_32_URL = 'https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-i686-posix-dwarf-gcc-12.2.0-llvm-14.0.6-mingw-w64msvcrt-10.0.0-r2.7z'
+$MINGW_64_SUM = 'c0dd9f2113a151dd2fe3dce8ceb30df90120fab4537349d7c0ee22e9ff4fe3bc'
+$MINGW_32_SUM = '80ab3fb4b65870509f968e07e44f90d216eaf130fe9eb320b7a98285a84a0d2e'
 
 $DBGHELP_64_URL = 'https://gist.githubusercontent.com/jrfonseca/55a9a0e0e228ad841032df1624da5e27/raw/8b5f0a1578be701128f09f886f9636389ae60268/dbghelp-win64.7z'
 $DBGHELP_32_URL = 'https://gist.githubusercontent.com/jrfonseca/55a9a0e0e228ad841032df1624da5e27/raw/8b5f0a1578be701128f09f886f9636389ae60268/dbghelp-win32.7z'
