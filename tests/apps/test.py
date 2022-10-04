@@ -33,6 +33,7 @@ import subprocess
 import os.path
 import re
 import optparse
+import random
 import tempfile
 import threading
 import multiprocessing.dummy as multiprocessing
@@ -217,6 +218,10 @@ def main():
         type="string", dest="regex",
         default = '.*')
     optparser.add_option(
+        '-i', '--iterations', metavar='NUMBER',
+        type="int", dest="iterations",
+        default = 1)
+    optparser.add_option(
         '-v', '--verbose',
         action="store_true",
         dest="verbose", default=False)
@@ -284,6 +289,10 @@ def main():
                 sys.exit(1)
 
             testArgs.append((catchsegvExe, testExe, testSrc))
+
+    if options.iterations > 1:
+        testArgs *= options.iterations
+        random.shuffle(testArgs)
 
     if numJobs <= 1 or len(testArgs) <= 1:
         imap = map
