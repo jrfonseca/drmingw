@@ -142,9 +142,9 @@ if ($target -eq "mingw64") {
     Exec { cmake -Stests\apps "-B$buildRoot\apps\msvc64" -G "Visual Studio 17 2022" -A x64 }
     Exec { cmake --build "$buildRoot\apps\msvc64" --config Debug "--" /verbosity:minimal /maxcpucount }
 
-    Exec { python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\$target-clang" "$buildRoot\apps\msvc32\Debug" "$buildRoot\apps\msvc64\Debug" }
+    Exec { python ci\spawndesk.py python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\$target-clang" "$buildRoot\apps\msvc32\Debug" "$buildRoot\apps\msvc64\Debug" }
 } else {
-    Exec { python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\$target-clang" "$buildRoot\apps\msvc32\Debug" }
+    Exec { python ci\spawndesk.py python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\$target-clang" "$buildRoot\apps\msvc32\Debug" }
 }
 
 #
