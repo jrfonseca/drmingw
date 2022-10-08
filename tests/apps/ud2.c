@@ -29,10 +29,15 @@
 
 #include "macros.h"
 
-#if defined(__MINGW64__) && defined(_M_ARM64)
+#if defined(__MINGW32__)
+#if defined(_M_ARM64)
 #define __ud2()  asm volatile ("udf #0xdead")
-#elif defined(__MINGW32__)
+#elif defined(_M_ARM)
+// https://stackoverflow.com/a/67309579
+#define __ud2()  asm volatile (".inst 0x0000dead")
+#else
 #define __ud2()  asm volatile ("ud2")
+#endif
 #endif
 
 int
@@ -43,5 +48,5 @@ main(int argc, char *argv[])
     return 0;
 }
 
-// CHECK_STDERR: /  ud2\.exe\!main\+0x[0-9a-f]+  \[.*\bud2\.c @ 41\]/
+// CHECK_STDERR: /  ud2\.exe\!main\+0x[0-9a-f]+  \[.*\bud2\.c @ 46\]/
 // CHECK_EXIT_CODE: 0xC000001D

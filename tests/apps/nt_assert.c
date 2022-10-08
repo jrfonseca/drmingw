@@ -29,27 +29,35 @@
 
 #include "macros.h"
 
-#if defined(__MINGW64__) && defined(_M_ARM64)
-
-static NO_RETURN FORCE_INLINE
-void DbgRaiseAssertionFailure(void) {
-    asm volatile (
-        "brk #0xf001"
-    );
-    __builtin_unreachable();
-}
-
-#elif defined(__MINGW32__)
+#if defined(__MINGW32__)
 
 #undef DbgRaiseAssertionFailure
 
+#if defined(_M_ARM64)
+
 static NO_RETURN FORCE_INLINE
 void DbgRaiseAssertionFailure(void) {
-    asm volatile (
-        "int $0x2c"
-    );
+    asm volatile ("brk #0xf001");
     __builtin_unreachable();
 }
+
+#elif defined(_M_ARM)
+
+static NO_RETURN FORCE_INLINE
+void DbgRaiseAssertionFailure(void) {
+    asm volatile ("bkpt");
+    __builtin_unreachable();
+}
+
+#else
+
+static NO_RETURN FORCE_INLINE
+void DbgRaiseAssertionFailure(void) {
+    asm volatile ("int $0x2c");
+    __builtin_unreachable();
+}
+
+#endif
 
 #endif
 

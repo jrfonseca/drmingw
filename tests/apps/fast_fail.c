@@ -52,6 +52,19 @@ void __fastfail(unsigned int code) {
     __builtin_unreachable();
 }
 
+#elif defined(_M_ARM)
+
+static NO_RETURN FORCE_INLINE
+void __fastfail(unsigned int code) {
+    register unsigned int r0 __asm__ ("r0") = code;
+    asm volatile (
+        ".inst 0xDEFB"
+         :
+         : "r" (r0)
+     );
+    __builtin_unreachable();
+}
+
 #else // !_M_ARM64
 
 static NO_RETURN FORCE_INLINE
