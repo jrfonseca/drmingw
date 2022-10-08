@@ -13,7 +13,7 @@ add_dependencies (catchsegv mgwhelp_implib)
 target_link_libraries (catchsegv
     common
     getoptW
-    ${MGWHELP_IMPLIB}
+    mgwhelp_implib
     winmm
 )
 

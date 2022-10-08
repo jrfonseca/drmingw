@@ -147,7 +147,6 @@ add_custom_target (check
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 install (FILES include/exchndl.h DESTINATION include)
 
-set (MGWHELP_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libmgwhelp.a)
 set (EXCHNDL_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libexchndl.a)
 
 add_subdirectory (src)

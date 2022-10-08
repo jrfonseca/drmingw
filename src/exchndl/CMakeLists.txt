@@ -16,7 +16,7 @@ add_dependencies (exchndl mgwhelp_implib)
 
 target_link_libraries (exchndl LINK_PRIVATE
     common
-    ${MGWHELP_IMPLIB}
+    mgwhelp_implib
 )
 
 set_target_properties (exchndl PROPERTIES

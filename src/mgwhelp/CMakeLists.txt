@@ -1,13 +1,24 @@
 if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL ARM)
-    set (MGWHELP_EXP_DEF mgwhelp32exp.def)
-    set (MGWHELP_IMP_DEF mgwhelp32imp.def)
+    # Build import library separately, to deal with MinGW issues
+
+    add_library (mgwhelp MODULE mgwhelp32exp.def)
+
+    set (MGWHELP_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libmgwhelp.a)
+    add_custom_command (
+        OUTPUT ${MGWHELP_IMPLIB}
+        COMMAND ${CMAKE_DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def ${CMAKE_CURRENT_SOURCE_DIR}/mgwhelp32imp.def
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mgwhelp32imp.def
+    )
+    add_custom_target (libmgwhelp_implib DEPENDS mgwhelp ${MGWHELP_IMPLIB})
+    add_library (mgwhelp_implib INTERFACE IMPORTED GLOBAL)
+    target_link_libraries (mgwhelp_implib INTERFACE ${MGWHELP_IMPLIB})
+    install (FILES ${MGWHELP_IMPLIB} DESTINATION lib)
 else ()
-    set (MGWHELP_EXP_DEF mgwhelp64.def)
-    set (MGWHELP_IMP_DEF mgwhelp64.def)
+    add_library (mgwhelp SHARED mgwhelp64.def)
+    add_library (mgwhelp_implib ALIAS mgwhelp)
 endif ()
 
-add_library (mgwhelp MODULE
-    ${MGWHELP_EXP_DEF}
+target_sources (mgwhelp PRIVATE
     dwarf_find.cpp
     dwarf_pe.cpp
     mgwhelp.cpp
@@ -27,13 +38,6 @@ set_target_properties (mgwhelp PROPERTIES
 
 install (TARGETS mgwhelp LIBRARY DESTINATION bin)
 
-add_custom_command (
-    OUTPUT ${MGWHELP_IMPLIB}
-    COMMAND ${CMAKE_DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def ${CMAKE_CURRENT_SOURCE_DIR}/${MGWHELP_IMP_DEF}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${MGWHELP_IMP_DEF}
-)
-add_custom_target (mgwhelp_implib DEPENDS mgwhelp ${MGWHELP_IMPLIB})
-install (FILES ${MGWHELP_IMPLIB} DESTINATION lib)
 
 
 # Bundle DbgHelp and SymSrv DLLs

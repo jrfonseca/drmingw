@@ -13,7 +13,7 @@ add_dependencies (drmingw mgwhelp_implib)
 
 target_link_libraries (drmingw
     common
-    ${MGWHELP_IMPLIB}
+    mgwhelp_implib
 )
 
 install (TARGETS drmingw RUNTIME DESTINATION bin)

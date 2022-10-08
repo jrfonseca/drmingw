@@ -10,7 +10,7 @@ add_executable (test_mgwhelp
 )
 add_dependencies (test_mgwhelp mgwhelp_implib)
 target_link_libraries (test_mgwhelp
-    ${MGWHELP_IMPLIB}
+    mgwhelp_implib
     shlwapi
 )
 add_dependencies (check test_mgwhelp)
