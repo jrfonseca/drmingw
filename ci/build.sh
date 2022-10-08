@@ -8,10 +8,10 @@ cmake_ () {
 }
 
 cmake_mingw32() {
-	cmake_ "$@" -DCMAKE_TOOLCHAIN_FILE=$PWD/.github/scripts/mingw32.cmake
+	cmake_ "$@" --toolchain $PWD/ci/toolchain/i686-w64-mingw32-gcc.cmake
 }
 cmake_mingw64() {
-	cmake_ "$@" -DCMAKE_TOOLCHAIN_FILE=$PWD/.github/scripts/mingw64.cmake
+	cmake_ "$@" --toolchain $PWD/ci/toolchain/x86_64-w64-mingw32-gcc.cmake
 }
 
 xvfb_run() {
