@@ -203,7 +203,7 @@ add_executable (test_exchndl_static_unicode
     test_exchndl_static_unicode.cpp
 )
 add_dependencies (test_exchndl_static_unicode exchndl_implib)
-target_link_libraries (test_exchndl_static_unicode ${EXCHNDL_IMPLIB} shlwapi)
+target_link_libraries (test_exchndl_static_unicode exchndl_implib shlwapi)
 add_dependencies (check test_exchndl_static_unicode)
 add_test (
     NAME test_exchndl_static_unicode
@@ -223,7 +223,7 @@ add_executable (test_exchndl_static_ansi
     test_exchndl_static_ansi.cpp
 )
 add_dependencies (test_exchndl_static_ansi exchndl_implib)
-target_link_libraries (test_exchndl_static_ansi ${EXCHNDL_IMPLIB} shlwapi)
+target_link_libraries (test_exchndl_static_ansi exchndl_implib shlwapi)
 add_dependencies (check test_exchndl_static_ansi)
 add_test (
     NAME test_exchndl_static_ansi

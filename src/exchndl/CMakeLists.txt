@@ -1,14 +1,27 @@
 if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL ARM)
-    set (EXCHNDL_EXP_DEF exchndl32exp.def)
-    set (EXCHNDL_IMP_DEF exchndl32imp.def)
+    # Build import library separately, to deal with MinGW issues
+
+    add_library (exchndl MODULE exchndl32exp.def)
+
+    set (EXCHNDL_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libexchndl.a)
+    add_custom_command (
+        OUTPUT ${EXCHNDL_IMPLIB}
+        COMMAND ${CMAKE_DLLTOOL} --output-lib ${EXCHNDL_IMPLIB} --dllname exchndl.dll --kill-at --input-def ${CMAKE_CURRENT_SOURCE_DIR}/exchndl32imp.def
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/exchndl32imp.def
+    )
+    add_custom_target (libexchndl_implib DEPENDS exchndl ${EXCHNDL_IMPLIB})
+    add_library (exchndl_implib INTERFACE IMPORTED GLOBAL)
+    target_link_libraries (exchndl_implib INTERFACE ${EXCHNDL_IMPLIB})
+    install (FILES ${EXCHNDL_IMPLIB} DESTINATION lib)
 else ()
-    set (EXCHNDL_EXP_DEF exchndl64.def)
-    set (EXCHNDL_IMP_DEF exchndl64.def)
+    add_library (exchndl SHARED exchndl64.def)
+    add_library (exchndl_implib ALIAS exchndl)
 endif ()
 
-add_library (exchndl MODULE
+set (EXCHNDL_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libexchndl.a)
+
+target_sources (exchndl PRIVATE
     exchndl.cpp
-    ${EXCHNDL_EXP_DEF}
     version.rc
 )
 
@@ -24,12 +37,3 @@ set_target_properties (exchndl PROPERTIES
 )
 
 install (TARGETS exchndl LIBRARY DESTINATION bin)
-
-
-add_custom_command (
-    OUTPUT ${EXCHNDL_IMPLIB}
-    COMMAND ${CMAKE_DLLTOOL} --output-lib ${EXCHNDL_IMPLIB} --kill-at --input-def ${CMAKE_CURRENT_SOURCE_DIR}/${EXCHNDL_IMP_DEF}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${EXCHNDL_IMP_DEF}
-)
-add_custom_target (exchndl_implib ALL DEPENDS exchndl ${EXCHNDL_IMPLIB})
-install (FILES ${EXCHNDL_IMPLIB} DESTINATION lib)
