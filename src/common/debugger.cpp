@@ -298,24 +298,20 @@ getThreadContext(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 {
     ZeroMemory(pContext, sizeof *pContext);
 
+#ifdef _WIN64
     BOOL bWow64 = FALSE;
-    if (HAVE_WIN64) {
-        IsWow64Process(hProcess, &bWow64);
-    }
-
-    BOOL bSuccess;
+    IsWow64Process(hProcess, &bWow64);
     if (bWow64) {
         PWOW64_CONTEXT pWow64Context = reinterpret_cast<PWOW64_CONTEXT>(pContext);
         static_assert(sizeof *pContext >= sizeof *pWow64Context,
                       "WOW64_CONTEXT should fit in CONTEXT");
         pWow64Context->ContextFlags = WOW64_CONTEXT_ALL;
-        bSuccess = Wow64GetThreadContext(hThread, pWow64Context);
-    } else {
-        pContext->ContextFlags = CONTEXT_ALL;
-        bSuccess = GetThreadContext(hThread, pContext);
+        return Wow64GetThreadContext(hThread, pWow64Context);
     }
+#endif
 
-    return bSuccess;
+    pContext->ContextFlags = CONTEXT_ALL;
+    return GetThreadContext(hThread, pContext);
 }
 
 

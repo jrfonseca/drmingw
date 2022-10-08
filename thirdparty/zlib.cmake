@@ -21,6 +21,9 @@ if (MSVC)
     target_compile_options (z PRIVATE -wd4131) # uses old-style declarator
 else ()
     target_compile_definitions (z PRIVATE HAVE_UNISTD_H)
+    if (CMAKE_C_COMPILER_ID MATCHES Clang)
+        target_compile_options (z PRIVATE -Wno-deprecated-non-prototype)
+    endif ()
 endif ()
 
 target_include_directories (z PUBLIC zlib)

@@ -92,7 +92,7 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
 
 static void
 dumpContext(
-#if defined(_M_ARM64)
+#if defined(_M_ARM64) || defined(_M_ARM)
     const CONTEXT *pContext
 #elif defined(_WIN64)
     const WOW64_CONTEXT *pContext
@@ -103,7 +103,9 @@ dumpContext(
 {
     // Show the registers
     lprintf("Registers:\n");
-#ifdef _M_ARM64
+
+#if defined(_M_ARM64)
+
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
         for(int i = 0 ; i < 28 ; i += 4)
         {
@@ -117,6 +119,8 @@ dumpContext(
          lprintf("pc=%016I64X sp=%016I64X fp=%016I64X \n",
             pContext->Pc, pContext->Sp, pContext->Fp);
     }
+
+#elif defined(_M_ARM)
 
 #else
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
@@ -168,7 +172,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     STACKFRAME64 StackFrame;
     ZeroMemory(&StackFrame, sizeof StackFrame);
 
-#ifdef _M_ARM64
+#if defined(_M_ARM64)
     USHORT processArch = 0;
     USHORT machineArch = 0;
     IsWow64Process2(hProcess, &processArch, &machineArch);
@@ -179,6 +183,13 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     StackFrame.AddrPC.Offset = pContext->Pc;
     StackFrame.AddrStack.Offset = pContext->Sp;
     StackFrame.AddrFrame.Offset = pContext->Fp;
+#elif defined(_M_ARM)
+    assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
+    MachineType = IMAGE_FILE_MACHINE_ARMNT;
+    dumpContext(pContext);
+    StackFrame.AddrPC.Offset = pContext->Pc;
+    StackFrame.AddrStack.Offset = pContext->Sp;
+    StackFrame.AddrFrame.Offset = pContext->R11;
 #else
     BOOL bWow64 = FALSE;
     if (HAVE_WIN64) {

@@ -44,15 +44,24 @@ IDM_MAINMENU MENU
 
 IDD_ABOUT DIALOG 0, 0, 155, 134
 STYLE DS_MODALFRAME | DS_3DLOOK | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+// FIXME llvm-rc can't parse adjacent strings
+#ifndef __clang__
 CAPTION "About " VER_PRODUCTNAME_STR
+#else
+CAPTION "About Dr. Mingw"
+#endif
 FONT 8, "MS Sans Serif"
 {
    CONTROL "&OK", IDOK, "BUTTON", BS_DEFPUSHBUTTON | BS_CENTER | WS_CHILD | WS_VISIBLE | WS_TABSTOP, 51, 115, 50, 14
    CONTROL "About This Program", -1, "button", BS_GROUPBOX | WS_CHILD | WS_VISIBLE | WS_GROUP, 5, 5, 145, 105
+#ifndef __clang__
    CONTROL "A JIT debugger that collects debugging information about unhandled exceptions.\r\n"
            "\r\n"
            VER_PRODUCTNAME_STR " version " VER_PRODUCTVERSION_STR "\r\n"
            "\r\n"
            VER_LEGALCOPYRIGHT_STR,
+#else
+   CONTROL "A JIT debugger that collects debugging information about unhandled exceptions.\r\n",
+#endif
            -1, "static", SS_CENTER | WS_CHILD | WS_VISIBLE, 27, 27, 100, 80
 }
