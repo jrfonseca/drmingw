@@ -1,4 +1,4 @@
-if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT CMAKE_SYSTEM_PROCESSOR STREQUAL ARM)
+if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND CMAKE_C_COMPILER_ID STREQUAL GNU)
     # Build import library separately, to deal with MinGW issues
 
     add_library (exchndl MODULE exchndl32exp.def)

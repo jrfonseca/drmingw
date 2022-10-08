@@ -68,15 +68,12 @@ for target in \
 do
 	toolchain=$PWD/ci/toolchain/$target.cmake
 
-	# XXX i686-w64-mingw32 is still broken with Clang
-	if [ "$target" != i686-w64-mingw32-clang ]
-	then
-		test -f build/$target/CMakeCache.txt || cmake -S . -B build/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
-		cmake --build build/$target --target all --target package -- "$@"
-	fi
+	test -f build/$target/CMakeCache.txt || cmake -S . -B build/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
+	cmake --build build/$target --target all --target package -- "$@"
 	
 	test -f build/apps/$target/CMakeCache.txt || cmake -S tests/apps -B build/apps/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=Debug
 	cmake --build build/apps/$target --target all -- "$@"
 done
 
 xvfb_run python3 tests/apps/test.py -w $WINE build/x86_64-w64-mingw32-clang/bin/catchsegv.exe build/apps/x86_64-w64-mingw32-clang build/apps/i686-w64-mingw32-clang
+xvfb_run python3 tests/apps/test.py -w $WINE build/i686-w64-mingw32-clang/bin/catchsegv.exe build/apps/i686-w64-mingw32-clang
