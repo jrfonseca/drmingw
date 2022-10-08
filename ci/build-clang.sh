@@ -43,7 +43,7 @@ test -d $WINEPREFIX || xvfb_run $WINE wineboot.exe --init
 
 export WINEDEBUG="${WINEDEBUG:-+debugstr}"
 
-export WINEPATH="$PWD/downloads/llvm-mingw/x86_64-w64-mingw32/bin;$PWD/downloads/llvm-mingw/i686-w64-mingw32/bin"
+#export WINEPATH="$PWD/downloads/llvm-mingw/x86_64-w64-mingw32/bin;$PWD/downloads/llvm-mingw/i686-w64-mingw32/bin"
 
 
 #
