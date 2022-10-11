@@ -76,7 +76,7 @@ jobs:
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
       uses: actions/upload-artifact@v2
       with:
-        name: drmingw-arm
+        name: drmingw-clang
         path: build/*-clang/drmingw-*.7z
         if-no-files-found: error
 
@@ -84,7 +84,7 @@ jobs:
   release:
     # https://github.community/t/trigger-job-on-tag-push-only/18076/2
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: build
+    needs: [build, build-clang]
     runs-on: windows-2022
     steps:
     - uses: actions/download-artifact@v2
@@ -101,6 +101,12 @@ jobs:
         Write-Host "::set-output name=mingw64-path::$($asset64.FullName)"
         Write-Host "::set-output name=mingw32-name::$($asset32.Name)"
         Write-Host "::set-output name=mingw64-name::$($asset64.Name)"
+        $asset32arm = Get-Item "${{ steps.download.outputs.download-path }}\drmingw-clang\armv7-w64-mingw32-clang\*.7z"
+        $asset64arm = Get-Item "${{ steps.download.outputs.download-path }}\drmingw-clang\aarch64-w64-mingw32-clang\*.7z"
+        Write-Host "::set-output name=mingw32-arm-path::$($asset32arm.FullName)"
+        Write-Host "::set-output name=mingw64-arm-path::$($asset64arm.FullName)"
+        Write-Host "::set-output name=mingw32-arm-name::$($asset32arm.Name)"
+        Write-Host "::set-output name=mingw64-arm-name::$($asset64arm.Name)"
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
@@ -128,4 +134,22 @@ jobs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ${{ steps.assets.outputs.mingw64-path }}
         asset_name: ${{ steps.assets.outputs.mingw64-name }}
+        asset_content_type: application/x-7z-compressed
+    - name: Upload Release Asset (32bits Arm)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ steps.assets.outputs.mingw32-arm-path }}
+        asset_name: ${{ steps.assets.outputs.mingw32-arm-name }}
+        asset_content_type: application/x-7z-compressed
+    - name: Upload Release Asset (64bits Arm)
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ${{ steps.assets.outputs.mingw64-arm-path }}
+        asset_name: ${{ steps.assets.outputs.mingw64-arm-name }}
         asset_content_type: application/x-7z-compressed
