@@ -270,7 +270,7 @@ ExcHndlSetLogFileNameA(const char *pszLogFileName)
     }
     int nSize = MultiByteToWideChar(CP_ACP, 0, pszLogFileName, -1, nullptr, 0);
     std::vector<WCHAR> wideLogFileName(nSize);
-    assert(MultiByteToWideChar(CP_ACP, 0, pszLogFileName, -1, &wideLogFileName[0], nSize) != 0);
+    MultiByteToWideChar(CP_ACP, 0, pszLogFileName, -1, &wideLogFileName[0], nSize);
     g_szLogFileName = &wideLogFileName[0];
     return TRUE;
 }
