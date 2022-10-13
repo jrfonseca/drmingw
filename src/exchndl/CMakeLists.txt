@@ -3,7 +3,7 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND CMAKE_C_COMPILER_ID STREQUAL GNU)
 
     add_library (exchndl MODULE exchndl32exp.def)
 
-    set (EXCHNDL_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libexchndl.a)
+    set (EXCHNDL_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libexchndl.dll.a)
     add_custom_command (
         OUTPUT ${EXCHNDL_IMPLIB}
         COMMAND ${CMAKE_DLLTOOL} --output-lib ${EXCHNDL_IMPLIB} --dllname exchndl.dll --kill-at --input-def ${CMAKE_CURRENT_SOURCE_DIR}/exchndl32imp.def
@@ -17,8 +17,6 @@ else ()
     add_library (exchndl SHARED exchndl64.def)
     add_library (exchndl_implib ALIAS exchndl)
 endif ()
-
-set (EXCHNDL_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libexchndl.a)
 
 target_sources (exchndl PRIVATE
     exchndl.cpp

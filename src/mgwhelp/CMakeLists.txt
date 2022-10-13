@@ -3,7 +3,7 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND CMAKE_C_COMPILER_ID STREQUAL GNU)
 
     add_library (mgwhelp MODULE mgwhelp32exp.def)
 
-    set (MGWHELP_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libmgwhelp.a)
+    set (MGWHELP_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libmgwhelp.dll.a)
     add_custom_command (
         OUTPUT ${MGWHELP_IMPLIB}
         COMMAND ${CMAKE_DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def ${CMAKE_CURRENT_SOURCE_DIR}/mgwhelp32imp.def
