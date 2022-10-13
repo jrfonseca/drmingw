@@ -135,7 +135,6 @@ add_custom_target (test_mgwhelp_zdebug ALL
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
 )
-add_dependencies (check test_mgwhelp_zdebug)
 add_test (
     NAME test_mgwhelp_zdebug
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.exe
@@ -186,6 +185,8 @@ if (NOT DEFINED OBJCOPY_VERSION)
 endif ()
 if (OBJCOPY_VERSION STREQUAL "llvm-objcopy")
     set_target_properties (test_mgwhelp_zdebug PROPERTIES EXCLUDE_FROM_ALL ON)
+else ()
+    add_dependencies (check test_mgwhelp_zdebug)
 endif ()
 if (OBJCOPY_VERSION STREQUAL "llvm-objcopy" OR NOT OBJCOPY_VERSION VERSION_GREATER_EQUAL "2.34")
     set_tests_properties (test_mgwhelp_zdebug PROPERTIES DISABLED ON)

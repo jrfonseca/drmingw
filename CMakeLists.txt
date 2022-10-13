@@ -139,10 +139,15 @@ endmacro ()
 # Targets
 
 enable_testing ()
-add_custom_target (check
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    USES_TERMINAL
-)
+if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
+    add_custom_target (check)
+elseif (DEFINED CMAKE_BUILD_TYPE)
+    # Single configuration
+    add_custom_target (check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure USES_TERMINAL)
+else ()
+    # Multiple configuration
+    add_custom_target (check COMMAND ${CMAKE_CTEST_COMMAND} -C "$<CONFIG>" --output-on-failure USES_TERMINAL)
+endif ()
 
 include_directories (${CMAKE_CURRENT_SOURCE_DIR}/include)
 install (FILES include/exchndl.h DESTINATION include)
