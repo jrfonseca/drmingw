@@ -36,8 +36,16 @@ set_target_properties (mgwhelp PROPERTIES
     PREFIX ""
 )
 
-install (TARGETS mgwhelp LIBRARY DESTINATION bin)
 
+add_custom_command (
+    TARGET mgwhelp
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -DCMAKE_OBJDUMP=${CMAKE_OBJDUMP} -DTARGET=$<TARGET_FILE:mgwhelp> -P ${CMAKE_SOURCE_DIR}/cmake/CheckDependencies.cmake
+    VERBATIM
+)
+
+
+install (TARGETS mgwhelp LIBRARY DESTINATION bin)
 
 
 # Bundle DbgHelp and SymSrv DLLs

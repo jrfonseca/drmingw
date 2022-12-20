@@ -17,4 +17,13 @@ target_link_libraries (catchsegv
     winmm
 )
 
+
+add_custom_command (
+    TARGET catchsegv
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -DCMAKE_OBJDUMP=${CMAKE_OBJDUMP} -DTARGET=$<TARGET_FILE:catchsegv> -P ${CMAKE_SOURCE_DIR}/cmake/CheckDependencies.cmake
+    VERBATIM
+)
+
+
 install (TARGETS catchsegv RUNTIME DESTINATION bin)
