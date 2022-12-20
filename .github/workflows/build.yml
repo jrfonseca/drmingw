@@ -3,7 +3,7 @@ name: build
 on: [push, pull_request]
 
 jobs:
-  build:
+  build-native:
     runs-on: windows-2022
     strategy:
       matrix:
@@ -33,7 +33,7 @@ jobs:
         path: build/mingw??/drmingw-*.7z
         if-no-files-found: error
 
-  build-cross:
+  build-cross-gcc:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
@@ -50,7 +50,7 @@ jobs:
     - run: sudo apt-get install -yqq --install-recommends mingw-w64 ninja-build cmake xinit xvfb wine wine64 wine32:i386
     - run: ci/build.sh
 
-  build-clang:
+  build-cross-clang:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
@@ -84,7 +84,7 @@ jobs:
   release:
     # https://github.community/t/trigger-job-on-tag-push-only/18076/2
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: [build, build-clang]
+    needs: [build-native, build-cross-clang]
     runs-on: windows-2022
     steps:
     - uses: actions/download-artifact@v3
