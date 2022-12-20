@@ -97,16 +97,16 @@ jobs:
       run: |
         $asset32 = Get-Item "${{ steps.download.outputs.download-path }}\drmingw-mingw32\mingw32\*.7z"
         $asset64 = Get-Item "${{ steps.download.outputs.download-path }}\drmingw-mingw64\mingw64\*.7z"
-        Write-Host "::set-output name=mingw32-path::$($asset32.FullName)"
-        Write-Host "::set-output name=mingw64-path::$($asset64.FullName)"
-        Write-Host "::set-output name=mingw32-name::$($asset32.Name)"
-        Write-Host "::set-output name=mingw64-name::$($asset64.Name)"
+        "mingw32-path=$($asset32.FullName)" >> $Env:GITHUB_OUTPUT
+        "mingw64-path=$($asset64.FullName)" >> $Env:GITHUB_OUTPUT
+        "mingw32-name=$($asset32.Name)" >> $Env:GITHUB_OUTPUT
+        "mingw64-name=$($asset64.Name)" >> $Env:GITHUB_OUTPUT
         $asset32arm = Get-Item "${{ steps.download.outputs.download-path }}\drmingw-clang\armv7-w64-mingw32-clang\*.7z"
         $asset64arm = Get-Item "${{ steps.download.outputs.download-path }}\drmingw-clang\aarch64-w64-mingw32-clang\*.7z"
-        Write-Host "::set-output name=mingw32-arm-path::$($asset32arm.FullName)"
-        Write-Host "::set-output name=mingw64-arm-path::$($asset64arm.FullName)"
-        Write-Host "::set-output name=mingw32-arm-name::$($asset32arm.Name)"
-        Write-Host "::set-output name=mingw64-arm-name::$($asset64arm.Name)"
+        "mingw32-arm-path=$($asset32arm.FullName)" >> $Env:GITHUB_OUTPUT
+        "mingw64-arm-path=$($asset64arm.FullName)" >> $Env:GITHUB_OUTPUT
+        "mingw32-arm-name=$($asset32arm.Name)" >> $Env:GITHUB_OUTPUT
+        "mingw64-arm-name=$($asset64arm.Name)" >> $Env:GITHUB_OUTPUT
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
