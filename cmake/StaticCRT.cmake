@@ -27,8 +27,11 @@ if (MINGW)
             ERROR_QUIET
         )
         if (NOT STATUS_CXX11_THREADS EQUAL 0)
+            message (STATUS "MinGW with POSIX threads detected.")
             # https://stackoverflow.com/a/28001271
             set (CMAKE_CXX_STANDARD_LIBRARIES "-Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic ${CMAKE_CXX_STANDARD_LIBRARIES}")
+        else ()
+            message (STATUS "MinGW with Win32 threads detected.")
         endif ()
     endif ()
 endif ()

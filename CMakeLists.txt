@@ -13,7 +13,6 @@ set (CPACK_PACKAGE_VERSION_PATCH "8")
 
 
 option (ENABLE_COVERAGE "Enable code coverage." OFF)
-option (POSIX_THREADS "Allow posix threads." OFF)
 
 
 ##############################################################################

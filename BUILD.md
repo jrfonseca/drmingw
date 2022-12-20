@@ -5,9 +5,7 @@
 
 Required:
 
- * [MinGW-w64](http://mingw-w64.sourceforge.net/) toolchain
-
-   * _win32_ threads (as opposed to _posix_ threads) is recommended to avoid dependency on `libwinpthread-1.dll`
+ * [MinGW](https://github.com/brechtsanders/winlibs_mingw/releases) toolchain
 
  * [CMake](http://www.cmake.org/)
 
