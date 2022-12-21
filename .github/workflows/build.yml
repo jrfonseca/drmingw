@@ -18,7 +18,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: downloads/*.7z
-        key: ${{ runner.os }}-${{ matrix.target }}-mingw-12.2.0-dbghelp-10.0.18362.1
+        key: ${{ runner.os }}-${{ matrix.target }}-mingw-12.2.0-win32-dbghelp-10.0.18362.1
     - run: Get-Host | Select-Object Version
     - run: python -m pip install gcovr codecov
     - name: Build

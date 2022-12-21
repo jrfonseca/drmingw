@@ -13,6 +13,7 @@ set (CPACK_PACKAGE_VERSION_PATCH "8")
 
 
 option (ENABLE_COVERAGE "Enable code coverage." OFF)
+option (POSIX_THREADS "Allow posix threads." OFF)
 
 
 ##############################################################################
@@ -64,6 +65,24 @@ set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 add_compiler_flags (-fno-strict-aliasing)
 
 include (StaticCRT)
+
+# Avoid Posix threads.  Posix threads is required for support of certain C++11
+# multi-threading features, but it introduces a new DLL dependency and we don't
+# use those features.
+execute_process (
+    COMMAND "${CMAKE_COMMAND}" -E echo "#include <thread>\n#ifdef _GLIBCXX_HAS_GTHREADS\n#error _GLIBCXX_HAS_GTHREADS\n#endif"
+    COMMAND "${CMAKE_CXX_COMPILER}" -x c++ -E -
+    RESULT_VARIABLE STATUS_CXX11_THREADS
+    OUTPUT_QUIET
+    ERROR_QUIET
+)
+if (NOT STATUS_CXX11_THREADS EQUAL 0)
+    if (POSIX_THREADS)
+        message (WARNING "Win32 threads recommended.")
+    else ()
+        message (SEND_ERROR "Win32 threads required.")
+    endif ()
+endif ()
 
 # Enable stack protection
 # XXX: Broken on https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86832

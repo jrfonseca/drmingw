@@ -18,10 +18,10 @@ function Exec {
     }
 }
 
-$MINGW_64_URL = 'https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-x86_64-posix-seh-gcc-12.2.0-llvm-14.0.6-mingw-w64msvcrt-10.0.0-r2.7z'
-$MINGW_32_URL = 'https://github.com/brechtsanders/winlibs_mingw/releases/download/12.2.0-14.0.6-10.0.0-msvcrt-r2/winlibs-i686-posix-dwarf-gcc-12.2.0-llvm-14.0.6-mingw-w64msvcrt-10.0.0-r2.7z'
-$MINGW_64_SUM = 'c0dd9f2113a151dd2fe3dce8ceb30df90120fab4537349d7c0ee22e9ff4fe3bc'
-$MINGW_32_SUM = '80ab3fb4b65870509f968e07e44f90d216eaf130fe9eb320b7a98285a84a0d2e'
+$MINGW_64_URL = 'https://github.com/niXman/mingw-builds-binaries/releases/download/12.2.0-rt_v10-rev2/x86_64-12.2.0-release-win32-seh-msvcrt-rt_v10-rev2.7z'
+$MINGW_32_URL = 'https://github.com/niXman/mingw-builds-binaries/releases/download/12.2.0-rt_v10-rev2/i686-12.2.0-release-win32-dwarf-msvcrt-rt_v10-rev2.7z'
+$MINGW_64_SUM = 'dbe4de36401906f296c2752afd512891a227a787f3b9cf10115b409feaef39aa'
+$MINGW_32_SUM = 'd76daf7a176f6e65ff75adc26efbadba89787bb14265696b94dce302cf1f8115'
 
 $DBGHELP_64_URL = 'https://gist.githubusercontent.com/jrfonseca/55a9a0e0e228ad841032df1624da5e27/raw/8b5f0a1578be701128f09f886f9636389ae60268/dbghelp-win64.7z'
 $DBGHELP_32_URL = 'https://gist.githubusercontent.com/jrfonseca/55a9a0e0e228ad841032df1624da5e27/raw/8b5f0a1578be701128f09f886f9636389ae60268/dbghelp-win32.7z'
@@ -131,9 +131,6 @@ Exec { cmake --build $buildDir --use-stderr --target test }
 # MinGW GCC
 Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\$target" -G $generator "-DCMAKE_BUILD_TYPE=Debug" }
 Exec { cmake --build "$buildRoot\apps\$target" }
-# MinGW Clang
-Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\$target-clang" -G $generator "-DCMAKE_BUILD_TYPE=Debug" "-DCMAKE_C_COMPILER=clang" "-DCMAKE_CXX_COMPILER=clang++" "-DCMAKE_C_FLAGS_DEBUG=-g" "-DCMAKE_CXX_FLAGS_DEBUG=-g" }
-Exec { cmake --build "$buildRoot\apps\$target-clang" }
 # MSVC 32-bits
 Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\msvc32" -G "Visual Studio 17 2022" -A Win32 }
 Exec { cmake --build "$buildRoot\apps\msvc32" --config Debug "--" /verbosity:minimal /maxcpucount }
@@ -142,9 +139,9 @@ if ($target -eq "mingw64") {
     Exec { cmake -Stests\apps "-B$buildRoot\apps\msvc64" -G "Visual Studio 17 2022" -A x64 }
     Exec { cmake --build "$buildRoot\apps\msvc64" --config Debug "--" /verbosity:minimal /maxcpucount }
 
-    Exec { python ci\spawndesk.py python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\$target-clang" "$buildRoot\apps\msvc32\Debug" "$buildRoot\apps\msvc64\Debug" }
+    Exec { python ci\spawndesk.py python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\msvc32\Debug" "$buildRoot\apps\msvc64\Debug" }
 } else {
-    Exec { python ci\spawndesk.py python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\$target-clang" "$buildRoot\apps\msvc32\Debug" }
+    Exec { python ci\spawndesk.py python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\msvc32\Debug" }
 }
 
 #
