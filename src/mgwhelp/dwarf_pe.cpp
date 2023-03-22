@@ -221,7 +221,9 @@ dwarf_pe_init(HANDLE hFile,
 
         if (strcmp(doas.as_name, ".gnu_debuglink") == 0) {
             Dwarf_Small *data;
-            pe_load_section(pe_obj, section_index, &data, &err);
+            if (DW_DLV_OK != pe_load_section(pe_obj, section_index, &data, &err)) {
+                continue;
+            }
             const char *debuglink = (const char *)data;
 
             std::vector<std::string> debugSearchDirs;

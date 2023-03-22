@@ -241,6 +241,7 @@ mgwhelp_module_create(struct mgwhelp_process *process, HANDLE hFile, PCSTR Image
 
     if (ImageName) {
         strncpy(module->LoadedImageName, ImageName, sizeof module->LoadedImageName);
+        module->LoadedImageName[MAX_PATH - 1] = '\0';
     } else {
         /* SymGetModuleInfo64 is not reliable for this, as explained in
          * https://msdn.microsoft.com/en-us/library/windows/desktop/ms681336.aspx
@@ -618,6 +619,7 @@ MgwSymGetLineFromAddr64(HANDLE hProcess,
         if (dwarf_find_line(&module->dwarf, Offset, &info)) {
             static char buf[1024];
             strncpy(buf, info.filename.c_str(), sizeof buf);
+            buf[sizeof(buf) - 1] = '\0';
             Line->FileName = buf;
             Line->LineNumber = info.line;
 
