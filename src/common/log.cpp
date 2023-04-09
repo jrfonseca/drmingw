@@ -92,7 +92,7 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
 
 static void
 dumpContext(
-#if defined(_M_ARM64) || defined(_M_ARM)
+#if defined(_M_ARM64)
     const CONTEXT *pContext
 #elif defined(_WIN64)
     const WOW64_CONTEXT *pContext
@@ -120,9 +120,8 @@ dumpContext(
             pContext->Pc, pContext->Sp, pContext->Fp);
     }
 
-#elif defined(_M_ARM)
-
 #else
+
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
         lprintf("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n", pContext->Eax,
                 pContext->Ebx, pContext->Ecx, pContext->Edx, pContext->Esi, pContext->Edi);
@@ -183,13 +182,6 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     StackFrame.AddrPC.Offset = pContext->Pc;
     StackFrame.AddrStack.Offset = pContext->Sp;
     StackFrame.AddrFrame.Offset = pContext->Fp;
-#elif defined(_M_ARM)
-    assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
-    MachineType = IMAGE_FILE_MACHINE_ARMNT;
-    dumpContext(pContext);
-    StackFrame.AddrPC.Offset = pContext->Pc;
-    StackFrame.AddrStack.Offset = pContext->Sp;
-    StackFrame.AddrFrame.Offset = pContext->R11;
 #else
     BOOL bWow64 = FALSE;
     if (HAVE_WIN64) {

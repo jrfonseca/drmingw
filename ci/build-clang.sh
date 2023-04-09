@@ -63,8 +63,7 @@ fi
 for target in \
 	x86_64-w64-mingw32-clang \
 	i686-w64-mingw32-clang \
-	aarch64-w64-mingw32-clang \
-	armv7-w64-mingw32-clang
+	aarch64-w64-mingw32-clang
 do
 	toolchain=$PWD/ci/toolchain/$target.cmake
 
