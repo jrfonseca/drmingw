@@ -91,38 +91,12 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
 
 
 static void
-dumpContext(
-#if defined(_M_ARM64)
-    const CONTEXT *pContext
-#elif defined(_WIN64)
-    const WOW64_CONTEXT *pContext
-#else
-    const CONTEXT *pContext
-#endif
-)
+dumpContext(const WOW64_CONTEXT *pContext)
 {
     // Show the registers
     lprintf("Registers:\n");
 
-#if defined(_M_ARM64)
-
-    if (pContext->ContextFlags & CONTEXT_INTEGER) {
-        for(int i = 0 ; i < 28 ; i += 4)
-        {
-            lprintf("X%d=%016I64X X%d=%016I64X X%d=%016I64X X%d=%016I64X\n", i, pContext->X[i],
-                i+1, pContext->X[i+1], i+2, pContext->X[i+2], i+3, pContext->X[i+3]);
-        }
-        lprintf("X%d=%016I64X\n", 28, pContext->X[28]);
-    }
-
-    if (pContext->ContextFlags & CONTEXT_CONTROL) {
-         lprintf("pc=%016I64X sp=%016I64X fp=%016I64X \n",
-            pContext->Pc, pContext->Sp, pContext->Fp);
-    }
-
-#else
-
-    if (pContext->ContextFlags & CONTEXT_INTEGER) {
+    if (pContext->ContextFlags & WOW64_CONTEXT_INTEGER) {
         lprintf("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n", pContext->Eax,
                 pContext->Ebx, pContext->Ecx, pContext->Edx, pContext->Esi, pContext->Edi);
     }
@@ -142,22 +116,51 @@ dumpContext(
                 pContext->EFlags & 0x00000001 ? "cy" : "nc"    //  CF (carry flag)
         );
     }
-    if (pContext->ContextFlags & CONTEXT_SEGMENTS) {
+    if (pContext->ContextFlags & WOW64_CONTEXT_SEGMENTS) {
         lprintf("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx", pContext->SegCs,
                 pContext->SegSs, pContext->SegDs, pContext->SegEs, pContext->SegFs,
                 pContext->SegGs);
-        if (pContext->ContextFlags & CONTEXT_CONTROL) {
+        if (pContext->ContextFlags & WOW64_CONTEXT_CONTROL) {
             lprintf("             efl=%08lx", pContext->EFlags);
         }
     } else {
-        if (pContext->ContextFlags & CONTEXT_CONTROL) {
+        if (pContext->ContextFlags & WOW64_CONTEXT_CONTROL) {
             lprintf("                                                                       "
                     "efl=%08lx",
                     pContext->EFlags);
         }
     }
-#endif    
+
     lprintf("\n\n");
+}
+
+
+static void
+dumpContext(const CONTEXT *pContext)
+{
+#if defined(_M_IX86)
+    dumpContext(reinterpret_cast<const WOW64_CONTEXT *>(pContext));
+#elif defined(_M_X64)
+    // TODO
+#elif defined(_M_ARM64)
+
+    if (pContext->ContextFlags & CONTEXT_INTEGER) {
+        for (unsigned i = 0 ; i < 28 ; i += 4) {
+            lprintf("X%d=%016I64X X%d=%016I64X X%d=%016I64X X%d=%016I64X\n", i, pContext->X[i],
+                    i+1, pContext->X[i+1], i+2, pContext->X[i+2], i+3, pContext->X[i+3]);
+        }
+        lprintf("X%d=%016I64X\n", 28, pContext->X[28]);
+    }
+
+    if (pContext->ContextFlags & CONTEXT_CONTROL) {
+         lprintf("pc=%016I64X sp=%016I64X fp=%016I64X \n",
+                 pContext->Pc, pContext->Sp, pContext->Fp);
+    }
+    lprintf("\n\n");
+
+#else
+#error
+#endif
 }
 
 
@@ -172,17 +175,34 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     ZeroMemory(&StackFrame, sizeof StackFrame);
 
 #if defined(_M_ARM64)
-    USHORT processArch = 0;
-    USHORT machineArch = 0;
-    IsWow64Process2(hProcess, &processArch, &machineArch);
 
-    assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
-    MachineType = IMAGE_FILE_MACHINE_ARM64;
-    dumpContext(pContext);
-    StackFrame.AddrPC.Offset = pContext->Pc;
-    StackFrame.AddrStack.Offset = pContext->Sp;
-    StackFrame.AddrFrame.Offset = pContext->Fp;
+    USHORT processArch = 0;
+    IsWow64Process2(hProcess, &processArch, nullptr);
+
+    if (processArch == IMAGE_FILE_MACHINE_ARM64) {
+        assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
+        MachineType = IMAGE_FILE_MACHINE_ARM64;
+        dumpContext(pContext);
+        StackFrame.AddrPC.Offset = pContext->Pc;
+        StackFrame.AddrStack.Offset = pContext->Sp;
+        StackFrame.AddrFrame.Offset = pContext->Fp;
+    } else if (processArch == IMAGE_FILE_MACHINE_I386) {
+        assert(processArch == IMAGE_FILE_MACHINE_I386);
+        const WOW64_CONTEXT *pWow64Context = reinterpret_cast<const WOW64_CONTEXT *>(pContext);
+        // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
+        assert((pWow64Context->ContextFlags & WOW64_CONTEXT_FULL) == WOW64_CONTEXT_FULL);
+        dumpContext(pWow64Context);
+        MachineType = IMAGE_FILE_MACHINE_I386;
+        StackFrame.AddrPC.Offset = pWow64Context->Eip;
+        StackFrame.AddrStack.Offset = pWow64Context->Esp;
+        StackFrame.AddrFrame.Offset = pWow64Context->Ebp;
+    } else {
+        lprintf("error: unsupported architecture 0x%04x\n", processArch);
+        return;
+    }
+
 #else
+
     BOOL bWow64 = FALSE;
     if (HAVE_WIN64) {
         IsWow64Process(hProcess, &bWow64);
@@ -191,9 +211,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         const WOW64_CONTEXT *pWow64Context = reinterpret_cast<const WOW64_CONTEXT *>(pContext);
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         assert((pWow64Context->ContextFlags & WOW64_CONTEXT_FULL) == WOW64_CONTEXT_FULL);
-#ifdef _WIN64
         dumpContext(pWow64Context);
-#endif
         MachineType = IMAGE_FILE_MACHINE_I386;
         StackFrame.AddrPC.Offset = pWow64Context->Eip;
         StackFrame.AddrStack.Offset = pWow64Context->Esp;
@@ -201,9 +219,9 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     } else {
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
+        dumpContext(pContext);
 #ifndef _WIN64
         MachineType = IMAGE_FILE_MACHINE_I386;
-        dumpContext(pContext);
         StackFrame.AddrPC.Offset = pContext->Eip;
         StackFrame.AddrStack.Offset = pContext->Esp;
         StackFrame.AddrFrame.Offset = pContext->Ebp;
@@ -214,6 +232,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         StackFrame.AddrFrame.Offset = pContext->Rbp;
 #endif
     }
+
 #endif
 
     StackFrame.AddrPC.Mode = AddrModeFlat;
