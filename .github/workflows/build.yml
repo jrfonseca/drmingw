@@ -23,8 +23,15 @@ jobs:
     - run: python -m pip install gcovr
     - name: Build
       run: .\ci\build.ps1 -target ${{ matrix.target }} -coverage
-      env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+    - name: codecov
+      uses: codecov/codecov-action@v3
+      if: "!(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))"
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: cobertura.xml
+        functionalities: search
+        fail_ci_if_error: true
+        verbose: false
     - name: Upload artifact
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
       uses: actions/upload-artifact@v3

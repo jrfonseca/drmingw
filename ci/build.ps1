@@ -149,9 +149,8 @@ if ($target -eq "mingw64") {
 #
 if ($coverage) {
     Exec { gcov --version }
-    if (Test-Path Env:CODECOV_TOKEN) {
+    if ($Env:GITHUB_ACTIONS -eq "true") {
         Exec { python -m gcovr --exclude-unreachable-branches --exclude-throw-branches --object-directory $buildDir --xml -o "cobertura.xml" }
-        #Exec { python -m codecov --file cobertura.xml -X gcov search }
     } else {
         Exec { python -m gcovr --exclude-unreachable-branches --exclude-throw-branches --object-directory $buildDir --html-details -o "$buildDir\coverage.html" }
     }
