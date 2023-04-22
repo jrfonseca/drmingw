@@ -1,0 +1,6 @@
+LIBRARY exchndl.dll
+
+EXPORTS
+	ExcHndlInit@0 == ExcHndlInit
+	ExcHndlSetLogFileNameA@4 == ExcHndlSetLogFileNameA
+	ExcHndlSetLogFileNameW@4 == ExcHndlSetLogFileNameW

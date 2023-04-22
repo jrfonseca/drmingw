@@ -8,10 +8,10 @@ include_directories (
 
 set_property (TARGET addr2line APPEND_STRING PROPERTY LINK_FLAGS " -municode")
 
-target_link_libraries (addr2line
+target_link_libraries (addr2line PRIVATE
     common
     getoptW
-    mgwhelp_implib
+    mgwhelp
 )
 
 install (TARGETS addr2line RUNTIME DESTINATION bin)

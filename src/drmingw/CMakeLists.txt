@@ -18,10 +18,10 @@ target_include_directories (drmingw PRIVATE
 
 set_property (TARGET drmingw APPEND_STRING PROPERTY LINK_FLAGS " -municode")
 
-target_link_libraries (drmingw
+target_link_libraries (drmingw PRIVATE
     common
     getoptW
-    mgwhelp_implib
+    mgwhelp
 )
 
 install (TARGETS drmingw RUNTIME DESTINATION bin)

@@ -8,16 +8,15 @@ force_debug ()
 add_executable (test_mgwhelp
     test_mgwhelp.cpp
 )
-add_dependencies (test_mgwhelp mgwhelp_implib)
 target_link_libraries (test_mgwhelp
-    mgwhelp_implib
+    mgwhelp
     shlwapi
 )
-add_dependencies (check test_mgwhelp)
 add_test (
     NAME test_mgwhelp
     COMMAND test_mgwhelp
 )
+set_tests_properties(test_mgwhelp PROPERTIES FIXTURES_REQUIRED test_fixture)
 
 #
 # test_mgwhelp_split
@@ -45,11 +44,11 @@ add_custom_target (test_mgwhelp_split ALL
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.debug
 )
-add_dependencies (check test_mgwhelp_split)
 add_test (
     NAME test_mgwhelp_split
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split.exe
 )
+set_tests_properties(test_mgwhelp_split PROPERTIES FIXTURES_REQUIRED test_fixture)
 
 
 #
@@ -81,12 +80,11 @@ add_custom_target (test_mgwhelp_split_subdir ALL
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/.debug/test_mgwhelp_split_subdir.debug
 )
-add_dependencies (check test_mgwhelp_split_subdir)
 add_test (
     NAME test_mgwhelp_split_subdir
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_split_subdir.exe
 )
-
+set_tests_properties(test_mgwhelp_split_subdir PROPERTIES FIXTURES_REQUIRED test_fixture)
 
 #
 # test_mgwhelp_stripped
@@ -105,11 +103,11 @@ add_custom_target (test_mgwhelp_stripped ALL
     DEPENDS
         ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped.exe
 )
-add_dependencies (check test_mgwhelp_stripped)
 add_test (
     NAME test_mgwhelp_stripped
     COMMAND ${CMAKE_CROSSCOMPILING_EMULATOR} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_stripped.exe
 )
+set_tests_properties(test_mgwhelp_stripped PROPERTIES FIXTURES_REQUIRED test_fixture)
 
 
 #
@@ -185,7 +183,7 @@ endif ()
 if (OBJCOPY_VERSION STREQUAL "llvm-objcopy")
     set_target_properties (test_mgwhelp_zdebug PROPERTIES EXCLUDE_FROM_ALL ON)
 else ()
-    add_dependencies (check test_mgwhelp_zdebug)
+    set_tests_properties(test_mgwhelp_zdebug PROPERTIES FIXTURES_REQUIRED test_fixture)
 endif ()
 if (OBJCOPY_VERSION STREQUAL "llvm-objcopy" OR OBJCOPY_VERSION VERSION_LESS "2.34")
     set_tests_properties (test_mgwhelp_zdebug PROPERTIES DISABLED ON)
@@ -202,14 +200,13 @@ include_directories (
 add_executable (test_exchndl_static_unicode
     test_exchndl_static_unicode.cpp
 )
-add_dependencies (test_exchndl_static_unicode exchndl_implib)
-target_link_libraries (test_exchndl_static_unicode exchndl_implib shlwapi)
-add_dependencies (check test_exchndl_static_unicode)
+target_link_libraries (test_exchndl_static_unicode exchndl shlwapi)
 add_test (
     NAME test_exchndl_static_unicode
     COMMAND test_exchndl_static_unicode
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
+set_tests_properties(test_exchndl_static_unicode PROPERTIES FIXTURES_REQUIRED test_fixture)
 
 
 #
@@ -222,14 +219,13 @@ include_directories (
 add_executable (test_exchndl_static_ansi
     test_exchndl_static_ansi.cpp
 )
-add_dependencies (test_exchndl_static_ansi exchndl_implib)
-target_link_libraries (test_exchndl_static_ansi exchndl_implib shlwapi)
-add_dependencies (check test_exchndl_static_ansi)
+target_link_libraries (test_exchndl_static_ansi exchndl shlwapi)
 add_test (
     NAME test_exchndl_static_ansi
     COMMAND test_exchndl_static_ansi
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
+set_tests_properties(test_exchndl_static_ansi PROPERTIES FIXTURES_REQUIRED test_fixture)
 
 
 #
@@ -243,13 +239,12 @@ add_executable (test_exchndl_dynamic_unicode
     test_exchndl_dynamic_unicode.cpp
 )
 target_link_libraries (test_exchndl_dynamic_unicode shlwapi)
-add_dependencies (test_exchndl_dynamic_unicode exchndl)
-add_dependencies (check test_exchndl_dynamic_unicode)
 add_test (
     NAME test_exchndl_dynamic_unicode
     COMMAND test_exchndl_dynamic_unicode
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
+set_tests_properties(test_exchndl_dynamic_unicode PROPERTIES FIXTURES_REQUIRED test_fixture)
 
 
 #
@@ -263,13 +258,12 @@ add_executable (test_exchndl_dynamic_ansi
     test_exchndl_dynamic_ansi.cpp
 )
 target_link_libraries (test_exchndl_dynamic_ansi shlwapi)
-add_dependencies (test_exchndl_dynamic_ansi exchndl)
-add_dependencies (check test_exchndl_dynamic_ansi)
 add_test (
     NAME test_exchndl_dynamic_ansi
     COMMAND test_exchndl_dynamic_ansi
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
+set_tests_properties(test_exchndl_dynamic_ansi PROPERTIES FIXTURES_REQUIRED test_fixture)
 
 
 #
@@ -279,10 +273,17 @@ add_test (
 add_executable (test_addr2line
     test_addr2line.cpp
 )
-add_dependencies (test_addr2line addr2line)
-add_dependencies (check test_addr2line)
 add_test (
     NAME test_addr2line
     COMMAND test_addr2line
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
+set_tests_properties(test_addr2line PROPERTIES FIXTURES_REQUIRED test_fixture)
+
+add_test(NAME test_build
+    COMMAND "${CMAKE_COMMAND}"
+    --build "${CMAKE_BINARY_DIR}"
+    --config "$<CONFIG>"
+)
+
+set_tests_properties(test_build PROPERTIES FIXTURES_SETUP test_fixture)

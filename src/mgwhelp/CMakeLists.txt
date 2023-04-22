@@ -1,21 +1,7 @@
 if (CMAKE_SIZEOF_VOID_P EQUAL 4 AND CMAKE_C_COMPILER_ID STREQUAL GNU)
-    # Build import library separately, to deal with MinGW issues
-
-    add_library (mgwhelp MODULE mgwhelp32exp.def)
-
-    set (MGWHELP_IMPLIB ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}/libmgwhelp.dll.a)
-    add_custom_command (
-        OUTPUT ${MGWHELP_IMPLIB}
-        COMMAND ${CMAKE_DLLTOOL} --output-lib ${MGWHELP_IMPLIB} --dllname mgwhelp.dll --kill-at --input-def ${CMAKE_CURRENT_SOURCE_DIR}/mgwhelp32imp.def
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mgwhelp32imp.def
-    )
-    add_custom_target (libmgwhelp_implib DEPENDS mgwhelp ${MGWHELP_IMPLIB})
-    add_library (mgwhelp_implib INTERFACE IMPORTED GLOBAL)
-    target_link_libraries (mgwhelp_implib INTERFACE ${MGWHELP_IMPLIB})
-    install (FILES ${MGWHELP_IMPLIB} DESTINATION lib)
+    add_library (mgwhelp SHARED mgwhelp32.def)
 else ()
     add_library (mgwhelp SHARED mgwhelp64.def)
-    add_library (mgwhelp_implib ALIAS mgwhelp)
 endif ()
 
 target_sources (mgwhelp PRIVATE

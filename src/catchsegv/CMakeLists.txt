@@ -8,10 +8,10 @@ include_directories (
 
 set_property (TARGET catchsegv APPEND_STRING PROPERTY LINK_FLAGS " -municode")
 
-target_link_libraries (catchsegv
+target_link_libraries (catchsegv PRIVATE
     common
     getoptW
-    mgwhelp_implib
+    mgwhelp
     winmm
 )
 

@@ -1,0 +1,108 @@
+EXPORTS
+	SymInitialize@12 = MgwSymInitialize@12 == SymInitialize
+	SymInitializeW@12 = MgwSymInitializeW@12 == SymInitializeW
+	SymCleanup@4 = MgwSymCleanup@4 == SymCleanup
+	SymSetOptions@4 = MgwSymSetOptions@4 == SymSetOptions
+	SymFromAddr@20 = MgwSymFromAddr@20 == SymFromAddr
+	SymFromAddrW@20 = MgwSymFromAddrW@20 == SymFromAddrW
+	SymGetLineFromAddr64@20 = MgwSymGetLineFromAddr64@20 == SymGetLineFromAddr64
+	SymGetLineFromAddrW64@20 = MgwSymGetLineFromAddrW64@20 == SymGetLineFromAddrW64
+	SymLoadModuleEx@36 = MgwSymLoadModuleEx@36 == SymLoadModuleEx
+	SymLoadModuleExW@36 = MgwSymLoadModuleExW@36 == SymLoadModuleExW
+	UnDecorateSymbolName@16 = MgwUnDecorateSymbolName@16 == UnDecorateSymbolName
+
+	EnumDirTree@24 == EnumDirTree
+	EnumDirTreeW@24 == EnumDirTreeW
+	EnumerateLoadedModules@12 == EnumerateLoadedModules
+	EnumerateLoadedModules64@12 == EnumerateLoadedModules64
+	EnumerateLoadedModulesW64@12 == EnumerateLoadedModulesW64
+	ExtensionApiVersion@0 == ExtensionApiVersion
+	FindDebugInfoFile@12 == FindDebugInfoFile
+	FindDebugInfoFileEx@20 == FindDebugInfoFileEx
+	FindExecutableImage@12 == FindExecutableImage
+	FindExecutableImageEx@20 == FindExecutableImageEx
+	FindExecutableImageExW@20 == FindExecutableImageExW
+	GetTimestampForLoadedLibrary@4 == GetTimestampForLoadedLibrary
+	ImageDirectoryEntryToData@16 == ImageDirectoryEntryToData
+	ImageDirectoryEntryToDataEx@20 == ImageDirectoryEntryToDataEx
+	ImageNtHeader@4 == ImageNtHeader
+	ImageRvaToSection@12 == ImageRvaToSection
+	ImageRvaToVa@16 == ImageRvaToVa
+	ImagehlpApiVersion@0 == ImagehlpApiVersion
+	ImagehlpApiVersionEx@4 == ImagehlpApiVersionEx
+	MakeSureDirectoryPathExists@4 == MakeSureDirectoryPathExists
+	MapDebugInformation@16 == MapDebugInformation
+	MiniDumpReadDumpStream@20 == MiniDumpReadDumpStream
+	MiniDumpWriteDump@28 == MiniDumpWriteDump
+	SearchTreeForFile@12 == SearchTreeForFile
+	SearchTreeForFileW@12 == SearchTreeForFileW
+	StackWalk@36 == StackWalk
+	StackWalk64@36 == StackWalk64
+	SymAddSymbol@32 == SymAddSymbol
+	SymAddSymbolW@32 == SymAddSymbolW
+	SymEnumLines@28 == SymEnumLines
+	SymEnumSourceFiles@24 == SymEnumSourceFiles
+	SymEnumSymbols@24 == SymEnumSymbols
+	SymEnumSymbolsW@24 == SymEnumSymbolsW
+	SymEnumTypes@20 == SymEnumTypes
+	SymEnumTypesW@20 == SymEnumTypesW
+	SymEnumerateModules@12 == SymEnumerateModules
+	SymEnumerateModules64@12 == SymEnumerateModules64
+	SymEnumerateModulesW64@12 == SymEnumerateModulesW64
+	SymEnumerateSymbols@16 == SymEnumerateSymbols
+	SymEnumerateSymbols64@20 == SymEnumerateSymbols64
+	SymFindFileInPath@40 == SymFindFileInPath
+	SymFindFileInPathW@40 == SymFindFileInPathW
+	SymFromName@12 == SymFromName
+	SymFunctionTableAccess@8 == SymFunctionTableAccess
+	SymFunctionTableAccess64@12 == SymFunctionTableAccess64
+	SymGetLineFromAddr@16 == SymGetLineFromAddr
+	SymGetLineNext@8 == SymGetLineNext
+	SymGetLineNext64@8 == SymGetLineNext64
+	SymGetLinePrev@8 == SymGetLinePrev
+	SymGetLinePrev64@8 == SymGetLinePrev64
+	SymGetModuleBase@8 == SymGetModuleBase
+	SymGetModuleBase64@12 == SymGetModuleBase64
+	SymGetModuleInfo@12 == SymGetModuleInfo
+	SymGetModuleInfo64@16 == SymGetModuleInfo64
+	SymGetModuleInfoW@12 == SymGetModuleInfoW
+	SymGetModuleInfoW64@16 == SymGetModuleInfoW64
+	SymGetOptions@0 == SymGetOptions
+	SymGetSearchPath@12 == SymGetSearchPath
+	SymGetSearchPathW@12 == SymGetSearchPathW
+	SymGetSourceFileToken@24 == SymGetSourceFileToken
+	SymGetSourceFileTokenW@24 == SymGetSourceFileTokenW
+	SymGetSymFromAddr@16 == SymGetSymFromAddr
+	SymGetSymFromAddr64@20 == SymGetSymFromAddr64
+	SymGetSymFromName@12 == SymGetSymFromName
+	SymGetSymFromName64@12 == SymGetSymFromName64
+	SymGetSymNext@8 == SymGetSymNext
+	SymGetSymNext64@8 == SymGetSymNext64
+	SymGetSymPrev@8 == SymGetSymPrev
+	SymGetSymPrev64@8 == SymGetSymPrev64
+	SymGetTypeFromName@20 == SymGetTypeFromName
+	SymGetTypeInfo@24 == SymGetTypeInfo
+	SymLoadModule@24 == SymLoadModule
+	SymLoadModule64@28 == SymLoadModule64
+	SymMatchFileName@16 == SymMatchFileName
+	SymMatchFileNameW@16 == SymMatchFileNameW
+	SymMatchString@12 == SymMatchString
+	SymRefreshModuleList@4 == SymRefreshModuleList
+	SymRegisterCallback@12 == SymRegisterCallback
+	SymRegisterCallback64@16 == SymRegisterCallback64
+	SymRegisterCallbackW64@16 == SymRegisterCallbackW64
+	SymRegisterFunctionEntryCallback@12 == SymRegisterFunctionEntryCallback
+	SymRegisterFunctionEntryCallback64@16 == SymRegisterFunctionEntryCallback64
+	SymSearch@44 == SymSearch
+	SymSearchW@44 == SymSearchW
+	SymSetContext@12 == SymSetContext
+	SymSetParentWindow@4 == SymSetParentWindow
+	SymSetScopeFromAddr@12 == SymSetScopeFromAddr
+	SymSetSearchPath@8 == SymSetSearchPath
+	SymSetSearchPathW@8 == SymSetSearchPathW
+	SymUnDName@12 == SymUnDName
+	SymUnDName64@12 == SymUnDName64
+	SymUnloadModule@8 == SymUnloadModule
+	SymUnloadModule64@12 == SymUnloadModule64
+	UnmapDebugInformation@4 == UnmapDebugInformation
+	WinDbgExtensionDllInit@12 == WinDbgExtensionDllInit
