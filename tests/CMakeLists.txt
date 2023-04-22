@@ -8,9 +8,8 @@ force_debug ()
 add_executable (test_mgwhelp
     test_mgwhelp.cpp
 )
-add_dependencies (test_mgwhelp mgwhelp_implib)
 target_link_libraries (test_mgwhelp
-    mgwhelp_implib
+    mgwhelp
     shlwapi
 )
 add_dependencies (check test_mgwhelp)
@@ -203,8 +202,7 @@ include_directories (
 add_executable (test_exchndl_static_unicode
     test_exchndl_static_unicode.cpp
 )
-add_dependencies (test_exchndl_static_unicode exchndl_implib)
-target_link_libraries (test_exchndl_static_unicode exchndl_implib shlwapi)
+target_link_libraries (test_exchndl_static_unicode exchndl shlwapi)
 add_dependencies (check test_exchndl_static_unicode)
 add_test (
     NAME test_exchndl_static_unicode
@@ -223,8 +221,7 @@ include_directories (
 add_executable (test_exchndl_static_ansi
     test_exchndl_static_ansi.cpp
 )
-add_dependencies (test_exchndl_static_ansi exchndl_implib)
-target_link_libraries (test_exchndl_static_ansi exchndl_implib shlwapi)
+target_link_libraries (test_exchndl_static_ansi exchndl shlwapi)
 add_dependencies (check test_exchndl_static_ansi)
 add_test (
     NAME test_exchndl_static_ansi
@@ -244,7 +241,6 @@ add_executable (test_exchndl_dynamic_unicode
     test_exchndl_dynamic_unicode.cpp
 )
 target_link_libraries (test_exchndl_dynamic_unicode shlwapi)
-add_dependencies (test_exchndl_dynamic_unicode exchndl)
 add_dependencies (check test_exchndl_dynamic_unicode)
 add_test (
     NAME test_exchndl_dynamic_unicode
@@ -264,7 +260,6 @@ add_executable (test_exchndl_dynamic_ansi
     test_exchndl_dynamic_ansi.cpp
 )
 target_link_libraries (test_exchndl_dynamic_ansi shlwapi)
-add_dependencies (test_exchndl_dynamic_ansi exchndl)
 add_dependencies (check test_exchndl_dynamic_ansi)
 add_test (
     NAME test_exchndl_dynamic_ansi
