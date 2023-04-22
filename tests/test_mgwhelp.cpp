@@ -190,6 +190,10 @@ main(int argc, char **argv)
     if (!hMgwHelpDll) {
         test_line(false, "GetModuleHandleA(\"mgwhelp.dll\")");
     } else {
+        test_line(GetProcAddress(hMgwHelpDll, "SymInitialize") != NULL, "GetProcAddress(\"SymInitialize\")");
+        test_line(GetProcAddress(hMgwHelpDll, "SymInitialize@12") == NULL, "!GetProcAddress(\"SymInitialize\")");
+        test_line(GetProcAddress(hMgwHelpDll, "EnumDirTree") != NULL, "GetProcAddress(\"EnumDirTree\")");
+        test_line(GetProcAddress(hMgwHelpDll, "EnumDirTree@24") == NULL, "!GetProcAddress(\"EnumDirTree\")");
         test_line(GetProcAddress(hMgwHelpDll, "SymGetOptions") != NULL, "GetProcAddress(\"SymGetOptions\")");
         test_line(GetProcAddress(hMgwHelpDll, "SymGetOptions@0") == NULL, "!GetProcAddress(\"SymGetOptions\")");
     }
