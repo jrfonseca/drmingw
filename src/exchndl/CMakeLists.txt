@@ -23,8 +23,6 @@ target_sources (exchndl PRIVATE
     version.rc
 )
 
-add_dependencies (exchndl mgwhelp_implib)
-
 target_link_libraries (exchndl PRIVATE
     common
     mgwhelp_implib

@@ -10,8 +10,6 @@ target_compile_definitions (drmingw PRIVATE
     VERSION="${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}"
 )
 
-add_dependencies (drmingw mgwhelp_implib)
-
 target_link_libraries (drmingw
     common
     mgwhelp_implib
