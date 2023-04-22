@@ -37,6 +37,12 @@ if (MINGW)
     set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
     set (CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
     set (CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fno-omit-frame-pointer")
+
+    add_link_options(
+        -static
+        -static-libgcc
+        -static-libstdc++
+    )
 endif ()
 
 # https://github.com/jrfonseca/drmingw/issues/42
