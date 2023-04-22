@@ -1,0 +1,108 @@
+EXPORTS
+	SymInitialize@12 = MgwSymInitialize@12 == SymInitialize
+	SymInitializeW@12 = MgwSymInitializeW@12 == SymInitializeW
+	SymCleanup@4 = MgwSymCleanup@4 == SymCleanup
+	SymSetOptions@4 = MgwSymSetOptions@4 == SymSetOptions
+	SymFromAddr@20 = MgwSymFromAddr@20 == SymFromAddr
+	SymFromAddrW@20 = MgwSymFromAddrW@20 == SymFromAddrW
+	SymGetLineFromAddr64@20 = MgwSymGetLineFromAddr64@20 == SymGetLineFromAddr64
+	SymGetLineFromAddrW64@20 = MgwSymGetLineFromAddrW64@20 == SymGetLineFromAddrW64
+	SymLoadModuleEx@36 = MgwSymLoadModuleEx@36 == SymLoadModuleEx
+	SymLoadModuleExW@36 = MgwSymLoadModuleExW@36 == SymLoadModuleExW
+	UnDecorateSymbolName@16 = MgwUnDecorateSymbolName@16 == UnDecorateSymbolName
+
+	EnumDirTree = dbghelp.EnumDirTree
+	EnumDirTreeW = dbghelp.EnumDirTreeW
+	EnumerateLoadedModules = dbghelp.EnumerateLoadedModules
+	EnumerateLoadedModules64 = dbghelp.EnumerateLoadedModules64
+	EnumerateLoadedModulesW64 = dbghelp.EnumerateLoadedModulesW64
+	ExtensionApiVersion = dbghelp.ExtensionApiVersion
+	FindDebugInfoFile = dbghelp.FindDebugInfoFile
+	FindDebugInfoFileEx = dbghelp.FindDebugInfoFileEx
+	FindExecutableImage = dbghelp.FindExecutableImage
+	FindExecutableImageEx = dbghelp.FindExecutableImageEx
+	FindExecutableImageExW = dbghelp.FindExecutableImageExW
+	GetTimestampForLoadedLibrary = dbghelp.GetTimestampForLoadedLibrary
+	ImageDirectoryEntryToData = dbghelp.ImageDirectoryEntryToData
+	ImageDirectoryEntryToDataEx = dbghelp.ImageDirectoryEntryToDataEx
+	ImageNtHeader = dbghelp.ImageNtHeader
+	ImageRvaToSection = dbghelp.ImageRvaToSection
+	ImageRvaToVa = dbghelp.ImageRvaToVa
+	ImagehlpApiVersion = dbghelp.ImagehlpApiVersion
+	ImagehlpApiVersionEx = dbghelp.ImagehlpApiVersionEx
+	MakeSureDirectoryPathExists = dbghelp.MakeSureDirectoryPathExists
+	MapDebugInformation = dbghelp.MapDebugInformation
+	MiniDumpReadDumpStream = dbghelp.MiniDumpReadDumpStream
+	MiniDumpWriteDump = dbghelp.MiniDumpWriteDump
+	SearchTreeForFile = dbghelp.SearchTreeForFile
+	SearchTreeForFileW = dbghelp.SearchTreeForFileW
+	StackWalk = dbghelp.StackWalk
+	StackWalk64 = dbghelp.StackWalk64
+	SymAddSymbol = dbghelp.SymAddSymbol
+	SymAddSymbolW = dbghelp.SymAddSymbolW
+	SymEnumLines = dbghelp.SymEnumLines
+	SymEnumSourceFiles = dbghelp.SymEnumSourceFiles
+	SymEnumSymbols = dbghelp.SymEnumSymbols
+	SymEnumSymbolsW = dbghelp.SymEnumSymbolsW
+	SymEnumTypes = dbghelp.SymEnumTypes
+	SymEnumTypesW = dbghelp.SymEnumTypesW
+	SymEnumerateModules = dbghelp.SymEnumerateModules
+	SymEnumerateModules64 = dbghelp.SymEnumerateModules64
+	SymEnumerateModulesW64 = dbghelp.SymEnumerateModulesW64
+	SymEnumerateSymbols = dbghelp.SymEnumerateSymbols
+	SymEnumerateSymbols64 = dbghelp.SymEnumerateSymbols64
+	SymFindFileInPath = dbghelp.SymFindFileInPath
+	SymFindFileInPathW = dbghelp.SymFindFileInPathW
+	SymFromName = dbghelp.SymFromName
+	SymFunctionTableAccess = dbghelp.SymFunctionTableAccess
+	SymFunctionTableAccess64 = dbghelp.SymFunctionTableAccess64
+	SymGetLineFromAddr = dbghelp.SymGetLineFromAddr
+	SymGetLineNext = dbghelp.SymGetLineNext
+	SymGetLineNext64 = dbghelp.SymGetLineNext64
+	SymGetLinePrev = dbghelp.SymGetLinePrev
+	SymGetLinePrev64 = dbghelp.SymGetLinePrev64
+	SymGetModuleBase = dbghelp.SymGetModuleBase
+	SymGetModuleBase64 = dbghelp.SymGetModuleBase64
+	SymGetModuleInfo = dbghelp.SymGetModuleInfo
+	SymGetModuleInfo64 = dbghelp.SymGetModuleInfo64
+	SymGetModuleInfoW = dbghelp.SymGetModuleInfoW
+	SymGetModuleInfoW64 = dbghelp.SymGetModuleInfoW64
+	SymGetOptions = dbghelp.SymGetOptions
+	SymGetSearchPath = dbghelp.SymGetSearchPath
+	SymGetSearchPathW = dbghelp.SymGetSearchPathW
+	SymGetSourceFileToken = dbghelp.SymGetSourceFileToken
+	SymGetSourceFileTokenW = dbghelp.SymGetSourceFileTokenW
+	SymGetSymFromAddr = dbghelp.SymGetSymFromAddr
+	SymGetSymFromAddr64 = dbghelp.SymGetSymFromAddr64
+	SymGetSymFromName = dbghelp.SymGetSymFromName
+	SymGetSymFromName64 = dbghelp.SymGetSymFromName64
+	SymGetSymNext = dbghelp.SymGetSymNext
+	SymGetSymNext64 = dbghelp.SymGetSymNext64
+	SymGetSymPrev = dbghelp.SymGetSymPrev
+	SymGetSymPrev64 = dbghelp.SymGetSymPrev64
+	SymGetTypeFromName = dbghelp.SymGetTypeFromName
+	SymGetTypeInfo = dbghelp.SymGetTypeInfo
+	SymLoadModule = dbghelp.SymLoadModule
+	SymLoadModule64 = dbghelp.SymLoadModule64
+	SymMatchFileName = dbghelp.SymMatchFileName
+	SymMatchFileNameW = dbghelp.SymMatchFileNameW
+	SymMatchString = dbghelp.SymMatchString
+	SymRefreshModuleList = dbghelp.SymRefreshModuleList
+	SymRegisterCallback = dbghelp.SymRegisterCallback
+	SymRegisterCallback64 = dbghelp.SymRegisterCallback64
+	SymRegisterCallbackW64 = dbghelp.SymRegisterCallbackW64
+	SymRegisterFunctionEntryCallback = dbghelp.SymRegisterFunctionEntryCallback
+	SymRegisterFunctionEntryCallback64 = dbghelp.SymRegisterFunctionEntryCallback64
+	SymSearch = dbghelp.SymSearch
+	SymSearchW = dbghelp.SymSearchW
+	SymSetContext = dbghelp.SymSetContext
+	SymSetParentWindow = dbghelp.SymSetParentWindow
+	SymSetScopeFromAddr = dbghelp.SymSetScopeFromAddr
+	SymSetSearchPath = dbghelp.SymSetSearchPath
+	SymSetSearchPathW = dbghelp.SymSetSearchPathW
+	SymUnDName = dbghelp.SymUnDName
+	SymUnDName64 = dbghelp.SymUnDName64
+	SymUnloadModule = dbghelp.SymUnloadModule
+	SymUnloadModule64 = dbghelp.SymUnloadModule64
+	UnmapDebugInformation = dbghelp.UnmapDebugInformation
+	WinDbgExtensionDllInit = dbghelp.WinDbgExtensionDllInit

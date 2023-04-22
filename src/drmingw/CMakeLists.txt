@@ -10,9 +10,9 @@ target_compile_definitions (drmingw PRIVATE
     VERSION="${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}"
 )
 
-target_link_libraries (drmingw
+target_link_libraries (drmingw PRIVATE
     common
-    mgwhelp_implib
+    mgwhelp
 )
 
 install (TARGETS drmingw RUNTIME DESTINATION bin)
