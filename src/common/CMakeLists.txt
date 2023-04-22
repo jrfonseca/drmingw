@@ -4,7 +4,7 @@ add_library (common STATIC
     symbols.cpp
 )
 
-target_link_libraries (common LINK_PRIVATE
+target_link_libraries (common PRIVATE
     psapi
     version
 )

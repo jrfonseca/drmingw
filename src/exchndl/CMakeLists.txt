@@ -25,7 +25,7 @@ target_sources (exchndl PRIVATE
 
 add_dependencies (exchndl mgwhelp_implib)
 
-target_link_libraries (exchndl LINK_PRIVATE
+target_link_libraries (exchndl PRIVATE
     common
     mgwhelp_implib
 )

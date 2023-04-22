@@ -25,7 +25,7 @@ target_sources (mgwhelp PRIVATE
     version.rc
 )
 
-target_link_libraries (mgwhelp LINK_PRIVATE
+target_link_libraries (mgwhelp PRIVATE
     common
     dwarf
     libiberty

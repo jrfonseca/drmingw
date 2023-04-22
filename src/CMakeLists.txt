@@ -1,6 +1,6 @@
 if (ENABLE_COVERAGE)
-    add_compiler_flags (--coverage)
-    add_linker_flags (--coverage)
+    add_compile_options (--coverage)
+    add_link_options (--coverage)
 endif ()
 
 include_directories (

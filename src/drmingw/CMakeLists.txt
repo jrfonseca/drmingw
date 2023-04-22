@@ -5,8 +5,9 @@ add_executable (drmingw WIN32
     resource.rc
 )
 
-set_target_properties (drmingw PROPERTIES
-    COMPILE_DEFINITIONS "PACKAGE=\"DrMingw\";VERSION=\"${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}\""
+target_compile_definitions (drmingw PRIVATE
+    PACKAGE="DrMingw"
+    VERSION="${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}"
 )
 
 add_dependencies (drmingw mgwhelp_implib)

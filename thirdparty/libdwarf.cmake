@@ -86,7 +86,7 @@ target_include_directories (dwarf PUBLIC
 )
 
 target_compile_definitions (dwarf PRIVATE
-    "PACKAGE_VERSION=\"drmingw\""
+    PACKAGE_VERSION="drmingw"
 )
 
 target_compile_definitions (dwarf PUBLIC
@@ -98,7 +98,7 @@ target_compile_options (dwarf PRIVATE
     -Wno-int-to-pointer-cast
 )
 
-target_link_libraries (dwarf z)
+target_link_libraries (dwarf PRIVATE z)
 
 install (
     FILES libdwarf/src/lib/libdwarf/LIBDWARFCOPYRIGHT

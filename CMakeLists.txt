@@ -4,12 +4,10 @@ cmake_minimum_required (VERSION 3.16)
 cmake_policy (SET CMP0091 NEW)
 
 
-project (drmingw)
-
-
-set (CPACK_PACKAGE_VERSION_MAJOR "0")
-set (CPACK_PACKAGE_VERSION_MINOR "9")
-set (CPACK_PACKAGE_VERSION_PATCH "10")
+project (drmingw
+    VERSION 0.9.10
+    LANGUAGES C CXX
+)
 
 
 option (ENABLE_COVERAGE "Enable code coverage." OFF)
@@ -44,25 +42,11 @@ set (CXX_STANDARD_REQUIRED ON)
 
 include (CheckCXXCompilerFlag)
 
-macro (add_compiler_flags)
-    string (REPLACE ";" " " _FLAGS "${ARGV}")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_FLAGS}")
-endmacro ()
-
-macro (add_linker_flags)
-    string (REPLACE ";" " " _FLAGS "${ARGV}")
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${_FLAGS}")
-    set (CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${_FLAGS}")
-    set (CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${_FLAGS}")
-endmacro ()
-
 # Adjust warnings
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror=implicit-function-declaration -Werror=missing-prototypes")
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+add_compile_options (-Wall "$<$<COMPILE_LANGUAGE:C>:-Werror=implicit-function-declaration -Werror=missing-prototypes>")
 
 # Disable strict aliasing rules
-add_compiler_flags (-fno-strict-aliasing)
+add_compile_options (-fno-strict-aliasing)
 
 include (StaticCRT)
 
@@ -88,7 +72,7 @@ endif ()
 # XXX: Broken on https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86832
 if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.0" OR
     CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "8.3")
-    add_compiler_flags (-fstack-protector-all)
+    add_compile_options (-fstack-protector-all)
     # MinGW doesn't link against libssp automatically, and furthermore
     # we want static linking.
     set (SSP_LIBRARY "-Wl,-Bstatic -lssp -Wl,-Bdynamic")
@@ -97,10 +81,9 @@ if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.0" OR
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    add_definitions (-DHAVE_WIN64=1)
+    add_compile_definitions (HAVE_WIN64=1)
 else ()
-    add_linker_flags (-Wl,--enable-stdcall-fixup)
-    add_definitions (-DHAVE_WIN64=0)
+    add_compile_definitions (HAVE_WIN64=0)
 endif ()
 
 # Require Windows 10 for Windows on ARM, Windows 7 for all else
@@ -115,17 +98,17 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
-add_definitions (
+add_compile_definitions (
     # http://msdn.microsoft.com/en-us/library/aa383745.aspx
-    -D_WIN32_WINNT=${WINNT}
-    -DWINVER=${WINNT}
+    _WIN32_WINNT=${WINNT}
+    WINVER=${WINNT}
     # https://msdn.microsoft.com/en-gb/library/windows/desktop/ms683198.aspx
-    -DPSAPI_VERSION=2
+    PSAPI_VERSION=2
 
     # version
-    -DPACKAGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR}
-    -DPACKAGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR}
-    -DPACKAGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}
+    PACKAGE_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}
+    PACKAGE_VERSION_MINOR=${PROJECT_VERSION_MINOR}
+    PACKAGE_VERSION_PATCH=${PROJECT_VERSION_PATCH}
 )
 
 # Macro to force using debug flags, regardless of the current build type
