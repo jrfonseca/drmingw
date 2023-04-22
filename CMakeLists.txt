@@ -11,7 +11,6 @@ project (drmingw
 
 
 option (ENABLE_COVERAGE "Enable code coverage." OFF)
-option (POSIX_THREADS "Allow posix threads." OFF)
 
 
 ##############################################################################
@@ -53,6 +52,7 @@ include (StaticCRT)
 # Avoid Posix threads.  Posix threads is required for support of certain C++11
 # multi-threading features, but it introduces a new DLL dependency and we don't
 # use those features.
+# https://github.com/jrfonseca/drmingw/issues/82#issuecomment-1360081041
 execute_process (
     COMMAND "${CMAKE_COMMAND}" -E echo "#include <thread>\n#ifdef _GLIBCXX_HAS_GTHREADS\n#error _GLIBCXX_HAS_GTHREADS\n#endif"
     COMMAND "${CMAKE_CXX_COMPILER}" -x c++ -E -
@@ -61,11 +61,7 @@ execute_process (
     ERROR_QUIET
 )
 if (NOT STATUS_CXX11_THREADS EQUAL 0)
-    if (POSIX_THREADS)
-        message (WARNING "Win32 threads recommended.")
-    else ()
-        message (SEND_ERROR "Win32 threads required.")
-    endif ()
+    message (SEND_ERROR "Win32 threads required.")
 endif ()
 
 # Enable stack protection
@@ -73,11 +69,8 @@ endif ()
 if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "8.0" OR
     CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "8.3")
     add_compile_options (-fstack-protector-all)
-    # MinGW doesn't link against libssp automatically, and furthermore
-    # we want static linking.
-    set (SSP_LIBRARY "-Wl,-Bstatic -lssp -Wl,-Bdynamic")
-    set (CMAKE_C_STANDARD_LIBRARIES "${SSP_LIBRARY} ${CMAKE_C_STANDARD_LIBRARIES}")
-    set (CMAKE_CXX_STANDARD_LIBRARIES "${SSP_LIBRARY} ${CMAKE_CXX_STANDARD_LIBRARIES}")
+    # MinGW doesn't link against libssp automatically.
+    link_libraries (ssp)
 endif ()
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)

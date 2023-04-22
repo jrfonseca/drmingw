@@ -18,7 +18,3 @@ set (CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set (CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set (CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set (CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
-
-# Statically link CRT
-set (CMAKE_C_FLAGS "--start-no-unused-arguments -Wl,-Bstatic -lunwind -Wl,-Bdynamic --end-no-unused-arguments")
-set (CMAKE_CXX_FLAGS "--start-no-unused-arguments -static-libstdc++ -Wl,-Bstatic -lunwind -Wl,-Bdynamic --end-no-unused-arguments")
