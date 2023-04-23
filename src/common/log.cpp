@@ -164,6 +164,9 @@ dumpContext(const CONTEXT *pContext)
 }
 
 
+typedef BOOL (WINAPI * PFN_GETPROCESSINFORMATION)(HANDLE, PROCESS_INFORMATION_CLASS, LPVOID, DWORD);
+
+
 void
 dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
 {
@@ -176,8 +179,30 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
 
 #if defined(_M_ARM64)
 
-    USHORT processArch = 0;
-    IsWow64Process2(hProcess, &processArch, nullptr);
+    USHORT processArch = IMAGE_FILE_MACHINE_UNKNOWN;
+    USHORT nativeArch = IMAGE_FILE_MACHINE_UNKNOWN;
+    BOOL bRet = IsWow64Process2(hProcess, &processArch, &nativeArch);
+    if (!bRet) {
+        lprintf("warning: IsWow64Process2 failed (0x%08lx)\n", GetLastError());
+        return;
+    }
+
+    if (processArch == IMAGE_FILE_MACHINE_UNKNOWN) {
+        // Not a WOW64 process -- use GetProcessInformation
+        // https://learn.microsoft.com/en-us/answers/questions/449019/detect-x86-64-process-on-arm64
+
+        HMODULE hKernelModule = GetModuleHandleA("kernel32");
+        assert(hKernelModule != nullptr);
+        PFN_GETPROCESSINFORMATION pfnGetProcessInformation =
+            (PFN_GETPROCESSINFORMATION)GetProcAddress(hKernelModule, "GetProcessInformation");
+        assert(pfnGetProcessInformation != nullptr);
+        PROCESS_MACHINE_INFORMATION processMachineInfo = { 0 };
+        if (pfnGetProcessInformation(hProcess, ProcessMachineTypeInfo, &processMachineInfo, sizeof processMachineInfo)) {
+            processArch = processMachineInfo.ProcessMachine;
+        } else {
+            processArch = nativeArch;
+        }
+    }
 
     if (processArch == IMAGE_FILE_MACHINE_ARM64) {
         assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
@@ -186,8 +211,15 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         StackFrame.AddrPC.Offset = pContext->Pc;
         StackFrame.AddrStack.Offset = pContext->Sp;
         StackFrame.AddrFrame.Offset = pContext->Fp;
+    } else if (processArch == IMAGE_FILE_MACHINE_AMD64) {
+        // XXX: Unfortunate pContext is _not_ an AMD64 context, so StackWalk will fail
+        assert((pContext->ContextFlags & CONTEXT_FULL) == CONTEXT_FULL);
+        MachineType = IMAGE_FILE_MACHINE_ARM64;
+        dumpContext(pContext);
+        StackFrame.AddrPC.Offset = pContext->Pc;
+        StackFrame.AddrStack.Offset = pContext->Sp;
+        StackFrame.AddrFrame.Offset = pContext->Fp;
     } else if (processArch == IMAGE_FILE_MACHINE_I386) {
-        assert(processArch == IMAGE_FILE_MACHINE_I386);
         const WOW64_CONTEXT *pWow64Context = reinterpret_cast<const WOW64_CONTEXT *>(pContext);
         // NOLINTNEXTLINE(clang-analyzer-core.NullDereference)
         assert((pWow64Context->ContextFlags & WOW64_CONTEXT_FULL) == WOW64_CONTEXT_FULL);
@@ -197,7 +229,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         StackFrame.AddrStack.Offset = pWow64Context->Esp;
         StackFrame.AddrFrame.Offset = pWow64Context->Ebp;
     } else {
-        lprintf("error: unsupported architecture 0x%04x\n", processArch);
+        lprintf("error: unsupported process architecture 0x%04x !\n", processArch);
         return;
     }
 
