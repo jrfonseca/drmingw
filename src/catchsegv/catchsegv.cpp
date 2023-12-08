@@ -152,7 +152,7 @@ Usage(void)
           "  -z           write minidumps\n"
           "  -Z DIRECTORY write minidumps to specified directory\n"
           "  -H           use debug heap\n"
-          "  -q           silence OutputDebugString output\n",
+          "  -q           silence messages from OutputDebugString\n",
           stderr);
 }
 
