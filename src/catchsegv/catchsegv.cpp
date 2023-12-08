@@ -151,7 +151,8 @@ Usage(void)
           "  -m           ignore modal dialogs\n"
           "  -z           write minidumps\n"
           "  -Z DIRECTORY write minidumps to specified directory\n"
-          "  -H           use debug heap\n",
+          "  -H           use debug heap\n"
+          "  -q           silence OutputDebugString output\n",
           stderr);
 }
 
@@ -264,7 +265,7 @@ wmain(int argc, wchar_t **argv)
 
     bool debugHeap = false;
     while (1) {
-        int opt = getoptW(argc, argv, L"?1dhHmt:zZ:v");
+        int opt = getoptW(argc, argv, L"?1dhHmt:zZ:vq");
 
         switch (opt) {
         case L'h':
@@ -294,6 +295,9 @@ wmain(int argc, wchar_t **argv)
         case L'Z':
             debugOptions.minidump = true;
             debugOptions.minidumpDir = optarg;
+            break;
+        case L'q':
+            debugOptions.no_debug_string = true;
             break;
         case L'?':
             if (optopt == L'?') {
