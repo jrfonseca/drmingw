@@ -92,9 +92,25 @@ You can use ExcHndl by:
 
       * or use `LoadLibrary`/`GetProcAddress` like
 
-            LoadLibrary("exchndl.dll");
-            pfnExcHndlInit = GetProcAddress("ExcHndlInit");
-            pfnExcHndlInit()
+            // Load the DLL
+            HMODULE hModule = LoadLibraryW(L"exchndl.dll");
+
+            if (hModule != NULL) {
+                // Get the function pointer
+                typedef void (*PFNEXCHNDLINIT)();
+                PFNEXCHNDLINIT pfnExcHndlInit = (PFNEXCHNDLINIT)GetProcAddress(hModule, "ExcHndlInit");
+
+                if (pfnExcHndlInit != NULL) {
+                    pfnExcHndlInit();
+                } else {
+                    // Handle the error if GetProcAddress fails
+                    // Add your error handling code here
+                }
+
+                // Do not free the DLL module
+            } else {
+                // Handle the error if LoadLibrary fails
+            }
 
   * you can also override the report location by invoking the exported `ExcHndlSetLogFileNameA`/`ExcHndlSetLogFileNameW` entry-point.
 
