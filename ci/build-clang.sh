@@ -7,20 +7,19 @@ xvfb_run() {
 }
 
 
+. ci/dependencies-clang.sh
+
+
 #
 # Download and setup llvm-ming
 #
 
-release=20220906
-basename=llvm-mingw-$release-ucrt-ubuntu-18.04-x86_64
-archive=$basename.tar.xz
-
 mkdir -p downloads
-test -f downloads/$archive || wget -q -O downloads/$archive https://github.com/mstorsjo/llvm-mingw/releases/download/$release/$archive
-test -d downloads/$basename || tar -xJf downloads/$archive -C downloads
+test -f downloads/$llvm_archive || wget -q -O downloads/$llvm_archive https://github.com/mstorsjo/llvm-mingw/releases/download/$llvm_release/$llvm_archive
+test -d downloads/$llvm_basename || tar -xJf downloads/$llvm_archive -C downloads
 
 rm -f downloads/llvm-mingw
-ln -sf $basename downloads/llvm-mingw
+ln -sf $llvm_basename downloads/llvm-mingw
 
 export PATH="$PWD/downloads/llvm-mingw/bin:$PATH"
 

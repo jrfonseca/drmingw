@@ -24,7 +24,7 @@ jobs:
         path: |
           downloads/*.7z
           downloads/*.zip
-        key: ${{ runner.os }}-${{ matrix.target }}-mingw-12.2.0-win32-dbghelp-10.0.18362.1
+        key: ${{ runner.os }}-${{ hashFiles('ci/dependencies.ps1') }}
     - run: Get-Host | Select-Object Version
     - run: python -m pip install gcovr
     - name: Build
@@ -75,7 +75,7 @@ jobs:
       uses: actions/cache@v3
       with:
         path: downloads/*.xz
-        key: ${{ runner.os }}-llvm-mingw-20220906
+        key: ${{ runner.os }}-${{ hashFiles('ci/dependencies-clang.sh') }}
     - run: sudo dpkg --add-architecture i386
     # Workaround https://github.com/actions/virtual-environments/issues/4589
     - run: |
