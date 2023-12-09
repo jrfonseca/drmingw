@@ -110,15 +110,7 @@ try {
 }
 Exec { python --version }
 
-try {
-    Get-Command ninja.exe -CommandType Application | Out-Null
-    Exec { ninja --version }
-    $generator = "Ninja"
-} catch [System.Management.Automation.CommandNotFoundException] {
-    Exec { mingw32-make --version }
-    $generator = "MinGW Makefiles"
-    $Env:MAKEFLAGS = "-j${Env:NUMBER_OF_PROCESSORS}"
-}
+Exec { ninja --version }
 
 Exec { cmake --version }
 
@@ -133,7 +125,7 @@ if ($Env:GITHUB_EVENT_NAME -eq "push" -And $Env:GITHUB_REF.StartsWith('refs/tags
     $coverage = $false
 }
 $buildDir = "$buildRoot\$target"
-Exec { cmake "-S." "-B$buildDir" -G $generator "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DENABLE_COVERAGE=$coverage" "-DWINDBG_DIR=$DBGHELP_DIR" }
+Exec { cmake "-S." "-B$buildDir" -G "Ninja" "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DENABLE_COVERAGE=$coverage" "-DWINDBG_DIR=$DBGHELP_DIR" }
 
 #
 # Build
@@ -150,7 +142,7 @@ $Env:CTEST_OUTPUT_ON_FAILURE = '1'
 Exec { cmake --build $buildDir --use-stderr --target test }
 
 # MinGW GCC
-Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\$target" -G $generator "-DCMAKE_BUILD_TYPE=Debug" }
+Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\$target" -G "Ninja" "-DCMAKE_BUILD_TYPE=Debug" }
 Exec { cmake --build "$buildRoot\apps\$target" }
 # MSVC 32-bits
 Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\msvc32" -G "Visual Studio 17 2022" -A Win32 }
