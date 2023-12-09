@@ -15,7 +15,6 @@ target_link_libraries (mgwhelp PRIVATE
     common
     dwarf
     libiberty
-    PUBLIC
     dbghelp
 )
 
