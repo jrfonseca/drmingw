@@ -78,7 +78,9 @@ do
 
 	test -f build/$target/CMakeCache.txt || cmake -S . -B build/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_CROSSCOMPILING_EMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}
 	cmake --build build/$target --target all --target check --target package -- "$@"
-	
+
+	python3 tests/check_dynamic_linkage.py --objdump="${target%%clang}objdump" --validate build/$target/bin/*.dll build/$target/bin/*.exe
+
 	test -f build/apps/$target/CMakeCache.txt || cmake -S tests/apps -B build/apps/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=Debug
 	cmake --build build/apps/$target --target all -- "$@"
 done

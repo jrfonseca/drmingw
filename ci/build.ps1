@@ -125,6 +125,8 @@ if ($target -eq "mingw32") {
 }
 Exec { cmake --build $buildDir --use-stderr --target all }
 
+Exec { python tests\check_dynamic_linkage.py --objdump=objdump --validate $buildDir\bin\*.dll $buildDir\bin\*.exe }
+
 #
 # Test
 #

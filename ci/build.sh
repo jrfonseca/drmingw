@@ -47,6 +47,8 @@ cmake_mingw64 -B $BUILD_DIR/mingw64 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUI
 cmake_mingw32 -B $BUILD_DIR/mingw32 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} -DCMAKE_CROSSCOMPILING_EMULATOR=$WINE
 cmake --build $BUILD_DIR/mingw64 --target all
 cmake --build $BUILD_DIR/mingw32 --target all
+python3 tests/check_dynamic_linkage.py --objdump=x86_64-w64-mingw32-objdump --validate $BUILD_DIR/mingw64/bin/*.dll $BUILD_DIR/mingw64/bin/*.exe
+python3 tests/check_dynamic_linkage.py --objdump=i686-w64-mingw32-objdump --validate $BUILD_DIR/mingw32/bin/*.dll $BUILD_DIR/mingw32/bin/*.exe
 xvfb_run cmake --build $BUILD_DIR/mingw64 --target check
 xvfb_run cmake --build $BUILD_DIR/mingw32 --target check
 
