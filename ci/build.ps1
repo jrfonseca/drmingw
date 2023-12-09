@@ -28,6 +28,9 @@ $DBGHELP_32_URL = 'https://gist.githubusercontent.com/jrfonseca/55a9a0e0e228ad84
 $DBGHELP_64_SUM = '9bdc77e09a9ebdc8f810c46ed2b1171c048d6ebbe1b9ea1f927bfac66220dae5'
 $DBGHELP_32_SUM = 'dfdf39857b76533adb0bffd9ef9d1bc7516280f810ecea6dd5c1b5ca97809706'
 
+$NINJA_URL = 'https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-win.zip'
+$NINJA_SUM = '524b344a1a9a55005eaf868d991e090ab8ce07fa109f1820d40e74642e289abc'
+
 #
 # Download and extract MinGW-w64 toolchain
 #
@@ -78,6 +81,22 @@ if (!(Test-Path $DBGHELP_DIR -PathType Container)) {
     }
     Exec { 7z x -y "-o$DBGHELP_DIR" $DBGHELP_ARCHIVE | Out-Null }
 }
+
+$NINJA_ARCHIVE = 'downloads\ninja-win.zip'
+$NINJA_DIR = 'downloads\ninja'
+$NINJA_DIR = [System.IO.Path]::GetFullPath($NINJA_DIR)
+if (!(Test-Path "$NINJA_DIR\ninja.exe" -PathType Leaf)) {
+    if (!(Test-Path $NINJA_ARCHIVE -PathType Leaf)) {
+        Invoke-WebRequest -Uri $NINJA_URL -OutFile $NINJA_ARCHIVE -UserAgent NativeHost
+        $hash = (Get-FileHash $NINJA_ARCHIVE -Algorithm SHA256).Hash
+        if ($hash -ne $NINJA_SUM) {
+            echo "error: ${NINJA_ARCHIVE}: wrong hash: ${hash}"
+            exit 1
+        }
+    }
+    Expand-Archive -Path $NINJA_ARCHIVE -DestinationPath $NINJA_DIR -Force
+}
+$Env:Path = "$NINJA_DIR;$Env:Path"
 
 
 #
