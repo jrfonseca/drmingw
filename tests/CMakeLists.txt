@@ -116,7 +116,6 @@ add_test (
 # test_mgwhelp_zdebug
 #
 
-option (ENABLE_ZDEBUG_TEST "Enable compressed debug sections test." OFF)
 add_custom_command (
     OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
     COMMAND ${CMAKE_OBJCOPY} --only-keep-debug --compress-debug-sections $<TARGET_FILE:test_mgwhelp> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_mgwhelp_zdebug.debug
