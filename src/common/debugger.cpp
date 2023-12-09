@@ -736,6 +736,7 @@ DebugMainLoop(void)
                 lprintf("OUTPUT_DEBUG_STRING PID=%lu TID=%lu\n", DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId);
             }
+            if (debugOptions.no_debug_string) break;
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
 

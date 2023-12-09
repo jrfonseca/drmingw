@@ -157,6 +157,7 @@ Here's the how to use it:
       -z           write minidumps
       -Z DIRECTORY write minidumps to specified directory
       -H           use debug heap
+      -q           silence messages from OutputDebugString
 
 ## Frequently Asked Questions
 

@@ -31,6 +31,7 @@ struct DebugOptions {
     const wchar_t *minidumpDir = nullptr;
     HANDLE hEvent = nullptr; // Signal an event after process is attached
     DWORD dwThreadId = 0;    // Resume thread after process is attached
+    bool no_debug_string = false; // Silence OutputDebugString messages
 };
 
 EXTERN_C DebugOptions debugOptions;
