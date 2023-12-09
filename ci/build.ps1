@@ -119,10 +119,6 @@ Exec { cmake "-S." "-B$buildDir" -G $generator "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_
 #
 # Build
 #
-if ($target -eq "mingw32") {
-# XXX: Temporary hack to avoid "No rule to make target lib*.dll.a"
-    Exec { cmake --build $buildDir --use-stderr --target libmgwhelp_implib --target libexchndl_implib }
-}
 Exec { cmake --build $buildDir --use-stderr --target all }
 
 Exec { python tests\check_dynamic_linkage.py --objdump=objdump --validate $buildDir\bin\*.dll $buildDir\bin\*.exe }
