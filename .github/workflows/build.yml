@@ -47,24 +47,19 @@ jobs:
         if-no-files-found: error
 
   build-cross-gcc:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 1
         submodules: recursive
     - run: sudo dpkg --add-architecture i386
-    # Workaround https://github.com/actions/virtual-environments/issues/4589
-    - run: |
-        sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-        sudo apt-get update -qq
-        sudo apt-get install -yqq --allow-downgrades libgd3/jammy libpcre2-8-0/jammy libpcre2-16-0/jammy libpcre2-32-0/jammy libpcre2-posix3/jammy
-        sudo apt-get purge -yqq libmono* moby* mono* php* libgdiplus libzip4
+    - run: sudo apt-get update -qq
     - run: sudo apt-get install -yqq --install-recommends mingw-w64 ninja-build cmake xinit xvfb wine wine64 wine32:i386
     - run: ci/build.sh
 
   build-cross-clang:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
       with:
@@ -77,12 +72,7 @@ jobs:
         path: downloads/*.xz
         key: ${{ runner.os }}-${{ hashFiles('ci/dependencies-clang.sh') }}
     - run: sudo dpkg --add-architecture i386
-    # Workaround https://github.com/actions/virtual-environments/issues/4589
-    - run: |
-        sudo rm -f /etc/apt/sources.list.d/microsoft-prod.list
-        sudo apt-get update -qq
-        sudo apt-get install -yqq --allow-downgrades libgd3/jammy libpcre2-8-0/jammy libpcre2-16-0/jammy libpcre2-32-0/jammy libpcre2-posix3/jammy
-        sudo apt-get purge -yqq libmono* moby* mono* php* libgdiplus libzip4
+    - run: sudo apt-get update -qq
     - run: sudo apt-get install -yqq --install-recommends ninja-build cmake xinit xvfb wine wine64 wine32:i386
     - run: ci/build-clang.sh
     - name: Upload artifact
