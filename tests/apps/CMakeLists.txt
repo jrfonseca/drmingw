@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.1)
+cmake_minimum_required (VERSION 3.16)
 
 # Enable CMAKE_MSVC_RUNTIME_LIBRARY
 cmake_policy (SET CMP0091 NEW)
