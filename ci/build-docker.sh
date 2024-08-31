@@ -22,6 +22,12 @@ docker_run () {
 	    "$@"
 }
 
-docker build -t $docker_tag -f ci/docker/$docker_file.Dockerfile ci/docker
+if ! docker buildx version
+then
+   echo 'error: docker buildx plugin required (sudo apt install docker-buildx)'
+   exit 1
+fi
+
+docker buildx build -t $docker_tag -f ci/docker/$docker_file.Dockerfile ci/docker
 
 docker_run ci/build.sh "$@"
