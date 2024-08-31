@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 MAINTAINER "Jose Fonseca" <jose.r.fonseca@gmail.com>
 ENV container docker
 
@@ -12,8 +12,8 @@ RUN \
  dpkg --add-architecture i386 && \
  apt-get update && apt-get install -y \
   apt-transport-https ca-certificates gnupg software-properties-common wget && \
- wget -q -O /etc/apt/trusted.gpg.d/winehw.asc https://dl.winehq.org/wine-builds/winehq.key && \
- echo 'deb https://dl.winehq.org/wine-builds/ubuntu/ jammy main' > /etc/apt/sources.list.d/wine.list && \
+ wget -q -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key && \
+ wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources && \
  apt-get update && apt-get install -qq -y --install-recommends \
   mingw-w64 ninja-build cmake python3 xinit xvfb \
   winehq-devel && \
