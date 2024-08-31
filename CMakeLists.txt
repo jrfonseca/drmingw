@@ -54,7 +54,7 @@ include (StaticCRT)
 # use those features.
 # https://github.com/jrfonseca/drmingw/issues/82#issuecomment-1360081041
 execute_process (
-    COMMAND "${CMAKE_COMMAND}" -E echo "#include <thread>\n#ifdef _GLIBCXX_HAS_GTHREADS\n#error _GLIBCXX_HAS_GTHREADS\n#endif"
+    COMMAND "${CMAKE_COMMAND}" -E echo "#include <thread>\n#ifdef _GLIBCXX_GCC_GTHR_POSIX_H\n#error _GLIBCXX_GCC_GTHR_POSIX_H\n#endif"
     COMMAND "${CMAKE_CXX_COMPILER}" -x c++ -E -
     RESULT_VARIABLE STATUS_CXX11_THREADS
     OUTPUT_QUIET
