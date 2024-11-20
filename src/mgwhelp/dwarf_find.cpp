@@ -31,10 +31,18 @@
 
 #include "dwarf_find.h"
 
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 #include <stdlib.h>
+#include <vector>
 
+#include "dwarf.h"
+#include "libdwarf.h"
 #include "outdbg.h"
 
+static int
+create_aranges(Dwarf_Debug dbg, std::vector<My_Arange *> &myrec, Dwarf_Error *error);
 
 static char unknown[] = {'?', '?', '\0'};
 
@@ -167,7 +175,15 @@ dwarf_find_symbol(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_symbol_info
 
     Dwarf_Arange arange;
     if (dwarf_get_arange(dwarf->aranges, dwarf->arange_count, addr, &arange, &error) != DW_DLV_OK) {
-        goto no_arange;
+        if (dwarf->my_aranges.empty()) {
+            if (create_aranges(dbg, dwarf->my_aranges, &error) == DW_DLV_ERROR) {
+                goto no_arange;
+            }
+        }
+        if (dwarf_get_arange((Dwarf_Arange *)dwarf->my_aranges.data(), dwarf->my_aranges.size(),
+                             addr, &arange, &error) != DW_DLV_OK) {
+            goto no_arange;
+        }
     }
 
     Dwarf_Off cu_die_offset;
@@ -204,7 +220,15 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
 
     Dwarf_Arange arange;
     if (dwarf_get_arange(dwarf->aranges, dwarf->arange_count, addr, &arange, &error) != DW_DLV_OK) {
-        goto no_arange;
+        if (dwarf->my_aranges.empty()) {
+            if (create_aranges(dbg, dwarf->my_aranges, &error) == DW_DLV_ERROR) {
+                goto no_arange;
+            }
+        }
+        if (dwarf_get_arange((Dwarf_Arange *)dwarf->my_aranges.data(), dwarf->my_aranges.size(),
+                             addr, &arange, &error) != DW_DLV_OK) {
+            goto no_arange;
+        }
     }
 
     Dwarf_Off cu_die_offset;
@@ -332,4 +356,285 @@ no_arange:
         OutputDebug("MGWHELP: libdwarf error - %s\n", dwarf_errmsg(error));
     }
     return result;
+}
+
+static int
+getlowhighpc(Dwarf_Die die, Dwarf_Addr *lowpc_out, Dwarf_Addr *highpc_out, Dwarf_Error *error)
+{
+    Dwarf_Addr hipc = 0;
+    int res = 0;
+    Dwarf_Half form = 0;
+    enum Dwarf_Form_Class formclass = DW_FORM_CLASS_UNKNOWN;
+
+    res = dwarf_lowpc(die, lowpc_out, error);
+    if (res == DW_DLV_OK) {
+        res = dwarf_highpc_b(die, &hipc, &form, &formclass, error);
+        if (res == DW_DLV_OK) {
+            if (formclass == DW_FORM_CLASS_CONSTANT) {
+                hipc += *lowpc_out;
+            }
+            *highpc_out = hipc;
+            return DW_DLV_OK;
+        }
+    }
+    /*  Cannot check ranges yet, we don't know the ranges base
+        offset yet. */
+    return DW_DLV_NO_ENTRY;
+}
+
+/* Based on 'examplev' in 'checkexamples.c'.
+   There is another example in 'check_comp_dir()' in 'findfuncbypc.c',
+   but it seems wrong because the base address is not read from 'DW_AT_low_pc' of the CU die.
+ */
+static int
+record_range(Dwarf_Debug dbg,
+             Dwarf_Die die,
+             std::vector<My_Arange *> &myrec,
+             Dwarf_Off info_offset,
+             Dwarf_Error *error)
+{
+    Dwarf_Signed count = 0;
+    Dwarf_Off realoffset = 0;
+    Dwarf_Ranges *rangesbuf = 0;
+    Dwarf_Unsigned bytecount = 0;
+    int res = 0;
+    Dwarf_Unsigned base_address = 0;
+    Dwarf_Bool have_base_addr = FALSE;
+    Dwarf_Bool have_rangesoffset = FALSE;
+    Dwarf_Unsigned rangesoffset = (Dwarf_Unsigned)info_offset;
+
+    /*  Find the ranges for a specific DIE */
+    res = dwarf_get_ranges_baseaddress(dbg, die, &have_base_addr, &base_address, &have_rangesoffset,
+                                       &rangesoffset, error);
+    if (res == DW_DLV_ERROR) {
+        /* Just pretend not an error. */
+        dwarf_dealloc_error(dbg, *error);
+        *error = 0;
+    }
+
+    res = dwarf_get_ranges_b(dbg, rangesoffset, die, &realoffset, &rangesbuf, &count, &bytecount,
+                             error);
+    if (res != DW_DLV_OK) {
+        return res;
+    }
+    Dwarf_Signed i = 0;
+    for (i = 0; i < count; ++i) {
+        Dwarf_Ranges *cur = rangesbuf + i;
+        Dwarf_Addr base = base_address;
+        Dwarf_Addr lowpc;
+        Dwarf_Addr highpc;
+
+        switch (cur->dwr_type) {
+        case DW_RANGES_ENTRY:
+            lowpc = cur->dwr_addr1 + base;
+            highpc = cur->dwr_addr2 + base;
+            myrec.push_back(new My_Arange{0, lowpc, highpc - lowpc, info_offset, dbg, 0});
+            break;
+        case DW_RANGES_ADDRESS_SELECTION:
+            base = cur->dwr_addr2;
+            break;
+        case DW_RANGES_END:
+            break;
+        default:
+            fprintf(stderr,
+                    "Impossible debug_ranges content!"
+                    " enum val %d \n",
+                    (int)cur->dwr_type);
+            return DW_DLV_ERROR;
+        }
+    }
+    dwarf_dealloc_ranges(dbg, rangesbuf, count);
+
+    return DW_DLV_OK;
+}
+
+/* Based on 'example_rnglist_for_attribute()' in 'checkexamples.c'. */
+static int
+record_rnglist_for_attribute(Dwarf_Debug dbg,
+                             Dwarf_Attribute attr,
+                             Dwarf_Unsigned attrvalue,
+                             Dwarf_Half form,
+                             std::vector<My_Arange *> &myrec,
+                             Dwarf_Off info_offset,
+                             Dwarf_Error *error)
+{
+    /*  attrvalue must be the DW_AT_ranges
+        DW_FORM_rnglistx or DW_FORM_sec_offset value
+        extracted from attr. */
+    int res = 0;
+    Dwarf_Unsigned entries_count;
+    Dwarf_Unsigned global_offset_of_rle_set;
+    Dwarf_Rnglists_Head rnglhead = 0;
+    Dwarf_Unsigned i = 0;
+
+    res = dwarf_rnglists_get_rle_head(attr, form, attrvalue, &rnglhead, &entries_count,
+                                      &global_offset_of_rle_set, error);
+    if (res != DW_DLV_OK) {
+        return res;
+    }
+    for (i = 0; i < entries_count; ++i) {
+        unsigned entrylen = 0;
+        unsigned code = 0;
+        Dwarf_Unsigned rawlowpc = 0;
+        Dwarf_Unsigned rawhighpc = 0;
+        Dwarf_Bool debug_addr_unavailable = FALSE;
+        Dwarf_Unsigned lowpc = 0;
+        Dwarf_Unsigned highpc = 0;
+
+        /*  Actual addresses are most likely what one
+            wants to know, not the lengths/offsets
+            recorded in .debug_rnglists. */
+        res =
+            dwarf_get_rnglists_entry_fields_a(rnglhead, i, &entrylen, &code, &rawlowpc, &rawhighpc,
+                                              &debug_addr_unavailable, &lowpc, &highpc, error);
+        if (res != DW_DLV_OK) {
+            dwarf_dealloc_rnglists_head(rnglhead);
+            return res;
+        }
+        if (code == DW_RLE_end_of_list) {
+            /* we are done */
+            break;
+        }
+        if (code == DW_RLE_base_addressx || code == DW_RLE_base_address) {
+            /*  We do not need to use these, they
+                have been accounted for already. */
+            continue;
+        }
+        if (debug_addr_unavailable) {
+            /* lowpc and highpc are not real addresses */
+            continue;
+        }
+        /*  Here do something with lowpc and highpc, these
+            are real addresses */
+        myrec.push_back(new My_Arange{0, lowpc, highpc - lowpc, info_offset, dbg, 0});
+    }
+    dwarf_dealloc_rnglists_head(rnglhead);
+    return DW_DLV_OK;
+}
+
+/* Based on 'print_die_data_i() in 'simplereader.c'. */
+static int
+record_rnglist(Dwarf_Debug dbg,
+               Dwarf_Die cur_die,
+               std::vector<My_Arange *> &myrec,
+               Dwarf_Off info_offset,
+               Dwarf_Error *error)
+{
+    Dwarf_Attribute attr = nullptr;
+    int res = DW_DLV_OK;
+    Dwarf_Unsigned attrvalue = 0;
+    Dwarf_Half form = 0;
+
+    res = dwarf_attr(cur_die, DW_AT_ranges, &attr, error);
+    if (res != DW_DLV_OK)
+        return res;
+
+    res = dwarf_whatform(attr, &form, error);
+    if (res == DW_DLV_OK) {
+        if (form == DW_FORM_rnglistx) {
+            res = dwarf_formudata(attr, &attrvalue, error);
+        } else {
+            assert(form == DW_FORM_sec_offset);
+            res = dwarf_global_formref(attr, &attrvalue, error);
+        }
+        if (res == DW_DLV_OK) {
+            res =
+                record_rnglist_for_attribute(dbg, attr, attrvalue, form, myrec, info_offset, error);
+        }
+    }
+    dwarf_dealloc(dbg, attr, DW_DLA_ATTR);
+
+    return res;
+}
+
+static int
+record_die(Dwarf_Debug dbg,
+           Dwarf_Die cur_die,
+           int is_info,
+           int in_level,
+           std::vector<My_Arange *> &myrec,
+           Dwarf_Error *error)
+{
+    Dwarf_Off info_offset, cu_offset;
+    Dwarf_Addr lowpc = 0;
+    Dwarf_Addr highpc = 0;
+    int res;
+
+    res = dwarf_dieoffset(cur_die, &info_offset, error);
+    if (res != DW_DLV_OK)
+        return res;
+    dwarf_die_CU_offset(cur_die, &cu_offset, error);
+    if (res != DW_DLV_OK)
+        return res;
+    info_offset -= cu_offset;
+
+    res = getlowhighpc(cur_die, &lowpc, &highpc, error);
+    if (res == DW_DLV_OK) {
+        myrec.push_back(new My_Arange{0, lowpc, highpc - lowpc, info_offset, dbg, 0});
+    } else {
+        Dwarf_Attribute attr = 0;
+        Dwarf_Half version = 0;
+        Dwarf_Half offset_size = 0;
+        res = dwarf_attr(cur_die, DW_AT_ranges, &attr, error);
+        if (res != DW_DLV_OK)
+            return res;
+        res = dwarf_get_version_of_die(cur_die, &version, &offset_size);
+        if (res != DW_DLV_OK)
+            return res;
+
+        if (version <= 4) {
+            res = record_range(dbg, cur_die, myrec, info_offset, error);
+        } else {
+            res = record_rnglist(dbg, cur_die, myrec, info_offset, error);
+        }
+        if (res != DW_DLV_OK)
+            return res;
+    }
+    return DW_DLV_OK;
+}
+
+int
+create_aranges(Dwarf_Debug dbg, std::vector<My_Arange *> &myrec, Dwarf_Error *error)
+{
+    Dwarf_Unsigned abbrev_offset = 0;
+    Dwarf_Half address_size = 0;
+    Dwarf_Half version_stamp = 0;
+    Dwarf_Half offset_size = 0;
+    Dwarf_Half extension_size = 0;
+    Dwarf_Sig8 signature;
+    Dwarf_Unsigned typeoffset = 0;
+    Dwarf_Unsigned next_cu_header = 0;
+    Dwarf_Half header_cu_type = 0;
+    Dwarf_Bool is_info = TRUE;
+    int res = DW_DLV_OK;
+
+    while (true) {
+        Dwarf_Die cu_die = NULL;
+        Dwarf_Unsigned cu_header_length = 0;
+
+        memset(&signature, 0, sizeof(signature));
+        res = dwarf_next_cu_header_e(dbg, is_info, &cu_die, &cu_header_length, &version_stamp,
+                                     &abbrev_offset, &address_size, &offset_size, &extension_size,
+                                     &signature, &typeoffset, &next_cu_header, &header_cu_type,
+                                     error);
+        if (res == DW_DLV_ERROR) {
+            return res;
+        }
+        if (res == DW_DLV_NO_ENTRY) {
+            if (is_info == TRUE) {
+                /*  Done with .debug_info, now check for
+                    .debug_types. */
+                is_info = FALSE;
+                continue;
+            }
+            /*  No more CUs to read! Never found
+                what we were looking for in either
+                .debug_info or .debug_types. */
+            return res;
+        }
+        /*  We have the cu_die . */
+        res = record_die(dbg, cu_die, is_info, 0, myrec, error);
+        dwarf_dealloc_die(cu_die);
+    }
+    return res;
 }
