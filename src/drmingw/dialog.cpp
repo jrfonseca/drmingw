@@ -111,9 +111,9 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
         HFONT hFont;
         hFont = CreateFontIndirectW(&lf);
 
-        SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
+        SetWindowFont(GetDlgItem(hwnd, IDC_MESSAGE), hFont, TRUE);
 
-        SendDlgItemMessage(hwnd, IDC_MESSAGE, EM_LIMITTEXT, ~(WPARAM)0, 0);
+        Edit_LimitText(GetDlgItem(hwnd, IDC_MESSAGE), ~0);
         break;
     }
     case WM_USER_APPEND_TEXT: {
@@ -121,8 +121,8 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
         HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
         int ndx = GetWindowTextLengthW(hEdit);
         SetFocus(hEdit);
-        SendMessageW(hEdit, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
-        SendMessageW(hEdit, EM_REPLACESEL, (WPARAM)0, lParam);
+        Edit_SetSel(hEdit, ndx, ndx);
+        Edit_ReplaceSel(hEdit, lParam);
         free((void *)lParam);
         break;
     }
