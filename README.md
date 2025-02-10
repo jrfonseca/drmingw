@@ -1,6 +1,6 @@
 # Dr. Mingw
 
-[![Build status](https://github.com/jrfonseca/drmingw/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/jrfonseca/drmingw/actions/workflows/build.yml)
+[![Build status](https://github.com/jrfonseca/drmingw/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/jrfonseca/drmingw/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/jrfonseca/drmingw/branch/codecov/graph/badge.svg?token=nR3cxxP8zB)](https://codecov.io/gh/jrfonseca/drmingw)
 
 ## About
