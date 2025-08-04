@@ -19,30 +19,33 @@ set (HAVE_ZSTD YES)
 set (HAVE_ZSTD_H YES)
 set (STDC_HEADERS YES)
 
-configure_file (libdwarf/cmake/config.h.cmake
+configure_file (libdwarf/cmake/config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/support/libdwarf/config.h)
 
+# See libdwarf/src/lib/libdwarf/CMakeLists.txt
 add_library (dwarf STATIC
     libdwarf/src/lib/libdwarf/dwarf_abbrev.c
     libdwarf/src/lib/libdwarf/dwarf_alloc.c
     libdwarf/src/lib/libdwarf/dwarf_arange.c
-    #libdwarf/src/lib/libdwarf/dwarf_crc32.c
+    libdwarf/src/lib/libdwarf/dwarf_crc.c
+    libdwarf/src/lib/libdwarf/dwarf_crc32.c
+    libdwarf/src/lib/libdwarf/dwarf_debug_sup.c
+    libdwarf/src/lib/libdwarf/dwarf_debugaddr.c
     libdwarf/src/lib/libdwarf/dwarf_debuglink.c
     libdwarf/src/lib/libdwarf/dwarf_debugnames.c
-    libdwarf/src/lib/libdwarf/dwarf_debug_sup.c
     libdwarf/src/lib/libdwarf/dwarf_die_deliv.c
     libdwarf/src/lib/libdwarf/dwarf_dsc.c
     libdwarf/src/lib/libdwarf/dwarf_elf_load_headers.c
-    libdwarf/src/lib/libdwarf/dwarf_elfread.c
     libdwarf/src/lib/libdwarf/dwarf_elf_rel_detector.c
+    libdwarf/src/lib/libdwarf/dwarf_elfread.c
     libdwarf/src/lib/libdwarf/dwarf_error.c
+    libdwarf/src/lib/libdwarf/dwarf_fill_in_attr_form.c
     libdwarf/src/lib/libdwarf/dwarf_find_sigref.c
     libdwarf/src/lib/libdwarf/dwarf_fission_to_cu.c
     libdwarf/src/lib/libdwarf/dwarf_form.c
     libdwarf/src/lib/libdwarf/dwarf_form_class_names.c
-    libdwarf/src/lib/libdwarf/dwarf_frame2.c
     libdwarf/src/lib/libdwarf/dwarf_frame.c
-    libdwarf/src/lib/libdwarf/dwarf_funcs.c
+    libdwarf/src/lib/libdwarf/dwarf_frame2.c
     libdwarf/src/lib/libdwarf/dwarf_gdbindex.c
     libdwarf/src/lib/libdwarf/dwarf_generic_init.c
     libdwarf/src/lib/libdwarf/dwarf_global.c
@@ -52,43 +55,40 @@ add_library (dwarf STATIC
     libdwarf/src/lib/libdwarf/dwarf_init_finish.c
     libdwarf/src/lib/libdwarf/dwarf_leb.c
     libdwarf/src/lib/libdwarf/dwarf_line.c
-    libdwarf/src/lib/libdwarf/dwarf_locationop_read.c
     libdwarf/src/lib/libdwarf/dwarf_loc.c
+    libdwarf/src/lib/libdwarf/dwarf_local_malloc.c
+    libdwarf/src/lib/libdwarf/dwarf_locationop_read.c
     libdwarf/src/lib/libdwarf/dwarf_loclists.c
     libdwarf/src/lib/libdwarf/dwarf_machoread.c
-    libdwarf/src/lib/libdwarf/dwarf_macro5.c
     libdwarf/src/lib/libdwarf/dwarf_macro.c
+    libdwarf/src/lib/libdwarf/dwarf_macro5.c
     libdwarf/src/lib/libdwarf/dwarf_memcpy_swap.c
     libdwarf/src/lib/libdwarf/dwarf_names.c
-    #libdwarf/src/lib/libdwarf/dwarf_object_detector.c
-    #libdwarf/src/lib/libdwarf/dwarf_object_read_common.c
+    libdwarf/src/lib/libdwarf/dwarf_object_detector.c
+    libdwarf/src/lib/libdwarf/dwarf_object_read_common.c
     libdwarf/src/lib/libdwarf/dwarf_peread.c
     libdwarf/src/lib/libdwarf/dwarf_print_lines.c
-    libdwarf/src/lib/libdwarf/dwarf_pubtypes.c
     libdwarf/src/lib/libdwarf/dwarf_query.c
     libdwarf/src/lib/libdwarf/dwarf_ranges.c
     libdwarf/src/lib/libdwarf/dwarf_rnglists.c
+    libdwarf/src/lib/libdwarf/dwarf_safe_arithmetic.c
     libdwarf/src/lib/libdwarf/dwarf_safe_strcpy.c
+    libdwarf/src/lib/libdwarf/dwarf_secname_ck.c
+    libdwarf/src/lib/libdwarf/dwarf_seekr.c
+    libdwarf/src/lib/libdwarf/dwarf_setup_sections.c
+    libdwarf/src/lib/libdwarf/dwarf_str_offsets.c
     libdwarf/src/lib/libdwarf/dwarf_string.c
     libdwarf/src/lib/libdwarf/dwarf_string.h
     libdwarf/src/lib/libdwarf/dwarf_stringsection.c
-    libdwarf/src/lib/libdwarf/dwarf_str_offsets.c
     libdwarf/src/lib/libdwarf/dwarf_tied.c
     libdwarf/src/lib/libdwarf/dwarf_tsearchhash.c
-    libdwarf/src/lib/libdwarf/dwarf_types.c
     libdwarf/src/lib/libdwarf/dwarf_util.c
-    libdwarf/src/lib/libdwarf/dwarf_vars.c
-    libdwarf/src/lib/libdwarf/dwarf_weaks.c
     libdwarf/src/lib/libdwarf/dwarf_xu_index.c
 )
 
 target_include_directories (dwarf PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}/support/libdwarf
     libdwarf/src/lib/libdwarf
-)
-
-target_compile_definitions (dwarf PRIVATE
-    PACKAGE_VERSION="drmingw"
 )
 
 target_compile_definitions (dwarf PUBLIC
