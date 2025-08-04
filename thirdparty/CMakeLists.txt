@@ -1,4 +1,5 @@
 include (zlib.cmake)
+include (zstd.cmake)
 include (libdwarf.cmake)
 add_subdirectory (libiberty)
 add_subdirectory (getoptW)

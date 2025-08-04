@@ -15,6 +15,8 @@ set (HAVE_WINDOWS_H YES)
 set (HAVE_WINDOWS_PATH_H YES)
 set (HAVE_ZLIB YES)
 set (HAVE_ZLIB_H YES)
+set (HAVE_ZSTD YES)
+set (HAVE_ZSTD_H YES)
 set (STDC_HEADERS YES)
 
 configure_file (libdwarf/cmake/config.h.cmake
@@ -99,6 +101,9 @@ target_compile_options (dwarf PRIVATE
 )
 
 target_link_libraries (dwarf PRIVATE z)
+
+target_link_libraries (dwarf PRIVATE libzstd_static)
+target_include_directories (dwarf PRIVATE ${zstd_SOURCE_DIR}/lib)
 
 install (
     FILES libdwarf/src/lib/libdwarf/LIBDWARFCOPYRIGHT
