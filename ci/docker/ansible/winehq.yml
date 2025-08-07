@@ -1,0 +1,25 @@
+- hosts: all
+  become: yes
+  tasks:
+  # https://gitlab.winehq.org/wine/wine/-/wikis/Debian-Ubuntu
+  - block:
+    - ansible.builtin.shell: |
+        dpkg --add-architecture i386
+    - ansible.builtin.get_url:
+        url: https://dl.winehq.org/wine-builds/winehq.key
+        dest: /etc/apt/keyrings/winehq-archive.key
+    - ansible.builtin.get_url:
+        url: https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
+        dest: /etc/apt/sources.list.d/winehq-noble.sources
+    - ansible.builtin.apt:
+        pkg:
+          - wine
+          - wine64
+          - wine32:i386
+        state: absent
+        autoremove: yes
+    - ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - winehq-devel
+        install_recommends: true

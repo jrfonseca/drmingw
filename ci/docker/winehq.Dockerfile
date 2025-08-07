@@ -1,23 +1,19 @@
 FROM ubuntu:24.04
-MAINTAINER "Jose Fonseca" <jose.r.fonseca@gmail.com>
-ENV container docker
+ENV container=docker
 
 # See also:
 # - https://dev.to/flpslv/running-winehq-inside-a-docker-container-52ej
-# - https://wiki.winehq.org/Ubuntu
+# - https://gitlab.winehq.org/wine/wine/-/wikis/Debian-Ubuntu
 
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN \
- dpkg --add-architecture i386 && \
- apt-get update && apt-get install -y \
-  apt-transport-https ca-certificates gnupg software-properties-common wget && \
- wget -q -O /etc/apt/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key && \
- wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources && \
- apt-get update && apt-get install -qq -y --install-recommends \
-  mingw-w64 ninja-build cmake python3 xinit xvfb \
-  winehq-devel && \
+ apt-get update && apt-get install -qq -y \
+  ansible mingw-w64 ninja-build cmake python3 xinit xvfb && \
  rm -rf /var/lib/apt/lists/*
+
+COPY ansible/winehq.yml /ansible/
+RUN ansible-playbook -c local -i localhost, /ansible/winehq.yml && rm -rf /var/lib/apt/lists/*
 
 # https://stackoverflow.com/questions/28405902/how-to-set-the-locale-inside-a-debian-ubuntu-docker-container
 RUN \
