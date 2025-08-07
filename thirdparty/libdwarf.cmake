@@ -97,8 +97,17 @@ target_compile_definitions (dwarf PUBLIC
 )
 
 target_compile_options (dwarf PRIVATE
-    -Wno-pointer-to-int-cast
-    -Wno-int-to-pointer-cast
+    -Wpointer-arith
+    -Wmissing-declarations
+    -Wmissing-prototypes
+    -Wdeclaration-after-statement
+    -Wextra
+    -Wcomment
+    -Wformat
+    -Wpedantic
+    -Wuninitialized
+    -Wno-long-long
+    -Wshadow
 )
 
 target_link_libraries (dwarf PRIVATE z)
