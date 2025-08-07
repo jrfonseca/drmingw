@@ -5,6 +5,8 @@ include (FetchContent)
 set (ZSTD_BUILD_STATIC ON)
 set (ZSTD_BUILD_SHARED OFF)
 set (ZSTD_BUILD_COMPRESSION OFF)
+set (ZSTD_LEGACY_SUPPORT OFF)
+set (ZSTD_MULTITHREAD_SUPPORT ON)
 
 FetchContent_Declare (
     zstd
