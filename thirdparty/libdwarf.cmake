@@ -93,6 +93,7 @@ target_include_directories (dwarf PUBLIC
 
 target_compile_definitions (dwarf PUBLIC
     LIBDWARF_BUILD
+    LIBDWARF_STATIC
 )
 
 target_compile_options (dwarf PRIVATE
