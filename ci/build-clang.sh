@@ -30,9 +30,11 @@ export PATH="$PWD/downloads/llvm-mingw/bin:$PATH"
 
 WINE=${WINE:-$(which wine)}
 
-mkdir -p build
+BUILD_DIR=${BUILD_DIR:-$PWD/build}
 
-export WINEPREFIX=$PWD/build/wine
+mkdir -p $BUILD_DIR
+
+export WINEPREFIX=$BUILD_DIR/wine
 
 # Prevent Gecko/Mono installation dialogues
 # https://forum.winehq.org/viewtopic.php?f=2&t=16320#p78458
@@ -75,14 +77,14 @@ do
 		;;
 	esac
 
-	test -f build/$target/CMakeCache.txt || cmake -S . -B build/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_CROSSCOMPILING_EMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}
-	cmake --build build/$target --target all --target check --target package -- "$@"
+	test -f $BUILD_DIR/$target/CMakeCache.txt || cmake -S . -B $BUILD_DIR/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_CROSSCOMPILING_EMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}
+	cmake --build $BUILD_DIR/$target --target all --target check --target package
 
-	python3 tests/check_dynamic_linkage.py --objdump="${target%%clang}objdump" --validate build/$target/bin/*.dll build/$target/bin/*.exe
+	python3 tests/check_dynamic_linkage.py --objdump="${target%%clang}objdump" --validate $BUILD_DIR/$target/bin/*.dll $BUILD_DIR/$target/bin/*.exe
 
-	test -f build/apps/$target/CMakeCache.txt || cmake -S tests/apps -B build/apps/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=Debug
-	cmake --build build/apps/$target --target all -- "$@"
+	test -f $BUILD_DIR/apps/$target/CMakeCache.txt || cmake -S tests/apps -B $BUILD_DIR/apps/$target -G Ninja --toolchain $toolchain -DCMAKE_BUILD_TYPE=Debug
+	cmake --build $BUILD_DIR/apps/$target --target all
 done
 
-xvfb_run python3 tests/apps/test.py -w $WINE build/x86_64-w64-mingw32-clang/bin/catchsegv.exe build/apps/x86_64-w64-mingw32-clang build/apps/i686-w64-mingw32-clang
-xvfb_run python3 tests/apps/test.py -w $WINE build/i686-w64-mingw32-clang/bin/catchsegv.exe build/apps/i686-w64-mingw32-clang
+xvfb_run python3 tests/apps/test.py -w $WINE "$@" $BUILD_DIR/x86_64-w64-mingw32-clang/bin/catchsegv.exe $BUILD_DIR/apps/x86_64-w64-mingw32-clang $BUILD_DIR/apps/i686-w64-mingw32-clang
+xvfb_run python3 tests/apps/test.py -w $WINE "$@" $BUILD_DIR/i686-w64-mingw32-clang/bin/catchsegv.exe $BUILD_DIR/apps/i686-w64-mingw32-clang

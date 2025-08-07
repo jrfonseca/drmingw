@@ -20,6 +20,11 @@ xvfb_run() {
 
 test ! -d /usr/lib/ccache || export PATH="/usr/lib/ccache:$PATH"
 
+
+#
+# Setup WINE
+#
+
 WINE=${WINE:-$(which wine)}
 
 x86_64-w64-mingw32-g++-win32 --version
@@ -43,8 +48,15 @@ test -d $WINEPREFIX || xvfb_run $WINE wineboot.exe --init
 
 export WINEDEBUG="${WINEDEBUG:-+debugstr}"
 
-cmake_mingw64 -B $BUILD_DIR/mingw64 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} -DCMAKE_CROSSCOMPILING_EMULATOR=$WINE
-cmake_mingw32 -B $BUILD_DIR/mingw32 -S . -G Ninja -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} -DCMAKE_CROSSCOMPILING_EMULATOR=$WINE
+
+
+#
+# Build
+#
+
+CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug}
+cmake_mingw64 -B $BUILD_DIR/mingw64 -S . -G Ninja -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_CROSSCOMPILING_EMULATOR=$WINE
+cmake_mingw32 -B $BUILD_DIR/mingw32 -S . -G Ninja -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DCMAKE_CROSSCOMPILING_EMULATOR=$WINE
 cmake --build $BUILD_DIR/mingw64 --target all
 cmake --build $BUILD_DIR/mingw32 --target all
 python3 tests/check_dynamic_linkage.py --objdump=x86_64-w64-mingw32-objdump --validate $BUILD_DIR/mingw64/bin/*.dll $BUILD_DIR/mingw64/bin/*.exe
