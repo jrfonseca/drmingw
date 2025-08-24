@@ -118,14 +118,6 @@ macro (force_debug)
         set (CMAKE_MODULE_LINKER_FLAGS_${build_type} "")
         set (CMAKE_SHARED_LINKER_FLAGS_${build_type} "")
     endforeach ()
-
-    # https://github.com/jrfonseca/drmingw/issues/42
-    if (CMAKE_C_COMPILER_ID STREQUAL "Clang")
-        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -gdwarf-aranges")
-    endif ()
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -gdwarf-aranges")
-    endif ()
 endmacro ()
 
 
