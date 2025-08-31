@@ -44,7 +44,8 @@ main(int argc, char **argv)
     DWORD64 dwSymbolOffset = (DWORD64)(UINT_PTR)&Foo - (DWORD64)(UINT_PTR)hModule;
 
     char szCommand[1024];
-    _snprintf(szCommand, sizeof szCommand, "addr2line.exe -e %s -f 0x%I64x", argv[0], dwSymbolOffset);
+    _snprintf(szCommand, sizeof szCommand, "addr2line.exe -e %s -f 0x%llx",
+              argv[0], dwSymbolOffset);
 
     FILE *fp = _popen(szCommand, "rt");
     ok = fp != NULL;
