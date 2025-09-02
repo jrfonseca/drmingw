@@ -261,11 +261,10 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
         goto no_srclines;
     }
 
-    Dwarf_Unsigned lineno, plineno;
-    Dwarf_Addr lineaddr, plineaddr;
+    Dwarf_Unsigned lineno;
+    Dwarf_Addr lineaddr;
     char *file, *pfile;
-    plineaddr = ~0ULL;
-    plineno = lineno = 0;
+    lineno = 0;
     pfile = file = nullptr;
     Dwarf_Signed i;
 
@@ -298,15 +297,6 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
             continue;
         }
 
-        if (addr > plineaddr && addr < lineaddr) {
-            // Lines are past the address
-            lineno = plineno;
-            file = pfile;
-            pfile = nullptr;
-            result = true;
-            break;
-        }
-
         if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
             OutputDebug("MGWHELP: dwarf_lineno failed - %s\n", dwarf_errmsg(error));
             break;
@@ -322,8 +312,6 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
             break;
         }
 
-        plineaddr = lineaddr;
-        plineno = lineno;
         if (pfile) {
             dwarf_dealloc(dbg, pfile, DW_DLA_STRING);
         }
