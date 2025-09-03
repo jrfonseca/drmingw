@@ -578,6 +578,7 @@ record_die(Dwarf_Debug dbg,
         res = dwarf_attr(cur_die, DW_AT_ranges, &attr, error);
         if (res != DW_DLV_OK)
             return res;
+        dwarf_dealloc_attribute(attr);
         res = dwarf_get_version_of_die(cur_die, &version, &offset_size);
         if (res != DW_DLV_OK)
             return res;
