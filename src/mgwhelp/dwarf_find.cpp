@@ -606,7 +606,6 @@ create_aranges(Dwarf_Debug dbg, std::vector<My_Arange *> &myrec, Dwarf_Error *er
     Dwarf_Unsigned typeoffset = 0;
     Dwarf_Unsigned next_cu_header = 0;
     Dwarf_Half header_cu_type = 0;
-    Dwarf_Bool is_info = TRUE;
     int res = DW_DLV_OK;
 
     while (true) {
@@ -614,7 +613,7 @@ create_aranges(Dwarf_Debug dbg, std::vector<My_Arange *> &myrec, Dwarf_Error *er
         Dwarf_Unsigned cu_header_length = 0;
 
         memset(&signature, 0, sizeof(signature));
-        res = dwarf_next_cu_header_e(dbg, is_info, &cu_die, &cu_header_length, &version_stamp,
+        res = dwarf_next_cu_header_e(dbg, TRUE, &cu_die, &cu_header_length, &version_stamp,
                                      &abbrev_offset, &address_size, &offset_size, &extension_size,
                                      &signature, &typeoffset, &next_cu_header, &header_cu_type,
                                      error);
@@ -622,19 +621,12 @@ create_aranges(Dwarf_Debug dbg, std::vector<My_Arange *> &myrec, Dwarf_Error *er
             return res;
         }
         if (res == DW_DLV_NO_ENTRY) {
-            if (is_info == TRUE) {
-                /*  Done with .debug_info, now check for
-                    .debug_types. */
-                is_info = FALSE;
-                continue;
-            }
             /*  No more CUs to read! Never found
-                what we were looking for in either
-                .debug_info or .debug_types. */
+                what we were looking for in .debug_info. */
             return res;
         }
         /*  We have the cu_die . */
-        res = record_die(dbg, cu_die, is_info, 0, myrec, error);
+        res = record_die(dbg, cu_die, TRUE, 0, myrec, error);
         dwarf_dealloc_die(cu_die);
     }
     return res;
