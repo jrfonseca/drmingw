@@ -215,6 +215,7 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
     Dwarf_Error error = 0;
     std::string symbol_name;
     unsigned int offset_addr;
+    std::string result_file;
 
     Dwarf_Debug dbg = dwarf->dbg;
 
@@ -261,16 +262,15 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
         goto no_srclines;
     }
 
-    Dwarf_Unsigned lineno, plineno;
+    Dwarf_Unsigned lineno, plineno, result_lineno;
     Dwarf_Addr lineaddr, plineaddr;
     char *file, *pfile;
     plineaddr = ~0ULL;
-    plineno = lineno = 0;
+    plineno = lineno = result_lineno = 0;
     pfile = file = nullptr;
     Dwarf_Signed i;
 
-    i = 0;
-    while (i < linecount) {
+    for (i = 0; i < linecount; ++i) {
         if (dwarf_lineaddr(linebuf[i], &lineaddr, &error) != DW_DLV_OK) {
             OutputDebug("MGWHELP: dwarf_lineaddr failed - %s\n", dwarf_errmsg(error));
             break;
@@ -300,11 +300,11 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
 
         if (addr > plineaddr && addr < lineaddr) {
             // Lines are past the address
-            lineno = plineno;
-            file = pfile;
+            result_lineno = plineno;
+            if (pfile)
+                result_file = pfile;
             pfile = nullptr;
             result = true;
-            break;
         }
 
         if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
@@ -318,6 +318,9 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
 
         if (addr == lineaddr) {
             // Exact match
+            result_lineno = lineno;
+            if (file)
+                result_file = file;
             result = true;
             break;
         }
@@ -329,12 +332,11 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
         }
         pfile = file;
         file = NULL;
-        ++i;
     }
 
-    if (result && file) {
-        info->filename = file;
-        info->line = lineno;
+    if (result) {
+        info->filename = result_file;
+        info->line = result_lineno;
         info->offset_addr = offset_addr;
     }
     if (file) {
