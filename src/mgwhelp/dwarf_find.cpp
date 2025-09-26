@@ -263,10 +263,12 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
 
     Dwarf_Unsigned lineno, plineno;
     Dwarf_Addr lineaddr, plineaddr;
+    Dwarf_Bool lineendsequence;
     char *file, *pfile;
     plineaddr = ~0ULL;
     plineno = lineno = 0;
     pfile = file = nullptr;
+    lineendsequence = FALSE;
     Dwarf_Signed i;
 
     i = 0;
@@ -307,12 +309,21 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
             break;
         }
 
-        if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
+        if (dwarf_lineendsequence(linebuf[i], &lineendsequence, &error) != DW_DLV_OK) {
+            OutputDebug("MGWHELP: dwarf_lineendsequence failed - %s\n", dwarf_errmsg(error));
+            break;
+        }
+
+        if (lineendsequence) {
+            lineno = 0;
+        } else if (dwarf_lineno(linebuf[i], &lineno, &error) != DW_DLV_OK) {
             OutputDebug("MGWHELP: dwarf_lineno failed - %s\n", dwarf_errmsg(error));
             break;
         }
 
-        if (dwarf_linesrc(linebuf[i], &file, &error) != DW_DLV_OK) {
+        if (lineendsequence) {
+            file = nullptr;
+        } else if (dwarf_linesrc(linebuf[i], &file, &error) != DW_DLV_OK) {
             OutputDebug("MGWHELP: dwarf_linesrc failed - %s\n", dwarf_errmsg(error));
         }
 
@@ -322,7 +333,7 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
             break;
         }
 
-        plineaddr = lineaddr;
+        plineaddr = lineendsequence ? ~0ULL : lineaddr;
         plineno = lineno;
         if (pfile) {
             dwarf_dealloc(dbg, pfile, DW_DLA_STRING);
@@ -332,8 +343,9 @@ dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *in
         ++i;
     }
 
-    if (result && file) {
-        info->filename = file;
+    if (result) {
+        if (file)
+            info->filename = file;
         info->line = lineno;
         info->offset_addr = offset_addr;
     }
