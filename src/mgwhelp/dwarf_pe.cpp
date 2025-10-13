@@ -154,12 +154,12 @@ static const Dwarf_Obj_Access_Methods_a pe_methods = {
 
 
 int
-dwarf_pe_init(HANDLE hFile,
-              const char *image,
-              Dwarf_Handler errhand,
-              Dwarf_Ptr errarg,
-              Dwarf_Debug *ret_dbg,
-              Dwarf_Error *error)
+mgwhelp_dwarf_pe_init(HANDLE hFile,
+                      const char *image,
+                      Dwarf_Handler errhand,
+                      Dwarf_Ptr errarg,
+                      Dwarf_Debug *ret_dbg,
+                      Dwarf_Error *error)
 {
     int res = DW_DLV_ERROR;
     pe_access_object_t *pe_obj;
@@ -250,7 +250,8 @@ dwarf_pe_init(HANDLE hFile,
                 if (hFile == INVALID_HANDLE_VALUE) {
                     OutputDebug("MGWHELP: %s - not found\n", debugImageStr);
                 } else {
-                    res = dwarf_pe_init(hFile, debugImageStr, errhand, errarg, ret_dbg, error);
+                    res = mgwhelp_dwarf_pe_init(hFile, debugImageStr, errhand, errarg, ret_dbg,
+                                                error);
                     CloseHandle(hFile);
                     break;
                 }
@@ -300,7 +301,7 @@ no_internals:
 
 
 int
-dwarf_pe_finish(Dwarf_Debug dbg, Dwarf_Error *error)
+mgwhelp_dwarf_pe_finish(Dwarf_Debug dbg, Dwarf_Error *error)
 {
     Dwarf_Obj_Access_Interface_a *intfc = dbg->de_obj_file;
     pe_access_object_t *pe_obj = (pe_access_object_t *)intfc->ai_object;

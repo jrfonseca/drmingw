@@ -288,7 +288,7 @@ mgwhelp_module_create(struct mgwhelp_process *process, HANDLE hFile, PCSTR Image
     module->image_base_vma = PEGetImageBase(module->lpFileBase);
 
     error = 0;
-    if (dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dwarf.dbg, &error) ==
+    if (mgwhelp_dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dwarf.dbg, &error) ==
         DW_DLV_OK) {
         if (dwarf_get_aranges(module->dwarf.dbg, &module->dwarf.aranges,
                               &module->dwarf.arange_count, &error) != DW_DLV_OK) {
@@ -329,7 +329,7 @@ mgwhelp_module_destroy(struct mgwhelp_module *module)
             }
             dwarf_dealloc(module->dwarf.dbg, module->dwarf.aranges, DW_DLA_LIST);
         }
-        dwarf_pe_finish(module->dwarf.dbg, &error);
+        mgwhelp_dwarf_pe_finish(module->dwarf.dbg, &error);
     }
 
     UnmapViewOfFile(module->lpFileBase);
