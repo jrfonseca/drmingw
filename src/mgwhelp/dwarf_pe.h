@@ -31,15 +31,15 @@ extern "C" {
 
 
 int
-dwarf_pe_init(HANDLE hFile,
-              const char *image,
-              Dwarf_Handler errhand,
-              Dwarf_Ptr errarg,
-              Dwarf_Debug *ret_dbg,
-              Dwarf_Error *error);
+mgwhelp_dwarf_pe_init(HANDLE hFile,
+                      const char *image,
+                      Dwarf_Handler errhand,
+                      Dwarf_Ptr errarg,
+                      Dwarf_Debug *ret_dbg,
+                      Dwarf_Error *error);
 
 int
-dwarf_pe_finish(Dwarf_Debug dbg, Dwarf_Error *error);
+mgwhelp_dwarf_pe_finish(Dwarf_Debug dbg, Dwarf_Error *error);
 
 
 #ifdef __cplusplus
