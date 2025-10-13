@@ -30,6 +30,7 @@ target_link_libraries (mgwhelp PRIVATE
     dwarf
     libiberty
     dbghelp
+    dwarfstack
 )
 
 set_target_properties (mgwhelp PROPERTIES
