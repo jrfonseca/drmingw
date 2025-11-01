@@ -19,13 +19,13 @@
 
 #pragma once
 
+#include "dwarfstack.h"
 #include <string>
 
 #include <stdbool.h>
 
 #include <dwarf.h>
 #include <libdwarf.h>
-#include <vector>
 
 
 #ifdef __cplusplus
@@ -44,44 +44,32 @@ struct dwarf_line_info {
     unsigned int offset_addr;
 };
 
-typedef struct _My_Arange {
-    /*  The segment selector. Only non-zero if Dwarf4, only
-        meaningful if ar_segment_selector_size non-zero   */
-    Dwarf_Unsigned ar_segment_selector;
-
-    /* Starting address of the arange, ie low-pc. */
-    Dwarf_Addr ar_address;
-
-    /* Length of the arange. */
-    Dwarf_Unsigned ar_length;
-
-    /*  Offset into .debug_info of the start of the compilation-unit
-        containing this set of aranges.
-        Applies only to .debug_info, not .debug_types. */
-    Dwarf_Off ar_info_offset;
-
-    /* Corresponding Dwarf_Debug. */
-    Dwarf_Debug ar_dbg;
-
-    Dwarf_Half ar_segment_selector_size;
-} My_Arange;
-
 struct dwarf_module {
     Dwarf_Debug dbg;
-
-    // cached aranges
-    Dwarf_Arange *aranges;
-    Dwarf_Signed arange_count;
-
-    std::vector<My_Arange *> my_aranges;
+    void *cuArr;
+    int cuQty;
 };
 
 
 bool
-dwarf_find_symbol(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_symbol_info *info);
+dwarf_find_symbol(Dwarf_Debug dbg,
+                  void *cuArr,
+                  int cuQty,
+                  Dwarf_Addr image_base_vma,
+                  char *name,
+                  Dwarf_Addr image_base,
+                  Dwarf_Addr addr,
+                  struct dwarf_symbol_info *info);
 
 bool
-dwarf_find_line(dwarf_module *dwarf, Dwarf_Addr addr, struct dwarf_line_info *info);
+dwarf_find_line(Dwarf_Debug dbg,
+                void *cuArr,
+                int cuQty,
+                Dwarf_Addr image_base_vma,
+                char *name,
+                Dwarf_Addr image_base,
+                Dwarf_Addr addr,
+                struct dwarf_line_info *info);
 
 #ifdef __cplusplus
 }

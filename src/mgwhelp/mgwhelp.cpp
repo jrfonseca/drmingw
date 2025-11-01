@@ -26,6 +26,7 @@
 #include <windows.h>
 #include <psapi.h>
 
+#include "dwarfstack.h"
 #include "outdbg.h"
 
 #include "mgwhelp.h"
@@ -290,10 +291,7 @@ mgwhelp_module_create(struct mgwhelp_process *process, HANDLE hFile, PCSTR Image
     error = 0;
     if (mgwhelp_dwarf_pe_init(hFile, module->LoadedImageName, 0, 0, &module->dwarf.dbg, &error) ==
         DW_DLV_OK) {
-        if (dwarf_get_aranges(module->dwarf.dbg, &module->dwarf.aranges,
-                              &module->dwarf.arange_count, &error) != DW_DLV_OK) {
-            OutputDebug("MGWHELP: libdwarf error - %s\n", dwarf_errmsg(error));
-        }
+        dwstReadCUs(module->dwarf.dbg, &module->dwarf.cuArr, &module->dwarf.cuQty);
     }
 
     if (bOwnFile) {
@@ -323,12 +321,7 @@ mgwhelp_module_destroy(struct mgwhelp_module *module)
 {
     if (module->dwarf.dbg) {
         Dwarf_Error error = 0;
-        if (module->dwarf.aranges) {
-            for (Dwarf_Signed i = 0; i < module->dwarf.arange_count; ++i) {
-                dwarf_dealloc(module->dwarf.dbg, module->dwarf.aranges[i], DW_DLA_ARANGE);
-            }
-            dwarf_dealloc(module->dwarf.dbg, module->dwarf.aranges, DW_DLA_LIST);
-        }
+        dwstFreeCUs(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty);
         mgwhelp_dwarf_pe_finish(module->dwarf.dbg, &error);
     }
 
@@ -572,7 +565,9 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
 
     if (module && module->dwarf.dbg) {
         struct dwarf_symbol_info info;
-        if (dwarf_find_symbol(&module->dwarf, Offset, &info)) {
+        if (dwarf_find_symbol(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
+                              module->image_base_vma, module->LoadedImageName, module->Base,
+                              Address, &info)) {
             strncpy(Symbol->Name, info.functionname.c_str(), Symbol->MaxNameLen);
             Symbol->NameLen = info.functionname.length();
             if (dwOptions & SYMOPT_UNDNAME) {
@@ -590,7 +585,6 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
         }
     }
 
-#if 1
     if (module && module->lpFileBase) {
         if (pe_find_symbol(module, Offset, Symbol->MaxNameLen, Symbol->Name, Displacement)) {
             if (dwOptions & SYMOPT_UNDNAME) {
@@ -603,7 +597,6 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
             return TRUE;
         }
     }
-#endif
 
     return SymFromAddr(hProcess, Address, Displacement, Symbol);
 }
@@ -620,7 +613,9 @@ MgwSymGetLineFromAddr64(HANDLE hProcess,
 
     if (module && module->dwarf.dbg) {
         static struct dwarf_line_info info;
-        if (dwarf_find_line(&module->dwarf, Offset, &info)) {
+        if (dwarf_find_line(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
+                            module->image_base_vma, module->LoadedImageName, module->Base, dwAddr,
+                            &info)) {
             static char buf[1024];
             strncpy(buf, info.filename.c_str(), sizeof buf);
             buf[sizeof(buf) - 1] = '\0';
