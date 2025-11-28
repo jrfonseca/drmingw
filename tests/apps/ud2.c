@@ -48,5 +48,5 @@ main(int argc, char *argv[])
     return 0;
 }
 
-// CHECK_STDERR: /  ud2\.exe\!main\+0x[0-9a-f]+  \[.*\bud2\.c @ 46\]/
+// CHECK_STDERR: /  ud2\.exe\!main\+0x[0-9a-f]+  \[.*\bud2\.c:46\]/
 // CHECK_EXIT_CODE: 0xC000001D

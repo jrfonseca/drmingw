@@ -323,7 +323,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
                 bLine =
                     GetLineFromAddr(hProcess, AddrPC + nudge, szFileName, _countof(szFileName), &dwLineNumber);
                 if (bLine) {
-                    lprintf(L"  [%ls @ %ld]", szFileName, dwLineNumber);
+                    lprintf(L"  [%ls:%ld]", szFileName, dwLineNumber);
                 }
             } else {
                 lprintf(L"!0x%I64x", AddrPC - (DWORD64)(INT_PTR)hModule);

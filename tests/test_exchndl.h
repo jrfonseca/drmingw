@@ -150,10 +150,10 @@ main(int argc, char **argv)
 
     if (!setjmp(g_JmpBuf) ) {
 #if !TEST_UNICODE
-        _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "%s @ %u]",
+        _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "%s:%u]",
                   PathFindFileNameA(__FILE__), __LINE__); *((volatile int *)0) = 0; LINE_BARRIER
 #else
-        _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "%S @ %u]",
+        _snprintf(g_szExceptionLinePattern, sizeof g_szExceptionLinePattern, "%S:%u]",
                   PathFindFileNameW(WFILE), __LINE__); *((volatile int *)0) = 0; LINE_BARRIER
 #endif // !TEST_UNICODE
         test_line(false, "longjmp"); exit(1);
