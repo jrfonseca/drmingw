@@ -6,3 +6,8 @@
 	path = thirdparty/libdwarf
 	url = https://github.com/davea42/libdwarf-code
 	shallow = true
+[submodule "thirdparty/dwarfstack"]
+	path = thirdparty/dwarfstack
+	url = https://github.com/oltolm/dwarfstack.git
+	branch = drmingw
+	shallow = true
