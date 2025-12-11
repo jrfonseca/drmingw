@@ -21,6 +21,7 @@
 #include <windows.h>
 #include <psapi.h>
 #include <dbghelp.h>
+#include <ntdef.h>
 #include <ntstatus.h>
 #include <tlhelp32.h>
 

@@ -69,7 +69,7 @@ help(void)
 static LSTATUS
 regSetStr(HKEY hKey, LPCWSTR lpValueName, LPCWSTR szStr)
 {
-    return RegSetValueExW(hKey, lpValueName, 0, REG_SZ, reinterpret_cast<LPCBYTE>(szStr),
+    return RegSetValueExW(hKey, lpValueName, 0, REG_SZ, reinterpret_cast<const BYTE*>(szStr),
                           (wcslen(szStr) + 1) * sizeof(wchar_t));
 }
 

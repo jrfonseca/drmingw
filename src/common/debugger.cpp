@@ -24,6 +24,7 @@
 #include <stdlib.h>
 
 #include <windows.h>
+#include <ntdef.h>
 #include <ntstatus.h>
 #include <psapi.h>
 

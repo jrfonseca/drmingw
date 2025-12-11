@@ -95,6 +95,8 @@ set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 add_compile_definitions (
     UNICODE
+    # https://learn.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
+    WIN32_LEAN_AND_MEAN
     # http://msdn.microsoft.com/en-us/library/aa383745.aspx
     _WIN32_WINNT=${WINNT}
     WINVER=${WINNT}
