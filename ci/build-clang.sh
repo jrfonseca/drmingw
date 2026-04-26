@@ -2,9 +2,9 @@
 
 set -eux
 
-xvfb_run() {
-	# Make Xvfb more tolerant on CI and avoid flaky X11/GL paths.
-	xvfb-run -a -s '-screen 0 1024x768x24 -nolisten tcp -noreset +extension RANDR +extension GLX' "$@"
+xwfb_run() {
+	# https://gitlab.freedesktop.org/ofourdan/xwayland-run
+	xwfb-run -n 9 -c weston -s \\-geometry -s 2024x768 -- "$@"
 }
 
 
@@ -43,7 +43,7 @@ export WINEDLLOVERRIDES="mscoree,mshtml="
 
 if ! test -d $WINEPREFIX
 then
-	xvfb_run $WINE wineboot.exe --init
+	xwfb_run $WINE wineboot.exe --init
 	$WINE reg.exe ADD 'HKCU\Software\Wine\winedbg' /v ShowCrashDialog /t REG_DWORD /d 0 /f
 fi
 
@@ -91,5 +91,5 @@ do
 	cmake --build $BUILD_DIR/apps/$target --target all
 done
 
-xvfb_run python3 tests/apps/test.py -w $WINE "$@" $BUILD_DIR/x86_64-w64-mingw32-clang/bin/catchsegv.exe $BUILD_DIR/apps/x86_64-w64-mingw32-clang $BUILD_DIR/apps/i686-w64-mingw32-clang
-xvfb_run python3 tests/apps/test.py -w $WINE "$@" $BUILD_DIR/i686-w64-mingw32-clang/bin/catchsegv.exe $BUILD_DIR/apps/i686-w64-mingw32-clang
+xwfb_run python3 tests/apps/test.py -w $WINE "$@" $BUILD_DIR/x86_64-w64-mingw32-clang/bin/catchsegv.exe $BUILD_DIR/apps/x86_64-w64-mingw32-clang $BUILD_DIR/apps/i686-w64-mingw32-clang
+xwfb_run python3 tests/apps/test.py -w $WINE "$@" $BUILD_DIR/i686-w64-mingw32-clang/bin/catchsegv.exe $BUILD_DIR/apps/i686-w64-mingw32-clang

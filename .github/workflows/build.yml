@@ -54,7 +54,7 @@ jobs:
         submodules: recursive
     - run: sudo dpkg --add-architecture i386
     - run: sudo apt-get update -qq
-    - run: sudo apt-get install -yqq --install-recommends mingw-w64 ninja-build cmake xinit xvfb wine wine64 wine32:i386
+    - run: sudo apt-get install -yqq --install-recommends mingw-w64 ninja-build cmake xinit xwayland-run wine wine64 wine32:i386
     - run: ci/build.sh
 
   build-cross-clang:
@@ -72,7 +72,7 @@ jobs:
         key: ${{ runner.os }}-${{ hashFiles('ci/dependencies-clang.sh') }}
     - run: sudo dpkg --add-architecture i386
     - run: sudo apt-get update -qq
-    - run: sudo apt-get install -yqq --install-recommends ninja-build cmake xinit xvfb
+    - run: sudo apt-get install -yqq --install-recommends ninja-build cmake xinit xwayland-run
     - run: ansible-playbook -c local -i localhost, ci/docker/ansible/winehq.yml
     - run: ci/build-clang.sh
     - name: Upload artifact
