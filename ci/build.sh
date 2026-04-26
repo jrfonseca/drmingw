@@ -44,7 +44,11 @@ export WINEPREFIX=$BUILD_DIR/wine
 # https://forum.winehq.org/viewtopic.php?f=2&t=16320#p78458
 export WINEDLLOVERRIDES="mscoree,mshtml="
 
-test -d $WINEPREFIX || xvfb_run $WINE wineboot.exe --init
+if ! test -d $WINEPREFIX
+then
+	xvfb_run $WINE wineboot.exe --init
+	$WINE reg.exe ADD 'HKCU\Software\Wine\winedbg' /v ShowCrashDialog /t REG_DWORD /d 0 /f
+fi
 
 export WINEDEBUG="${WINEDEBUG:-+debugstr}"
 
