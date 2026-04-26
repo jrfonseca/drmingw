@@ -130,6 +130,9 @@ add_test_executable (stack_buffer_overflow stack_buffer_overflow.c)
 add_test_executable (std_terminate std_terminate.cpp)
 add_test_executable (true true.c)
 add_test_executable (ud2 ud2.c)
+add_test_executable (unicode "unicØde.c")
+
+set_target_properties (unicode PROPERTIES OUTPUT_NAME "unicØde")
 
 if (MINGW)
     target_compile_options (stack_buffer_overflow PRIVATE -fstack-protector-all)

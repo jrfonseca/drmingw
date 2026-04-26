@@ -164,7 +164,7 @@ def test(args):
         # them.
 
         checkCommentRe = re.compile(r'^// CHECK_([_0-9A-Z]+):\s+(.*)$')
-        for line in open(testSrc, 'rt'):
+        for line in open(testSrc, 'rt', encoding='utf-8'):
             line = line.rstrip('\n')
             mo = checkCommentRe.match(line)
             if mo:

@@ -29,6 +29,8 @@
 
 #include <stdlib.h>
 
+#include <intrin.h>
+
 #define LINE_BARRIER rand();
 
 #if defined(__GNUC__)
@@ -43,9 +45,18 @@
 #error Unsupported compiler
 #endif
 
-
 // Define WFILE as a wide-character variant of __FILE__
 // See https://stackoverflow.com/a/14421702/1708371
 #define WIDE2(x) L##x
 #define WIDE1(x) WIDE2(x)
 #define WFILE WIDE1(__FILE__)
+
+#if defined(__MINGW32__)
+#if defined(_M_ARM64)
+#define __debugbreak()  asm volatile ("brk #0xf000")
+#elif defined(_M_ARM)
+#define __debugbreak()  asm volatile ("bkpt")
+#else
+#define __debugbreak()  asm volatile ("int3")
+#endif
+#endif
