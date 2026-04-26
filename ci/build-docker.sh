@@ -30,4 +30,5 @@ fi
 
 docker buildx build -t $docker_tag -f ci/docker/$docker_file.Dockerfile ci/docker
 
-docker_run ci/build.sh "$@"
+# Set `build_script=ci/build-clang.sh` to build and run Clang tests.
+docker_run ${build_script:-ci/build.sh} "$@"
