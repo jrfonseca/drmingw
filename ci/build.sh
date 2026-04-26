@@ -15,7 +15,8 @@ cmake_mingw64() {
 }
 
 xvfb_run() {
-	xvfb-run -a -s '-screen 0 1024x768x24' "$@"
+	# Make Xvfb more tolerant on CI and avoid flaky X11/GL paths.
+	xvfb-run -a -s '-screen 0 1024x768x24 -nolisten tcp -noreset +extension RANDR +extension GLX' "$@"
 }
 
 test ! -d /usr/lib/ccache || export PATH="/usr/lib/ccache:$PATH"
