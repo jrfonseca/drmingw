@@ -51,7 +51,7 @@ then
 	$WINE reg.exe ADD 'HKCU\Software\Wine\winedbg' /v ShowCrashDialog /t REG_DWORD /d 0 /f
 fi
 
-export WINEDEBUG="${WINEDEBUG:-+debugstr}"
+export WINEDEBUG="${WINEDEBUG:--all,+debugstr}"
 
 
 

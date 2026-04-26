@@ -47,7 +47,7 @@ then
 	$WINE reg.exe ADD 'HKCU\Software\Wine\winedbg' /v ShowCrashDialog /t REG_DWORD /d 0 /f
 fi
 
-export WINEDEBUG="${WINEDEBUG:-+debugstr}"
+export WINEDEBUG="${WINEDEBUG:--all,+debugstr}"
 
 #export WINEPATH="$PWD/downloads/llvm-mingw/x86_64-w64-mingw32/bin;$PWD/downloads/llvm-mingw/i686-w64-mingw32/bin"
 

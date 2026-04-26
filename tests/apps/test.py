@@ -113,7 +113,7 @@ def test(args):
     if sys.platform != 'win32':
         cmd = [options.wine] + cmd
         if options.verbose:
-            os.environ.setdefault('WINEDEBUG', '+debugstr')
+            os.environ.setdefault('WINEDEBUG', '-all,+debugstr')
 
     writeStdout('# ' + ' '.join(cmd) + '\n')
 
