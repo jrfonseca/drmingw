@@ -262,6 +262,7 @@ def main():
     failedTests = []
 
     numJobs = cpu_count()
+    numJobs = min(numJobs, 16)
     pool = multiprocessing.Pool(numJobs)
 
     testSrcFiles = os.listdir(testsSrcDir)
