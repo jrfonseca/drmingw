@@ -41,7 +41,7 @@ struct mgwhelp_module {
     struct mgwhelp_module *next;
 
     DWORD64 Base;
-    char LoadedImageName[MAX_PATH];
+    wchar_t LoadedImageName[MAX_PATH];
 
     HANDLE hFileMapping;
     PBYTE lpFileBase;
@@ -146,7 +146,7 @@ pe_find_symbol(struct mgwhelp_module *module,
     if (pNtHeaders->FileHeader.PointerToSymbolTable +
             pNtHeaders->FileHeader.NumberOfSymbols * sizeof pSymbolTable[0] >
         module->nFileSize) {
-        OutputDebug("MGWHELP: %s - symbol table extends beyond image size\n",
+        OutputDebug("MGWHELP: %ls - symbol table extends beyond image size\n",
                     module->LoadedImageName);
         return FALSE;
     }
@@ -225,7 +225,7 @@ pe_find_symbol(struct mgwhelp_module *module,
 
 
 static struct mgwhelp_module *
-mgwhelp_module_create(struct mgwhelp_process *process, HANDLE hFile, PCSTR ImageName, DWORD64 Base)
+mgwhelp_module_create(struct mgwhelp_process *process, HANDLE hFile, PCWSTR ImageName, DWORD64 Base)
 {
     struct mgwhelp_module *module;
     BOOL bOwnFile;
@@ -241,15 +241,15 @@ mgwhelp_module_create(struct mgwhelp_process *process, HANDLE hFile, PCSTR Image
     module->Base = Base;
 
     if (ImageName) {
-        strncpy(module->LoadedImageName, ImageName, sizeof module->LoadedImageName);
-        module->LoadedImageName[MAX_PATH - 1] = '\0';
+        wcsncpy(module->LoadedImageName, ImageName, _countof(module->LoadedImageName));
+        module->LoadedImageName[MAX_PATH - 1] = L'\0';
     } else {
         /* SymGetModuleInfo64 is not reliable for this, as explained in
          * https://msdn.microsoft.com/en-us/library/windows/desktop/ms681336.aspx
          */
         DWORD dwRet;
-        dwRet = GetModuleFileNameExA(process->hProcess, (HMODULE)(UINT_PTR)Base,
-                                     module->LoadedImageName, sizeof module->LoadedImageName);
+        dwRet = GetModuleFileNameExW(process->hProcess, (HMODULE)(UINT_PTR)Base,
+                                     module->LoadedImageName, _countof(module->LoadedImageName));
         if (dwRet == 0) {
             OutputDebug("MGWHELP: could not determine module name\n");
             goto no_module_name;
@@ -258,10 +258,10 @@ mgwhelp_module_create(struct mgwhelp_process *process, HANDLE hFile, PCSTR Image
 
     bOwnFile = FALSE;
     if (!hFile) {
-        hFile = CreateFileA(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
+        hFile = CreateFileW(module->LoadedImageName, GENERIC_READ, FILE_SHARE_READ, NULL,
                             OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
         if (hFile == INVALID_HANDLE_VALUE) {
-            OutputDebug("MGWHELP: %s - file not found\n", module->LoadedImageName);
+            OutputDebug("MGWHELP: %ls - file not found\n", module->LoadedImageName);
             goto no_module_name;
         }
         bOwnFile = TRUE;
@@ -334,7 +334,7 @@ static struct mgwhelp_process *
 mgwhelp_process_lookup(HANDLE hProcess);
 
 static struct mgwhelp_module *
-mgwhelp_module_lookup(HANDLE hProcess, HANDLE hFile, PCSTR ImageName, DWORD64 Base)
+mgwhelp_module_lookup(HANDLE hProcess, HANDLE hFile, PCWSTR ImageName, DWORD64 Base)
 {
     struct mgwhelp_process *process;
     struct mgwhelp_module *module;
@@ -463,7 +463,13 @@ MgwSymLoadModuleEx(HANDLE hProcess,
         SymLoadModuleEx(hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags);
 
     if (BaseOfDll) {
-        mgwhelp_module_lookup(hProcess, hFile, ImageName, BaseOfDll);
+        wchar_t ImageNameBuf[MAX_PATH];
+        PCWSTR ImageNameW = nullptr;
+        if (ImageName) {
+            MultiByteToWideChar(CP_ACP, 0, ImageName, -1, ImageNameBuf, _countof(ImageNameBuf));
+            ImageNameW = ImageNameBuf;
+        }
+        mgwhelp_module_lookup(hProcess, hFile, ImageNameW, BaseOfDll);
     }
 
     return dwRet;
@@ -486,18 +492,7 @@ MgwSymLoadModuleExW(HANDLE hProcess,
         SymLoadModuleExW(hProcess, hFile, ImageName, ModuleName, BaseOfDll, DllSize, Data, Flags);
 
     if (BaseOfDll) {
-        char ImageNameBuf[MAX_PATH];
-        PCSTR ImageNameA;
-
-        if (ImageName) {
-            WideCharToMultiByte(CP_ACP, 0, ImageName, -1, ImageNameBuf, _countof(ImageNameBuf),
-                                NULL, NULL);
-            ImageNameA = ImageNameBuf;
-        } else {
-            ImageNameA = NULL;
-        }
-
-        mgwhelp_module_lookup(hProcess, hFile, ImageNameA, BaseOfDll);
+        mgwhelp_module_lookup(hProcess, hFile, ImageName, BaseOfDll);
     }
 
     return dwRet;
@@ -566,8 +561,8 @@ MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_
     if (module && module->dwarf.dbg) {
         struct dwarf_symbol_info info;
         if (dwarf_find_symbol(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
-                              module->image_base_vma, module->LoadedImageName, module->Base,
-                              Address, &info)) {
+                              module->image_base_vma, module->LoadedImageName,
+                              module->Base, Address, &info)) {
             strncpy(Symbol->Name, info.functionname.c_str(), Symbol->MaxNameLen);
             Symbol->NameLen = info.functionname.length();
             if (dwOptions & SYMOPT_UNDNAME) {
@@ -608,28 +603,25 @@ MgwSymGetLineFromAddr64(HANDLE hProcess,
                         PDWORD pdwDisplacement,
                         PIMAGEHLP_LINE64 Line)
 {
-    DWORD64 Offset;
-    mgwhelp_module *module = mgwhelp_find_module(hProcess, dwAddr, &Offset);
-
-    if (module && module->dwarf.dbg) {
-        static struct dwarf_line_info info;
-        if (dwarf_find_line(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
-                            module->image_base_vma, module->LoadedImageName, module->Base, dwAddr,
-                            &info)) {
-            static char buf[1024];
-            strncpy(buf, info.filename.c_str(), sizeof buf);
-            buf[sizeof(buf) - 1] = '\0';
-            Line->FileName = buf;
-            Line->LineNumber = info.line;
-
-            if (pdwDisplacement) {
-                *pdwDisplacement = info.offset_addr;
-            }
-            return TRUE;
-        }
+    IMAGEHLP_LINEW64 LineW;
+    ZeroMemory(&LineW, sizeof LineW);
+    LineW.SizeOfStruct = sizeof LineW;
+    if (MgwSymGetLineFromAddrW64(hProcess, dwAddr, pdwDisplacement, &LineW)) {
+        // https://msdn.microsoft.com/en-us/library/windows/desktop/ms681330.aspx
+        // states that SymGetLineFromAddrW64 "returns a pointer to a buffer
+        // that may be reused by another function" and that callers should be
+        // "sure to copy the data returned to another buffer immediately",
+        // therefore the static buffer should be safe.
+        static char FileName[1024];
+        Line->FileName = FileName;
+        WideCharToMultiByte(CP_ACP, 0, LineW.FileName, -1, FileName, _countof(FileName), nullptr,
+                            nullptr);
+        FileName[_countof(FileName) - 1] = '\0';
+        Line->LineNumber = LineW.LineNumber;
+        return TRUE;
+    } else {
+        return FALSE;
     }
-
-    return SymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, Line);
 }
 
 
@@ -710,21 +702,31 @@ MgwSymGetLineFromAddrW64(HANDLE hProcess,
                          PDWORD pdwDisplacement,
                          PIMAGEHLP_LINEW64 LineW)
 {
-    IMAGEHLP_LINE64 LineA;
-    ZeroMemory(&LineA, sizeof LineA);
-    LineA.SizeOfStruct = sizeof LineA;
-    if (MgwSymGetLineFromAddr64(hProcess, dwAddr, pdwDisplacement, &LineA)) {
-        // https://msdn.microsoft.com/en-us/library/windows/desktop/ms681330.aspx
-        // states that SymGetLineFromAddrW64 "returns a pointer to a buffer
-        // that may be reused by another function" and that callers should be
-        // "sure to copy the data returned to another buffer immediately",
-        // therefore the static buffer should be safe.
-        static WCHAR FileName[1024];
-        LineW->FileName = FileName;
-        MultiByteToWideChar(CP_ACP, 0, LineA.FileName, -1, LineW->FileName, 1024);
-        LineW->LineNumber = LineA.LineNumber;
-        return TRUE;
-    } else {
-        return FALSE;
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms681330.aspx
+    // states that SymGetLineFromAddrW64 "returns a pointer to a buffer
+    // that may be reused by another function" and that callers should be
+    // "sure to copy the data returned to another buffer immediately",
+    // therefore the static buffer should be safe.
+    static WCHAR FileName[1024];
+    LineW->FileName = FileName;
+
+    DWORD64 Offset;
+    mgwhelp_module *module = mgwhelp_find_module(hProcess, dwAddr, &Offset);
+
+    if (module && module->dwarf.dbg) {
+        static struct dwarf_line_info info;
+        if (dwarf_find_line(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
+                            module->image_base_vma, module->LoadedImageName,
+                            module->Base, dwAddr, &info)) {
+            wcsncpy(FileName, info.filename.c_str(), _countof(FileName));
+            FileName[_countof(FileName) - 1] = L'\0';
+            LineW->LineNumber = info.line;
+            if (pdwDisplacement) {
+                *pdwDisplacement = info.offset_addr;
+            }
+            return TRUE;
+        }
     }
+
+    return SymGetLineFromAddrW64(hProcess, dwAddr, pdwDisplacement, LineW);
 }

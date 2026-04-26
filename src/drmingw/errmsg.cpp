@@ -25,10 +25,11 @@
 void
 _ErrorMessageBox(LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ...)
 {
-    char szErrorMsg[1024], szModule[MAX_PATH], szMsg[4096];
+    char szErrorMsg[1024], szMsg[4096];
+    wchar_t szModule[MAX_PATH];
     va_list ap;
 
-    if (!GetModuleFileNameA(NULL, szModule, MAX_PATH)) {
+    if (!GetModuleFileNameW(NULL, szModule, MAX_PATH)) {
         szModule[0] = 0;
     }
 
@@ -39,7 +40,7 @@ _ErrorMessageBox(LPCSTR lpszFile, DWORD dwLine, LPCSTR lpszFormat, ...)
     sprintf(szMsg,
             "Error!\r\n"
             "\r\n"
-            "Program: %s\r\n"
+            "Program: %ls\r\n"
             "File: %s\r\n"
             "Line: %lu\r\n"
             "\r\n"

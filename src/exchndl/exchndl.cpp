@@ -42,21 +42,34 @@ static HANDLE g_hReportFile = nullptr;
 static BOOL g_bOwnReportFile = FALSE;
 
 static void
-writeReport(const char *szText)
+writeReport(const wchar_t *szText)
 {
-    DWORD cbWritten;
-    while (*szText != '\0') {
-        const char *p = szText;
-        while (*p != '\0' && *p != '\n') {
-            ++p;
-        }
-        WriteFile(g_hReportFile, szText, p - szText, &cbWritten, 0);
-        if (*p == '\n') {
-            WriteFile(g_hReportFile, "\r\n", 2, &cbWritten, 0);
-            ++p;
-        }
-        szText = p;
+    int cbNeeded = WideCharToMultiByte(CP_UTF8, 0, szText, -1, NULL, 0, NULL, NULL);
+    if (cbNeeded <= 0) {
+        return;
     }
+    char *szTextA = (char *)malloc(cbNeeded);
+    if (!szTextA) {
+        return;
+    }
+    WideCharToMultiByte(CP_UTF8, 0, szText, -1, szTextA, cbNeeded, NULL, NULL);
+
+    DWORD cbWritten;
+    const char *p = szTextA;
+    while (*p != '\0') {
+        const char *q = p;
+        while (*q != '\0' && *q != '\n') {
+            ++q;
+        }
+        WriteFile(g_hReportFile, p, (DWORD)(q - p), &cbWritten, 0);
+        if (*q == '\n') {
+            WriteFile(g_hReportFile, "\r\n", 2, &cbWritten, 0);
+            ++q;
+        }
+        p = q;
+    }
+
+    free(szTextA);
 }
 
 
@@ -66,7 +79,7 @@ GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     PEXCEPTION_RECORD pExceptionRecord = pExceptionInfo->ExceptionRecord;
 
     // Start out with a banner
-    lprintf("-------------------\n\n");
+    lprintf(L"-------------------\n\n");
 
     SYSTEMTIME SystemTime;
     GetLocalTime(&SystemTime);
@@ -76,7 +89,7 @@ GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
                    _countof(szDateStr));
     char szTimeStr[128];
     GetTimeFormatA(Locale, 0, &SystemTime, "HH':'mm':'ss", szTimeStr, _countof(szTimeStr));
-    lprintf("Error occurred on %s at %s.\n\n", szDateStr, szTimeStr);
+    lprintf(L"Error occurred on %S at %S.\n\n", szDateStr, szTimeStr);
 
     HANDLE hProcess = GetCurrentProcess();
 
@@ -98,7 +111,7 @@ GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
         PVOID ip = (PVOID)pContext->Eip;
 #endif
         if (pExceptionRecord->ExceptionAddress != ip) {
-            lprintf("warning: inconsistent exception context record\n");
+            lprintf(L"warning: inconsistent exception context record\n");
         }
 
         dumpStack(hProcess, GetCurrentThread(), pContext);
@@ -114,26 +127,26 @@ GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
     BOOL bSuccess = FALSE;
     if (hKernelModule) {
         DWORD nSize = MAX_PATH;
-        std::vector<char> path(nSize);
+        std::vector<WCHAR> path(nSize);
         DWORD dwRet;
-        while ((dwRet = GetModuleFileNameA(hKernelModule, &path[0], nSize)) == nSize) {
+        while ((dwRet = GetModuleFileNameW(hKernelModule, &path[0], nSize)) == nSize) {
             nSize *= 2;
             path.resize(nSize);
         }
         WORD awVInfo[4];
         if (dwRet && getModuleVersionInfo(&path[0], awVInfo)) {
-            lprintf("Windows %hu.%hu.%hu.%hu\n", awVInfo[0], awVInfo[1], awVInfo[2], awVInfo[3]);
+            lprintf(L"Windows %hu.%hu.%hu.%hu\n", awVInfo[0], awVInfo[1], awVInfo[2], awVInfo[3]);
             bSuccess = TRUE;
         }
     }
     if (!bSuccess) {
-        lprintf("Windows version could not be determined\n");
+        lprintf(L"Windows version could not be determined\n");
     }
 
-    lprintf("DrMingw %u.%u.%u\n", PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR,
+    lprintf(L"DrMingw %u.%u.%u\n", PACKAGE_VERSION_MAJOR, PACKAGE_VERSION_MINOR,
             PACKAGE_VERSION_PATCH);
 
-    lprintf("\n");
+    lprintf(L"\n");
 }
 
 #include <stdio.h>

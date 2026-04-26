@@ -129,11 +129,11 @@ GetSymFromAddr(HANDLE hProcess,
 BOOL
 GetLineFromAddr(HANDLE hProcess,
                 DWORD64 dwAddress,
-                LPSTR lpFileName,
+                LPWSTR lpFileName,
                 DWORD nSize,
                 LPDWORD lpLineNumber)
 {
-    IMAGEHLP_LINE64 Line;
+    IMAGEHLP_LINEW64 Line;
     DWORD dwDisplacement =
         0; // Displacement of the input address, relative to the start of the symbol
 
@@ -141,12 +141,12 @@ GetLineFromAddr(HANDLE hProcess,
     memset(&Line, 0, sizeof Line);
     Line.SizeOfStruct = sizeof Line;
 
-    if (!SymGetLineFromAddr64(hProcess, dwAddress, &dwDisplacement, &Line))
+    if (!SymGetLineFromAddrW64(hProcess, dwAddress, &dwDisplacement, &Line))
         return FALSE;
 
     assert(lpFileName && lpLineNumber);
 
-    strncpy(lpFileName, Line.FileName, nSize);
+    wcsncpy(lpFileName, Line.FileName, nSize);
     *lpLineNumber = Line.LineNumber;
 
     return TRUE;

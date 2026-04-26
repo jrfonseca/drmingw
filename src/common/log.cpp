@@ -47,9 +47,9 @@
 
 
 static void
-defaultCallback(const char *s)
+defaultCallback(const wchar_t *s)
 {
-    OutputDebugStringA(s);
+    OutputDebugStringW(s);
 }
 
 
@@ -63,18 +63,15 @@ setDumpCallback(DumpCallback cb)
 }
 
 
-#ifdef __GNUC__
-__attribute__((format(printf, 1, 2)))
-#endif
 int
-lprintf(const char *format, ...)
+lprintf(const wchar_t *format, ...)
 {
-    char szBuffer[1024];
+    wchar_t szBuffer[1024];
     int retValue;
     va_list ap;
 
     va_start(ap, format);
-    retValue = _vsnprintf(szBuffer, sizeof szBuffer, format, ap);
+    retValue = _vsnwprintf(szBuffer, _countof(szBuffer), format, ap);
     va_end(ap);
 
     g_Cb(szBuffer);
@@ -84,7 +81,7 @@ lprintf(const char *format, ...)
 
 
 static BOOL
-dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber);
+dumpSourceCode(LPCWSTR lpFileName, DWORD dwLineNumber);
 
 
 #define MAX_SYM_NAME_SIZE 512
@@ -94,14 +91,14 @@ static void
 dumpContext(const WOW64_CONTEXT *pContext)
 {
     // Show the registers
-    lprintf("Registers:\n");
+    lprintf(L"Registers:\n");
 
     if (pContext->ContextFlags & WOW64_CONTEXT_INTEGER) {
-        lprintf("eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n", pContext->Eax,
+        lprintf(L"eax=%08lx ebx=%08lx ecx=%08lx edx=%08lx esi=%08lx edi=%08lx\n", pContext->Eax,
                 pContext->Ebx, pContext->Ecx, pContext->Edx, pContext->Esi, pContext->Edi);
     }
     if (pContext->ContextFlags & CONTEXT_CONTROL) {
-        lprintf("eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %s %s %s %s %s %s %s %s %s %s\n",
+        lprintf(L"eip=%08lx esp=%08lx ebp=%08lx iopl=%1lx %S %S %S %S %S %S %S %S %S %S\n",
                 pContext->Eip, pContext->Esp, pContext->Ebp,
                 (pContext->EFlags >> 12) & 3,                  //  IOPL level value
                 pContext->EFlags & 0x00100000 ? "vip" : "   ", //  VIP (virtual interrupt pending)
@@ -117,21 +114,21 @@ dumpContext(const WOW64_CONTEXT *pContext)
         );
     }
     if (pContext->ContextFlags & WOW64_CONTEXT_SEGMENTS) {
-        lprintf("cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx", pContext->SegCs,
+        lprintf(L"cs=%04lx  ss=%04lx  ds=%04lx  es=%04lx  fs=%04lx  gs=%04lx", pContext->SegCs,
                 pContext->SegSs, pContext->SegDs, pContext->SegEs, pContext->SegFs,
                 pContext->SegGs);
         if (pContext->ContextFlags & WOW64_CONTEXT_CONTROL) {
-            lprintf("             efl=%08lx", pContext->EFlags);
+            lprintf(L"             efl=%08lx", pContext->EFlags);
         }
     } else {
         if (pContext->ContextFlags & WOW64_CONTEXT_CONTROL) {
-            lprintf("                                                                       "
-                    "efl=%08lx",
+            lprintf(L"                                                                       "
+                    L"efl=%08lx",
                     pContext->EFlags);
         }
     }
 
-    lprintf("\n\n");
+    lprintf(L"\n\n");
 }
 
 
@@ -146,17 +143,17 @@ dumpContext(const CONTEXT *pContext)
 
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
         for (unsigned i = 0 ; i < 28 ; i += 4) {
-            lprintf("X%d=%016I64X X%d=%016I64X X%d=%016I64X X%d=%016I64X\n", i, pContext->X[i],
+            lprintf(L"X%d=%016I64X X%d=%016I64X X%d=%016I64X X%d=%016I64X\n", i, pContext->X[i],
                     i+1, pContext->X[i+1], i+2, pContext->X[i+2], i+3, pContext->X[i+3]);
         }
-        lprintf("X%d=%016I64X\n", 28, pContext->X[28]);
+        lprintf(L"X%d=%016I64X\n", 28, pContext->X[28]);
     }
 
     if (pContext->ContextFlags & CONTEXT_CONTROL) {
-         lprintf("pc=%016I64X sp=%016I64X fp=%016I64X \n",
+         lprintf(L"pc=%016I64X sp=%016I64X fp=%016I64X \n",
                  pContext->Pc, pContext->Sp, pContext->Fp);
     }
-    lprintf("\n\n");
+    lprintf(L"\n\n");
 
 #else
 #error
@@ -183,7 +180,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     USHORT nativeArch = IMAGE_FILE_MACHINE_UNKNOWN;
     BOOL bRet = IsWow64Process2(hProcess, &processArch, &nativeArch);
     if (!bRet) {
-        lprintf("warning: IsWow64Process2 failed (0x%08lx)\n", GetLastError());
+        lprintf(L"warning: IsWow64Process2 failed (0x%08lx)\n", GetLastError());
         return;
     }
 
@@ -229,7 +226,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         StackFrame.AddrStack.Offset = pWow64Context->Esp;
         StackFrame.AddrFrame.Offset = pWow64Context->Ebp;
     } else {
-        lprintf("error: unsupported process architecture 0x%04x !\n", processArch);
+        lprintf(L"error: unsupported process architecture 0x%04x !\n", processArch);
         return;
     }
 
@@ -277,9 +274,9 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
     CONTEXT Context = *pContext;
 
     if (MachineType == IMAGE_FILE_MACHINE_I386) {
-        lprintf("AddrPC   Params\n");
+        lprintf(L"AddrPC   Params\n");
     } else {
-        lprintf("AddrPC           Params\n");
+        lprintf(L"AddrPC           Params\n");
     }
 
     BOOL bInsideWine = isInsideWine();
@@ -289,7 +286,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
 
     while (TRUE) {
         char szSymName[MAX_SYM_NAME_SIZE] = "";
-        char szFileName[MAX_PATH] = "";
+        wchar_t szFileName[MAX_PATH] = {};
         DWORD dwLineNumber = 0;
 
         if (!StackWalk64(MachineType, hProcess, hThread, &StackFrame, &Context,
@@ -300,11 +297,11 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
             break;
 
         if (MachineType == IMAGE_FILE_MACHINE_I386) {
-            lprintf("%08lX %08lX %08lX %08lX", (DWORD)StackFrame.AddrPC.Offset,
+            lprintf(L"%08lX %08lX %08lX %08lX", (DWORD)StackFrame.AddrPC.Offset,
                     (DWORD)StackFrame.Params[0], (DWORD)StackFrame.Params[1],
                     (DWORD)StackFrame.Params[2]);
         } else {
-            lprintf("%016I64X %016I64X %016I64X %016I64X", StackFrame.AddrPC.Offset,
+            lprintf(L"%016I64X %016I64X %016I64X %016I64X", StackFrame.AddrPC.Offset,
                     StackFrame.Params[0], StackFrame.Params[1], StackFrame.Params[2]);
         }
 
@@ -314,26 +311,26 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
 
         DWORD64 AddrPC = StackFrame.AddrPC.Offset;
         HMODULE hModule = (HMODULE)(INT_PTR)SymGetModuleBase64(hProcess, AddrPC);
-        char szModule[MAX_PATH];
-        if (hModule && GetModuleFileNameExA(hProcess, hModule, szModule, MAX_PATH)) {
-            lprintf("  %s", getBaseName(szModule));
+        wchar_t szModule[MAX_PATH];
+        if (hModule && GetModuleFileNameExW(hProcess, hModule, szModule, _countof(szModule))) {
+            lprintf(L"  %ls", getBaseNameW(szModule));
 
             bSymbol = GetSymFromAddr(hProcess, AddrPC + nudge, szSymName, MAX_SYM_NAME_SIZE,
                                      &dwOffsetFromSymbol);
             if (bSymbol) {
-                lprintf("!%s+0x%lx", szSymName, dwOffsetFromSymbol - nudge);
+                lprintf(L"!%S+0x%lx", szSymName, dwOffsetFromSymbol - nudge);
 
                 bLine =
-                    GetLineFromAddr(hProcess, AddrPC + nudge, szFileName, MAX_PATH, &dwLineNumber);
+                    GetLineFromAddr(hProcess, AddrPC + nudge, szFileName, _countof(szFileName), &dwLineNumber);
                 if (bLine) {
-                    lprintf("  [%s @ %ld]", szFileName, dwLineNumber);
+                    lprintf(L"  [%ls @ %ld]", szFileName, dwLineNumber);
                 }
             } else {
-                lprintf("!0x%I64x", AddrPC - (DWORD64)(INT_PTR)hModule);
+                lprintf(L"!0x%I64x", AddrPC - (DWORD64)(INT_PTR)hModule);
             }
         }
 
-        lprintf("\n");
+        lprintf(L"\n");
 
         if (bLine) {
             dumpSourceCode(szFileName, dwLineNumber);
@@ -363,7 +360,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         nudge = -1;
     }
 
-    lprintf("\n");
+    lprintf(L"\n");
 }
 
 
@@ -476,18 +473,18 @@ dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord)
 {
     NTSTATUS ExceptionCode = pExceptionRecord->ExceptionCode;
 
-    char szModule[MAX_PATH];
-    LPCSTR lpcszProcess;
+    wchar_t szModule[MAX_PATH];
+    LPCWSTR lpcszProcess;
     HMODULE hModule;
 
-    if (GetModuleFileNameExA(hProcess, NULL, szModule, MAX_PATH)) {
-        lpcszProcess = getBaseName(szModule);
+    if (GetModuleFileNameExW(hProcess, NULL, szModule, _countof(szModule))) {
+        lpcszProcess = getBaseNameW(szModule);
     } else {
-        lpcszProcess = "Application";
+        lpcszProcess = L"Application";
     }
 
     // First print information about the type of fault
-    lprintf("%s caused", lpcszProcess);
+    lprintf(L"%ls caused", lpcszProcess);
 
     LPCSTR lpcszException = getExceptionString(ExceptionCode);
     if (lpcszException) {
@@ -505,17 +502,17 @@ dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord)
             break;
         }
 
-        lprintf(" %s %s", lpszArticle, lpcszException);
+        lprintf(L" %S %S", lpszArticle, lpcszException);
     } else {
-        lprintf(" an Unknown [0x%lX] Exception", ExceptionCode);
+        lprintf(L" an Unknown [0x%lX] Exception", ExceptionCode);
     }
 
     // Now print information about where the fault occurred
-    lprintf(" at location %p", pExceptionRecord->ExceptionAddress);
+    lprintf(L" at location %p", pExceptionRecord->ExceptionAddress);
     if ((hModule = (HMODULE)(INT_PTR)
              SymGetModuleBase64(hProcess, (DWORD64)(INT_PTR)pExceptionRecord->ExceptionAddress)) &&
-        GetModuleFileNameExA(hProcess, hModule, szModule, sizeof szModule))
-        lprintf(" in module %s", getBaseName(szModule));
+        GetModuleFileNameExW(hProcess, hModule, szModule, _countof(szModule)))
+        lprintf(L" in module %ls", getBaseNameW(szModule));
 
     // If the exception was an access violation, print out some additional information, to the error
     // log and the debugger.
@@ -538,7 +535,7 @@ dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord)
             break;
         }
 
-        lprintf(" %s location %p", lpszVerb, (PVOID)pExceptionRecord->ExceptionInformation[1]);
+        lprintf(L" %S location %p", lpszVerb, (PVOID)pExceptionRecord->ExceptionInformation[1]);
     }
 
     // https://devblogs.microsoft.com/oldnewthing/20190108-00/
@@ -564,21 +561,21 @@ dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord)
             szCode = "INVALID_FAST_FAIL_CODE";  // FAST_FAIL_INVALID_FAST_FAIL_CODE
         }
 
-        lprintf(" with code %u (%s)", uCode, szCode);
+        lprintf(L" with code %u (%S)", uCode, szCode);
     }
 
-    lprintf(".\n\n");
+    lprintf(L".\n\n");
 }
 
 
 static BOOL
-dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
+dumpSourceCode(LPCWSTR lpFileName, DWORD dwLineNumber)
 {
     FILE *fp;
     unsigned i;
     DWORD dwContext = 2;
 
-    if ((fp = fopen(lpFileName, "r")) == NULL)
+    if ((fp = _wfopen(lpFileName, L"r")) == NULL)
         return FALSE;
 
     i = 0;
@@ -586,11 +583,11 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
         int c;
 
         if ((int)i >= (int)dwLineNumber - (int)dwContext) {
-            lprintf(i == dwLineNumber ? ">%5i: " : "%6i: ", i);
+            lprintf(i == dwLineNumber ? L">%5i: " : L"%6i: ", i);
             while (!feof(fp) && (c = fgetc(fp)) != '\n')
                 if (isprint(c))
-                    lprintf("%c", c);
-            lprintf("\n");
+                    lprintf(L"%c", c);
+            lprintf(L"\n");
         } else {
             while (!feof(fp) && fgetc(fp) != '\n')
                 ;
@@ -603,16 +600,16 @@ dumpSourceCode(LPCSTR lpFileName, DWORD dwLineNumber)
 
 
 BOOL
-getModuleVersionInfo(LPCSTR szModule, WORD awVInfo[4])
+getModuleVersionInfo(LPCWSTR szModule, WORD awVInfo[4])
 {
     DWORD dummy, size;
     BOOL success = FALSE;
 
-    size = GetFileVersionInfoSizeA(szModule, &dummy);
+    size = GetFileVersionInfoSizeW(szModule, &dummy);
     if (size > 0) {
         LPVOID pVer = malloc(size);
         ZeroMemory(pVer, size);
-        if (GetFileVersionInfoA(szModule, 0, size, pVer)) {
+        if (GetFileVersionInfoW(szModule, 0, size, pVer)) {
             VS_FIXEDFILEINFO *pFileInfo;
             if (VerQueryValueA(pVer, "\\", (LPVOID *)&pFileInfo, (UINT *)&dummy)) {
                 awVInfo[0] = HIWORD(pFileInfo->dwFileVersionMS);
@@ -653,33 +650,33 @@ dumpModules(HANDLE hProcess)
 #endif
     }
 
-    MODULEENTRY32 me32;
+    MODULEENTRY32W me32;
     me32.dwSize = sizeof me32;
-    if (Module32First(hModuleSnap, &me32)) {
+    if (Module32FirstW(hModuleSnap, &me32)) {
         do {
             if (MachineType == IMAGE_FILE_MACHINE_I386) {
                 lprintf(
-                    "%08lX-%08lX ",
+                    L"%08lX-%08lX ",
                     (DWORD)(DWORD64)me32.modBaseAddr,
                     (DWORD)(DWORD64)me32.modBaseAddr + me32.modBaseSize
                 );
             } else {
                 lprintf(
-                    "%016I64X-%016I64X ",
+                    L"%016I64X-%016I64X ",
                     (DWORD64)me32.modBaseAddr,
                     (DWORD64)me32.modBaseAddr + me32.modBaseSize
                 );
             }
-            const char *szBaseName = getBaseName(me32.szExePath);
+            const wchar_t *szBaseName = getBaseNameW(me32.szExePath);
             WORD awVInfo[4];
             if (getModuleVersionInfo(me32.szExePath, awVInfo)) {
-                lprintf("%-12s\t%hu.%hu.%hu.%hu\n", szBaseName, awVInfo[0], awVInfo[1],
+                lprintf(L"%-12ls\t%hu.%hu.%hu.%hu\n", szBaseName, awVInfo[0], awVInfo[1],
                         awVInfo[2], awVInfo[3]);
             } else {
-                lprintf("%s\n", szBaseName);
+                lprintf(L"%ls\n", szBaseName);
             }
-        } while (Module32Next(hModuleSnap, &me32));
-        lprintf("\n");
+        } while (Module32NextW(hModuleSnap, &me32));
+        lprintf(L"\n");
     }
 
     CloseHandle(hModuleSnap);

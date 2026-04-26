@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <io.h>
+#include <fcntl.h>
+
 #include <windows.h>
 #include <dbghelp.h>
 
@@ -39,9 +42,9 @@
 
 
 static void
-outputCallback(const char *s)
+outputCallback(const wchar_t *s)
 {
-    fputs(s, stderr);
+    fputws(s, stderr);
     fflush(stderr);
 }
 
@@ -65,7 +68,7 @@ TerminateProcessById(DWORD dwProcessId)
         CloseHandle(hProcess);
     }
     if (!bTerminated) {
-        fprintf(stderr, "catchsegv: error: failed to interrupt target (0x%08lx)\n", GetLastError());
+        fwprintf(stderr, L"catchsegv: error: failed to interrupt target (0x%08lx)\n", GetLastError());
         exit(EXIT_FAILURE);
     }
 }
@@ -90,7 +93,7 @@ EnumWindowCallback(HWND hWnd, LPARAM lParam)
                 szWindowText[0] = 0;
             }
 
-            fprintf(stderr, "catchsegv: error: message dialog detected (%ls)\n", szWindowText);
+            fwprintf(stderr, L"catchsegv: error: message dialog detected (%ls)\n", szWindowText);
 
             g_TimerIgnore = TRUE;
 
@@ -129,7 +132,7 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
         return;
     }
 
-    fprintf(stderr, "catchsegv: time out (%lu sec) exceeded\n", g_TimeOut);
+    fwprintf(stderr, L"catchsegv: time out (%lu sec) exceeded\n", g_TimeOut);
 
     g_TimerIgnore = TRUE;
 
@@ -140,20 +143,20 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
 static void
 Usage(void)
 {
-    fputs("usage: catchsegv [options] -- <command-line>\n"
-          "\n"
-          "options:\n"
-          "  -?|-h        displays command line help text\n"
-          "  -v           enables verbose output from the debugger\n"
-          "  -d           enables debugging output (for debugging catchsegv itself)\n"
-          "  -t SECONDS   specifies a timeout in seconds\n"
-          "  -1           dump stack on first chance exceptions\n"
-          "  -m           ignore modal dialogs\n"
-          "  -z           write minidumps\n"
-          "  -Z DIRECTORY write minidumps to specified directory\n"
-          "  -H           use debug heap\n"
-          "  -q           silence messages from OutputDebugString\n",
-          stderr);
+    fputws(L"usage: catchsegv [options] -- <command-line>\n"
+           L"\n"
+           L"options:\n"
+           L"  -?|-h        displays command line help text\n"
+           L"  -v           enables verbose output from the debugger\n"
+           L"  -d           enables debugging output (for debugging catchsegv itself)\n"
+           L"  -t SECONDS   specifies a timeout in seconds\n"
+           L"  -1           dump stack on first chance exceptions\n"
+           L"  -m           ignore modal dialogs\n"
+           L"  -z           write minidumps\n"
+           L"  -Z DIRECTORY write minidumps to specified directory\n"
+           L"  -H           use debug heap\n"
+           L"  -q           silence messages from OutputDebugString\n",
+           stderr);
 }
 
 
@@ -169,10 +172,10 @@ consoleCtrlHandler(DWORD fdwCtrlType)
 
     switch (fdwCtrlType) {
     case CTRL_C_EVENT:
-        fprintf(stderr, "catchsegv: warning: caught Ctrl-C event\n");
+        fwprintf(stderr, L"catchsegv: warning: caught Ctrl-C event\n");
         return cCtrlC++ ? FALSE : TRUE;
     case CTRL_BREAK_EVENT:
-        fprintf(stderr, "catchsegv: warning: caught Ctrl-Break event\n");
+        fwprintf(stderr, L"catchsegv: warning: caught Ctrl-Break event\n");
         return cCtrlBreak++ ? FALSE : TRUE;
     default:
         return FALSE;
@@ -259,6 +262,8 @@ wmain(int argc, wchar_t **argv)
 #endif
 #endif
 
+    _setmode(_fileno(stderr), _O_U8TEXT);
+
     /*
      * Parse command line arguments
      */
@@ -341,7 +346,7 @@ wmain(int argc, wchar_t **argv)
     }
 
     if (commandLine.empty()) {
-        fprintf(stderr, "catchsegv: error: no command line given\n\n");
+        fwprintf(stderr, L"catchsegv: error: no command line given\n\n");
         Usage();
         return EXIT_FAILURE;
     }
@@ -374,8 +379,8 @@ wmain(int argc, wchar_t **argv)
                         NULL, // lpEnvironment
                         NULL, // lpCurrentDirectory
                         &StartupInfo, &ProcessInformation)) {
-        fprintf(stderr, "catchsegv: error: failed to create the process (0x%08lx)\n",
-                GetLastError());
+        fwprintf(stderr, L"catchsegv: error: failed to create the process (0x%08lx)\n",
+                 GetLastError());
         exit(EXIT_FAILURE);
     }
 
@@ -383,8 +388,8 @@ wmain(int argc, wchar_t **argv)
 
     g_hTimerQueue = CreateTimerQueue();
     if (g_hTimerQueue == NULL) {
-        fprintf(stderr, "catchsegv: error: failed to create a timer queue (0x%08lx)\n",
-                GetLastError());
+        fwprintf(stderr, L"catchsegv: error: failed to create a timer queue (0x%08lx)\n",
+                 GetLastError());
         return EXIT_FAILURE;
     }
 
@@ -396,8 +401,8 @@ wmain(int argc, wchar_t **argv)
 
     if (!CreateTimerQueueTimer(&g_hTimer, g_hTimerQueue, (WAITORTIMERCALLBACK)TimeOutCallback,
                                (PVOID)(UINT_PTR)dwProcessId, g_Period, g_Period, 0)) {
-        fprintf(stderr, "catchsegv: error: failed to CreateTimerQueueTimer failed (0x%08lx)\n",
-                GetLastError());
+        fwprintf(stderr, L"catchsegv: error: failed to CreateTimerQueueTimer failed (0x%08lx)\n",
+                 GetLastError());
         return EXIT_FAILURE;
     }
 

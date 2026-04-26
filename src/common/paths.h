@@ -63,3 +63,36 @@ getDirName(char *szFilename)
         *pSeparator = '\0';
     }
 }
+
+
+static inline const wchar_t *
+getSeparatorW(const wchar_t *szFilename)
+{
+    const wchar_t *p = nullptr, *q = szFilename;
+    wchar_t c;
+    do {
+        c = *q++;
+        if (c == L'\\' || c == L'/' || c == L':') {
+            p = q;
+        }
+    } while (c);
+    return p;
+}
+
+
+static inline const wchar_t *
+getBaseNameW(const wchar_t *szFilename)
+{
+    const wchar_t *pSeparator = getSeparatorW(szFilename);
+    return pSeparator ? pSeparator : szFilename;
+}
+
+
+static inline void
+getDirNameW(wchar_t *szFilename)
+{
+    wchar_t *pSeparator = (wchar_t *)getSeparatorW(szFilename);
+    if (pSeparator) {
+        *pSeparator = L'\0';
+    }
+}

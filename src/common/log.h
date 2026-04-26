@@ -21,16 +21,13 @@
 #include <windows.h>
 
 
-typedef void (*DumpCallback)(const char *);
+typedef void (*DumpCallback)(const wchar_t *);
 
 EXTERN_C void
 setDumpCallback(DumpCallback cb);
 
 EXTERN_C int
-#ifdef __GNUC__
-    __attribute__((format(printf, 1, 2)))
-#endif
-    lprintf(const char *format, ...);
+lprintf(const wchar_t *format, ...);
 
 EXTERN_C void
 dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
@@ -39,7 +36,7 @@ EXTERN_C void
 dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext);
 
 EXTERN_C BOOL
-getModuleVersionInfo(LPCSTR szModule, WORD awVInfo[4]);
+getModuleVersionInfo(LPCWSTR szModule, WORD awVInfo[4]);
 
 EXTERN_C void
 dumpModules(HANDLE hProcess);

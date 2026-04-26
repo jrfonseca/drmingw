@@ -39,12 +39,12 @@
 #include <dwarfstack.h>
 
 static void
-find_symbol_cb(Dwarf_Addr addr,
-               const char *filename,
-               int lineno,
-               const char *funcname,
-               void *context,
-               int columnno)
+find_symbol_cbW(uint64_t addr,
+                const wchar_t *filename,
+                int lineno,
+                const char *funcname,
+                void *context,
+                int columnno)
 {
     switch (lineno) {
     case DWST_BASE_ADDR:
@@ -68,23 +68,23 @@ dwarf_find_symbol(Dwarf_Debug dbg,
                   void *cuArr,
                   int cuQty,
                   Dwarf_Addr image_base_vma,
-                  char *name,
+                  wchar_t *name,
                   Dwarf_Addr image_base,
                   Dwarf_Addr addr,
                   struct dwarf_symbol_info *info)
 {
-    dwstOfDwarfDebug(dbg, image_base_vma, name, image_base, &addr, 1, &find_symbol_cb, info, cuArr,
-                     cuQty);
+    dwstOfDwarfDebugW(dbg, image_base_vma, name, image_base, &addr, 1, &find_symbol_cbW, info,
+                      cuArr, cuQty);
     return !info->functionname.empty();
 }
 
 static void
-find_line_cb(Dwarf_Addr addr,
-             const char *filename,
-             int lineno,
-             const char *funcname,
-             void *context,
-             int columnno)
+find_line_cbW(uint64_t addr,
+              const wchar_t *filename,
+              int lineno,
+              const char *funcname,
+              void *context,
+              int columnno)
 {
     switch (lineno) {
     case DWST_BASE_ADDR:
@@ -97,7 +97,7 @@ find_line_cb(Dwarf_Addr addr,
 
     default:
         auto info = (struct dwarf_line_info *)context;
-        info->filename = filename;
+        info->filename = filename ? filename : L"";
         info->offset_addr = addr;
         info->line = lineno;
         return;
@@ -109,13 +109,13 @@ dwarf_find_line(Dwarf_Debug dbg,
                 void *cuArr,
                 int cuQty,
                 Dwarf_Addr image_base_vma,
-                char *name,
+                wchar_t *name,
                 Dwarf_Addr image_base,
                 Dwarf_Addr addr,
                 struct dwarf_line_info *info)
 {
-    dwstOfDwarfDebug(dbg, image_base_vma, name, image_base, &addr, 1, &find_line_cb, info, cuArr,
-                     cuQty);
+    dwstOfDwarfDebugW(dbg, image_base_vma, name, image_base, &addr, 1, &find_line_cbW, info,
+                      cuArr, cuQty);
 
     return !info->filename.empty();
 }

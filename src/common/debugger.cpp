@@ -118,7 +118,7 @@ symCallbackDeferedSymbol(const char *szVerb, ULONG64 CallbackData)
 {
     PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData =
         (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
-    lprintf("%s deferred symbol load of: %s (hFile = %p)\n", szVerb, pData->FileName, pData->hFile);
+    lprintf(L"%S deferred symbol load of: %S (hFile = %p)\n", szVerb, pData->FileName, pData->hFile);
     return FALSE;
 }
 
@@ -127,7 +127,7 @@ static BOOL CALLBACK
 symCallback(HANDLE hProcess, ULONG ActionCode, ULONG64 CallbackData, ULONG64 UserContext)
 {
     if (ActionCode == CBA_DEBUG_INFO) {
-        lprintf("%s", (LPCSTR)(UINT_PTR)CallbackData);
+        lprintf(L"%S", (LPCSTR)(UINT_PTR)CallbackData);
         return TRUE;
     }
 
@@ -135,7 +135,7 @@ symCallback(HANDLE hProcess, ULONG ActionCode, ULONG64 CallbackData, ULONG64 Use
         if (ActionCode == CBA_DEFERRED_SYMBOL_LOAD_PARTIAL) {
             PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData =
                 (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
-            lprintf("error: partial symbol load of %s\n", pData->FileName);
+            lprintf(L"error: partial symbol load of %S\n", pData->FileName);
             return FALSE;
         }
     } else {
@@ -160,11 +160,11 @@ symCallback(HANDLE hProcess, ULONG ActionCode, ULONG64 CallbackData, ULONG64 Use
 
 // https://msdn.microsoft.com/en-us/library/aa366789.aspx
 static BOOL
-GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
+GetFileNameFromHandle(HANDLE hFile, LPWSTR lpszFilePath, DWORD cchFilePath)
 {
     // FILE_NAME_NORMALIZED (the default) can fail on SMB files with
     // ERROR_ACCESS_DENIED.  Use FILE_NAME_OPENED instead.
-    DWORD dwRet = GetFinalPathNameByHandleA(hFile, lpszFilePath, cchFilePath, FILE_NAME_OPENED);
+    DWORD dwRet = GetFinalPathNameByHandleW(hFile, lpszFilePath, cchFilePath, FILE_NAME_OPENED);
     if (dwRet == 0) {
         OutputDebug("GetFinalPathNameByHandle failed with 0x%08lx\n", GetLastError());
         // fallback to MapViewOfFile
@@ -185,32 +185,32 @@ GetFileNameFromHandle(HANDLE hFile, LPSTR lpszFilePath, DWORD cchFilePath)
     if (hFileMap) {
         LPVOID pMem = MapViewOfFile(hFileMap, FILE_MAP_READ, 0, 0, 1);
         if (pMem) {
-            if (GetMappedFileNameA(GetCurrentProcess(), pMem, lpszFilePath, cchFilePath)) {
+            if (GetMappedFileNameW(GetCurrentProcess(), pMem, lpszFilePath, cchFilePath)) {
                 // Translate path with device name to drive letters.
-                char szDriveStrings[512] = "";
-                if (GetLogicalDriveStrings(_countof(szDriveStrings) - 1, szDriveStrings)) {
-                    char szDrive[3] = " :";
+                wchar_t szDriveStrings[512] = L"";
+                if (GetLogicalDriveStringsW(_countof(szDriveStrings) - 1, szDriveStrings)) {
+                    wchar_t szDrive[3] = L" :";
                     BOOL bFound = FALSE;
-                    char *p = szDriveStrings;
+                    wchar_t *p = szDriveStrings;
 
                     do {
                         // Copy the drive letter to the template string
                         *szDrive = *p;
 
                         // Look up each device name
-                        char szName[MAX_PATH];
-                        if (QueryDosDevice(szDrive, szName, _countof(szName))) {
-                            size_t uNameLen = strlen(szName);
+                        wchar_t szName[MAX_PATH];
+                        if (QueryDosDeviceW(szDrive, szName, _countof(szName))) {
+                            size_t uNameLen = wcslen(szName);
                             if (uNameLen < MAX_PATH) {
-                                bFound = _strnicmp(lpszFilePath, szName, uNameLen) == 0 &&
-                                         lpszFilePath[uNameLen] == '\\';
+                                bFound = _wcsnicmp(lpszFilePath, szName, uNameLen) == 0 &&
+                                         lpszFilePath[uNameLen] == L'\\';
                                 if (bFound) {
                                     // Replace device path with DOS path
-                                    std::string s("\\\\?\\");
+                                    std::wstring s(L"\\\\?\\");
                                     s.append(szDrive);
                                     s.append(&lpszFilePath[uNameLen]);
-                                    strncpy(lpszFilePath, s.c_str(), cchFilePath);
-                                    lpszFilePath[cchFilePath - 1] = '\0';
+                                    wcsncpy(lpszFilePath, s.c_str(), cchFilePath);
+                                    lpszFilePath[cchFilePath - 1] = L'\0';
                                 }
                             }
                         }
@@ -253,7 +253,7 @@ getModuleSize(HANDLE hProcess, LPVOID lpBaseOfDll)
 
 
 static void
-loadModule(HANDLE hProcess, HANDLE hFile, PCSTR pszImageName, LPVOID lpBaseOfDll)
+loadModule(HANDLE hProcess, HANDLE hFile, PCWSTR pszImageName, LPVOID lpBaseOfDll)
 {
     bool deferred = SymGetOptions() & SYMOPT_DEFERRED_LOADS;
 
@@ -264,8 +264,8 @@ loadModule(HANDLE hProcess, HANDLE hFile, PCSTR pszImageName, LPVOID lpBaseOfDll
         DllSize = getModuleSize(hProcess, lpBaseOfDll);
     }
 
-    if (!SymLoadModuleEx(hProcess, hFile, pszImageName, NULL, (UINT_PTR)lpBaseOfDll, DllSize, NULL,
-                         0)) {
+    if (!SymLoadModuleExW(hProcess, hFile, pszImageName, NULL, (UINT_PTR)lpBaseOfDll, DllSize,
+                          NULL, 0)) {
         OutputDebug("warning: SymLoadModule64 failed: 0x%08lx\n", GetLastError());
     }
 
@@ -374,10 +374,10 @@ writeDump(DWORD dwProcessId,
     }
 
     if (bSuccess) {
-        lprintf("info: minidump written to %ls\n", szFilePath);
+        lprintf(L"info: minidump written to %ls\n", szFilePath);
 
     } else {
-        lprintf("error: failed to write minidump to %ls\n", szFilePath);
+        lprintf(L"error: failed to write minidump to %ls\n", szFilePath);
     }
 }
 
@@ -465,7 +465,7 @@ DebugMainLoop(void)
             // status parameter (dwContinueStatus). This value
             // is used by the ContinueDebugEvent function.
             if (debugOptions.verbose_flag) {
-                lprintf("EXCEPTION PID=%lu TID=%lu ExceptionCode=0x%lx dwFirstChance=%lu\n",
+                lprintf(L"EXCEPTION PID=%lu TID=%lu ExceptionCode=0x%lx dwFirstChance=%lu\n",
                         DebugEvent.dwProcessId, DebugEvent.dwThreadId,
                         pExceptionRecord->ExceptionCode, DebugEvent.u.Exception.dwFirstChance);
             }
@@ -496,7 +496,7 @@ DebugMainLoop(void)
                                 dwRet = ResumeThread(hThread);
                             }
                             if (dwRet == dwFailed) {
-                                lprintf("error: failed to resume thread %lu\n", dwThreadId);
+                                lprintf(L"error: failed to resume thread %lu\n", dwThreadId);
                             }
                         }
 
@@ -593,7 +593,7 @@ DebugMainLoop(void)
 
         case CREATE_THREAD_DEBUG_EVENT:
             if (debugOptions.verbose_flag) {
-                lprintf("CREATE_THREAD PID=%lu TID=%lu\n", DebugEvent.dwProcessId,
+                lprintf(L"CREATE_THREAD PID=%lu TID=%lu\n", DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId);
             }
 
@@ -606,16 +606,17 @@ DebugMainLoop(void)
         case CREATE_PROCESS_DEBUG_EVENT: {
             HANDLE hFile = DebugEvent.u.CreateProcessInfo.hFile;
 
-            char szImageName[MAX_PATH];
-            char *lpImageName = NULL;
+            wchar_t szImageName[MAX_PATH];
+            wchar_t *lpImageName = nullptr;
             if (hFile && GetFileNameFromHandle(hFile, szImageName, _countof(szImageName))) {
                 lpImageName = szImageName;
             }
 
             if (debugOptions.verbose_flag) {
-                lprintf("CREATE_PROCESS PID=%lu TID=%lu lpBaseOfImage=%p %s\n",
+                lprintf(L"CREATE_PROCESS PID=%lu TID=%lu lpBaseOfImage=%p %ls\n",
                         DebugEvent.dwProcessId, DebugEvent.dwThreadId,
-                        DebugEvent.u.CreateProcessInfo.lpBaseOfImage, lpImageName);
+                        DebugEvent.u.CreateProcessInfo.lpBaseOfImage,
+                        lpImageName ? lpImageName : L"");
             }
 
             HANDLE hProcess = DebugEvent.u.CreateProcessInfo.hProcess;
@@ -641,7 +642,7 @@ DebugMainLoop(void)
 
         case EXIT_THREAD_DEBUG_EVENT:
             if (debugOptions.verbose_flag) {
-                lprintf("EXIT_THREAD PID=%lu TID=%lu dwExitCode=0x%lx\n", DebugEvent.dwProcessId,
+                lprintf(L"EXIT_THREAD PID=%lu TID=%lu dwExitCode=0x%lx\n", DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId, DebugEvent.u.ExitThread.dwExitCode);
             }
 
@@ -664,7 +665,7 @@ DebugMainLoop(void)
 
         case EXIT_PROCESS_DEBUG_EVENT: {
             if (debugOptions.verbose_flag) {
-                lprintf("EXIT_PROCESS PID=%lu TID=%lu dwExitCode=0x%lx\n", DebugEvent.dwProcessId,
+                lprintf(L"EXIT_PROCESS PID=%lu TID=%lu dwExitCode=0x%lx\n", DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId, DebugEvent.u.ExitProcess.dwExitCode);
             }
 
@@ -700,15 +701,16 @@ DebugMainLoop(void)
         case LOAD_DLL_DEBUG_EVENT: {
             HANDLE hFile = DebugEvent.u.LoadDll.hFile;
 
-            char szImageName[MAX_PATH];
-            char *lpImageName = NULL;
+            wchar_t szImageName[MAX_PATH];
+            wchar_t *lpImageName = nullptr;
             if (hFile && GetFileNameFromHandle(hFile, szImageName, _countof(szImageName))) {
                 lpImageName = szImageName;
             }
 
             if (debugOptions.verbose_flag) {
-                lprintf("LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %s\n", DebugEvent.dwProcessId,
-                        DebugEvent.dwThreadId, DebugEvent.u.LoadDll.lpBaseOfDll, lpImageName);
+                lprintf(L"LOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p %ls\n", DebugEvent.dwProcessId,
+                        DebugEvent.dwThreadId, DebugEvent.u.LoadDll.lpBaseOfDll,
+                        lpImageName ? lpImageName : L"");
             }
 
             pProcessInfo = &g_Processes[DebugEvent.dwProcessId];
@@ -721,7 +723,7 @@ DebugMainLoop(void)
 
         case UNLOAD_DLL_DEBUG_EVENT:
             if (debugOptions.verbose_flag) {
-                lprintf("UNLOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\n", DebugEvent.dwProcessId,
+                lprintf(L"UNLOAD_DLL PID=%lu TID=%lu lpBaseOfDll=%p\n", DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId, DebugEvent.u.UnloadDll.lpBaseOfDll);
             }
 
@@ -733,7 +735,7 @@ DebugMainLoop(void)
 
         case OUTPUT_DEBUG_STRING_EVENT: {
             if (debugOptions.verbose_flag) {
-                lprintf("OUTPUT_DEBUG_STRING PID=%lu TID=%lu\n", DebugEvent.dwProcessId,
+                lprintf(L"OUTPUT_DEBUG_STRING PID=%lu TID=%lu\n", DebugEvent.dwProcessId,
                         DebugEvent.dwThreadId);
             }
             if (debugOptions.no_debug_string) break;
@@ -747,7 +749,7 @@ DebugMainLoop(void)
                                   DebugEvent.u.DebugString.lpDebugStringData,
                                   DebugEvent.u.DebugString.nDebugStringLength);
 
-            lprintf("%s", lpDebugStringData);
+            lprintf(L"%S", lpDebugStringData);
 
             free(lpDebugStringData);
             break;
@@ -755,13 +757,13 @@ DebugMainLoop(void)
 
         case RIP_EVENT:
             if (debugOptions.verbose_flag) {
-                lprintf("RIP PID=%lu TID=%lu\n", DebugEvent.dwProcessId, DebugEvent.dwThreadId);
+                lprintf(L"RIP PID=%lu TID=%lu\n", DebugEvent.dwProcessId, DebugEvent.dwThreadId);
             }
             break;
 
         default:
             if (debugOptions.verbose_flag) {
-                lprintf("EVENT%lu PID=%lu TID=%lu\n", DebugEvent.dwDebugEventCode,
+                lprintf(L"EVENT%lu PID=%lu TID=%lu\n", DebugEvent.dwDebugEventCode,
                         DebugEvent.dwProcessId, DebugEvent.dwThreadId);
             }
             break;

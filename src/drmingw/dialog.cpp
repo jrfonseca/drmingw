@@ -52,9 +52,9 @@ AboutDlgProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
 
 void
-appendText(LPCSTR szText)
+appendText(LPCWSTR szText)
 {
-    char *szBuf = strdup(szText);
+    wchar_t *szBuf = wcsdup(szText);
     PostMessage(g_hWnd, WM_USER_APPEND_TEXT, (WPARAM)0, (LPARAM)szBuf);
 } // NOLINT(clang-analyzer-unix.Malloc): szBuf is freed in WndProc
 
@@ -67,8 +67,8 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
         // Newer rich edit controls are much faster
         // http://blogs.msdn.com/b/murrays/archive/2006/10/14/richedit-versions.aspx
         // https://msdn.microsoft.com/en-us/library/windows/desktop/hh298375.aspx
-        LoadLibraryA("riched20.dll");
-        CreateWindowA(RICHEDIT_CLASS, "",
+        LoadLibraryW(L"riched20.dll");
+        CreateWindowW(RICHEDIT_CLASSW, L"",
                       WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE | ES_READONLY,
                       CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, hwnd,
                       (HMENU)IDC_MESSAGE, g_hInstance, NULL);
@@ -118,10 +118,10 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
     case WM_USER_APPEND_TEXT: {
         // http://support.microsoft.com/kb/109550
         HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
-        int ndx = GetWindowTextLength(hEdit);
+        int ndx = GetWindowTextLengthW(hEdit);
         SetFocus(hEdit);
-        SendMessage(hEdit, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
-        SendMessage(hEdit, EM_REPLACESEL, (WPARAM)0, lParam);
+        SendMessageW(hEdit, EM_SETSEL, (WPARAM)ndx, (LPARAM)ndx);
+        SendMessageW(hEdit, EM_REPLACESEL, (WPARAM)0, lParam);
         free((void *)lParam);
         break;
     }
@@ -135,26 +135,26 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
         case CM_FILE_SAVEAS: {
-            OPENFILENAMEA ofn;
-            char szFileName[MAX_PATH];
+            OPENFILENAMEW ofn;
+            wchar_t szFileName[MAX_PATH];
 
             ZeroMemory(&ofn, sizeof(ofn));
             szFileName[0] = 0;
 
             ofn.lStructSize = sizeof(ofn);
             ofn.hwndOwner = hwnd;
-            ofn.lpstrFilter = "Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0\0";
+            ofn.lpstrFilter = L"Text Files (*.txt)\0*.txt\0All Files (*.*)\0*.*\0\0";
             ofn.lpstrFile = szFileName;
             ofn.nMaxFile = MAX_PATH;
-            ofn.lpstrDefExt = "txt";
+            ofn.lpstrDefExt = L"txt";
 
             ofn.Flags = OFN_EXPLORER | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
 
-            if (GetSaveFileNameA(&ofn)) {
+            if (GetSaveFileNameW(&ofn)) {
                 HANDLE hFile;
                 BOOL bSuccess = FALSE;
 
-                if ((hFile = CreateFileA(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+                if ((hFile = CreateFileW(szFileName, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
                                          FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE) {
                     HWND hEdit = GetDlgItem(hwnd, IDC_MESSAGE);
                     DWORD dwTextLength = GetWindowTextLength(hEdit);
@@ -175,7 +175,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                 }
 
                 if (!bSuccess)
-                    MessageBoxA(hwnd, "Save file failed.", "Error", MB_OK | MB_ICONEXCLAMATION);
+                    MessageBoxW(hwnd, L"Save file failed.", L"Error", MB_OK | MB_ICONEXCLAMATION);
             }
             break;
         }
@@ -203,11 +203,11 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 void
 createDialog(void)
 {
-    STARTUPINFOA startinfo;
-    WNDCLASSEXA WndClass;
+    STARTUPINFOW startinfo;
+    WNDCLASSEXW WndClass;
 
     g_hInstance = GetModuleHandle(NULL);
-    GetStartupInfoA(&startinfo);
+    GetStartupInfoW(&startinfo);
 
     WndClass.cbSize = sizeof WndClass;
     WndClass.style = 0;
@@ -218,18 +218,18 @@ createDialog(void)
     WndClass.hIcon = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
     WndClass.hCursor = LoadCursor(NULL, IDC_ARROW);
     WndClass.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    WndClass.lpszMenuName = MAKEINTRESOURCEA(IDM_MAINMENU);
-    WndClass.lpszClassName = "DrMingw";
+    WndClass.lpszMenuName = MAKEINTRESOURCEW(IDM_MAINMENU);
+    WndClass.lpszClassName = L"DrMingw";
     WndClass.hIconSm = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
 
-    if (!RegisterClassExA(&WndClass)) {
+    if (!RegisterClassExW(&WndClass)) {
         ErrorMessageBox("RegisterClassEx: %s", LastErrorMessage());
         exit(EXIT_FAILURE);
     }
 
-    g_hWnd = CreateWindowExA(WS_EX_CLIENTEDGE, WndClass.lpszClassName, "Dr. Mingw",
-                             WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-                             CW_USEDEFAULT, NULL, NULL, g_hInstance, NULL);
+    g_hWnd = CreateWindowExW(WS_EX_CLIENTEDGE, WndClass.lpszClassName, L"Dr. Mingw",
+                              WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+                              CW_USEDEFAULT, NULL, NULL, g_hInstance, NULL);
 
     if (g_hWnd == NULL) {
         ErrorMessageBox("CreateWindowEx: %s", LastErrorMessage());

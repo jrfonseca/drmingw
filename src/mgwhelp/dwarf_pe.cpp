@@ -155,7 +155,7 @@ static const Dwarf_Obj_Access_Methods_a pe_methods = {
 
 int
 mgwhelp_dwarf_pe_init(HANDLE hFile,
-                      const char *image,
+                      const wchar_t *image,
                       Dwarf_Handler errhand,
                       Dwarf_Ptr errarg,
                       Dwarf_Debug *ret_dbg,
@@ -201,7 +201,7 @@ mgwhelp_dwarf_pe_init(HANDLE hFile,
     if (pe_obj->pNtHeaders->FileHeader.PointerToSymbolTable +
             pe_obj->pNtHeaders->FileHeader.NumberOfSymbols * sizeof pe_obj->pSymbolTable[0] >
         pe_obj->nFileSize) {
-        OutputDebug("MGWHELP: %s - symbol table extends beyond image size\n", image);
+        OutputDebug("MGWHELP: %ls - symbol table extends beyond image size\n", image);
         goto no_intfc;
     }
 
@@ -224,31 +224,39 @@ mgwhelp_dwarf_pe_init(HANDLE hFile,
             if (DW_DLV_OK != pe_load_section(pe_obj, section_index, &data, &err)) {
                 continue;
             }
+            // debuglink is an ASCII filename from the .gnu_debuglink DWARF section
             const char *debuglink = (const char *)data;
+            int wlen = MultiByteToWideChar(CP_UTF8, 0, debuglink, -1, nullptr, 0);
+            if (wlen <= 0) {
+                continue;
+            }
+            std::vector<wchar_t> wbuf(wlen);
+            MultiByteToWideChar(CP_UTF8, 0, debuglink, -1, wbuf.data(), wlen);
+            std::wstring wDebuglink(wbuf.data());
 
-            std::vector<std::string> debugSearchDirs;
+            std::vector<std::wstring> debugSearchDirs;
 
             // Search on the image directory
-            const char *pImageSep = getSeparator(image);
-            std::string imageDir;
+            const wchar_t *pImageSep = getSeparatorW(image);
+            std::wstring imageDir;
             if (pImageSep) {
                 imageDir.append(image, pImageSep);
             }
             debugSearchDirs.emplace_back(imageDir);
 
             // Then search on a .debug subdirectory
-            imageDir.append(".debug\\");
+            imageDir.append(L".debug\\");
             debugSearchDirs.emplace_back(imageDir);
 
             HANDLE hFile = INVALID_HANDLE_VALUE;
             for (auto const &debugSearchDir : debugSearchDirs) {
-                std::string debugImage(debugSearchDir);
-                debugImage.append(debuglink);
-                const char *debugImageStr = debugImage.c_str();
-                hFile = CreateFileA(debugImageStr, GENERIC_READ, FILE_SHARE_READ, NULL,
+                std::wstring debugImage(debugSearchDir);
+                debugImage.append(wDebuglink);
+                const wchar_t *debugImageStr = debugImage.c_str();
+                hFile = CreateFileW(debugImageStr, GENERIC_READ, FILE_SHARE_READ, NULL,
                                     OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
                 if (hFile == INVALID_HANDLE_VALUE) {
-                    OutputDebug("MGWHELP: %s - not found\n", debugImageStr);
+                    OutputDebug("MGWHELP: %ls - not found\n", debugImageStr);
                 } else {
                     res = mgwhelp_dwarf_pe_init(hFile, debugImageStr, errhand, errarg, ret_dbg,
                                                 error);
@@ -283,7 +291,7 @@ mgwhelp_dwarf_pe_init(HANDLE hFile,
         PIMAGE_OPTIONAL_HEADER pOptionalHeader;
         pOptionalHeader = &pe_obj->pNtHeaders->OptionalHeader;
         if (pOptionalHeader->MajorLinkerVersion == 2 && pOptionalHeader->MinorLinkerVersion >= 21) {
-            OutputDebug("MGWHELP: %s - no dwarf symbols\n", image);
+            OutputDebug("MGWHELP: %ls - no dwarf symbols\n", image);
         }
 
         free(intfc);

@@ -39,7 +39,7 @@ struct dwarf_symbol_info {
 };
 
 struct dwarf_line_info {
-    std::string filename;
+    std::wstring filename;
     unsigned int line = 0;
     unsigned int offset_addr;
 };
@@ -56,7 +56,7 @@ dwarf_find_symbol(Dwarf_Debug dbg,
                   void *cuArr,
                   int cuQty,
                   Dwarf_Addr image_base_vma,
-                  char *name,
+                  wchar_t *name,
                   Dwarf_Addr image_base,
                   Dwarf_Addr addr,
                   struct dwarf_symbol_info *info);
@@ -66,7 +66,7 @@ dwarf_find_line(Dwarf_Debug dbg,
                 void *cuArr,
                 int cuQty,
                 Dwarf_Addr image_base_vma,
-                char *name,
+                wchar_t *name,
                 Dwarf_Addr image_base,
                 Dwarf_Addr addr,
                 struct dwarf_line_info *info);

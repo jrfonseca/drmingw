@@ -97,6 +97,7 @@ add_compile_definitions (
     WINVER=${WINNT}
     # https://msdn.microsoft.com/en-gb/library/windows/desktop/ms683198.aspx
     PSAPI_VERSION=2
+    __USE_MINGW_ANSI_STDIO=0
 
     # version
     PACKAGE_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}

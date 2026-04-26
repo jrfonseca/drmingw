@@ -37,6 +37,6 @@ GetSymFromAddr(HANDLE hProcess,
 EXTERN_C BOOL
 GetLineFromAddr(HANDLE hProcess,
                 DWORD64 dwAddress,
-                LPSTR lpFileName,
+                LPWSTR lpFileName,
                 DWORD nSize,
                 LPDWORD lpLineNumber);

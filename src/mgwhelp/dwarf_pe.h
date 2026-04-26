@@ -32,7 +32,7 @@ extern "C" {
 
 int
 mgwhelp_dwarf_pe_init(HANDLE hFile,
-                      const char *image,
+                      const wchar_t *image,
                       Dwarf_Handler errhand,
                       Dwarf_Ptr errarg,
                       Dwarf_Debug *ret_dbg,

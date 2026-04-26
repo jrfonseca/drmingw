@@ -26,7 +26,7 @@
 
 #include <process.h>
 
-#include "getopt.h"
+#include "getoptW.h"
 #include "debugger.h"
 #include "symbols.h"
 #include "dialog.h"
@@ -44,63 +44,63 @@ static int uninstall_given = 0;  /* Whether uninstall was given.  */
 static void
 help(void)
 {
-    MessageBoxA(NULL,
-                VER_PRODUCTNAME_STR " version " VER_PRODUCTVERSION_STR "\r\n"
-                VER_LEGALCOPYRIGHT_STR "\r\n"
-                "\r\n"
-                "Usage: drmingw [OPTIONS]\r\n"
-                "\r\n"
-                "Options:\r\n"
-                "  -h, --help\tPrint help and exit\r\n"
-                "  -V, --version\tPrint version and exit\r\n"
-                "  -i, --install\tInstall as the default JIT debugger\r\n"
-                "  -u, --uninstall\tUninstall\r\n"
-                "  -pLONG, --process-id=LONG\r\n"
-                "\t\tAttach to the process with the given identifier\r\n"
-                "  -eLONG, --event=LONG\r\n"
-                "\t\tSignal an event after process is attached\r\n"
-                "  -b, --breakpoint\tTreat debug breakpoints as exceptions\r\n"
-                "  -v, --verbose\tVerbose output\r\n"
-                "  -d, --debug\tDebug output\r\n",
-                PACKAGE, MB_OK | MB_ICONINFORMATION);
+    MessageBoxW(NULL,
+                L"" VER_PRODUCTNAME_STR L" version " VER_PRODUCTVERSION_STR L"\r\n"
+                L"" VER_LEGALCOPYRIGHT_STR L"\r\n"
+                L"\r\n"
+                L"Usage: drmingw [OPTIONS]\r\n"
+                L"\r\n"
+                L"Options:\r\n"
+                L"  -h, --help\tPrint help and exit\r\n"
+                L"  -V, --version\tPrint version and exit\r\n"
+                L"  -i, --install\tInstall as the default JIT debugger\r\n"
+                L"  -u, --uninstall\tUninstall\r\n"
+                L"  -pLONG, --process-id=LONG\r\n"
+                L"\t\tAttach to the process with the given identifier\r\n"
+                L"  -eLONG, --event=LONG\r\n"
+                L"\t\tSignal an event after process is attached\r\n"
+                L"  -b, --breakpoint\tTreat debug breakpoints as exceptions\r\n"
+                L"  -v, --verbose\tVerbose output\r\n"
+                L"  -d, --debug\tDebug output\r\n",
+                L"" PACKAGE, MB_OK | MB_ICONINFORMATION);
 }
 
 
 static LSTATUS
-regSetStr(HKEY hKey, LPCSTR lpValueName, LPCSTR szStr)
+regSetStr(HKEY hKey, LPCWSTR lpValueName, LPCWSTR szStr)
 {
-    return RegSetValueExA(hKey, lpValueName, 0, REG_SZ, reinterpret_cast<LPCBYTE>(szStr),
-                          strlen(szStr) + 1);
+    return RegSetValueExW(hKey, lpValueName, 0, REG_SZ, reinterpret_cast<LPCBYTE>(szStr),
+                          (wcslen(szStr) + 1) * sizeof(wchar_t));
 }
 
 
 static DWORD
 install(REGSAM samDesired)
 {
-    char szFile[MAX_PATH];
-    if (!GetModuleFileNameA(NULL, szFile, MAX_PATH)) {
+    wchar_t szFile[MAX_PATH];
+    if (!GetModuleFileNameW(NULL, szFile, MAX_PATH)) {
         return GetLastError();
     }
 
-    std::string debuggerCommand;
-    debuggerCommand += '"';
+    std::wstring debuggerCommand;
+    debuggerCommand += L'"';
     debuggerCommand += szFile;
-    debuggerCommand += "\" -p %ld -e %ld";
+    debuggerCommand += L"\" -p %ld -e %ld";
     if (debugOptions.verbose_flag)
-        debuggerCommand += " -v";
+        debuggerCommand += L" -v";
     if (debugOptions.breakpoint_flag)
-        debuggerCommand += " -b";
+        debuggerCommand += L" -b";
     if (debugOptions.debug_flag)
-        debuggerCommand += " -d";
+        debuggerCommand += L" -d";
 
     HKEY hKey;
     long lRet;
     DWORD dwDisposition;
 
     lRet =
-        RegCreateKeyExA(HKEY_LOCAL_MACHINE,
-                        "Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug", // The AeDebug
-                                                                                    // registry key.
+        RegCreateKeyExW(HKEY_LOCAL_MACHINE,
+                        L"Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug", // The AeDebug
+                                                                                     // registry key.
                         0, NULL, REG_OPTION_NON_VOLATILE, KEY_WRITE | samDesired, NULL, &hKey,
                         &dwDisposition);
     if (lRet != ERROR_SUCCESS) {
@@ -108,10 +108,10 @@ install(REGSAM samDesired)
     }
 
     // Write the Debugger value.
-    lRet = regSetStr(hKey, "Debugger", debuggerCommand.c_str());
+    lRet = regSetStr(hKey, L"Debugger", debuggerCommand.c_str());
     if (lRet == ERROR_SUCCESS) {
         // Write the Auto value.
-        lRet = regSetStr(hKey, "Auto", "1");
+        lRet = regSetStr(hKey, L"Auto", L"1");
     }
 
     // Close the key no matter what happened.
@@ -128,16 +128,16 @@ uninstall(REGSAM samDesired)
     long lRet;
 
     lRet =
-        RegOpenKeyExA(HKEY_LOCAL_MACHINE,
-                      "Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug", // The AeDebug
-                                                                                  // registry key.
+        RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+                      L"Software\\Microsoft\\Windows NT\\CurrentVersion\\AeDebug", // The AeDebug
+                                                                                   // registry key.
                       0, KEY_ALL_ACCESS | samDesired, &hKey);
     if (lRet != ERROR_SUCCESS) {
         return lRet;
     }
 
     // Write the Debugger value.
-    lRet = regSetStr(hKey, "Debugger", "");
+    lRet = regSetStr(hKey, L"Debugger", L"");
 
     // Leave Auto value as "1".  It is the default
     // (https://docs.microsoft.com/en-us/windows/desktop/Debug/configuring-automatic-debugging)
@@ -152,22 +152,22 @@ uninstall(REGSAM samDesired)
 
 
 static DWORD
-getProcessIdByName(const char *szProcessName)
+getProcessIdByName(const wchar_t *szProcessName)
 {
     DWORD dwProcessId = 0;
 
     HANDLE hProcessSnap;
     hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hProcessSnap != INVALID_HANDLE_VALUE) {
-        PROCESSENTRY32 pe32;
+        PROCESSENTRY32W pe32;
         pe32.dwSize = sizeof pe32;
-        if (Process32First(hProcessSnap, &pe32)) {
+        if (Process32FirstW(hProcessSnap, &pe32)) {
             do {
-                if (stricmp(szProcessName, pe32.szExeFile) == 0) {
+                if (_wcsicmp(szProcessName, pe32.szExeFile) == 0) {
                     dwProcessId = pe32.th32ProcessID;
                     break;
                 }
-            } while (Process32Next(hProcessSnap, &pe32));
+            } while (Process32NextW(hProcessSnap, &pe32));
         }
         CloseHandle(hProcessSnap);
     }
@@ -196,7 +196,7 @@ debugThread(void *arg)
 
 
 int
-main(int argc, char **argv)
+wmain(int argc, wchar_t **argv)
 {
     DWORD dwProcessId = 0;
     int c; /* Character of the parsed option.  */
@@ -205,19 +205,19 @@ main(int argc, char **argv)
 
     while (1) {
         int option_index = 0;
-        static const struct option long_options[] = {{"help", 0, NULL, 'h'},
-                                                     {"version", 0, NULL, 'V'},
-                                                     {"install", 0, NULL, 'i'},
-                                                     {"uninstall", 0, NULL, 'u'},
-                                                     {"process-id", 1, NULL, 'p'},
-                                                     {"event", 1, NULL, 'e'},
-                                                     {"tid", 1, NULL, 't'},
-                                                     {"breakpoint", 0, NULL, 'b'},
-                                                     {"verbose", 0, NULL, 'v'},
-                                                     {"debug", 0, NULL, 'd'},
+        static const struct option long_options[] = {{L"help", 0, NULL, 'h'},
+                                                     {L"version", 0, NULL, 'V'},
+                                                     {L"install", 0, NULL, 'i'},
+                                                     {L"uninstall", 0, NULL, 'u'},
+                                                     {L"process-id", 1, NULL, 'p'},
+                                                     {L"event", 1, NULL, 'e'},
+                                                     {L"tid", 1, NULL, 't'},
+                                                     {L"breakpoint", 0, NULL, 'b'},
+                                                     {L"verbose", 0, NULL, 'v'},
+                                                     {L"debug", 0, NULL, 'd'},
                                                      {NULL, 0, NULL, 0}};
 
-        c = getopt_long_only(argc, argv, "?hViup:e:t:vbd", long_options, &option_index);
+        c = getoptW_long_only(argc, argv, L"?hViup:e:t:vbd", long_options, &option_index);
 
         if (c == -1)
             break; /* Exit from `while (1)' loop.  */
@@ -226,9 +226,9 @@ main(int argc, char **argv)
         case '?':
             if (optopt != '?') {
                 /* Invalid option.  */
-                char szErrMsg[512];
-                sprintf(szErrMsg, "Invalid option '%c'", optopt);
-                MessageBoxA(NULL, szErrMsg, PACKAGE, MB_OK | MB_ICONSTOP);
+                wchar_t szErrMsg[512];
+                swprintf(szErrMsg, 512, L"Invalid option '%c'", optopt);
+                MessageBoxW(NULL, szErrMsg, L"" PACKAGE, MB_OK | MB_ICONSTOP);
                 return 1;
             }
             /* fall-through */
@@ -237,13 +237,14 @@ main(int argc, char **argv)
             return 0;
 
         case 'V': /* Print version and exit.  */
-            MessageBoxA(NULL, PACKAGE " " VERSION, PACKAGE, MB_OK | MB_ICONINFORMATION);
+            MessageBoxW(NULL, L"" PACKAGE L" " VERSION, L"" PACKAGE, MB_OK | MB_ICONINFORMATION);
             return 0;
 
         case 'i': /* Install as the default JIT debugger.  */
             if (uninstall_given) {
-                MessageBoxA(NULL, "conficting options `--uninstall' (`-u') and `--install' (`-i')",
-                            PACKAGE, MB_OK | MB_ICONSTOP);
+                MessageBoxW(NULL,
+                            L"conficting options `--uninstall' (`-u') and `--install' (`-i')",
+                            L"" PACKAGE, MB_OK | MB_ICONSTOP);
                 return 0;
             }
             install_given = 1;
@@ -251,8 +252,9 @@ main(int argc, char **argv)
 
         case 'u': /* Uninstall.  */
             if (install_given) {
-                MessageBoxA(NULL, "conficting options `--install' (`-i') and `--uninstall' (`-u')",
-                            PACKAGE, MB_OK | MB_ICONSTOP);
+                MessageBoxW(NULL,
+                            L"conficting options `--install' (`-i') and `--uninstall' (`-u')",
+                            L"" PACKAGE, MB_OK | MB_ICONSTOP);
                 return 0;
             }
             uninstall_given = 1;
@@ -260,35 +262,35 @@ main(int argc, char **argv)
 
         case 'p': /* Attach to the process with the given identifier.  */
             if (process_id_given) {
-                MessageBoxA(NULL, "`--process-id' (`-p') option redeclared", PACKAGE,
+                MessageBoxW(NULL, L"`--process-id' (`-p') option redeclared", L"" PACKAGE,
                             MB_OK | MB_ICONSTOP);
                 return 1;
             }
             process_id_given = 1;
-            if (optarg[0] >= '0' && optarg[0] <= '9') {
-                dwProcessId = strtoul(optarg, NULL, 0);
+            if (optarg[0] >= L'0' && optarg[0] <= L'9') {
+                dwProcessId = wcstoul(optarg, NULL, 0);
             } else {
                 debugOptions.breakpoint_flag = true;
                 dwProcessId = getProcessIdByName(optarg);
             }
             if (!dwProcessId) {
-                MessageBoxA(NULL, "Invalid process", PACKAGE, MB_OK | MB_ICONSTOP);
+                MessageBoxW(NULL, L"Invalid process", L"" PACKAGE, MB_OK | MB_ICONSTOP);
                 return 1;
             }
             break;
 
         case 'e': /* Signal an event after process is attached.  */
             if (debugOptions.hEvent) {
-                MessageBoxA(NULL, "`--event' (`-e') option redeclared", PACKAGE,
+                MessageBoxW(NULL, L"`--event' (`-e') option redeclared", L"" PACKAGE,
                             MB_OK | MB_ICONSTOP);
                 return 1;
             }
-            debugOptions.hEvent = (HANDLE)(INT_PTR)atol(optarg);
+            debugOptions.hEvent = (HANDLE)(INT_PTR)wcstol(optarg, NULL, 0);
             break;
 
         case 't': {
             /* Thread id.  Used when debugging WinRT apps. */
-            debugOptions.dwThreadId = strtoul(optarg, NULL, 0);
+            debugOptions.dwThreadId = wcstoul(optarg, NULL, 0);
             break;
         }
 
@@ -306,9 +308,9 @@ main(int argc, char **argv)
 
         default: /* bug: option not considered.  */
         {
-            char szErrMsg[512];
-            sprintf(szErrMsg, "Unexpected option '-%c'", c);
-            MessageBoxA(NULL, szErrMsg, PACKAGE, MB_OK | MB_ICONSTOP);
+            wchar_t szErrMsg[512];
+            swprintf(szErrMsg, 512, L"Unexpected option '-%c'", c);
+            MessageBoxW(NULL, szErrMsg, L"" PACKAGE, MB_OK | MB_ICONSTOP);
             return 1;
         }
         }
@@ -322,17 +324,17 @@ main(int argc, char **argv)
         }
 #endif
         if (dwRet != ERROR_SUCCESS) {
-            MessageBoxA(NULL,
+            MessageBoxW(NULL,
                         dwRet == ERROR_ACCESS_DENIED
-                            ? "You must have administrator privileges to install Dr. Mingw as the "
-                              "default application debugger"
-                            : "Unexpected error when trying to install Dr. Mingw as the default "
-                              "application debugger",
-                        "DrMingw", MB_OK | MB_ICONERROR);
+                            ? L"You must have administrator privileges to install Dr. Mingw as the "
+                              L"default application debugger"
+                            : L"Unexpected error when trying to install Dr. Mingw as the default "
+                              L"application debugger",
+                        L"DrMingw", MB_OK | MB_ICONERROR);
             return 1;
         }
-        MessageBoxA(NULL, "Dr. Mingw has been installed as the default application debugger",
-                    "DrMingw", MB_OK | MB_ICONINFORMATION);
+        MessageBoxW(NULL, L"Dr. Mingw has been installed as the default application debugger",
+                    L"DrMingw", MB_OK | MB_ICONINFORMATION);
         return 0;
     }
 
@@ -344,16 +346,16 @@ main(int argc, char **argv)
         }
 #endif
         if (dwRet != ERROR_SUCCESS) {
-            MessageBoxA(NULL,
+            MessageBoxW(NULL,
                         dwRet == ERROR_ACCESS_DENIED
-                            ? "You must have administrator privileges to uninstall Dr. Mingw as "
-                              "the default application debugger"
-                            : "Unexpected error when trying to uninstall Dr. Mingw as the default "
-                              "application debugger",
-                        "DrMingw", MB_OK | MB_ICONERROR);
+                            ? L"You must have administrator privileges to uninstall Dr. Mingw as "
+                              L"the default application debugger"
+                            : L"Unexpected error when trying to uninstall Dr. Mingw as the default "
+                              L"application debugger",
+                        L"DrMingw", MB_OK | MB_ICONERROR);
             return 1;
         }
-        MessageBoxA(NULL, "Dr. Mingw has been uninstalled", "DrMingw", MB_OK | MB_ICONINFORMATION);
+        MessageBoxW(NULL, L"Dr. Mingw has been uninstalled", L"DrMingw", MB_OK | MB_ICONINFORMATION);
         return 0;
     }
 
@@ -361,10 +363,10 @@ main(int argc, char **argv)
         SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
 
         if (!ObtainSeDebugPrivilege())
-            MessageBoxA(NULL,
-                        "An error occurred while obtaining debug privileges.\nDrMingw will not "
-                        "debug system processes.",
-                        "DrMingw", MB_OK | MB_ICONERROR);
+            MessageBoxW(NULL,
+                        L"An error occurred while obtaining debug privileges.\nDrMingw will not "
+                        L"debug system processes.",
+                        L"DrMingw", MB_OK | MB_ICONERROR);
 
         createDialog();
 
