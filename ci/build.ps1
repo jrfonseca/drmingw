@@ -48,9 +48,10 @@ if (!(Test-Path $MINGW_ARCHIVE -PathType Leaf)) {
         exit 1
     }
 }
+New-Item -ItemType Directory -Force -Path $buildRoot | Out-Null
+$buildRoot = Convert-Path $buildRoot
 New-Item -ItemType Directory -Force -Path "$buildRoot\toolchain" | Out-Null
 $toolchain = "$buildRoot\toolchain\$target"
-$toolchain = [System.IO.Path]::GetFullPath($toolchain)
 if (!(Test-Path $toolchain -PathType Container)) {
     Write-Host "Extracting $MINGW_ARCHIVE to $toolchain ..."
     Exec { 7z x -y "-o$buildRoot\toolchain" $MINGW_ARCHIVE | Out-Null }
@@ -75,7 +76,8 @@ if (!(Test-Path $DBGHELP_DIR -PathType Container)) {
 
 $NINJA_ARCHIVE = 'downloads\ninja-win.zip'
 $NINJA_DIR = 'downloads\ninja'
-$NINJA_DIR = [System.IO.Path]::GetFullPath($NINJA_DIR)
+New-Item -ItemType Directory -Force -Path "$NINJA_DIR" | Out-Null
+$NINJA_DIR = Convert-Path $NINJA_DIR
 if (!(Test-Path "$NINJA_DIR\ninja.exe" -PathType Leaf)) {
     if (!(Test-Path $NINJA_ARCHIVE -PathType Leaf)) {
         Invoke-WebRequest -Uri $NINJA_URL -OutFile $NINJA_ARCHIVE -UserAgent NativeHost
