@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-native:
-    runs-on: windows-2022
+    runs-on: windows-2025
     strategy:
       matrix:
         target: [mingw64, mingw32]
