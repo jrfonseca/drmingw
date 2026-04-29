@@ -138,11 +138,19 @@ Exec { cmake --build $buildDir --use-stderr --target test }
 Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\$target" -G "Ninja" "-DCMAKE_BUILD_TYPE=Debug" }
 Exec { cmake --build "$buildRoot\apps\$target" }
 # MSVC 32-bits
-Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\msvc32" -G "Visual Studio 17 2022" -A Win32 }
+# https://github.com/microsoft/vswhere/wiki/Find-VC#powershell
+$product = & "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -format json | ConvertFrom-Json | Select-Object -First 1
+$productVersion = [System.Version]$product.installationVersion
+if ($product.DisplayName -notmatch '^.* (?<year>\d\d\d\d)$') {
+	throw
+}
+$generator = "Visual Studio $($productVersion.Major) $($Matches.year)"
+Write-Host "Using $generator"
+Exec { cmake "-S" tests\apps "-B" "$buildRoot\apps\msvc32" -G "$generator" -A Win32 }
 Exec { cmake --build "$buildRoot\apps\msvc32" --config Debug "--" /verbosity:minimal /maxcpucount }
 if ($target -eq "mingw64") {
     # MSVC 64-bits
-    Exec { cmake -Stests\apps "-B$buildRoot\apps\msvc64" -G "Visual Studio 17 2022" -A x64 }
+    Exec { cmake -Stests\apps "-B$buildRoot\apps\msvc64" -G "$generator" -A x64 }
     Exec { cmake --build "$buildRoot\apps\msvc64" --config Debug "--" /verbosity:minimal /maxcpucount }
 
     Exec { python ci\spawndesk.py python tests\apps\test.py $buildDir\bin\catchsegv.exe "$buildRoot\apps\$target" "$buildRoot\apps\msvc32\Debug" "$buildRoot\apps\msvc64\Debug" }
