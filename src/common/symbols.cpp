@@ -68,25 +68,25 @@ InitializeSym(HANDLE hProcess, BOOL fInvadeProcess)
     // Provide default symbol search path
     // https://msdn.microsoft.com/en-us/library/windows/desktop/ms680689.aspx
     // http://msdn.microsoft.com/en-gb/library/windows/hardware/ff558829.aspx
-    std::string sSymSearchPathBuf;
-    const char *szSymSearchPath = nullptr;
-    if (getenv("_NT_SYMBOL_PATH") == nullptr && getenv("_NT_ALT_SYMBOL_PATH") == nullptr) {
-        char szLocalAppData[MAX_PATH];
-        HRESULT hr = SHGetFolderPathA(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, szLocalAppData);
+    std::wstring sSymSearchPathBuf;
+    const wchar_t *szSymSearchPath = nullptr;
+    if (_wgetenv(L"_NT_SYMBOL_PATH") == nullptr && _wgetenv(L"_NT_ALT_SYMBOL_PATH") == nullptr) {
+        wchar_t szLocalAppData[MAX_PATH];
+        HRESULT hr = SHGetFolderPathW(nullptr, CSIDL_LOCAL_APPDATA, nullptr, 0, szLocalAppData);
         assert(SUCCEEDED(hr));
         if (SUCCEEDED(hr)) {
             // Cache symbols in %APPDATA%\drmingw
-            sSymSearchPathBuf += "srv*";
+            sSymSearchPathBuf += L"srv*";
             sSymSearchPathBuf += szLocalAppData;
-            sSymSearchPathBuf += "\\drmingw*http://msdl.microsoft.com/download/symbols";
+            sSymSearchPathBuf += L"\\drmingw*http://msdl.microsoft.com/download/symbols";
             szSymSearchPath = sSymSearchPathBuf.c_str();
         } else {
             // No cache
-            szSymSearchPath = "srv*http://msdl.microsoft.com/download/symbols";
+            szSymSearchPath = L"srv*http://msdl.microsoft.com/download/symbols";
         }
     }
 
-    return SymInitialize(hProcess, szSymSearchPath, fInvadeProcess);
+    return SymInitializeW(hProcess, szSymSearchPath, fInvadeProcess);
 }
 
 
