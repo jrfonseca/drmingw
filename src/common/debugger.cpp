@@ -35,6 +35,21 @@
 #include "wine.h"
 
 
+typedef struct _IMAGEHLP_DEFERRED_SYMBOL_LOADW64 {
+    DWORD   SizeOfStruct;
+    DWORD64 BaseOfImage;
+    DWORD   CheckSum;
+    DWORD   TimeDateStamp;
+    WCHAR   FileName[MAX_PATH + 1];
+    BOOLEAN Reparse;
+    HANDLE  hFile;
+    DWORD   Flags;
+} IMAGEHLP_DEFERRED_SYMBOL_LOADW64, *PIMAGEHLP_DEFERRED_SYMBOL_LOADW64;
+
+
+EXTERN_C BOOL IMAGEAPI SymRegisterCallbackW64(HANDLE, PSYMBOL_REGISTERED_CALLBACK64, ULONG64);
+
+
 DebugOptions debugOptions;
 
 
@@ -114,11 +129,11 @@ ObtainSeDebugPrivilege(void)
 
 
 static BOOL
-symCallbackDeferedSymbol(const char *szVerb, ULONG64 CallbackData)
+symCallbackDeferedSymbol(const wchar_t *szVerb, ULONG64 CallbackData)
 {
-    PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData =
-        (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
-    lprintf(L"%S deferred symbol load of: %S (hFile = %p)\n", szVerb, pData->FileName, pData->hFile);
+    PIMAGEHLP_DEFERRED_SYMBOL_LOADW64 pData =
+        (PIMAGEHLP_DEFERRED_SYMBOL_LOADW64)(UINT_PTR)CallbackData;
+    lprintf(L"%s deferred symbol load of: %s (hFile = %p)\n", szVerb, pData->FileName, pData->hFile);
     return FALSE;
 }
 
@@ -133,24 +148,24 @@ symCallback(HANDLE hProcess, ULONG ActionCode, ULONG64 CallbackData, ULONG64 Use
 
     if (1) {
         if (ActionCode == CBA_DEFERRED_SYMBOL_LOAD_PARTIAL) {
-            PIMAGEHLP_DEFERRED_SYMBOL_LOAD64 pData =
-                (PIMAGEHLP_DEFERRED_SYMBOL_LOAD64)(UINT_PTR)CallbackData;
-            lprintf(L"error: partial symbol load of %S\n", pData->FileName);
+            PIMAGEHLP_DEFERRED_SYMBOL_LOADW64 pData =
+                (PIMAGEHLP_DEFERRED_SYMBOL_LOADW64)(UINT_PTR)CallbackData;
+            lprintf(L"error: partial symbol load of %s\n", pData->FileName);
             return FALSE;
         }
     } else {
         // Debug partial symbols
         switch (ActionCode) {
         case CBA_DEFERRED_SYMBOL_LOAD_START:
-            return symCallbackDeferedSymbol("Starting", CallbackData);
+            return symCallbackDeferedSymbol(L"Starting", CallbackData);
         case CBA_DEFERRED_SYMBOL_LOAD_COMPLETE:
-            return symCallbackDeferedSymbol("Completed", CallbackData);
+            return symCallbackDeferedSymbol(L"Completed", CallbackData);
         case CBA_DEFERRED_SYMBOL_LOAD_FAILURE:
-            return symCallbackDeferedSymbol("Failed", CallbackData);
+            return symCallbackDeferedSymbol(L"Failed", CallbackData);
         case CBA_DEFERRED_SYMBOL_LOAD_CANCEL:
             return FALSE;
         case CBA_DEFERRED_SYMBOL_LOAD_PARTIAL:
-            return symCallbackDeferedSymbol("Partial", CallbackData);
+            return symCallbackDeferedSymbol(L"Partial", CallbackData);
         }
     }
 
@@ -633,7 +648,7 @@ DebugMainLoop(void)
                 exit(EXIT_FAILURE);
             }
 
-            SymRegisterCallback64(hProcess, &symCallback, 0);
+            SymRegisterCallbackW64(hProcess, &symCallback, 0);
 
             loadModule(hProcess, hFile, lpImageName, DebugEvent.u.CreateProcessInfo.lpBaseOfImage);
 
