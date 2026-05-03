@@ -97,6 +97,12 @@ else:
 
 
 def test(args):
+    if sys.platform == 'win32':
+        if not sys.stdout.isatty():
+            sys.stdout.reconfigure(encoding='utf-8')
+        if not sys.stderr.isatty():
+            sys.stderr.reconfigure(encoding='utf-8')
+
     catchsegvExe, testExe, testSrc = args
 
     result = True
@@ -303,7 +309,6 @@ def main():
         if not testResult:
             failedTests.append(testName)
 
-    #sys.stdout.write('1..%u\n' % numTests)
     if failedTests:
         sys.stdout.write('# %u tests failed\n' % len(failedTests))
         for failedTest in failedTests:
