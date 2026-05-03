@@ -8,6 +8,6 @@
 	shallow = true
 [submodule "thirdparty/dwarfstack"]
 	path = thirdparty/dwarfstack
-	url = https://github.com/oltolm/dwarfstack.git
+	url = https://github.com/jrfonseca/dwarfstack
 	branch = drmingw
 	shallow = true
