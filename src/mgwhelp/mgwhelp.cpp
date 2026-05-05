@@ -510,9 +510,9 @@ GetModuleBase(HANDLE hProcess, DWORD64 dwAddress)
 {
     if (hProcess == GetCurrentProcess()) {
         HMODULE hModule = NULL;
-        BOOL bRet = GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+        BOOL bRet = GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
                                            GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-                                       (LPCSTR)(UINT_PTR)dwAddress, &hModule);
+                                       (LPCWSTR)(UINT_PTR)dwAddress, &hModule);
         if (bRet) {
             return (DWORD64)(UINT_PTR)hModule;
         }

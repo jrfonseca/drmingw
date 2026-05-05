@@ -83,13 +83,13 @@ GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
     SYSTEMTIME SystemTime;
     GetLocalTime(&SystemTime);
-    char szDateStr[128];
+    wchar_t szDateStr[128];
     LCID Locale = MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT);
-    GetDateFormatA(Locale, 0, &SystemTime, "dddd',' MMMM d',' yyyy", szDateStr,
+    GetDateFormatW(Locale, 0, &SystemTime, L"dddd',' MMMM d',' yyyy", szDateStr,
                    _countof(szDateStr));
-    char szTimeStr[128];
-    GetTimeFormatA(Locale, 0, &SystemTime, "HH':'mm':'ss", szTimeStr, _countof(szTimeStr));
-    lprintf(L"Error occurred on %S at %S.\n\n", szDateStr, szTimeStr);
+    wchar_t szTimeStr[128];
+    GetTimeFormatW(Locale, 0, &SystemTime, L"HH':'mm':'ss", szTimeStr, _countof(szTimeStr));
+    lprintf(L"Error occurred on %s at %s.\n\n", szDateStr, szTimeStr);
 
     HANDLE hProcess = GetCurrentProcess();
 
@@ -123,7 +123,7 @@ GenerateExceptionReport(PEXCEPTION_POINTERS pExceptionInfo)
 
     dumpModules(hProcess);
 
-    HMODULE hKernelModule = GetModuleHandleA("kernel32");
+    HMODULE hKernelModule = GetModuleHandleW(L"kernel32");
     BOOL bSuccess = FALSE;
     if (hKernelModule) {
         DWORD nSize = MAX_PATH;

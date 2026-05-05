@@ -80,7 +80,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
         // We used to use GetStockObject(ANSI_FIXED_FONT), but it's known
         // to lead to unreliable results, particularly on Russian locales
         // or high-DPI displays, so now we match Notepad's default font.
-        LOGFONTA lf = {
+        LOGFONTW lf = {
             10,                      // lfHeight
             0,                       // lfWidth
             0,                       // lfEscapement
@@ -94,7 +94,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
             0,                       // lfClipPrecision
             DEFAULT_QUALITY,         // lfQuality
             FIXED_PITCH | FF_MODERN, // lfPitchAndFamily
-            "Lucida Console"         // lfFaceName
+            L"Lucida Console"         // lfFaceName
         };
 
         // Apply the DPI scale factor
@@ -108,7 +108,7 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
         }
 
         HFONT hFont;
-        hFont = CreateFontIndirectA(&lf);
+        hFont = CreateFontIndirectW(&lf);
 
         SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_SETFONT, (WPARAM)hFont, MAKELPARAM(TRUE, 0));
 
@@ -160,12 +160,12 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
                     DWORD dwTextLength = GetWindowTextLength(hEdit);
                     if (dwTextLength > 0) // No need to bother if there's no text.
                     {
-                        LPSTR pszText;
+                        LPWSTR pszText;
 
-                        if ((pszText = (LPSTR)GlobalAlloc(GPTR, dwTextLength + 1)) != NULL) {
-                            if (GetWindowTextA(hEdit, pszText, dwTextLength + 1)) {
+                        if ((pszText = (LPWSTR)GlobalAlloc(GPTR, (dwTextLength + 1) * sizeof(WCHAR))) != NULL) {
+                            if (GetWindowTextW(hEdit, pszText, dwTextLength + 1)) {
                                 DWORD dwWritten;
-                                if (WriteFile(hFile, pszText, dwTextLength, &dwWritten, NULL))
+                                if (WriteFile(hFile, pszText, dwTextLength * sizeof(WCHAR), &dwWritten, NULL))
                                     bSuccess = TRUE;
                             }
                             GlobalFree(pszText);

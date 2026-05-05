@@ -178,7 +178,7 @@ wmain(int argc, wchar_t **argv)
         fwprintf(stderr, L"warning: failed to load module symbols\n");
     }
 
-    if (!GetModuleHandleA("symsrv.dll")) {
+    if (!GetModuleHandleW(L"symsrv.dll")) {
         fwprintf(stderr, L"warning: symbol server not loaded\n");
     }
 
