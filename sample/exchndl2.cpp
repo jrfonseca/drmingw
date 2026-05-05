@@ -7,7 +7,7 @@
 
 struct ExceptionHandler {
     ExceptionHandler() {
-        LoadLibraryA("exchndl.dll");
+        LoadLibraryW(L"exchndl.dll");
     }
 };
 

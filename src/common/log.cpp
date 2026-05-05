@@ -188,7 +188,7 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         // Not a WOW64 process -- use GetProcessInformation
         // https://learn.microsoft.com/en-us/answers/questions/449019/detect-x86-64-process-on-arm64
 
-        HMODULE hKernelModule = GetModuleHandleA("kernel32");
+        HMODULE hKernelModule = GetModuleHandleW(L"kernel32");
         assert(hKernelModule != nullptr);
         PFN_GETPROCESSINFORMATION pfnGetProcessInformation =
             (PFN_GETPROCESSINFORMATION)GetProcAddress(hKernelModule, "GetProcessInformation");
@@ -611,7 +611,7 @@ getModuleVersionInfo(LPCWSTR szModule, WORD awVInfo[4])
         ZeroMemory(pVer, size);
         if (GetFileVersionInfoW(szModule, 0, size, pVer)) {
             VS_FIXEDFILEINFO *pFileInfo;
-            if (VerQueryValueA(pVer, "\\", (LPVOID *)&pFileInfo, (UINT *)&dummy)) {
+            if (VerQueryValueW(pVer, L"\\", (LPVOID *)&pFileInfo, (UINT *)&dummy)) {
                 awVInfo[0] = HIWORD(pFileInfo->dwFileVersionMS);
                 awVInfo[1] = LOWORD(pFileInfo->dwFileVersionMS);
                 awVInfo[2] = HIWORD(pFileInfo->dwFileVersionLS);

@@ -142,7 +142,7 @@ static BOOL CALLBACK
 symCallback(HANDLE hProcess, ULONG ActionCode, ULONG64 CallbackData, ULONG64 UserContext)
 {
     if (ActionCode == CBA_DEBUG_INFO) {
-        lprintf(L"%S", (LPCSTR)(UINT_PTR)CallbackData);
+        lprintf(L"%s", (LPCWSTR)(UINT_PTR)CallbackData);
         return TRUE;
     }
 
