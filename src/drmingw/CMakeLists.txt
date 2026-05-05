@@ -1,3 +1,5 @@
+include(CPack)
+
 add_executable (drmingw WIN32
     dialog.cpp
     errmsg.cpp
