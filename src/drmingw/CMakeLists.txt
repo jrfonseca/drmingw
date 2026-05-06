@@ -16,8 +16,6 @@ target_include_directories (drmingw PRIVATE
 
 set_property (TARGET drmingw APPEND_STRING PROPERTY LINK_FLAGS " -municode")
 
-add_dependencies (drmingw mgwhelp_implib)
-
 target_link_libraries (drmingw
     common
     getoptW
