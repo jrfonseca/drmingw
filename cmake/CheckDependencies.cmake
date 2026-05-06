@@ -1,6 +1,9 @@
 # Throw an error if libwinpthread-1.dll dependency is found
 # https://github.com/jrfonseca/drmingw/issues/82
 
+if (POLICY CMP0207)
+    cmake_policy (SET CMP0207 NEW)  # file(GET_RUNTIME_DEPENDENCIES) normalizes paths
+endif ()
 set (CMAKE_GET_RUNTIME_DEPENDENCIES_PLATFORM windows+pe)
 set (CMAKE_GET_RUNTIME_DEPENDENCIES_TOOL objdump)
 set (CMAKE_GET_RUNTIME_DEPENDENCIES_COMMAND ${CMAKE_OBJDUMP})
