@@ -43,28 +43,52 @@ main(int argc, char **argv)
 
     DWORD64 dwSymbolOffset = (DWORD64)(UINT_PTR)&Foo - (DWORD64)(UINT_PTR)hModule;
 
-    char szCommand[1024];
-    _snprintf(szCommand, sizeof szCommand, "addr2line.exe -e %s -f 0x%llx",
-              argv[0], dwSymbolOffset);
+    wchar_t szCommand[1024];
+    _snwprintf(szCommand, _countof(szCommand), L"addr2line.exe -e %hs -f 0x%llx", argv[0], dwSymbolOffset);
 
-    FILE *fp = _popen(szCommand, "rt");
-    ok = fp != NULL;
-    test_line(ok, "_popen(\"%s\")", szCommand);
+    SECURITY_ATTRIBUTES sa = { sizeof(sa), NULL, TRUE };
+    HANDLE hReadPipe = NULL, hWritePipe = NULL;
+    ok = CreatePipe(&hReadPipe, &hWritePipe, &sa, 0) != FALSE;
+    test_line(ok, "CreatePipe");
+    if (!ok) {
+        test_exit();
+    }
+    SetHandleInformation(hReadPipe, HANDLE_FLAG_INHERIT, 0);
+
+    STARTUPINFOW si = {};
+    si.cb = sizeof(si);
+    si.dwFlags = STARTF_USESTDHANDLES;
+    si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    si.hStdOutput = hWritePipe;
+    si.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+
+    PROCESS_INFORMATION pi = {};
+    ok = CreateProcessW(NULL, szCommand, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi) != FALSE;
+    test_line(ok, "CreateProcessW(\"%ls\")", szCommand);
+    CloseHandle(hWritePipe);
     if (ok) {
-        char szLine[512];
-        bool found = false;
-
-        while (fgets(szLine, sizeof szLine, fp)) {
-            fprintf(stdout, "%s\n", szLine);
-            if (strstr(szLine, szSymbolName)) {
-                found = true;
+        char szOutput[4096];
+        DWORD dwTotal = 0;
+        while (dwTotal < sizeof(szOutput) - 1) {
+            DWORD dwRead;
+            if (!ReadFile(hReadPipe, szOutput + dwTotal, DWORD(sizeof(szOutput) - 1 - dwTotal), &dwRead, NULL) ||
+                dwRead == 0) {
+                break;
             }
+            dwTotal += dwRead;
         }
+        szOutput[dwTotal] = '\0';
+
+        fprintf(stdout, "%s", szOutput);
+        bool found = strstr(szOutput, szSymbolName) != NULL;
 
         test_line(found, "strstr(\"%s\")", szSymbolName);
 
-        fclose(fp);
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
     }
+    CloseHandle(hReadPipe);
 
     test_exit();
 }
