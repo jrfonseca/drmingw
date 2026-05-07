@@ -30,12 +30,13 @@ fi
 
 if [ "$GITHUB_ACTIONS" = true ]
 then
-    # See:
-    # - https://dev.to/dtinth/caching-docker-builds-in-github-actions-which-approach-is-the-fastest-a-research-18ei
-    # - https://github.com/dtinth/github-actions-docker-layer-caching-poc/blob/master/.github/workflows/dockerimage.yml
-    docker pull docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache || true
-    docker buildx build -t $docker_tag --cache-from=docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache -f ci/docker/$docker_file.Dockerfile ci/docker
-    docker tag $docker_tag docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache && docker push docker.pkg.github.com/$GITHUB_REPOSITORY/build-cache || true
+    # https://docs.docker.com/build/cache/backends/gha/
+    docker buildx build \
+        -t $docker_tag \
+        --cache-from type=gha,scope=$docker_file \
+        --cache-to type=gha,mode=max,scope=$docker_file \
+        --load \
+        -f ci/docker/$docker_file.Dockerfile ci/docker
 else
     docker buildx build -t $docker_tag -f ci/docker/$docker_file.Dockerfile ci/docker
 fi
