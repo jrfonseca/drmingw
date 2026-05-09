@@ -26,19 +26,14 @@
  **************************************************************************/
 
 #include "macros.h"
-#include "wine.h"
 
 int
 main(int argc, char *argv[])
 {
-    if (insideWine()) {
-        return EXIT_SKIP;
-    }
-
     __debugbreak();  LINE_BARRIER
 
     return 0;
 }
 
-// CHECK_STDERR: /  unicØde\.exe\!main\+0x[0-9a-f]+  \[.*\bunicØde\.c:38\]/
+// CHECK_STDERR: /  unicØde\.exe\!main\+0x[0-9a-f]+  \[.*\bunicØde\.c:33\]/
 // CHECK_EXIT_CODE: 0x80000003|0x4000001f

@@ -116,7 +116,7 @@ def test(args):
         testExe
     ]
 
-    if sys.platform != 'win32':
+    if sys.platform != 'win32' and 'WSL_DISTRO_NAME' not in os.environ:
         cmd = [options.wine] + cmd
         if options.verbose:
             os.environ.setdefault('WINEDEBUG', '-all,+debugstr')
@@ -284,7 +284,7 @@ def main():
         if not testNameRe.search(testName):
             continue
 
-        if sys.platform != 'win32' and testName in ('ctrl_break', 'ctrl_c'):
+        if sys.platform != 'win32' and testName in ('ctrl_break', 'ctrl_c', 'unicØde'):
             continue
 
         testSrc = os.path.join(testsSrcDir, testSrcFile)
