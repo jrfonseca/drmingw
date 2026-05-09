@@ -35,5 +35,5 @@ main(int argc, char *argv[])
     return 0;
 }
 
-// CHECK_STDERR: /  int3\.exe\!main\+0x[0-9a-f]+  \[.*\bint3\.c @ 33\]/
+// CHECK_STDERR: /  int3\.exe\!main\+0x[0-9a-f]+  \[.*\bint3\.c:33\]/
 // CHECK_EXIT_CODE: 0x80000003

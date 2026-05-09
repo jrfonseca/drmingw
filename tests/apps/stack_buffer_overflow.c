@@ -38,4 +38,4 @@ int main()
 #endif
 }
 
-// CHECK_STDERR: /  stack_buffer_overflow\.exe\!main\+0x[0-9a-f]+  \[.*\bstack_buffer_overflow\.c @ [0-9]+\]/
+// CHECK_STDERR: /  stack_buffer_overflow\.exe\!main\+0x[0-9a-f]+  \[.*\bstack_buffer_overflow\.c:[0-9]+\]/
