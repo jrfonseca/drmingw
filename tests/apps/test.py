@@ -159,8 +159,6 @@ def test(args):
     exitCode = p.returncode
     if exitCode < 0:
         exitCode += (1 << 32)
-    if exitCode == 0x4000001f:
-        exitCode = 0x80000003
 
     if exitCode == 125:
         # skip
@@ -181,13 +179,16 @@ def test(args):
                     if checkExpr.startswith('!'):
                         inverse = True
                         checkExpr = checkExpr[1:]
-                    if checkExpr.startswith('0x'):
-                        checkExitCode = int(checkExpr, 16)
-                    else:
-                        checkExitCode = int(checkExpr)
-                    if sys.platform != 'win32':
-                        checkExitCode = checkExitCode % 256
-                    ok = exitCode == checkExitCode 
+                    checkExitCodes = []
+                    for codeExpr in checkExpr.split('|'):
+                        if codeExpr.startswith('0x'):
+                            checkExitCode = int(codeExpr, 16)
+                        else:
+                            checkExitCode = int(codeExpr)
+                        if sys.platform != 'win32':
+                            checkExitCode = checkExitCode % 256
+                        checkExitCodes.append(checkExitCode)
+                    ok = exitCode in checkExitCodes
                     if inverse:
                         ok = not ok
                     if not ok:

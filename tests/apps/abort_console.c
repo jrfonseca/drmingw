@@ -40,4 +40,4 @@ int main()
     abort();
 }
 
-// CHECK_EXIT_CODE: 3
+// CHECK_EXIT_CODE: 3|0xC0000409

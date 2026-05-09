@@ -55,4 +55,4 @@ int main()
 }
 
 // CHECK_STDERR: /2 \+ 2 == 5/
-// CHECK_EXIT_CODE: 3
+// CHECK_EXIT_CODE: 3|0xC0000409

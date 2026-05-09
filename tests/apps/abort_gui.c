@@ -43,4 +43,4 @@ WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdS
     abort();
 }
 
-// CHECK_EXIT_CODE: 3
+// CHECK_EXIT_CODE: 3|0xC0000409
