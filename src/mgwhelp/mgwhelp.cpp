@@ -382,7 +382,7 @@ mgwhelp_find_module(HANDLE hProcess, DWORD64 Address, PDWORD64 pOffset)
 
     Base = GetModuleBase(hProcess, Address);
     if (!Base) {
-        return FALSE;
+        return NULL;
     }
 
     module = mgwhelp_module_lookup(hProcess, 0, NULL, Base);
@@ -533,7 +533,7 @@ demangle(const char *mangled, DWORD Flags)
 {
     assert(mangled);
 
-    // There can be false negatives, such as "_ZwTerminateProcess@8"
+    // There can be false positives, such as "_ZwTerminateProcess@8"
     if (mangled[0] != '_' || mangled[1] != 'Z') {
         return NULL;
     }
