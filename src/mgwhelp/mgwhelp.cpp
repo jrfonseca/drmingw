@@ -18,6 +18,7 @@
 
 
 #include <assert.h>
+#include <cstdlib>
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -599,16 +600,15 @@ MgwUnDecorateSymbolName(PCSTR DecoratedName,
                         DWORD UndecoratedLength,
                         DWORD Flags)
 {
-    assert(DecoratedName != NULL);
+    wchar_t DecoratedNameW[1024];
+    wchar_t UnDecoratedNameW[1024];
 
-    char *output_buffer = demangle(DecoratedName, Flags);
-    if (output_buffer) {
-        strncpy(UnDecoratedName, output_buffer, UndecoratedLength);
-        free(output_buffer);
-        return strlen(UnDecoratedName);
-    }
-
-    return UnDecorateSymbolName(DecoratedName, UnDecoratedName, UndecoratedLength, Flags);
+    MultiByteToWideChar(CP_ACP, 0, DecoratedName, -1, DecoratedNameW, _countof(DecoratedNameW));
+    int len = MgwUnDecorateSymbolNameW(DecoratedNameW, UnDecoratedNameW, _countof(UnDecoratedNameW),
+                                       Flags);
+    len = WideCharToMultiByte(CP_ACP, 0, UnDecoratedNameW, len, UnDecoratedName, UndecoratedLength,
+                              nullptr, nullptr);
+    return len;
 }
 
 
@@ -731,4 +731,28 @@ MgwSymGetLineFromAddrW64(HANDLE hProcess,
     }
 
     return SymGetLineFromAddrW64(hProcess, dwAddr, pdwDisplacement, Line);
+}
+
+EXTERN_C DWORD WINAPI
+MgwUnDecorateSymbolNameW(PCWSTR DecoratedName,
+                         PWSTR UnDecoratedName,
+                         DWORD UndecoratedLength,
+                         DWORD Flags)
+{
+    assert(DecoratedName != NULL);
+
+    char DecoratedNameA[1024];
+
+    WideCharToMultiByte(CP_UTF8, 0, DecoratedName, -1, DecoratedNameA, sizeof(DecoratedNameA),
+                        nullptr, nullptr);
+
+    char *output_buffer = demangle(DecoratedNameA, Flags);
+    if (output_buffer) {
+        int len =
+            MultiByteToWideChar(CP_UTF8, 0, output_buffer, -1, UnDecoratedName, UndecoratedLength);
+        free(output_buffer);
+        return len;
+    }
+
+    return UnDecorateSymbolNameW(DecoratedName, UnDecoratedName, UndecoratedLength, Flags);
 }

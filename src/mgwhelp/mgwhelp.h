@@ -76,3 +76,9 @@ MgwSymGetLineFromAddrW64(HANDLE hProcess,
                          DWORD64 dwAddr,
                          PDWORD pdwDisplacement,
                          PIMAGEHLP_LINEW64 LineW);
+
+EXTERN_C DWORD WINAPI
+MgwUnDecorateSymbolNameW(PCWSTR DecoratedName,
+                         PWSTR UnDecoratedName,
+                         DWORD UndecoratedLength,
+                         DWORD Flags);
