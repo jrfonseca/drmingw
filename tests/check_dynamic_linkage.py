@@ -7,13 +7,12 @@
 
 
 import argparse
+import glob
 import json
 import os
-import glob
 import re
 import subprocess
 import sys
-
 
 dbghelp_exports = {
 
@@ -28,6 +27,7 @@ dbghelp_exports = {
     "SymLoadModuleEx",
     "SymLoadModuleExW",
     "UnDecorateSymbolName",
+    "UnDecorateSymbolNameW",
 
 	"EnumDirTree",
 	"EnumDirTreeW",
