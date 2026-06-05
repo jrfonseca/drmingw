@@ -10,6 +10,7 @@ EXPORTS
         SymLoadModuleEx = MgwSymLoadModuleEx
         SymLoadModuleExW = MgwSymLoadModuleExW
         UnDecorateSymbolName = MgwUnDecorateSymbolName
+        UnDecorateSymbolNameW = MgwUnDecorateSymbolNameW
 
 	EnumDirTree
 	EnumDirTreeW

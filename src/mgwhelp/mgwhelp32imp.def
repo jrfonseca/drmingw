@@ -105,5 +105,6 @@ EXPORTS
 	SymUnloadModule@8
 	SymUnloadModule64@12
 	UnDecorateSymbolName@16
+	UnDecorateSymbolNameW@16
 	UnmapDebugInformation@4
 	WinDbgExtensionDllInit@12
