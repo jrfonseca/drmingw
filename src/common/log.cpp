@@ -138,7 +138,71 @@ dumpContext(const CONTEXT *pContext)
 #if defined(_M_IX86)
     dumpContext(reinterpret_cast<const WOW64_CONTEXT *>(pContext));
 #elif defined(_M_X64)
-    // TODO
+
+    // Show the registers
+    lprintf(L"Registers:\n");
+
+    if (pContext->ContextFlags & CONTEXT_INTEGER) {
+        lprintf(L"rax=%016I64X rbx=%016I64X rcx=%016I64X\n"
+                L"rdx=%016I64X rsi=%016I64X rdi=%016I64X\n"
+                L"r8 =%016I64X r9 =%016I64X r10=%016I64X r11=%016I64X\n"
+                L"r12=%016I64X r13=%016I64X r14=%016I64X r15=%016I64X\n",
+                pContext->Rax, pContext->Rbx, pContext->Rcx,
+                pContext->Rdx, pContext->Rsi, pContext->Rdi,
+                pContext->R8, pContext->R9, pContext->R10, pContext->R11,
+                pContext->R12, pContext->R13, pContext->R14, pContext->R15);
+    }
+    if (pContext->ContextFlags & CONTEXT_CONTROL) {
+        lprintf(L"rip=%016I64X rsp=%016I64X rbp=%016I64X iopl=%1lx %S %S %S %S %S %S %S %S %S %S\n",
+                pContext->Rip, pContext->Rsp, pContext->Rbp,
+                (pContext->EFlags >> 12) & 3,                  //  IOPL level value
+                pContext->EFlags & 0x00100000 ? "vip" : "   ", //  VIP (virtual interrupt pending)
+                pContext->EFlags & 0x00080000 ? "vif" : "   ", //  VIF (virtual interrupt flag)
+                pContext->EFlags & 0x00000800 ? "ov" : "nv",   //  OF (overflow flag)
+                pContext->EFlags & 0x00000400 ? "dn" : "up",   //  DF (direction flag)
+                pContext->EFlags & 0x00000200 ? "ei" : "di",   //  IF (interrupt enable flag)
+                pContext->EFlags & 0x00000080 ? "ng" : "pl",   //  SF (sign flag)
+                pContext->EFlags & 0x00000040 ? "zr" : "nz",   //  ZF (zero flag)
+                pContext->EFlags & 0x00000010 ? "ac" : "na",   //  AF (aux carry flag)
+                pContext->EFlags & 0x00000004 ? "po" : "pe",   //  PF (parity flag)
+                pContext->EFlags & 0x00000001 ? "cy" : "nc"    //  CF (carry flag)
+        );
+    }
+    if (pContext->ContextFlags & CONTEXT_SEGMENTS) {
+        lprintf(L"cs=%04x  ss=%04x  ds=%04x  es=%04x  fs=%04x  gs=%04x",
+                (unsigned)pContext->SegCs, (unsigned)pContext->SegSs,
+                (unsigned)pContext->SegDs, (unsigned)pContext->SegEs,
+                (unsigned)pContext->SegFs, (unsigned)pContext->SegGs);
+        if (pContext->ContextFlags & CONTEXT_CONTROL) {
+            lprintf(L"             efl=%08lx\n", pContext->EFlags);
+        } else {
+            lprintf(L"\n");
+        }
+    } else {
+        if (pContext->ContextFlags & CONTEXT_CONTROL) {
+            lprintf(L"                                                                       "
+                    L"efl=%08lx\n",
+                    pContext->EFlags);
+        }
+    }
+
+    if (pContext->ContextFlags & CONTEXT_FLOATING_POINT) {
+#define XMM_LINE(ctx, a, b, c, d) \
+        lprintf(L"xmm" #a "=%016I64X:%016I64X xmm" #b "=%016I64X:%016I64X " \
+                L"xmm" #c "=%016I64X:%016I64X xmm" #d "=%016I64X:%016I64X\n", \
+                (ctx)->Xmm##a.High, (ctx)->Xmm##a.Low, \
+                (ctx)->Xmm##b.High, (ctx)->Xmm##b.Low, \
+                (ctx)->Xmm##c.High, (ctx)->Xmm##c.Low, \
+                (ctx)->Xmm##d.High, (ctx)->Xmm##d.Low)
+        XMM_LINE(pContext, 0, 1, 2, 3);
+        XMM_LINE(pContext, 4, 5, 6, 7);
+        XMM_LINE(pContext, 8, 9, 10, 11);
+        XMM_LINE(pContext, 12, 13, 14, 15);
+#undef XMM_LINE
+    }
+
+    lprintf(L"\n\n");
+
 #elif defined(_M_ARM64)
 
     if (pContext->ContextFlags & CONTEXT_INTEGER) {
