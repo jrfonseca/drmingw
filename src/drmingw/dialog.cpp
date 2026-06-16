@@ -231,7 +231,7 @@ createDialog(void)
     WndClass.hIconSm = LoadIcon(g_hInstance, MAKEINTRESOURCE(IDI_MAINICON));
 
     if (!RegisterClassExW(&WndClass)) {
-        ErrorMessageBox("RegisterClassEx: %s", LastErrorMessage());
+        ErrorMessageBox(L"RegisterClassEx: %ls", LastErrorMessage());
         exit(EXIT_FAILURE);
     }
 
@@ -240,7 +240,7 @@ createDialog(void)
                               CW_USEDEFAULT, NULL, NULL, g_hInstance, NULL);
 
     if (g_hWnd == NULL) {
-        ErrorMessageBox("CreateWindowEx: %s", LastErrorMessage());
+        ErrorMessageBox(L"CreateWindowEx: %ls", LastErrorMessage());
         exit(EXIT_FAILURE);
     }
 

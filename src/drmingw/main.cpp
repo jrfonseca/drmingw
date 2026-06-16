@@ -183,7 +183,7 @@ debugThread(void *arg)
 
     // attach debuggee
     if (!DebugActiveProcess(dwProcessId)) {
-        ErrorMessageBox("DebugActiveProcess: %s", LastErrorMessage());
+        ErrorMessageBox(L"DebugActiveProcess: %ls", LastErrorMessage());
         return;
     }
 
