@@ -169,8 +169,59 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL ARM64)
     set (CPACK_SYSTEM_NAME win64-arm)
 endif ()
 
-set (CPACK_GENERATOR "7Z")
+set (CPACK_GENERATOR "7Z;NSIS")
 
 set (CPACK_STRIP_FILES ON)
+
+# NSIS installer settings
+set (CPACK_NSIS_DISPLAY_NAME "Dr. Mingw")
+set (CPACK_NSIS_PACKAGE_NAME "Dr. Mingw")
+set (CPACK_NSIS_MANUFACTURER "Jose Fonseca")
+set (CPACK_NSIS_INSTALL_ROOT "$PROGRAMFILES64")
+set (CPACK_PACKAGE_INSTALL_DIRECTORY "drmingw-${PROJECT_VERSION}-win64")
+set (CPACK_NSIS_CONTACT "jose.fonseca@gmail.com")
+set (CPACK_NSIS_URL_INFO_ABOUT "https://github.com/jrfonseca/drmingw")
+set (CPACK_NSIS_HELP_LINK "https://github.com/jrfonseca/drmingw")
+set (CPACK_NSIS_MENU_LINKS
+    "https://github.com/jrfonseca/drmingw" "Dr. Mingw Homepage"
+)
+set (CPACK_NSIS_CREATE_ICONS_EXTRA
+    "CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\Dr. Mingw.lnk' '$INSTDIR\\\\bin\\\\drmingw.exe'"
+)
+set (CPACK_NSIS_DELETE_ICONS_EXTRA
+    "Delete '$SMPROGRAMS\\\\$MUI_TEMP\\\\Dr. Mingw.lnk'"
+)
+# Register drmingw as the default JIT debugger after installation,
+# and unregister before uninstallation.
+set (CPACK_NSIS_EXTRA_INSTALL_COMMANDS
+    "ExecWait '$\\\"$INSTDIR/bin/drmingw.exe$\\\" -i'"
+)
+set (CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS
+    "ExecWait '$\\\"$INSTDIR/bin/drmingw.exe$\\\" -u'"
+)
+set (CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE.txt")
+set (CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/src/drmingw/icon.ico")
+set (CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/src/drmingw/icon.ico")
+
+# Embed version info into the installer .exe (visible in File Explorer -> Details).
+# CPACK_NSIS_DEFINES is injected into the generated .nsi script.  We build a
+# single string with real newlines via configure_file + file(READ) to avoid
+# CMake's ";" list-join (NSIS treats ";" as a comment character).
+# CPACK_VERBATIM_VARIABLES prevents CPack from re-encoding the value as a list.
+file(WRITE "${CMAKE_BINARY_DIR}/NSIS.defines.in"
+    "VIProductVersion \"@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@.0\"\n"
+    "VIAddVersionKey \"ProductName\" \"Dr. Mingw\"\n"
+    "VIAddVersionKey \"CompanyName\" \"Jose Fonseca\"\n"
+    "VIAddVersionKey \"FileDescription\" \"Dr. Mingw Installer\"\n"
+    "VIAddVersionKey \"FileVersion\" \"@PROJECT_VERSION@\"\n"
+    "VIAddVersionKey \"ProductVersion\" \"@PROJECT_VERSION@\"\n"
+    "VIAddVersionKey \"LegalCopyright\" \"Jose Fonseca\"\n"
+)
+configure_file("${CMAKE_BINARY_DIR}/NSIS.defines.in" "${CMAKE_BINARY_DIR}/NSIS.defines" @ONLY)
+file(READ "${CMAKE_BINARY_DIR}/NSIS.defines" CPACK_NSIS_DEFINES)
+set(CPACK_VERBATIM_VARIABLES TRUE)
+
+set (CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+set (CPACK_NSIS_MODIFY_PATH OFF)
 
 include(CPack)
