@@ -660,8 +660,7 @@ MgwSymFromAddrW(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL
     if (module && module->dwarf.dbg) {
         struct dwarf_symbol_info info;
         if (dwarf_find_symbol(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
-                              module->image_base_vma, module->LoadedImageName, module->Base,
-                              Address, &info)) {
+                              module->image_base_vma, module->Base, Address, &info)) {
             const char *name = info.functionname.c_str();
             if (dwOptions & SYMOPT_UNDNAME) {
                 char *output_buffer = demangle(name, UNDNAME_NAME_ONLY);
@@ -716,8 +715,7 @@ MgwSymGetLineFromAddrW64(HANDLE hProcess,
     if (module && module->dwarf.dbg) {
         static struct dwarf_line_info info;
         if (dwarf_find_line(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
-                            module->image_base_vma, module->LoadedImageName, module->Base, dwAddr,
-                            &info)) {
+                            module->image_base_vma, module->Base, dwAddr, &info)) {
             static wchar_t buf[1024];
             Line->FileName = buf;
             wcsncpy(buf, info.filename.c_str(), _countof(buf));
