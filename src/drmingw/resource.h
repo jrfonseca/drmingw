@@ -20,6 +20,7 @@
 #define IDI_MAINICON 1
 
 #define IDM_MAINMENU 11
+#define IDM_ACCEL   12
 
 #define IDD_ABOUT 101
 
@@ -29,3 +30,5 @@
 #define CM_FILE_SAVEAS 9001
 #define CM_FILE_EXIT   9002
 #define CM_HELP_ABOUT  9003
+#define CM_EDIT_SELECTALL 9004
+#define CM_EDIT_COPY 9005

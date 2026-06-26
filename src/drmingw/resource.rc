@@ -32,14 +32,26 @@ IDM_MAINMENU MENU
 {
     POPUP "&File"
     {
-        MENUITEM "Save &As...", CM_FILE_SAVEAS
+        MENUITEM "Save &As...\tCtrl+S", CM_FILE_SAVEAS
         MENUITEM SEPARATOR
         MENUITEM "E&xit", CM_FILE_EXIT
+    }
+    POPUP "&Edit"
+    {
+        MENUITEM "&Select All\tCtrl+A", CM_EDIT_SELECTALL
+        MENUITEM "&Copy\tCtrl+C", CM_EDIT_COPY
     }
     POPUP "&Help"
     {
         MENUITEM "&About", CM_HELP_ABOUT
     }
+}
+
+IDM_ACCEL ACCELERATORS
+{
+    "S", CM_FILE_SAVEAS, VIRTKEY, CONTROL
+    "A", CM_EDIT_SELECTALL, VIRTKEY, CONTROL
+    "C", CM_EDIT_COPY, VIRTKEY, CONTROL
 }
 
 IDD_ABOUT DIALOG 0, 0, 155, 134

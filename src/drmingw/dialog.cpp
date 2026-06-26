@@ -17,6 +17,7 @@
  */
 
 #include <windows.h>
+#include <windowsx.h>
 #include <richedit.h>
 
 #include "errmsg.h"
@@ -185,6 +186,12 @@ WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam)
 
         case CM_HELP_ABOUT:
             return DialogBox(g_hInstance, MAKEINTRESOURCE(IDD_ABOUT), hwnd, AboutDlgProc);
+        case CM_EDIT_SELECTALL:
+            Edit_SetSel(GetDlgItem(hwnd, IDC_MESSAGE), 0, -1);
+            break;
+        case CM_EDIT_COPY:
+            SendDlgItemMessage(hwnd, IDC_MESSAGE, WM_COPY, 0, 0);
+            break;
         }
         break;
     case WM_CLOSE:
@@ -247,10 +254,13 @@ mainLoop(void)
 {
     MSG Msg;
     BOOL bRet;
+    HACCEL hAccel = LoadAccelerators(g_hInstance, MAKEINTRESOURCE(IDM_ACCEL));
 
     while ((bRet = GetMessage(&Msg, NULL, 0, 0)) > 0) {
-        TranslateMessage(&Msg);
-        DispatchMessage(&Msg);
+        if (!TranslateAccelerator(g_hWnd, hAccel, &Msg)) {
+            TranslateMessage(&Msg);
+            DispatchMessage(&Msg);
+        }
     }
     if (bRet < 0) {
         return EXIT_FAILURE;
