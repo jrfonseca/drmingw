@@ -54,7 +54,7 @@ jobs:
         submodules: recursive
     - run: sudo dpkg --add-architecture i386
     - run: sudo apt-get update -qq
-    - run: sudo apt-get install -yqq --install-recommends mingw-w64 ninja-build cmake xinit xwayland-run wine wine64 wine32:i386
+    - run: sudo apt-get install -yqq --install-recommends mingw-w64 ninja-build nsis cmake xinit xwayland-run wine wine64 wine32:i386
     - run: ci/build.sh
 
   build-cross-clang:

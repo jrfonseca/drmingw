@@ -91,6 +91,24 @@ if (!(Test-Path "$NINJA_DIR\ninja.exe" -PathType Leaf)) {
 }
 $Env:Path = "$NINJA_DIR;$Env:Path"
 
+$NSIS_ARCHIVE = Split-Path -leaf $NSIS_URL
+$NSIS_ARCHIVE = "downloads\$NSIS_ARCHIVE"
+$NSIS_DIR = "downloads\$(Split-Path -LeafBase $NSIS_ARCHIVE)"
+New-Item -ItemType Directory -Force -Path "$NSIS_DIR" | Out-Null
+$NSIS_DIR = Convert-Path $NSIS_DIR
+if (!(Test-Path "$NSIS_DIR\makensis.exe" -PathType Leaf)) {
+    if (!(Test-Path $NSIS_ARCHIVE -PathType Leaf)) {
+        Invoke-WebRequest -Uri $NSIS_URL -OutFile $NSIS_ARCHIVE -UserAgent NativeHost
+        $hash = (Get-FileHash $NSIS_ARCHIVE -Algorithm SHA256).Hash
+        if ($hash -ne $NSIS_SUM) {
+            echo "error: ${NSIS_ARCHIVE}: wrong hash: ${hash}"
+            exit 1
+        }
+    }
+    Expand-Archive -Path $NSIS_ARCHIVE -DestinationPath 'downloads' -Force
+}
+$Env:Path = "$NSIS_DIR;$Env:Path"
+
 
 #
 # Setup environment
@@ -104,6 +122,9 @@ try {
 Exec { python --version }
 
 Exec { ninja --version }
+
+Exec { makensis /version }
+Write-Host
 
 Exec { cmake --version }
 

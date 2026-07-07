@@ -10,3 +10,6 @@ $DBGHELP_32_SUM = 'dfdf39857b76533adb0bffd9ef9d1bc7516280f810ecea6dd5c1b5ca97809
 
 $NINJA_URL = 'https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-win.zip'
 $NINJA_SUM = '524b344a1a9a55005eaf868d991e090ab8ce07fa109f1820d40e74642e289abc'
+
+$NSIS_URL = 'https://prdownloads.sourceforge.net/nsis/nsis-3.12.zip'
+$NSIS_SUM = '56581f90db321581c5381193d796fffcf2d24b2f8fed2160a6c6a3baa67f2c4f'
