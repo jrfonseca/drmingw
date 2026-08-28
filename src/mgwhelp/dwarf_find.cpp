@@ -73,6 +73,7 @@ dwarf_find_symbol(Dwarf_Debug dbg,
                   Dwarf_Addr addr,
                   struct dwarf_symbol_info *info)
 {
+    *info = {};
     dwstOfDwarfDebugW(dbg, image_base_vma, name, image_base, &addr, 1, &find_symbol_cbW, info,
                       cuArr, cuQty);
     return !info->functionname.empty();
@@ -114,6 +115,7 @@ dwarf_find_line(Dwarf_Debug dbg,
                 Dwarf_Addr addr,
                 struct dwarf_line_info *info)
 {
+    *info = {};
     dwstOfDwarfDebugW(dbg, image_base_vma, name, image_base, &addr, 1, &find_line_cbW, info,
                       cuArr, cuQty);
 

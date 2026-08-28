@@ -658,7 +658,7 @@ MgwSymFromAddrW(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL
     mgwhelp_module *module = mgwhelp_find_module(hProcess, Address, &Offset);
 
     if (module && module->dwarf.dbg) {
-        struct dwarf_symbol_info info;
+        struct dwarf_symbol_info info = {};
         if (dwarf_find_symbol(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
                               module->image_base_vma, module->LoadedImageName, module->Base,
                               Address, &info)) {
@@ -714,7 +714,7 @@ MgwSymGetLineFromAddrW64(HANDLE hProcess,
     mgwhelp_module *module = mgwhelp_find_module(hProcess, dwAddr, &Offset);
 
     if (module && module->dwarf.dbg) {
-        static struct dwarf_line_info info;
+        struct dwarf_line_info info = {};
         if (dwarf_find_line(module->dwarf.dbg, module->dwarf.cuArr, module->dwarf.cuQty,
                             module->image_base_vma, module->LoadedImageName, module->Base, dwAddr,
                             &info)) {
