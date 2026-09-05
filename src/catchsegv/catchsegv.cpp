@@ -32,6 +32,7 @@
 
 #include <windows.h>
 #include <dbghelp.h>
+#include <mmsystem.h>
 
 #include <string>
 

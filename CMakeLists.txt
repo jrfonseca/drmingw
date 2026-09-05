@@ -27,7 +27,7 @@ set (CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package (WinDbg)
 
 include_directories (
-    ${CMAKE_SOURCE_DIR}/thirdparty/libiberty
+    ${PROJECT_SOURCE_DIR}/thirdparty/libiberty
 )
 
 add_subdirectory (thirdparty)
@@ -95,6 +95,8 @@ set (CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 add_compile_definitions (
     UNICODE
+    # https://learn.microsoft.com/en-us/windows/win32/winprog/using-the-windows-headers
+    WIN32_LEAN_AND_MEAN
     # http://msdn.microsoft.com/en-us/library/aa383745.aspx
     _WIN32_WINNT=${WINNT}
     WINVER=${WINNT}
@@ -128,7 +130,7 @@ endmacro ()
 ##############################################################################
 # Targets
 
-enable_testing ()
+include(CTest)
 if (CMAKE_CROSSCOMPILING AND NOT CMAKE_CROSSCOMPILING_EMULATOR)
     add_custom_target (check)
 elseif (DEFINED CMAKE_BUILD_TYPE)
