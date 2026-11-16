@@ -1,6 +1,7 @@
 param (
     [ValidateSet('mingw64','mingw32')][string]$target = 'mingw64',
     [string]$buildRoot = 'build',
+    [ValidateSet('', 'Debug', 'Release', 'RelWithDebInfo', 'MinSizeRel')][string]$config = '',
     [switch]$coverage = $false  # https://stackoverflow.com/q/5079413
 )
 
@@ -137,6 +138,9 @@ $CMAKE_BUILD_TYPE = 'Debug'
 if ($Env:GITHUB_EVENT_NAME -eq "push" -And $Env:GITHUB_REF.StartsWith('refs/tags/')) {
     $CMAKE_BUILD_TYPE = 'Release'
     $coverage = $false
+}
+if ($config) {
+    $CMAKE_BUILD_TYPE = $config
 }
 $buildDir = "$buildRoot\$target"
 Exec { cmake "-S." "-B$buildDir" -G "Ninja" "-DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE" "-DENABLE_COVERAGE=$coverage" "-DWINDBG_DIR=$DBGHELP_DIR" }
