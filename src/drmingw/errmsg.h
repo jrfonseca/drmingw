@@ -22,18 +22,26 @@
 #include <windows.h>
 
 
-// XXX: This leaks the error message
-#define FormatErrorMessage(n) \
-    ({ \
-        LPVOID lpMsgBuf; \
-\
-        FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | \
-                           FORMAT_MESSAGE_IGNORE_INSERTS, \
-                       NULL, n, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPWSTR)&lpMsgBuf, 0, \
-                       NULL); \
-\
-        (LPWSTR) lpMsgBuf; \
-    })
+#include <stdio.h>
+#include <stdlib.h>
+
+
+// Returns a pointer to a static buffer, which is overwritten by subsequent calls.
+inline LPCWSTR
+FormatErrorMessage(DWORD dwMessageId)
+{
+    static wchar_t szMsgBuf[512];
+
+    DWORD dwLen = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+                                 dwMessageId, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), szMsgBuf,
+                                 _countof(szMsgBuf), NULL);
+    if (dwLen == 0) {
+        _snwprintf(szMsgBuf, _countof(szMsgBuf), L"Unknown error 0x%08lx", dwMessageId);
+        szMsgBuf[_countof(szMsgBuf) - 1] = L'\0';
+    }
+
+    return szMsgBuf;
+}
 
 #define LastErrorMessage() FormatErrorMessage(GetLastError())
 
