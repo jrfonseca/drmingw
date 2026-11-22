@@ -35,20 +35,22 @@ _ErrorMessageBox(LPCWSTR lpszFile, DWORD dwLine, LPCWSTR lpszFormat, ...)
     }
 
     va_start(ap, lpszFormat);
-    vswprintf(szErrorMsg, lpszFormat, ap);
+    _vsnwprintf(szErrorMsg, _countof(szErrorMsg), lpszFormat, ap);
     va_end(ap);
+    szErrorMsg[_countof(szErrorMsg) - 1] = L'\0';
 
-    swprintf(szMsg,
-            L"Error!\r\n"
-            L"\r\n"
-            L"Program: %ls\r\n"
-            L"File: %ls\r\n"
-            L"Line: %lu\r\n"
-            L"\r\n"
-            L"%ls\r\n"
-            L"\r\n"
-            L"(Press Retry to debug the application - JIT must be enabled)\r\n",
-            szModule, lpszFile, dwLine, szErrorMsg);
+    _snwprintf(szMsg, _countof(szMsg),
+               L"Error!\r\n"
+               L"\r\n"
+               L"Program: %ls\r\n"
+               L"File: %ls\r\n"
+               L"Line: %lu\r\n"
+               L"\r\n"
+               L"%ls\r\n"
+               L"\r\n"
+               L"(Press Retry to debug the application - JIT must be enabled)\r\n",
+               szModule, lpszFile, dwLine, szErrorMsg);
+    szMsg[_countof(szMsg) - 1] = L'\0';
 
     // Display the string.
     switch (MessageBoxW(NULL, szMsg, L"DrMingw", MB_ICONERROR | MB_ABORTRETRYIGNORE)) {
