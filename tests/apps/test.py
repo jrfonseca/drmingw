@@ -129,12 +129,18 @@ def test(args):
 
     # Isolate this python script from console events
     creationflags = 0
+    kwargs = {}
     if sys.platform == 'win32':
         testName, _ = os.path.splitext(os.path.basename(testSrc))
         if testName.startswith('ctrl_'):
             creationflags |= subprocess.CREATE_NEW_CONSOLE
+            # Keep the new console hidden.
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+            kwargs['startupinfo'] = startupinfo
 
-    p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, creationflags=creationflags)
+    p = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, creationflags=creationflags, **kwargs)
     p.wait()
 
     stdout.seek(0)
