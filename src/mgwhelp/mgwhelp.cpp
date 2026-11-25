@@ -553,13 +553,25 @@ demangle(const char *mangled, DWORD Flags)
 BOOL WINAPI
 MgwSymFromAddr(HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol)
 {
-    char buffer[1024];
+    char buffer[1024] = {};
     PSYMBOL_INFOW SymbolW = (PSYMBOL_INFOW)buffer;
     SymbolW->SizeOfStruct = sizeof *SymbolW;
     SymbolW->MaxNameLen = ((sizeof(buffer) - sizeof *SymbolW) / sizeof(WCHAR)) - 1;
     if (MgwSymFromAddrW(hProcess, Address, Displacement, SymbolW)) {
+        // Propagate the other fields, e.g. Flags, which lets callers detect
+        // symbols that were merely derived from DLL exports
+        Symbol->TypeIndex = SymbolW->TypeIndex;
+        Symbol->Size = SymbolW->Size;
+        Symbol->ModBase = SymbolW->ModBase;
+        Symbol->Flags = SymbolW->Flags;
+        Symbol->Value = SymbolW->Value;
+        Symbol->Address = SymbolW->Address;
+        Symbol->Register = SymbolW->Register;
+        Symbol->Scope = SymbolW->Scope;
+        Symbol->Tag = SymbolW->Tag;
         WideCharToMultiByte(CP_ACP, 0, SymbolW->Name, -1, Symbol->Name, Symbol->MaxNameLen, nullptr,
                             nullptr);
+        Symbol->NameLen = strnlen(Symbol->Name, Symbol->MaxNameLen);
         return TRUE;
     } else {
         return FALSE;
