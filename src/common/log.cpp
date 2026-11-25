@@ -380,9 +380,19 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         if (hModule && GetModuleFileNameExW(hProcess, hModule, szModule, _countof(szModule))) {
             lprintf(L"  %ls", getBaseNameW(szModule));
 
+            ULONG SymFlags = 0;
             bSymbol = GetSymFromAddr(hProcess, AddrPC + nudge, szSymName, MAX_SYM_NAME_SIZE,
-                                     &dwOffsetFromSymbol);
-            if (bSymbol) {
+                                     &dwOffsetFromSymbol, &SymFlags);
+            if (bSymbol && (SymFlags & SYMFLAG_EXPORT)) {
+                // Without proper symbols, DbgHelp resorts to the nearest
+                // preceding DLL export, which is often misleading (e.g., all
+                // internal functions resolve to the last export), so print
+                // the module relative address first, which can be resolved
+                // offline (e.g., with addr2line.exe) once symbols are
+                // available.
+                lprintf(L"!0x%I64x (%S+0x%lx)", AddrPC - (DWORD64)(INT_PTR)hModule, szSymName,
+                        dwOffsetFromSymbol - nudge);
+            } else if (bSymbol) {
                 lprintf(L"!%S+0x%lx", szSymName, dwOffsetFromSymbol - nudge);
 
                 bLine =

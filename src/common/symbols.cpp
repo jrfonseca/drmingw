@@ -95,9 +95,10 @@ GetSymFromAddr(HANDLE hProcess,
                DWORD64 dwAddress,
                LPSTR lpSymName,
                DWORD nSize,
-               LPDWORD lpdwDisplacement)
+               LPDWORD lpdwDisplacement,
+               PULONG lpSymFlags)
 {
-    PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)malloc(sizeof(SYMBOL_INFO) + nSize * sizeof(char));
+    PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)calloc(1, sizeof(SYMBOL_INFO) + nSize * sizeof(char));
 
     DWORD64 dwDisplacement =
         0; // Displacement of the input address, relative to the start of the symbol
@@ -118,6 +119,9 @@ GetSymFromAddr(HANDLE hProcess,
         }
         if (lpdwDisplacement) {
             *lpdwDisplacement = dwDisplacement;
+        }
+        if (lpSymFlags) {
+            *lpSymFlags = pSymbol->Flags;
         }
     }
 

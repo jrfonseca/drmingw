@@ -32,7 +32,8 @@ GetSymFromAddr(HANDLE hProcess,
                DWORD64 dwAddress,
                LPSTR lpSymName,
                DWORD nSize,
-               LPDWORD lpdwDisplacement);
+               LPDWORD lpdwDisplacement,
+               PULONG lpSymFlags); // SYMFLAG_xxx, e.g., SYMFLAG_EXPORT
 
 EXTERN_C BOOL
 GetLineFromAddr(HANDLE hProcess,
