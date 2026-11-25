@@ -353,6 +353,11 @@ writeDump(DWORD dwProcessId,
 
     HANDLE hFile = CreateFileW(szFilePath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
                                FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        lprintf(L"error: failed to create minidump file %ls (0x%08lx)\n", szFilePath,
+                GetLastError());
+        return;
+    }
 
     /*
      * http://www.debuginfo.com/articles/effminidumps2.html#minidump
@@ -381,20 +386,31 @@ writeDump(DWORD dwProcessId,
     UserStreamParam.UserStreamCount = _countof(UserStreams);
     UserStreamParam.UserStreamArray = UserStreams;
 
-    BOOL bSuccess = FALSE;
-    if (hFile != INVALID_HANDLE_VALUE) {
-        bSuccess =
-            MiniDumpWriteDump(pProcessInfo->hProcess, dwProcessId, hFile, (MINIDUMP_TYPE)DumpType,
-                              pExceptionParam, &UserStreamParam, nullptr);
+    BOOL bSuccess =
+        MiniDumpWriteDump(pProcessInfo->hProcess, dwProcessId, hFile, (MINIDUMP_TYPE)DumpType,
+                          pExceptionParam, &UserStreamParam, nullptr);
+    // MiniDumpWriteDump sets an HRESULT as the last error
+    DWORD dwError = bSuccess ? ERROR_SUCCESS : GetLastError();
 
-        CloseHandle(hFile);
-    }
+    CloseHandle(hFile);
 
     if (bSuccess) {
         lprintf(L"info: minidump written to %ls\n", szFilePath);
+        return;
+    }
 
-    } else {
-        lprintf(L"error: failed to write minidump to %ls\n", szFilePath);
+    lprintf(L"error: failed to write minidump to %ls (0x%08lx)\n", szFilePath, dwError);
+
+    // Help diagnose out-of-disk-space failures
+    ULARGE_INTEGER FreeBytesAvailable;
+    if (GetDiskFreeSpaceExW(debugOptions.minidumpDir, &FreeBytesAvailable, nullptr, nullptr)) {
+        lprintf(L"info: %I64u MiB of free disk space available\n",
+                FreeBytesAvailable.QuadPart >> 20);
+    }
+
+    // Don't leave a truncated dump behind, as it would only waste disk space
+    if (!DeleteFileW(szFilePath)) {
+        lprintf(L"warning: failed to delete %ls (0x%08lx)\n", szFilePath, GetLastError());
     }
 }
 
