@@ -24,6 +24,7 @@
 #include <stdlib.h>
 
 #include <windows.h>
+#include <winioctl.h>
 #include <ntdef.h>
 #include <ntstatus.h>
 #include <psapi.h>
@@ -420,12 +421,27 @@ writeDump(DWORD dwProcessId,
     filePath += L".dmp";
     LPCWSTR szFilePath = filePath.c_str();
 
-    HANDLE hFile = CreateFileW(szFilePath, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS,
-                               FILE_ATTRIBUTE_NORMAL, nullptr);
+    // FSCTL_SET_COMPRESSION requires both read and write access
+    HANDLE hFile = CreateFileW(szFilePath, GENERIC_READ | GENERIC_WRITE, 0, nullptr,
+                               CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (hFile == INVALID_HANDLE_VALUE) {
         lprintf(L"error: failed to create minidump file %ls (0x%08lx)\n", szFilePath,
                 GetLastError());
         return;
+    }
+
+    // Minidumps with process memory can be huge, but they compress well, so
+    // enable NTFS compression, which happens transparently as data is
+    // written.  This is merely an optimization, as it's not supported by all
+    // file systems (e.g., FAT, ReFS, NTFS with clusters larger than 4KB.)
+    USHORT CompressionFormat = COMPRESSION_FORMAT_DEFAULT;
+    DWORD cbBytesReturned = 0;
+    if (!DeviceIoControl(hFile, FSCTL_SET_COMPRESSION, &CompressionFormat,
+                         sizeof CompressionFormat, nullptr, 0, &cbBytesReturned, nullptr)) {
+        if (debugOptions.verbose_flag) {
+            lprintf(L"warning: failed to enable NTFS compression for %ls (0x%08lx)\n",
+                    szFilePath, GetLastError());
+        }
     }
 
     /*
