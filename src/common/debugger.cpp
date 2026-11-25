@@ -332,6 +332,75 @@ getThreadContext(HANDLE hProcess, HANDLE hThread, PCONTEXT pContext)
 }
 
 
+/*
+ * MinGW's dbghelp.h lacks the MINIDUMP_CALLBACK_INPUT::ReadMemoryFailure
+ * member, and wrongly places MINIDUMP_CALLBACK_OUTPUT::Status outside the
+ * union, so declare the relevant layouts as per Windows SDK.
+ */
+#include <pshpack4.h>
+struct DUMP_READ_MEMORY_FAILURE_INPUT {
+    ULONG ProcessId;
+    HANDLE ProcessHandle;
+    ULONG CallbackType;
+    ULONG64 Offset;
+    ULONG Bytes;
+    HRESULT FailureStatus;
+};
+#include <poppack.h>
+
+static_assert(offsetof(DUMP_READ_MEMORY_FAILURE_INPUT, Offset) ==
+                  offsetof(MINIDUMP_CALLBACK_INPUT, Thread),
+              "unexpected MINIDUMP_CALLBACK_INPUT layout");
+
+struct DUMP_CALLBACK_STATE {
+    ULONG64 ullSkippedBytes;
+    ULONG ulSkippedRegions;
+};
+
+static BOOL CALLBACK
+dumpCallback(PVOID CallbackParam,
+             PMINIDUMP_CALLBACK_INPUT CallbackInput,
+             PMINIDUMP_CALLBACK_OUTPUT CallbackOutput)
+{
+    switch (CallbackInput->CallbackType) {
+    case IncludeModuleCallback:
+    case ModuleCallback:
+    case IncludeThreadCallback:
+    case ThreadCallback:
+    case ThreadExCallback:
+        // Include everything
+        return TRUE;
+
+    case CancelCallback:
+        // Stop receiving cancel callbacks
+        CallbackOutput->CheckCancel = FALSE;
+        CallbackOutput->Cancel = FALSE;
+        return TRUE;
+
+    case ReadMemoryFailureCallback: {
+        // Memory might be unreadable (e.g., memory mapped by graphics
+        // drivers, or regions freed meanwhile.)  By default this aborts the
+        // whole dump, so skip the region instead.
+        auto pInput = reinterpret_cast<const DUMP_READ_MEMORY_FAILURE_INPUT *>(CallbackInput);
+        auto pState = static_cast<DUMP_CALLBACK_STATE *>(CallbackParam);
+        pState->ullSkippedBytes += pInput->Bytes;
+        pState->ulSkippedRegions += 1;
+        if (debugOptions.verbose_flag) {
+            lprintf(L"warning: failed to read %lu bytes at 0x%I64x (0x%08lx)\n", pInput->Bytes,
+                    pInput->Offset, pInput->FailureStatus);
+        }
+        // MINIDUMP_CALLBACK_OUTPUT::Status lies at the start of the union
+        *reinterpret_cast<HRESULT *>(CallbackOutput) = S_OK;
+        return TRUE;
+    }
+
+    default:
+        // Behave as if there was no callback
+        return FALSE;
+    }
+}
+
+
 static void
 writeDump(DWORD dwProcessId,
           PPROCESS_INFO pProcessInfo,
@@ -386,11 +455,39 @@ writeDump(DWORD dwProcessId,
     UserStreamParam.UserStreamCount = _countof(UserStreams);
     UserStreamParam.UserStreamArray = UserStreams;
 
+    DUMP_CALLBACK_STATE CallbackState = {};
+    MINIDUMP_CALLBACK_INFORMATION CallbackParam;
+    CallbackParam.CallbackRoutine = dumpCallback;
+    CallbackParam.CallbackParam = &CallbackState;
+
     BOOL bSuccess =
         MiniDumpWriteDump(pProcessInfo->hProcess, dwProcessId, hFile, (MINIDUMP_TYPE)DumpType,
-                          pExceptionParam, &UserStreamParam, nullptr);
+                          pExceptionParam, &UserStreamParam, &CallbackParam);
     // MiniDumpWriteDump sets an HRESULT as the last error
     DWORD dwError = bSuccess ? ERROR_SUCCESS : GetLastError();
+
+    if (!bSuccess) {
+        lprintf(L"warning: failed to write full minidump (0x%08lx); retrying with a smaller one\n",
+                dwError);
+
+        // Truncate the file and try again without process memory
+        LARGE_INTEGER liZero = {};
+        if (SetFilePointerEx(hFile, liZero, nullptr, FILE_BEGIN) && SetEndOfFile(hFile)) {
+            DumpType = MiniDumpNormal | MiniDumpWithHandleData | MiniDumpWithThreadInfo |
+                       MiniDumpWithUnloadedModules;
+            bSuccess = MiniDumpWriteDump(pProcessInfo->hProcess, dwProcessId, hFile,
+                                         (MINIDUMP_TYPE)DumpType, pExceptionParam,
+                                         &UserStreamParam, &CallbackParam);
+            if (!bSuccess) {
+                dwError = GetLastError();
+            }
+        }
+    }
+
+    if (CallbackState.ullSkippedBytes) {
+        lprintf(L"warning: skipped %I64u bytes of unreadable memory in %lu regions\n",
+                CallbackState.ullSkippedBytes, CallbackState.ulSkippedRegions);
+    }
 
     CloseHandle(hFile);
 
