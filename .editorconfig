@@ -2,6 +2,12 @@
 
 root = true
 
+[*]
+end_of_line = lf
+
+[*.{reg,cmd,bat}]
+end_of_line = crlf
+
 [*.{c,h,cpp,hpp,cc,hh,inl,rc}]
 indent_style = space
 indent_size = 4

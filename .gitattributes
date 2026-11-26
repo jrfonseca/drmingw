@@ -1,2 +1,11 @@
-*.reg -crlf
-*.cmd -crlf
+# Use LF in the working tree on every platform, so native Windows and WSL
+# checkouts agree.
+* text=auto eol=lf
+
+# Windows-only formats that need CRLF.
+*.reg text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.png binary
+*.ico binary
