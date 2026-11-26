@@ -53,7 +53,7 @@ outputCallback(const wchar_t *s)
 static ULONG g_TimeOut = 0;
 static HANDLE g_hTimer = NULL;
 static HANDLE g_hTimerQueue = NULL;
-static DWORD g_ElapsedTime = 0;
+static ULONGLONG g_StartTime = 0;
 static BOOL g_TimerIgnore = FALSE;
 static DWORD g_Period = 1000;
 static BOOL g_ModalDialogIgnore = FALSE;
@@ -127,9 +127,7 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
         return;
     }
 
-    g_ElapsedTime += g_Period;
-
-    if (!g_TimeOut || g_ElapsedTime < g_TimeOut * 1000) {
+    if (!g_TimeOut || GetTickCount64() - g_StartTime < (ULONGLONG)g_TimeOut * 1000) {
         return;
     }
 
@@ -399,6 +397,8 @@ wmain(int argc, wchar_t **argv)
     if (mmRes == MMSYSERR_NOERROR && tc.wPeriodMax < g_Period) {
         g_Period = tc.wPeriodMax;
     }
+
+    g_StartTime = GetTickCount64();
 
     if (!CreateTimerQueueTimer(&g_hTimer, g_hTimerQueue, (WAITORTIMERCALLBACK)TimeOutCallback,
                                (PVOID)(UINT_PTR)dwProcessId, g_Period, g_Period, 0)) {
