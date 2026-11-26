@@ -399,6 +399,51 @@ writeDump(DWORD dwProcessId,
 }
 
 
+/*
+ * Track when the debugger is busy dumping stacks or writing minidumps, so
+ * that timeouts (e.g., catchsegv's) don't kill the process meanwhile, as
+ * that would truncate the output, and make MiniDumpWriteDump fail.
+ *
+ * Also accumulate the time spent busy, so that timeouts can discount it, as
+ * symbol resolution (which may involve downloading PDBs from a symbol
+ * server) can take arbitrarily long, while the debuggee is suspended.
+ */
+static volatile LONG g_lBusy = 0;
+static volatile LONG g_lBusyMilliseconds = 0;
+
+namespace {
+class BusyGuard {
+    ULONGLONG m_ullStart;
+
+public:
+    BusyGuard() : m_ullStart(GetTickCount64()) { InterlockedIncrement(&g_lBusy); }
+    ~BusyGuard()
+    {
+        // Update the busy time before clearing the busy flag, so that
+        // observers never see an idle debugger with stale busy time.
+        LONG lElapsed = (LONG)(GetTickCount64() - m_ullStart);
+        InterlockedExchangeAdd(&g_lBusyMilliseconds, lElapsed);
+        InterlockedDecrement(&g_lBusy);
+    }
+    BusyGuard(const BusyGuard &) = delete;
+    BusyGuard &
+    operator=(const BusyGuard &) = delete;
+};
+} // namespace
+
+BOOL
+DebuggerIsBusy(void)
+{
+    return InterlockedCompareExchange(&g_lBusy, 0, 0) != 0;
+}
+
+DWORD
+DebuggerBusyTime(void)
+{
+    return (DWORD)InterlockedCompareExchange(&g_lBusyMilliseconds, 0, 0);
+}
+
+
 // Trap a particular thread
 BOOL
 TrapThread(DWORD dwProcessId, DWORD dwThreadId)
@@ -562,6 +607,8 @@ DebugMainLoop(void)
                 }
             }
 
+            BusyGuard busyGuard;
+
             dumpException(pProcessInfo->hProcess, &DebugEvent.u.Exception.ExceptionRecord);
 
             // Find the thread in the thread list
@@ -668,6 +715,7 @@ DebugMainLoop(void)
 
             // Dump the stack on abort()
             if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
+                BusyGuard busyGuard;
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
                 HANDLE hProcess = pProcessInfo->hProcess;
                 HANDLE hThread = pThreadInfo->hThread;
@@ -690,6 +738,7 @@ DebugMainLoop(void)
 
             // Dump the stack on abort()
             if (!fTerminating && isAbnormalExitCode(DebugEvent.u.ExitThread.dwExitCode)) {
+                BusyGuard busyGuard;
                 pThreadInfo = &pProcessInfo->Threads[DebugEvent.dwThreadId];
                 HANDLE hProcess = pProcessInfo->hProcess;
                 HANDLE hThread = pThreadInfo->hThread;

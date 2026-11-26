@@ -42,3 +42,12 @@ EXTERN_C BOOL
 DebugMainLoop(void);
 EXTERN_C BOOL
 TrapThread(DWORD dwProcessId, DWORD dwThreadId);
+
+// Whether the debugger is busy dumping stacks or writing minidumps
+EXTERN_C BOOL
+DebuggerIsBusy(void);
+
+// Total time, in milliseconds, the debugger spent busy dumping stacks or
+// writing minidumps
+EXTERN_C DWORD
+DebuggerBusyTime(void);

@@ -119,6 +119,13 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
         return;
     }
 
+    // Don't time out while dumping stacks or writing minidumps, which can
+    // take a long time for big processes; terminating the process meanwhile
+    // would truncate the output and make the minidump fail.
+    if (DebuggerIsBusy()) {
+        return;
+    }
+
     if (!g_ModalDialogIgnore) {
         EnumWindows(EnumWindowCallback, (LPARAM)dwProcessId);
     }
@@ -127,7 +134,14 @@ TimeOutCallback(PVOID lpParam, BOOLEAN TimerOrWaitFired)
         return;
     }
 
-    if (!g_TimeOut || GetTickCount64() - g_StartTime < (ULONGLONG)g_TimeOut * 1000) {
+    if (!g_TimeOut) {
+        return;
+    }
+
+    // Discount the time the debugger spent busy (e.g., resolving symbols),
+    // as the debuggee was suspended meanwhile.
+    ULONGLONG ullElapsed = GetTickCount64() - g_StartTime - DebuggerBusyTime();
+    if (ullElapsed < (ULONGLONG)g_TimeOut * 1000) {
         return;
     }
 
