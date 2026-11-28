@@ -53,20 +53,28 @@ outputCallback(const wchar_t *s)
 static ULONG g_TimeOut = 0;
 static HANDLE g_hTimer = NULL;
 static HANDLE g_hTimerQueue = NULL;
+static HANDLE g_hJob = NULL;
 static ULONGLONG g_StartTime = 0;
 static BOOL g_TimerIgnore = FALSE;
 static DWORD g_Period = 1000;
 static BOOL g_ModalDialogIgnore = FALSE;
 
 
+// Terminate the debuggee, along with any processes it spawned, as these are
+// debugged too, and the debugger would otherwise wait for them to exit.
 static void
 TerminateProcessById(DWORD dwProcessId)
 {
     BOOL bTerminated = FALSE;
-    HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
-    if (hProcess) {
-        bTerminated = TerminateProcess(hProcess, 3);
-        CloseHandle(hProcess);
+    if (g_hJob) {
+        bTerminated = TerminateJobObject(g_hJob, 3);
+    }
+    if (!bTerminated) {
+        HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, dwProcessId);
+        if (hProcess) {
+            bTerminated = TerminateProcess(hProcess, 3);
+            CloseHandle(hProcess);
+        }
     }
     if (!bTerminated) {
         fwprintf(stderr, L"catchsegv: error: failed to interrupt target (0x%08lx)\n", GetLastError());
@@ -388,7 +396,7 @@ wmain(int argc, wchar_t **argv)
                         NULL, // lpProcessAttributes
                         NULL, // lpThreadAttributes
                         TRUE, // bInheritHandles
-                        DEBUG_PROCESS,
+                        DEBUG_PROCESS | CREATE_SUSPENDED,
                         NULL, // lpEnvironment
                         NULL, // lpCurrentDirectory
                         &StartupInfo, &ProcessInformation)) {
@@ -396,6 +404,22 @@ wmain(int argc, wchar_t **argv)
                  GetLastError());
         exit(EXIT_FAILURE);
     }
+
+    // Put the debuggee in a job, which its descendants will inherit, so they
+    // can all be terminated together on time out.  Do so before resuming it,
+    // so it can't spawn any process meanwhile.  This is not essential, so
+    // carry on if it fails (e.g., if nested jobs are not supported.)
+    g_hJob = CreateJobObjectW(NULL, NULL);
+    if (g_hJob && !AssignProcessToJobObject(g_hJob, ProcessInformation.hProcess)) {
+        if (debugOptions.verbose_flag) {
+            fwprintf(stderr, L"catchsegv: warning: failed to assign process to job (0x%08lx)\n",
+                     GetLastError());
+        }
+        CloseHandle(g_hJob);
+        g_hJob = NULL;
+    }
+
+    ResumeThread(ProcessInformation.hThread);
 
     DWORD dwProcessId = GetProcessId(ProcessInformation.hProcess);
 
