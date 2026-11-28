@@ -283,3 +283,22 @@ add_test (
     COMMAND test_addr2line
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
+
+
+#
+# test_drmingw
+#
+
+add_executable (test_drmingw
+    test_drmingw.cpp
+)
+target_include_directories (test_drmingw PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/drmingw
+)
+add_dependencies (test_drmingw drmingw)
+add_dependencies (check test_drmingw)
+add_test (
+    NAME test_drmingw
+    COMMAND test_drmingw
+    WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+)
