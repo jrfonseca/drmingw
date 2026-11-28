@@ -302,3 +302,39 @@ add_test (
     COMMAND test_drmingw
     WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 )
+
+
+#
+# test_catchsegv
+#
+# The driver is a Python script, which must run natively, and run the
+# Windows executables through CMAKE_CROSSCOMPILING_EMULATOR itself.
+#
+
+find_package (Python3 COMPONENTS Interpreter)
+
+add_executable (test_catchsegv_app
+    test_catchsegv_app.cpp
+)
+
+add_executable (test_catchsegv_dmp
+    test_catchsegv_dmp.cpp
+)
+target_link_libraries (test_catchsegv_dmp
+    mgwhelp_implib
+)
+
+if (Python3_Interpreter_FOUND)
+    add_dependencies (check catchsegv test_catchsegv_app test_catchsegv_dmp)
+    add_test (
+        NAME test_catchsegv
+        COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/test_catchsegv.py
+            "--emulator=${CMAKE_CROSSCOMPILING_EMULATOR}"
+            $<TARGET_FILE:catchsegv>
+            $<TARGET_FILE:test_catchsegv_app>
+            $<TARGET_FILE:test_catchsegv_dmp>
+    )
+else ()
+    message (WARNING "Python 3 not found: test_catchsegv disabled")
+endif ()
