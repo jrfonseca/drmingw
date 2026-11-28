@@ -33,18 +33,13 @@ cmake_ () {
 if [[ -v WSL_DISTRO_NAME ]]
 then
 	WINE=/usr/bin/env
-
-	xwfb_run() {
-		"$@"
-	}
 else
 	WINE=${WINE:-$(which wine)}
-
-	xwfb_run() {
-		# https://gitlab.freedesktop.org/ofourdan/xwayland-run
-		xwfb-run -n 8 -c weston -s \\-geometry -s 2024x768 -- "$@"
-	}
 fi
+
+xwfb_run() {
+	"$(dirname "${BASH_SOURCE[0]}")/headless.sh" "$@"
+}
 
 BUILD_DIR=${BUILD_DIR:-$PWD/build}
 
