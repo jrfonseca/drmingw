@@ -9,7 +9,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN \
  apt-get update && apt-get install -qq -y \
-  ansible mingw-w64 ninja-build nsis cmake python3 xinit xz-utils xwayland-run && \
+  ansible mingw-w64 ninja-build nsis cmake python3 xinit xz-utils xwayland-run gcovr && \
  rm -rf /var/lib/apt/lists/*
 
 COPY ansible/winehq.yml /ansible/

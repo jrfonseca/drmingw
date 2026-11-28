@@ -6,8 +6,7 @@ set -x
 docker_file=${docker_file:-winehq}
 docker_tag=drmingw-$docker_file
 
-test -t 0 && interactive=true || interactive=false
-uid=$(id -u)
+test -t 0 -a -t 1 && interactive=true || interactive=false
 
 docker_run () {
     docker run \
@@ -17,7 +16,8 @@ docker_run () {
 	    -v "$PWD:$PWD" \
 	    -w "$PWD" \
 	    -e "BUILD_DIR=$PWD/build/docker-$docker_file" \
-	    -u "$uid" \
+	    -e "COVERAGE=${COVERAGE:-0}" \
+	    -u "$(id -u):$(id -g)" \
 	    $docker_tag \
 	    "$@"
 }

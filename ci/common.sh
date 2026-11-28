@@ -1,6 +1,28 @@
 cmake_ () {
+	set +x
 	test "$1" = "-B"
-	test -f "$2/CMakeCache.txt" || cmake "$@"
+	if test -f "$2/CMakeCache.txt"
+	then
+		# Reconfigure existing build trees only if ENABLE_COVERAGE changed
+		local arg
+		for arg in "$@"
+		do
+			case "$arg" in
+			-DENABLE_COVERAGE=*)
+				if ! grep -qx "ENABLE_COVERAGE:BOOL=${arg#-DENABLE_COVERAGE=}" "$2/CMakeCache.txt"
+				then
+					set -x
+					cmake -B "$2" "$arg"
+					set +x
+				fi
+				;;
+			esac
+		done
+	else
+		set -x
+		cmake "$@"
+	fi
+	set -x
 }
 
 
@@ -56,3 +78,46 @@ then
 		;;
 	esac
 fi
+
+
+#
+# Code coverage (enable with COVERAGE=1)
+#
+
+COVERAGE=${COVERAGE:-0}
+if [ "$CMAKE_BUILD_TYPE" = "Release" ]
+then
+	COVERAGE=0
+fi
+if [ "$COVERAGE" -gt 0 ]
+then
+	gcovr --version
+fi
+
+# Discard counters from previous runs
+coverage_reset() {
+	if [ "$COVERAGE" -gt 0 ]
+	then
+		find "$1" -name '*.gcda' -delete
+	fi
+}
+
+# coverage_report <build-dir> <gcov-executable>
+coverage_report() {
+	if [ "$COVERAGE" -gt 0 ]
+	then
+		rm -f "$1"/coverage*.html "$1"/coverage.css
+		gcovr \
+			--gcov-executable "$2" \
+			--exclude-unreachable-branches \
+			--exclude-throw-branches \
+			--root "$PWD" \
+			--exclude 'downloads/' \
+			--exclude-directories '(.*/)?wine$' \
+			--exclude-directories '/tmp/claude-[0-9]+(/.*)?$' \
+			--object-directory "$1" \
+			--html-details -o "$1/coverage.html" \
+			--print-summary \
+			"$1"
+	fi
+}
