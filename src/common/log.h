@@ -35,6 +35,10 @@ dumpException(HANDLE hProcess, PEXCEPTION_RECORD pExceptionRecord);
 EXTERN_C void
 dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext);
 
+// Dump the modules seen in the stack backtraces since the last call
+EXTERN_C void
+dumpStackModules(HANDLE hProcess);
+
 EXTERN_C BOOL
 getModuleVersionInfo(LPCWSTR szModule, WORD awVInfo[4]);
 

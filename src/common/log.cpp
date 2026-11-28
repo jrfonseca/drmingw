@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#include <set>
+
 #include <assert.h>
 
 #include <windows.h>
@@ -226,6 +228,76 @@ dumpContext(const CONTEXT *pContext)
 }
 
 
+// Base addresses of the modules seen in the stack backtraces so far
+static std::set<DWORD64> g_StackModules;
+
+
+void
+dumpStackModules(HANDLE hProcess)
+{
+    if (g_StackModules.empty()) {
+        return;
+    }
+
+    BOOL bWow64 = FALSE;
+    if (HAVE_WIN64) {
+        IsWow64Process(hProcess, &bWow64);
+    }
+    BOOL b32Bit = !HAVE_WIN64 || bWow64;
+
+    lprintf(L"Modules:\n");
+
+    for (DWORD64 BaseOfImage : g_StackModules) {
+        IMAGEHLP_MODULEW64 ModuleInfo;
+        ZeroMemory(&ModuleInfo, sizeof ModuleInfo);
+        ModuleInfo.SizeOfStruct = sizeof ModuleInfo;
+        if (!SymGetModuleInfoW64(hProcess, BaseOfImage, &ModuleInfo)) {
+            ModuleInfo.BaseOfImage = BaseOfImage;
+        }
+
+        if (b32Bit) {
+            lprintf(L"%08lX-%08lX", (DWORD)ModuleInfo.BaseOfImage,
+                    (DWORD)(ModuleInfo.BaseOfImage + ModuleInfo.ImageSize));
+        } else {
+            lprintf(L"%016I64X-%016I64X", ModuleInfo.BaseOfImage,
+                    ModuleInfo.BaseOfImage + ModuleInfo.ImageSize);
+        }
+
+        wchar_t szModule[MAX_PATH] = {};
+        if (GetModuleFileNameExW(hProcess, (HMODULE)(INT_PTR)BaseOfImage, szModule,
+                                 _countof(szModule))) {
+            lprintf(L"  %ls", getBaseNameW(szModule));
+            WORD awVInfo[4];
+            if (getModuleVersionInfo(szModule, awVInfo)) {
+                lprintf(L"  %hu.%hu.%hu.%hu", awVInfo[0], awVInfo[1], awVInfo[2], awVInfo[3]);
+            }
+        }
+
+        // Print image and PDB identifiers in the same form as the symbol
+        // store keys, so the matching files can be retrieved later.
+        if (ModuleInfo.TimeDateStamp) {
+            lprintf(L"  image=%08lX%lx", ModuleInfo.TimeDateStamp, ModuleInfo.ImageSize);
+        }
+        if (ModuleInfo.CVSig == 0x53445352 /* 'RSDS' */ && ModuleInfo.CVData[0]) {
+            const GUID &guid = ModuleInfo.PdbSig70;
+            lprintf(L"  pdb=%ls/%08lX%04hX%04hX%02X%02X%02X%02X%02X%02X%02X%02X%lX",
+                    getBaseNameW(ModuleInfo.CVData), guid.Data1, guid.Data2, guid.Data3,
+                    guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4],
+                    guid.Data4[5], guid.Data4[6], guid.Data4[7], ModuleInfo.PdbAge);
+            if (ModuleInfo.LoadedPdbName[0] == 0) {
+                lprintf(L" (not found)");
+            }
+        }
+
+        lprintf(L"\n");
+    }
+
+    lprintf(L"\n");
+
+    g_StackModules.clear();
+}
+
+
 typedef BOOL (WINAPI * PFN_GETPROCESSINFORMATION)(HANDLE, PROCESS_INFORMATION_CLASS, LPVOID, DWORD);
 
 
@@ -379,6 +451,8 @@ dumpStack(HANDLE hProcess, HANDLE hThread, const CONTEXT *pContext)
         wchar_t szModule[MAX_PATH];
         if (hModule && GetModuleFileNameExW(hProcess, hModule, szModule, _countof(szModule))) {
             lprintf(L"  %ls", getBaseNameW(szModule));
+
+            g_StackModules.insert((DWORD64)(INT_PTR)hModule);
 
             ULONG SymFlags = 0;
             bSymbol = GetSymFromAddr(hProcess, AddrPC + nudge, szSymName, MAX_SYM_NAME_SIZE,

@@ -598,6 +598,7 @@ TrapThread(DWORD dwProcessId, DWORD dwThreadId)
         if (getThreadContext(hProcess, hThread, &Context)) {
             dumpStack(hProcess, hThread, &Context);
         }
+        dumpStackModules(hProcess);
         writeDump(dwProcessId, pProcessInfo, nullptr);
 
         // TODO: Flag fTerminating
@@ -766,6 +767,8 @@ DebugMainLoop(void)
                 }
             }
 
+            dumpStackModules(pProcessInfo->hProcess);
+
             if (!DebugEvent.u.Exception.dwFirstChance) {
                 if (bExceptionContext) {
                     EXCEPTION_POINTERS ExceptionPointers;
@@ -863,6 +866,7 @@ DebugMainLoop(void)
                 if (getThreadContext(hProcess, hThread, &Context)) {
                     dumpStack(hProcess, hThread, &Context);
                 }
+                dumpStackModules(hProcess);
             }
 
             pProcessInfo->Threads.erase(DebugEvent.dwThreadId);
@@ -886,6 +890,7 @@ DebugMainLoop(void)
                 if (getThreadContext(hProcess, hThread, &Context)) {
                     dumpStack(hProcess, hThread, &Context);
                 }
+                dumpStackModules(hProcess);
 
                 writeDump(DebugEvent.dwProcessId, pProcessInfo, nullptr);
             }
