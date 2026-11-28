@@ -741,6 +741,8 @@ DebugMainLoop(void)
             dumpException(pProcessInfo->hProcess, &DebugEvent.u.Exception.ExceptionRecord);
 
             // Find the thread in the thread list
+            CONTEXT ExceptionContext;
+            BOOL bExceptionContext = FALSE;
             THREAD_INFO_LIST::const_iterator it;
             for (it = pProcessInfo->Threads.begin(); it != pProcessInfo->Threads.end(); ++it) {
                 DWORD dwThreadId = it->first;
@@ -758,10 +760,17 @@ DebugMainLoop(void)
 
                 dumpStack(pProcessInfo->hProcess, hThread, &Context);
 
-                if (!DebugEvent.u.Exception.dwFirstChance) {
+                if (dwThreadId == DebugEvent.dwThreadId) {
+                    ExceptionContext = Context;
+                    bExceptionContext = TRUE;
+                }
+            }
+
+            if (!DebugEvent.u.Exception.dwFirstChance) {
+                if (bExceptionContext) {
                     EXCEPTION_POINTERS ExceptionPointers;
                     ExceptionPointers.ExceptionRecord = pExceptionRecord;
-                    ExceptionPointers.ContextRecord = &Context;
+                    ExceptionPointers.ContextRecord = &ExceptionContext;
 
                     MINIDUMP_EXCEPTION_INFORMATION ExceptionParam;
                     ExceptionParam.ThreadId = DebugEvent.dwThreadId;
@@ -769,6 +778,8 @@ DebugMainLoop(void)
                     ExceptionParam.ClientPointers = FALSE;
 
                     writeDump(DebugEvent.dwProcessId, pProcessInfo, &ExceptionParam);
+                } else {
+                    writeDump(DebugEvent.dwProcessId, pProcessInfo, nullptr);
                 }
             }
 
